@@ -47,7 +47,8 @@ The release-pinned
 are the machine-readable source for mandate content and receipts.
 
 Source facts below summarize those materials. AgSDL assessments are project
-conclusions and do not add requirements to AP2.
+conclusions and do not add requirements to AP2. Later official tracker reports
+are labeled separately and do not amend the release contract.
 
 ## Version and contract boundaries
 
@@ -138,6 +139,13 @@ then assign concrete Principal identities, Runtime instances, and endpoints.
 Co-located roles remain separate mappings so reviewers can inspect each duty
 and trust boundary.
 
+The current AgSDL Protocol model also assigns protocol positions through
+agent-only Roles. Representing AP2 as an ordinary Protocol definition would
+therefore require synthetic Agents for non-agentic participants. The candidate
+extension should instead target the integrating System or Fragment and preserve
+AP2 role labels in extension-specific requirement mappings until the core has a
+non-agentic protocol-participant concept.
+
 Delegated verification work maps to a Handoff when only responsibility moves.
 It also needs an AgSDL Delegation when the provider receives authority to take
 a protected Action. Neither mapping authorizes agent-to-agent mandate
@@ -187,6 +195,13 @@ The general ideas already fit the proposed AgSDL core:
 - An immutable artifact preserves the signed mandate or receipt bytes, while
   occurrences record approval, delegation, authorization, Action, and Effect.
 
+Mandate Delegation applies to both AP2 modes when a Shopping Agent receives and
+later presents the mandate. A user-authorized closed mandate in direct mode
+therefore supports a transaction-bounded Delegation occurrence as well as an
+Approval decision. When a Trusted Surface communicates directly with a
+non-agentic Merchant and no Shopping Agent acts for the user, that separate
+flow has no agent delegation.
+
 AgSDL should not add a generic Mandate entity. A mandate is one external
 credential representation that can support several distinct AgSDL facts. The
 signature proves integrity and signer control under stated trust assumptions.
@@ -223,17 +238,22 @@ The release defines these open mandate constraints:
 The line-item constraint defines the required matching outcome and presents a
 maximum-flow formulation as one implementation method. Unknown or unevaluable
 constraints fail. Recurrence and budget depend on previous presentations and
-accumulated amounts. AP2 requires a rejection receipt before a Shopping Agent
-presents another closed candidate from the same open mandate, but also allows
-downstream parties to reject overlapping uses.
+accumulated amounts. AP2 says a Shopping Agent must not present a subsequent
+open Payment or Checkout Mandate without a rejection receipt from the previous
+one. Its stated rationale is to prevent several checkouts under one open
+mandate. The wording does not fully define the identifier or state scope needed
+to enforce that rule across verifiers.
 
 ### AgSDL assessment
 
-The binding needs two protected Actions and Effects at minimum: checkout
-completion and payment. They have different verifiers, Resources, evidence,
-and failure outcomes. One authorization result cannot substitute for the other.
-The payment credential is a secret or opaque credential reference, not an
-Authority grant and not a copy of payment card data in the description.
+The binding must separate the Shopping Agent's mandate presentation and request
+from the action performed in response. Checkout request, Merchant order
+commitment, payment-authority request, credential release, payment submission,
+and payment processing have different acting and initiating Principals,
+Resources, evidence, and failure outcomes. One authorization result cannot
+substitute for another. The payment credential is a secret or opaque credential
+reference, not an Authority grant and not a copy of payment card data in the
+description.
 
 Every AP2 constraint maps to an AgSDL Policy or Delegation condition, but AP2
 owns its exact evaluation. AgSDL should reference the constraint contract and
@@ -269,6 +289,12 @@ binding preserves the exact presented content, user Principal identity,
 surface and signer identities, decision, time, expiry, and definition or policy
 versions. In an autonomous flow, the later agent-signed closed mandate is a use
 of delegated authority, not another human approval.
+
+Under the Trusted Agent Provider model, the provider's signature supports the
+provider's claim that it obtained authorization and consent. The mandate alone
+does not identify every fact required for an AgSDL Approval decision. Missing
+human identity, display, decision, time, or version evidence remains an evidence
+gap rather than an inferred Approval occurrence.
 
 Where law or policy requires consent, an AgSDL consent requirement and consent
 record remain separate. A valid AP2 signature cannot prove that a user
@@ -337,6 +363,20 @@ canonical mandate representation should identify it. These discussions show
 active interoperability work. Their proposed algorithms and external libraries
 are not part of the AP2 v0.2.0 contract.
 
+Later open reports in the official tracker identify three additional release
+gaps. Issue
+[#297](https://github.com/google-agentic-commerce/AP2/issues/297) reports that
+`payment.agent_recurrence` lacks interoperable period semantics and that the
+SDK evaluator does not enforce its frequency. Issue
+[#298](https://github.com/google-agentic-commerce/AP2/issues/298) reports that
+the SDK treats empty or undisclosed line-item alternatives as a wildcard and
+does not enforce required quantity as the documentation describes. Issue
+[#299](https://github.com/google-agentic-commerce/AP2/issues/299) reports that
+the SDK drops Payment Instrument extension fields and compares allowed
+instruments only by `id`. Inspection of the tagged SDK confirms the cited code
+paths. The reports remain open and are not normative amendments, but they
+identify cases where the release SDK cannot supply conformance evidence.
+
 ### AgSDL assessment
 
 A binding can declare deterministic checks, but a positive interoperability
@@ -349,9 +389,12 @@ future AP2 adapter tests need positive and negative cases for:
 3. `sd_hash`, `checkout_hash`, `transaction_id`, open-to-closed chain, and
    receipt-reference recomputation from preserved compact bytes;
 4. unchanged claims, every supported constraint algorithm, selective
-   disclosures, decoys, and fail-closed unknown constraints;
+   disclosures, decoys, fail-closed unknown constraints, empty line-item
+   alternatives, required quantities, qualified item identities, and Payment
+   Instrument extension preservation and comparison;
 5. direct and autonomous flows, including altered content after approval;
-6. recurrence, budget, replay, concurrent presentation, rejected candidate,
+6. recurrence counts and every frequency boundary, timezone and daylight-saving
+   transition, budget, replay, concurrent presentation, rejected candidate,
    expiry, revocation, and unavailable accounting state;
 7. separated Checkout and Payment decisions, payment credential scope, receipt
    status, and dispute-chain assembly;
@@ -378,6 +421,15 @@ artifacts:
 - Consent quality and legal sufficiency are not verifiable from mandate shape.
 - Stateful recurrence, budget, and overlap enforcement need shared execution
   state that the wire artifacts do not supply.
+- `payment.agent_recurrence` does not define interoperable rolling or calendar
+  periods, reference events, timezones, daylight-saving behavior, or boundary
+  rules for its frequency values.
+- The tagged SDK diverges from the documented `checkout.line_items` behavior
+  for empty or undisclosed alternatives and required quantities. AP2 also leaves
+  the item-identifier namespace underspecified.
+- The tagged SDK drops type-specific Payment Instrument fields and compares
+  allowed instruments only by `id`, while AP2 permits instrument extensions and
+  does not define the identity namespace.
 - Delegate SD-JWT is a mutable individual draft in the AP2 normative reference
   set.
 - AP2 uses SD-JWT VC fields and format identifiers without naming an exact
@@ -400,6 +452,6 @@ artifacts:
 - Proposed canonicalization vectors and consume-once layers remain unmerged,
   non-normative community work.
 
-These limits support a specialized AgSDL binding proposal with explicit gaps.
+These limits support a candidate AgSDL binding extension with explicit gaps.
 They do not support normative syntax, imported AP2 schemas, or an
 interoperability claim at AgSDL's current pre-draft stage.
