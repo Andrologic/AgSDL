@@ -51,6 +51,37 @@ the definitions that constrain them. A runtime may use an occurrence to select
 new behavior, but that selection is itself behavior described or permitted by a
 definition.
 
+Some concerns therefore have two or more named forms:
+
+- a **state definition** constrains a **state occurrence**;
+- an **authorization requirement** constrains an **authorization decision**;
+- an **approval requirement** constrains an **approval request** and an
+  **approval decision**;
+- an **evaluation definition** produces an **evaluation result**; and
+- a **trace requirement** constrains an **execution trace**, which contains
+  **trace records**.
+
+A **message occurrence** has no corresponding message definition in this model.
+Interfaces and protocols define its contract. The relationship model names
+occurrence forms explicitly so that an execution result is never treated as a
+reusable definition.
+
+### Portable requirements and resolved bindings
+
+A portable definition may declare a **binding requirement**. A binding
+requirement states capabilities and constraints that an implementation must
+satisfy, but does not identify that implementation. A **resolved binding** is a
+deployment-specific record that selects a runtime or environment element and
+shows which binding requirement it satisfies.
+
+Conceptual resolution validates definitions, references, and binding
+requirements without requiring resolved bindings. Deployment resolution
+compares those requirements with candidate implementations and records each as
+satisfied, unsatisfied, or indeterminate. A deployment that claims readiness
+must resolve every required binding. Replacing a resolved binding does not
+change portable meaning unless the replacement also changes a portable
+definition or requirement.
+
 ### Ownership, use, and containment
 
 This proposal uses three distinct relation kinds:
@@ -93,8 +124,8 @@ table also states the inverse cardinality from one target back to its sources.
 
 A **system** is the definition of one agentic application boundary. It declares
 the system's purpose, owned components, exposed interfaces, governing policies,
-topology, control flow, and execution requirements. It is the root used to
-resolve and validate a complete description.
+optional topology, control flow, and execution requirements. It is the root used
+to resolve and validate a complete description.
 
 The system owns definitions that are local to it and uses definitions supplied
 by packages. It does not own runtime occurrences.
@@ -106,6 +137,9 @@ Invariants:
   ownership, or use relations.
 - Every interaction crossing the system boundary uses an interface declared by
   the system or by a contained agent that the system exposes.
+- A system with one agent does not require a topology. Its agent and exposed
+  interfaces are sufficient when no participant graph or permitted
+  inter-participant path needs to be declared.
 - The system boundary identifies what AgSDL governs. External systems remain
   environment elements unless they have their own system definitions.
 
@@ -182,7 +216,8 @@ Invariants:
 A **tool** is a definition of an invocable operation with declared inputs,
 outputs, effects, failures, and authorization needs. A tool is the operation
 contract. The service, process, function, or device that performs it belongs to
-the runtime or environment.
+the runtime or environment. The tool may declare binding requirements without
+naming or resolving an implementation.
 
 Invariants:
 
@@ -212,7 +247,9 @@ Invariants:
 
 **Memory** is a definition of retained information that an agent or system may
 read or update across control-flow steps or executions. It states retention,
-scope, access, and update rules. Memory content is runtime state.
+scope, access, update rules, and any storage binding requirements. Memory
+content is runtime state. A memory definition does not require a resolved
+storage binding during conceptual resolution.
 
 Invariants:
 
@@ -243,9 +280,10 @@ Invariants:
 
 ### State
 
-**State** is the execution data that can affect later behavior within a declared
-scope. A state definition describes allowed fields, ownership, lifetime, and
-transitions. A state occurrence holds values at a point in an execution.
+A **state definition** describes execution data that can affect later behavior
+within a declared scope. It states allowed fields, ownership, lifetime,
+transitions, and any state-management binding requirements. A **state
+occurrence** holds values at a point in an execution.
 
 Invariants:
 
@@ -303,9 +341,9 @@ Invariants:
 - Transport bindings cannot change the portable operation contract.
 - Exposing an interface does not grant callers authorization to use it.
 
-### Message
+### Message occurrence
 
-A **message** is an occurrence of information sent from one identified endpoint
+A **message occurrence** is information sent from one identified endpoint
 to one or more identified endpoints through an interface according to a
 protocol. Its envelope records sender, intended recipient, protocol position,
 and correlation identity. Its content conforms to the selected interface
@@ -313,9 +351,10 @@ operation.
 
 Invariants:
 
-- A message has exactly one declared sender. Broadcast infrastructure may relay
-  it without becoming that sender.
-- A message has at least one intended recipient or one declared broadcast scope.
+- A message occurrence has exactly one declared sender. Broadcast infrastructure
+  may relay it without becoming that sender.
+- A message occurrence has at least one intended recipient or one declared
+  broadcast scope.
 - Replies and correlated messages reference earlier message occurrences without
   changing them.
 - Delivery, processing, and acceptance are separate facts. A trace must not
@@ -354,12 +393,15 @@ Invariants:
   authorization.
 - A cyclic topology is valid only when the participating protocols or control
   flows define progress, termination, or an intentional long-lived loop.
+- Omitting a topology declares no static participant graph. It does not require
+  a synthetic one-node graph and does not prevent a single agent from being a
+  complete system.
 
 ### Control flow
 
 A **control flow** is a definition of how control can move among steps based on
 events, outcomes, state, and policy decisions. Steps may invoke agents, tools,
-skills, protocol transitions, evaluations, or human approvals.
+skills, protocol transitions, evaluation definitions, or approval requirements.
 
 Invariants:
 
@@ -375,8 +417,8 @@ Invariants:
 
 A **policy** is a definition of rules that permit, deny, require, or constrain an
 action or information flow under stated conditions. Policy evaluation produces
-a decision occurrence. A policy can require authorization evidence or human
-approval, but it is distinct from both.
+a decision occurrence. A policy can require authorization evidence or
+satisfaction of an approval requirement, but it is distinct from both.
 
 Invariants:
 
@@ -387,12 +429,12 @@ Invariants:
 - Policy application points precede the effects they govern.
 - Instructions, roles, tools, and skills cannot bypass an applicable policy.
 
-### Authorization
+### Authorization requirement and decision
 
-**Authorization** is a runtime decision that an identified principal may perform
-a specified action on a specified resource under the effective policy and
-context. An authorization definition states the evidence and decision mechanism
-required at an application point.
+An **authorization requirement** is a definition of the evidence and decision
+mechanism required at an application point. An **authorization decision** is an
+occurrence stating whether an identified principal may perform a specified
+action on a specified resource under the effective policy and context.
 
 Invariants:
 
@@ -401,66 +443,71 @@ Invariants:
 - A permission is not transferable unless policy defines delegation.
 - Delegated authorization cannot exceed the delegating principal's delegable
   authority.
-- Authorization occurs close enough to the effect to account for relevant state
-  and policy changes.
+- An authorization decision occurs close enough to the effect to account for
+  relevant state and policy changes.
 
-### Human approval
+### Approval requirement, request, and decision
 
-A **human approval** is an authorization input supplied by an identified human
-principal in response to a bounded request. An approval definition states the
-required approver qualifications, presented information, allowed decisions,
-expiry, and effect of no response.
+An **approval requirement** is a definition of required approver qualifications,
+presented information, allowed decisions, expiry, and the effect of no response.
+An **approval request** is an occurrence that presents one bounded proposed
+action for decision. An **approval decision** is an occurrence supplied by an
+identified human principal in response to that request and may contribute to an
+authorization decision.
 
 Invariants:
 
 - An approval request identifies the exact proposed action, relevant resource,
   requesting principal, and material context.
-- Approval is valid only for its declared scope and lifetime.
-- Approval of one action cannot be inferred as approval of later or broader
-  actions.
-- The trace preserves the request and decision without requiring disclosure of
-  protected rationale or credentials.
+- An approval decision is valid only for its declared scope and lifetime.
+- An approval decision for one action cannot be inferred as approval of later
+  or broader actions.
+- The execution trace preserves the request and decision when the applicable
+  trace requirement requires them, without requiring disclosure of protected
+  rationale or credentials.
 
-### Evaluation
+### Evaluation definition and result
 
-An **evaluation** is a definition of a method that assesses a definition,
-occurrence, trace, or system outcome against stated criteria. An evaluation
-result is an occurrence containing observations, scores or judgments, and the
+An **evaluation definition** is a method that assesses a definition, occurrence,
+execution trace, or system outcome against stated criteria. An **evaluation
+result** is an occurrence containing observations, scores or judgments, and the
 identity of the evaluated subject.
 
 Invariants:
 
 - An evaluation definition states its subject type, inputs, procedure, criteria,
   and result contract.
-- A result identifies the evaluation definition version and subject version or
-  occurrence identity.
+- An evaluation result identifies the evaluation definition version and subject
+  version or occurrence identity.
 - An evaluator's model, tools, data, or human judgment are declared when they
   affect reproducibility or interpretation.
 - An evaluation result does not alter the evaluated occurrence.
 
-### Trace
+### Trace requirement, execution trace, and trace record
 
-A **trace** is an ordered or causally linked collection of immutable records
-about an execution. A trace definition states required event kinds, correlation,
-retention, redaction, and access rules. A trace record is an occurrence.
+A **trace requirement** is a definition of required event kinds, correlation,
+retention, redaction, and access rules. An **execution trace** is an occurrence
+aggregate containing an ordered or causally linked collection of immutable
+**trace records** about one execution.
 
 Invariants:
 
 - Each trace record has an identity, event kind, time or causal position, and
   attribution to a runtime principal or runtime component when known.
-- Records preserve causal links across delegation, tool calls, messages,
-  approvals, state transitions, and policy decisions.
+- Trace records preserve causal links across delegation, tool calls, message
+  occurrences, approval decisions, state transitions, and policy decisions.
 - Redaction is represented so a consumer can distinguish absent data from
   withheld data.
-- Trace immutability prevents silent alteration. Corrections append records or
-  produce a new trace version.
+- Execution-trace immutability prevents silent alteration. Corrections append
+  records or produce a new execution-trace version.
 
 ### Runtime
 
 A **runtime** is a definition of execution capabilities that realize a system.
-It binds portable definitions to implementations, schedules work, manages
-occurrences, and enforces declared application points. A runtime instance is an
-execution participant with its own principal identity.
+At deployment, a resolved binding may select it to realize portable definitions.
+It schedules work, manages occurrences, and enforces declared application
+points. A runtime instance is an execution participant with its own principal
+identity.
 
 Invariants:
 
@@ -483,6 +530,8 @@ Invariants:
 
 - Every deployment resolves one system version, one or more runtime bindings,
   and at least one target environment.
+- Each resolved binding identifies the portable binding requirement it
+  satisfies and the selected runtime or environment element.
 - Each required interface, secret reference, data resource, and external service
   has a deployment binding or an explicit unsatisfied requirement.
 - Scaling preserves identity, state authority, and message-delivery semantics
@@ -535,20 +584,20 @@ Invariants:
 
 ## Relationship model
 
-The following table defines the core outgoing relations. A target inverse of
-`0..*` means that any number of sources may reuse the same target. Ownership and
-containment impose tighter inverses where stated.
+The first table defines relations among portable definitions. A target inverse
+of `0..*` means that any number of sources may reuse the same target. Ownership
+and containment impose tighter inverses where stated. These relations can be
+resolved and validated without selecting a runtime or target environment.
 
-| Source | Relation | Target | Targets per source | Sources per target |
+| Source definition | Relation | Target definition or requirement | Targets per source | Sources per target |
 | --- | --- | --- | --- | --- |
-| System | owns | Agent | 0..* | 0..1 |
-| System | owns | Interface | 1..* | 1 |
-| System | uses | Topology | 1 | 0..* |
+| System | owns | Agent | 1..* | 0..1 |
+| System | exposes | Interface | 1..* | 0..* |
+| System | uses | Topology | 0..1 | 0..* |
 | System | uses | Control flow | 0..* | 0..* |
 | System | governed by | Policy | 0..* | 0..* |
-| System | evaluated by | Evaluation | 0..* | 0..* |
-| System | requires | Runtime | 0..* | 0..* |
-| System | deployed by | Deployment | 0..* | 1 |
+| System | evaluated by | Evaluation definition | 0..* | 0..* |
+| System | declares | Runtime binding requirement | 0..* | 1 |
 | Agent | contains | Agent | 0..* | 0..1 |
 | Agent | assigned | Role | 0..* | 0..* |
 | Agent | uses | Model | 0..* | 0..* |
@@ -557,58 +606,85 @@ containment impose tighter inverses where stated.
 | Agent | assigned | Skill | 0..* | 0..* |
 | Agent | uses | Memory | 0..* | 0..* |
 | Agent | consults | Knowledge | 0..* | 0..* |
-| Agent | owns | State | 0..* | 0..1 |
-| Agent | exposes | Interface | 1..* | 1 |
-| Agent | represented by | Identity | 1 | 1 |
+| Agent | owns | State definition | 0..* | 0..1 |
+| Agent | exposes | Interface | 1..* | 0..* |
+| Agent | represented by | Definition identity | 1 | 1 |
 | Agent | governed by | Policy | 0..* | 0..* |
 | Model | constrained by | Policy | 0..* | 0..* |
 | Instructions | target | Agent, Model invocation, Skill, or Control-flow step | 1 | 0..* |
-| Tool | implemented by | Runtime or Environment element | 1..* | 0..* |
+| Tool | requires | Tool binding requirement | 1..* | 1 |
 | Tool | governed by | Policy | 0..* | 0..* |
 | Skill | composed from | Instructions, Tool, Knowledge, Control flow, or Skill | 1..* | 0..* |
-| Memory | backed by | Runtime or Environment element | 1..* | 0..* |
+| Memory | requires | Storage binding requirement | 1..* | 1 |
 | Memory | governed by | Policy | 0..* | 0..* |
 | Knowledge | accessed through | Tool or Interface | 1..* | 0..* |
 | Knowledge | governed by | Policy | 0..* | 0..* |
-| State | managed by | Runtime | 1..* | 0..* |
+| State definition | requires | State-management binding requirement | 1..* | 1 |
 | Environment | contains | Environment element | 0..* | 0..1 |
 | Interface | uses | Protocol | 0..1 | 0..* |
 | Interface | governed by | Policy | 0..* | 0..* |
-| Message | sent by | Identity | 1 | 0..* |
-| Message | addressed to | Identity or broadcast scope | 1..* | 0..* |
-| Message | passes through | Interface | 1 | 0..* |
-| Message | follows | Protocol | 0..1 | 0..* |
-| Message | replies to or correlates with | Message | 0..* | 0..* |
 | Protocol | assigns participant | Role | 2..* | 0..* |
 | Protocol | carried by | Interface | 1..* | 0..1 |
 | Topology | contains node for | Agent, System, Human participant, or Environment endpoint | 1..* | 0..* |
 | Topology | contains directed edge through | Interface | 0..* | 0..* |
 | Control flow | contains | Control-flow step | 1..* | 1 |
-| Control-flow step | invokes | Agent, Tool, Skill, Evaluation, or Human approval | 0..1 | 0..* |
+| Control-flow step | invokes | Agent, Tool, Skill, Evaluation definition, or Approval requirement | 0..1 | 0..* |
 | Control-flow step | transitions to | Control-flow step | 0..* | 0..* |
-| Policy | applies to | System, Agent, Model, Tool, Skill, Memory, Knowledge, State, Interface, Message, Runtime, Deployment, or Extension | 1..* | 0..* |
-| Authorization | evaluates for | Identity | 1 | 0..* |
-| Authorization | applies | Policy | 1..* | 0..* |
-| Human approval | supplied by | Identity | 1 | 0..* |
-| Human approval | requested by | Identity | 1 | 0..* |
-| Human approval | contributes to | Authorization | 1 | 0..1 |
-| Evaluation | evaluates | Definition, Occurrence, Trace, or System outcome | 1..* | 0..* |
-| Trace | records | Occurrence | 0..* | 0..* |
-| Trace | describes execution of | System | 1 | 0..* |
-| Runtime | realizes | System or component definition | 1..* | 0..* |
-| Runtime | operates in | Environment | 1..* | 0..* |
-| Deployment | deploys | System | 1 | 0..* |
-| Deployment | binds | Runtime | 1..* | 0..* |
-| Deployment | targets | Environment | 1..* | 0..* |
+| Policy | applies to | Definition, binding requirement, message occurrence kind, or application point | 1..* | 0..* |
+| Authorization requirement | applies | Policy | 1..* | 0..* |
+| Authorization requirement | may require | Approval requirement | 0..* | 0..* |
+| Evaluation definition | evaluates | Definition, occurrence kind, execution trace, or system outcome | 1..* | 0..* |
+| Trace requirement | describes observation of | System | 1 | 0..* |
 | Package | contains | Definition or artifact | 1..* | 0..1 |
 | Package | depends on | Package | 0..* | 0..* |
 | Profile | based on | Definition or Profile | 1 | 0..* |
 | Extension | targets | Core entity definition | 1..* | 0..* |
 
-Relations to an `Environment element`, `Human participant`, `Control-flow step`,
-`Model invocation`, `System outcome`, or package `artifact` use subordinate
-records rather than additional top-level entity kinds. Each subordinate record
-has identity within its owning definition or occurrence.
+Deployment relations select implementations but remain separate from portable
+meaning:
+
+| Source | Relation | Target | Targets per source | Sources per target |
+| --- | --- | --- | --- | --- |
+| System | deployed by | Deployment | 0..* | 1 |
+| Deployment | deploys | System | 1 | 0..* |
+| Deployment | binds | Runtime | 1..* | 0..* |
+| Deployment | targets | Environment | 1..* | 0..* |
+| Deployment | supplies | Resolved binding | 1..* | 1 |
+| Resolved binding | satisfies | Binding requirement | 1 | 0..* |
+| Resolved binding | selects | Runtime or Environment element | 1 | 0..* |
+| Runtime | realizes | System or component definition | 1..* | 0..* |
+| Runtime | operates in | Environment | 1..* | 0..* |
+
+Occurrence relations describe execution evidence. They do not make their
+sources reusable definitions:
+
+| Source occurrence | Relation | Target | Targets per source | Sources per target |
+| --- | --- | --- | --- | --- |
+| Message occurrence | sent by | Runtime principal identity | 1 | 0..* |
+| Message occurrence | addressed to | Runtime principal identity or broadcast scope | 1..* | 0..* |
+| Message occurrence | passes through | Interface | 1 | 0..* |
+| Message occurrence | follows | Protocol | 0..1 | 0..* |
+| Message occurrence | replies to or correlates with | Message occurrence | 0..* | 0..* |
+| State occurrence | conforms to | State definition | 1 | 0..* |
+| Authorization decision | evaluates for | Runtime principal identity | 1 | 0..* |
+| Authorization decision | applies | Policy | 1..* | 0..* |
+| Authorization decision | satisfies | Authorization requirement | 1 | 0..* |
+| Approval request | satisfies | Approval requirement | 1 | 0..* |
+| Approval request | requested by | Runtime principal identity | 1 | 0..* |
+| Approval decision | responds to | Approval request | 1 | 0..1 |
+| Approval decision | supplied by | Human principal identity | 1 | 0..* |
+| Approval decision | contributes to | Authorization decision | 0..1 | 0..* |
+| Evaluation result | produced under | Evaluation definition | 1 | 0..* |
+| Evaluation result | evaluates | Definition, occurrence, execution trace, or system outcome | 1..* | 0..* |
+| Execution trace | satisfies | Trace requirement | 0..* | 0..* |
+| Execution trace | records | Trace record | 0..* | 1 |
+| Execution trace | describes execution of | System | 1 | 0..* |
+
+An `Environment element`, `Human participant`, `Control-flow step`, `Model
+invocation`, `System outcome`, package `artifact`, binding requirement, and
+resolved binding are subordinate records rather than additional top-level entity
+kinds. Each subordinate record has identity within its owning definition or
+occurrence.
 
 ## Recursion, reuse, references, and cycles
 
@@ -629,14 +705,15 @@ across a boundary.
 ### Reuse
 
 Roles, models, instructions, tools, skills, memory, knowledge, protocols,
-policies, evaluations, runtimes, and extensions are reusable definitions. Reuse
-creates another directed `uses`, `assigned`, or equivalent relation to the same
-identified definition. It does not clone the definition.
+policies, evaluation definitions, runtime definitions, and extensions are
+reusable definitions. Reuse creates another directed `uses`, `assigned`, or
+equivalent relation to the same identified definition. It does not clone the
+definition.
 
-State occurrences, messages, approvals, authorization decisions, trace records,
-and evaluation results are not reusable definitions. A later occurrence may
-reference them as evidence or history, but it cannot treat them as mutable shared
-templates.
+State occurrences, message occurrences, approval requests, approval decisions,
+authorization decisions, execution traces, trace records, and evaluation
+results are not reusable definitions. A later occurrence may reference them as
+evidence or history, but it cannot treat them as mutable shared templates.
 
 ### Reference resolution
 
@@ -678,8 +755,8 @@ invariants:
 4. Every boundary-crossing interaction uses a declared interface and direction.
 5. Every effect is attributable to an agent, human principal, runtime principal,
    or external event.
-6. Every governed effect passes through the policy, authorization, and approval
-   application points required at that effect.
+6. Every governed effect passes through the policy application points and
+   produces the authorization and approval occurrences required at that effect.
 7. Reuse preserves definition identity. Customization uses a profile, a new
    definition, or an extension rather than mutating an imported definition.
 8. Runtime occurrences identify the applicable definition versions when needed
@@ -688,6 +765,29 @@ invariants:
    deployment platform, and extension payload semantics.
 10. A required extension that a consumer does not understand prevents a claim of
     full portable interpretation.
+
+## Requirements traceability
+
+This proposal covers the requirements that shape the conceptual model as
+follows. Coverage here means that the model has a responsible entity, relation,
+or invariant. It does not claim that later syntax, processing, or conformance
+work is complete.
+
+| Requirements | Conceptual coverage |
+| --- | --- |
+| REQ-001, REQ-002 | System, component identities, references, ownership, interfaces, and governing-control relations expose the principal facts for inspection and stable addressing. |
+| REQ-003 | System, Agent, Interface, runtime binding requirements, Trace requirement, and Evaluation definition can describe a complete single-agent system. Topology is optional. |
+| REQ-004 | Topology, Protocol, Control flow, shared reusable definitions, ownership, and policy relations cover the core multi-agent structure. Explicit routing, delegation, and handoff definitions remain to be defined. |
+| REQ-010, REQ-011, REQ-016, REQ-017 | Package, Profile, Reference, identity scopes, dependency relations, and deterministic reference-resolution invariants cover composition and controlled resolution. |
+| REQ-018 through REQ-020 | Extension identity, required-extension failure behavior, and preservation through package, profile, and deployment resolution cover extension boundaries. Portable fallback still needs precise processing rules. |
+| REQ-021 through REQ-026 | Identity, Environment, Policy, Authorization requirement and decision, Approval requirement, request, and decision, Tool, Interface, and boundary invariants represent principals, protected actions, secret references, supervision, and trust crossings. Review, override, interruption, escalation, and failure-policy vocabularies remain to be defined. |
+| REQ-027 through REQ-031 | Trace requirement, execution trace, trace record, Evaluation definition, and Evaluation result preserve observable identity and definition-result separation. Metric definitions, probabilistic targets, and conformance claims remain to be defined. |
+| REQ-032 through REQ-035 | Binding requirements, resolved bindings, Runtime, Deployment, Environment, and the binding-separation rules distinguish portable needs from selected implementations and visible capability gaps. Target-assessment report behavior remains to be defined. |
+
+REQ-005 through REQ-009, REQ-012 through REQ-015, and REQ-036 through REQ-038
+mainly govern syntax, processor reports, version compatibility, exchange, and
+framework adapters. Their detailed rules are outside this core entity model and
+remain open for later proposals or normative text.
 
 ## Consequences
 
@@ -730,9 +830,10 @@ three without collapsing their portable meaning.
 
 ### Combine policy, authorization, and approval
 
-A policy is a rule definition, authorization is a decision occurrence, and
-human approval is one bounded input to such a decision. Separating them preserves
-who decided what, under which rule, and for how long.
+A policy is a rule definition, an authorization requirement defines a decision
+point, and an authorization decision records its outcome. An approval
+requirement defines a human gate; its request and decision are occurrences.
+Separating them preserves who decided what, under which rule, and for how long.
 
 ### Model only static definitions
 
@@ -744,9 +845,9 @@ to later work.
 ## Security considerations
 
 The model separates availability from authority. A visible tool, interface,
-skill, memory, or knowledge source does not become usable until policy and
-authorization permit the action. Human approval is bounded to an action and
-context. Delegation preserves both initiator and actor identity.
+skill, memory, or knowledge source does not become usable until policy and an
+authorization decision permit the action. An approval decision is bounded to an
+action and context. Delegation preserves both initiator and actor identity.
 
 Secrets remain external values referenced through environment and deployment
 bindings. Trace requirements include attribution, causal links, redaction, and
