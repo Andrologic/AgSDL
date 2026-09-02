@@ -36,7 +36,7 @@ the evidence.
 
 This proposal covers:
 
-- an MCP binding requirement and its resolved binding;
+- an MCP binding profile and its resolved binding;
 - references to MCP core and extension contracts;
 - mappings for MCP tools, resources, prompts, and client features;
 - protocol-version and capability negotiation;
@@ -50,22 +50,30 @@ or claim behavioral equivalence with any MCP SDK.
 
 ## Terms
 
-An **MCP binding requirement** is a protocol-qualified binding requirement. It
-states the MCP contracts, endpoint role, capabilities, named entries, security
-conditions, and failure behavior an implementation must satisfy.
+An **MCP binding profile** is a profile-specific record subordinate to a binding
+requirement already allowed by its owner's kind. It states the MCP contracts,
+endpoint role, capabilities, named entries, security conditions, and failure
+behavior an implementation must satisfy. It creates no new ownership relation.
+Several binding requirements may use the same profile facts, but each remains
+owned and resolved separately.
 
 An **MCP resolved binding** is a deployment-specific Resolved binding that
-selects an MCP client, server endpoint, transport, credentials references, and
-verified contract versions for one MCP binding requirement.
+selects exactly one Runtime or Environment element for one profiled binding
+requirement. Deployment evidence records the MCP host, client, counterpart
+endpoint, transport, credential references, and verified contract versions. If
+the client runtime and server endpoint both require selection, two binding
+requirements and their resolved bindings identify them separately.
 
 An **MCP contract reference** identifies the external MCP core specification or
 an MCP extension by publisher, owner-qualified identity, exact edition or
 immutable content identity, and authoritative location.
 
 An **MCP entry mapping** relates one MCP-advertised tool name, resource URI or
-URI template, or prompt name to one or more AgSDL definitions. It states which
-party controls the external entry and which MCP operation resolves or invokes
-it.
+URI template, or prompt name to one or more AgSDL definitions. Its identity is
+scoped by the resolved server endpoint, MCP contract revision, entry kind, and
+MCP name or URI. It states which party controls the external entry and which
+MCP operation resolves or invokes it. Self-reported server information is not
+part of a security identity.
 
 An **MCP capability requirement** identifies a directional MCP capability and
 settings constraints. It is not an AgSDL Implementation feature, Authority
@@ -79,13 +87,18 @@ result. Omission does not authorize a fallback.
 
 ### Contract identity and protocol era
 
-Every MCP binding requirement should identify:
+Every MCP binding profile should identify:
 
 - the MCP core contract by exact dated revision;
 - the protocol era, either modern per-request metadata or legacy
   initialization;
 - every extension through a separate MCP contract reference;
-- the client or server role AgSDL expects the bound implementation to perform;
+- the client or server endpoint role AgSDL expects the selected element to
+  perform;
+- the AgSDL Runtime or runtime instance responsible for the MCP host and
+  its security, consent, authorization, and client-lifecycle decisions;
+- the local MCP client and its one-to-one server relationship when the selected
+  element is a server endpoint;
 - the standard or custom transport contract; and
 - any earlier MCP revisions that may be selected, each as a separate binding
   variant with an explicit compatibility and degradation policy.
@@ -103,12 +116,13 @@ evidence of implementation quality.
 
 ### Binding contents
 
-An MCP binding requirement should contain or reference these facts:
+An MCP binding profile should contain or reference these facts:
 
 | Fact | Meaning in AgSDL |
 | --- | --- |
 | Core contract | Exact external MCP revision and authoritative schema |
-| Endpoint role | MCP client or MCP server role required from the bound component |
+| Participants | MCP host, local client, server endpoint, and their assigned responsibilities |
+| Endpoint role | MCP client or MCP server role required from the selected element |
 | Transport | `stdio`, Streamable HTTP, or an identified custom binding |
 | Server selection | External endpoint or process selection constraints, without embedded secrets |
 | Required server capabilities | Capabilities and settings that discovery must report |
@@ -120,7 +134,7 @@ An MCP binding requirement should contain or reference these facts:
 | Degradation | Predeclared outcomes for every optional or unavailable dependency |
 | Evidence | Structural, resolution, and execution checks needed for the claim |
 
-The binding should identify the MCP endpoint as an external endpoint or
+The profile should identify the MCP endpoint as an external endpoint or
 Environment element and place an Interface at the relevant AgSDL boundary. It
 should reference MCP as the external Protocol contract. It should not duplicate
 MCP JSON-RPC methods as AgSDL operations unless an AgSDL Interface operation
@@ -147,7 +161,9 @@ compatible directional match. Optional capabilities may be absent only when an
 MCP degradation case defines the remaining portable behavior. A runtime should
 reassess request-specific client capabilities before every request and should
 invalidate or refresh cached server discovery according to the applicable MCP
-cache contract.
+cache contract. Discovery and catalog evidence must remain scoped to the
+resolved endpoint, MCP revision, principal or authorization context, cache
+scope, and lifetime that produced it.
 
 Modern negotiation should use `server/discover` or handle the MCP
 `UnsupportedProtocolVersionError`. A recognized modern error should lead only
@@ -193,10 +209,13 @@ path, size, and content-type constraints where those facts affect policy.
 ### Prompts
 
 An MCP prompt mapping should identify the prompt name, its argument contract,
-and the AgSDL Instructions or Interface operation that may consume its returned
-messages. The server controls the returned content. The binding should state
-its trust classification, instruction precedence, allowed consumers, and the
-policy applied before that content can influence an Action.
+and the Interface operation that may consume its returned messages. An author
+may incorporate pinned prompt content into a new Instructions definition before
+resolution when the definition records the content's source and integrity. A
+runtime `prompts/get` result remains message content created during execution
+and cannot create or alter Instructions. The server controls the returned
+content. The binding should state its trust classification, allowed consumers,
+and the policy applied before that content can influence an Action.
 
 MCP's user-controlled interaction convention does not prove AgSDL consent or
 approval. Selecting or retrieving a prompt neither grants authority nor changes
@@ -216,7 +235,7 @@ Every required MCP extension should have:
 
 An MCP extension is external protocol behavior. It is not automatically an
 AgSDL Extension. An AgSDL Extension is needed only when the AgSDL document adds
-non-core meaning that cannot be expressed through the MCP binding requirement
+non-core meaning that cannot be expressed through the MCP binding profile
 and existing AgSDL definitions.
 
 If one party lacks a required MCP extension, the runtime should stop before the
@@ -277,9 +296,10 @@ permits `InputRequiredResult` should declare:
 - handling of opaque `requestState`; and
 - trace requirements across the original request, input processing, and retry.
 
-Each retry is a new MCP JSON-RPC request but may continue one AgSDL protocol
-occurrence. The binding should not assume that authorization or approval from
-the first request remains valid. A protected Action should receive an
+Each retry is a new MCP JSON-RPC request. Its Message occurrences may correlate
+as one interaction under the same Protocol definition. The binding should not
+assume that authorization or approval from the first request remains valid. A
+protected Action should receive an
 Authorization decision close enough to its eventual effect to account for
 changed arguments, input responses, policies, credentials, and time.
 
@@ -323,7 +343,7 @@ claim.
 | Required client capability absent on a request | Fail | Use a predeclared flow that does not require it |
 | Required MCP extension absent or incompatible | Fail | None for the affected operation |
 | Optional MCP extension absent | Follow the extension contract and declared degradation case | Use core behavior only when both explicitly permit it |
-| Mapped tool, resource, template, or prompt absent | Mark the mapping unsatisfied | Use a named alternative with equivalent behavior proven by adapter tests |
+| Mapped tool, resource, template, or prompt absent | Mark the mapping unsatisfied | Use a named alternative supported by bounded adapter execution evidence |
 | Catalog-change subscription unavailable | Mark freshness requirement unsatisfied | Bounded relisting under the declared staleness limit |
 | Authorization missing or invalid | Refuse the protected operation | Start the declared authorization branch |
 | Scope insufficient | Refuse the protected operation | Bounded step-up authorization without expanding AgSDL authority |
@@ -348,18 +368,25 @@ runtime or deployment evidence, not unresolved-document evidence.
 A future MCP binding adapter should claim conformance only for named
 implementation features. At minimum, executable suites should cover:
 
-1. modern discovery and direct version-error negotiation;
+1. modern discovery, scoped caching, rejection of self-reported server
+   information as security identity, and direct version-error negotiation;
 2. rejection of an undeclared revision and separation of legacy fallback;
 3. per-request client capability emission, missing-capability errors, and HTTP
    header-to-body mismatch rejection;
-4. positive and negative tool, resource, prompt, and catalog-change mappings;
-5. required and optional extension negotiation, including Tasks if claimed;
+4. positive and negative tool, resource, prompt, and catalog-change mappings,
+   including pagination, authorization-dependent catalogs, remote schema
+   references, calls to unadvertised methods, JSON-RPC errors, and tool results
+   with `isError`;
+5. required and optional extension negotiation, including Task lifecycle,
+   cancellation, polling, and input if Tasks are claimed;
 6. HTTP authorization discovery, audience checks, insufficient-scope recovery,
    token isolation, and refusal paths;
 7. stdio credential injection without applying the HTTP authorization flow;
 8. MRTR success, decline, cancellation, timeout, unsupported input, changed
    authorization, bounded retry, and opaque `requestState` handling; and
-9. loss reports and trace correlation across every declared degradation case.
+9. subscription acknowledgement, reconnection, relisting, and bounded
+   staleness; and
+10. loss reports and trace correlation across every declared degradation case.
 
 Passing structural checks would support only a mapping or readiness claim.
 Behavioral interoperability requires execution against identified MCP client
@@ -376,7 +403,7 @@ the time of this proposal.
 | REQ-018 through REQ-020 | Preserves extension identity, independent versioning, required support, and explicit fallback |
 | REQ-021 through REQ-026 | Maps trust crossings, secret references, authority, approval, failure, and untrusted MCP content without assigning them to MCP capabilities |
 | REQ-027 and REQ-028 | Requires observable correlation across discovery, authorization, calls, MRTR retries, subscriptions, and degradation |
-| REQ-032 through REQ-035 | Defines a portable MCP binding requirement, deployment-specific resolution, and visible capability gaps |
+| REQ-032 through REQ-035 | Defines an MCP profile for portable binding requirements, deployment-specific resolution, and visible capability gaps |
 
 This traceability identifies conceptual coverage. It is not conformance
 evidence and does not close the unresolved implementation work in those
@@ -386,10 +413,10 @@ requirements.
 
 This example illustrates information, not syntax.
 
-A handbook assistant declares an MCP binding requirement for MCP `2026-07-28`
-over Streamable HTTP. It requires the server `tools` and `resources`
-capabilities, maps MCP tool `search_handbook` to the AgSDL Handbook lookup Tool
-and Read handbook Action, and maps resource template
+A handbook assistant gives its Tool binding requirement an MCP binding profile
+for MCP `2026-07-28` over Streamable HTTP. It requires the server `tools` and
+`resources` capabilities, maps MCP tool `search_handbook` to the AgSDL Handbook
+lookup Tool and Read handbook Action, and maps resource template
 `handbook://pages/{page}` to Company handbook Knowledge. The binding does not
 require prompts, sampling, roots, or extensions.
 
@@ -477,10 +504,6 @@ When `requestState` affects authorization, resource access, or business logic,
 the MCP server should meet the exact MCP integrity, expiry, principal-binding,
 request-binding, and replay requirements. An AgSDL declaration cannot supply
 those controls by itself.
-When `requestState` affects authorization, resource access, or business logic,
-the MCP server should meet the exact MCP integrity, expiry, principal-binding,
-request-binding, and replay requirements. An AgSDL declaration cannot supply
-those controls by itself.
 
 ## Compatibility impact
 
@@ -495,15 +518,9 @@ translated to a legacy binding without loss.
 
 ## Unresolved questions
 
-1. Should the first AgSDL syntax make protocol bindings a general reusable
-   entity or a profile-specific subordinate record?
-2. Which MCP entry mappings need stable AgSDL identities when catalogs are
-   intentionally dynamic?
-3. What minimum execution suite can test MRTR authorization re-evaluation
+1. What minimum execution suite can test MRTR authorization re-evaluation
    without depending on a production OAuth service?
-4. Should an MCP extension contract reference require an immutable content
+2. Should an MCP extension contract reference require an immutable content
    digest when the extension publishes no numbered edition?
-5. Can one generic subscription freshness model cover MCP, event protocols, and
+3. Can one generic subscription freshness model cover MCP, event protocols, and
    framework-specific catalogs without losing their different guarantees?
-6. Which AgSDL occurrence should correlate retries of one MRTR interaction while
-   keeping each Action and Authorization decision independently auditable?
