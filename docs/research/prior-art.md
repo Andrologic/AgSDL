@@ -50,6 +50,29 @@ model, not an interoperability standard. Its `Agent`, `Runner`, `context`,
 would risk implying that behavior if it reused those names without narrower
 definitions.
 
+### Open Agent Specification
+
+**Source facts.** Oracle maintains the [Open Agent Specification, or Agent
+Spec](https://github.com/oracle/agent-spec/tree/agent-spec-26.1.2). The
+[language specification
+26.1.2](https://oracle.github.io/agent-spec/26.1.2/agentspec/language_spec_26_1_2.html)
+defines serialized components for conversational agents, structured flows,
+models, tools, remote services, multi-agent patterns, datastores, control-flow
+edges, and data-flow edges. PyAgentSpec and TSAgentSpec implement serialization,
+validation, and parts of this model. Framework adapters translate supported
+components to other runtimes. The released source contains SDK and adapter tests,
+but no merged versioned cross-runtime conformance suite was found.
+
+**AgSDL assessment.** Agent Spec is direct prior art for declarative agent and
+workflow exchange. Its concrete flow, I/O, reference, and adapter rules are
+valuable test cases. Its root components do not describe AgSDL's complete system
+boundary, ownership, principal, authority, policy, trust, deployment, or
+conformance model. Agent Spec's implicit data space, type conversions, shared
+conversation, runtime configuration, and plugin behavior must remain qualified
+external semantics. The focused [Agent Spec and AgSDL research
+note](open-agent-specification.md) records the versioned comparison, terminology
+collisions, mapping hypotheses, and evidence gaps.
+
 ### A2A Agent Cards and core protocol
 
 **Source facts.** The A2A Project under the Linux Foundation maintains the
