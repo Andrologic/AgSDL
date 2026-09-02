@@ -76,6 +76,22 @@ identifiable as an extension.
 A **runtime binding** maps a described concept to an implementation, service,
 artifact, credential source, endpoint, or deployment facility.
 
+An **observed input boundary** identifies the descriptions, artifacts,
+references, target facts, or other inputs that a processor examined for one
+operation. It excludes runtime behavior, generated configuration, hidden
+defaults, and other information that the processor did not observe.
+
+A **coverage statement** identifies an operation, the processor capability
+claimed for that operation, the validation phase if applicable, the observed
+input boundary, the rules or checks applied, and any portion classified as
+unknown. It states the limit of a result rather than asserting knowledge beyond
+the examined inputs.
+
+A **known finding** is a violation, change, gap, or other reportable condition
+that a processor discovers while applying the checks in a coverage statement.
+It does not include conditions outside the observed input boundary or checks
+that the processor did not claim to perform.
+
 ## Users and required operations
 
 ### System authors and maintainers
@@ -136,6 +152,12 @@ final entities of the conceptual model.
 make each applicable requirement enforceable through normative text and a
 conformance test or documented inspection procedure.
 
+A processor obligation in this proposal applies to one operation for which the
+processor declares a capability. The obligation is limited to the applicable
+validation phase and observed input boundary in its coverage statement. The
+processor must report unknown when the available inputs or claimed checks do
+not support a positive or negative result.
+
 `QUAL-*` identifies a quality goal. Quality goals guide design choices but need
 measurable acceptance criteria before they can support conformance claims.
 
@@ -145,12 +167,14 @@ quality goal to at least one use case or constraint.
 
 ## Mandatory requirements
 
-### Comprehension and identity
+### Inspectability and identity
 
-- **REQ-001 Human-readable meaning.** A person must be able to inspect an AgSDL
-  description and determine its declared system purpose, boundary, principal
-  components, relationships, ownership, and controls without executing it.
-  Conformance evidence must include an inspection procedure for those facts.
+- **REQ-001 Inspectable declarations.** The model must make the declared system
+  purpose, boundary, principal components, relationships, ownership, and
+  controls individually identifiable without executing the described system.
+  Conformance evidence must demonstrate that an inspection procedure can
+  locate each applicable declaration and distinguish an absent declaration
+  from an unknown value.
 - **REQ-002 Stable identity.** The model must support stable identities for a
   system and for components that other parts of a description, external
   descriptions, observations, or evaluation evidence need to address.
@@ -171,13 +195,16 @@ quality goal to at least one use case or constraint.
 ### Validation and conformance
 
 - **REQ-006 Structural validation.** A processor must be able to report whether
-  a description satisfies the structural rules of its declared AgSDL version
-  and must identify each detected violation by location and rule.
+  the inputs in its coverage statement satisfy the structural rules applied
+  during the claimed validation phase. It must report every known finding
+  accumulated during that phase by location and rule. This obligation does not
+  assert that the processor can detect violations outside its observed input
+  boundary or declared capability.
 - **REQ-007 Semantic validation.** The specification must define checkable
   cross-component constraints, including reference integrity, identity
   uniqueness, required relationships, and incompatible declarations. A
-  processor must report every violation it detects without treating runtime
-  success as proof of validity.
+  processor must report every known finding accumulated by the claimed semantic
+  validation phase without treating runtime success as proof of validity.
 - **REQ-008 Validation profiles.** Validation must distinguish the portable
   core from optional profiles, extensions, and target-specific checks. A report
   must identify which rule sets it applied.
@@ -208,8 +235,10 @@ quality goal to at least one use case or constraint.
   relationships. It must not equate successful parsing with semantic
   compatibility.
 - **REQ-015 Change comparison.** A processor must be able to compare two
-  descriptions and identify changes in portable meaning separately from
-  changes confined to extensions, runtime bindings, or presentation.
+  descriptions within its declared comparison capability and identify known
+  changes in portable meaning separately from known changes confined to
+  extensions, runtime bindings, or presentation. Its coverage statement must
+  identify inputs or change categories it did not compare as unknown.
 
 ### References and extensions
 
@@ -243,7 +272,10 @@ quality goal to at least one use case or constraint.
   resolving secret values.
 - **REQ-023 Least-authority analysis.** The model must expose enough information
   for a processor or reviewer to compare declared component operations with
-  granted permissions and report excessive, missing, or indeterminate access.
+  granted permissions. A processor claiming this analysis must report
+  excessive, missing, or indeterminate access for the declared operations and
+  permissions within its observed input boundary. Undeclared or unobserved
+  operations remain unknown.
 - **REQ-024 Human supervision.** The model must represent human approval,
   review, override, interruption, and escalation points, including the actor,
   triggering condition, permitted decision, timeout or absence policy, and
@@ -282,8 +314,10 @@ quality goal to at least one use case or constraint.
   lifecycle, and availability needs without naming a specific implementation
   unless the declaration is explicitly a runtime binding or extension.
 - **REQ-033 Deployment planning.** A processor must be able to compare declared
-  requirements with a target environment and report satisfied, unsatisfied, and
-  indeterminate requirements before deployment.
+  requirements with the target facts available within its observed input
+  boundary and report satisfied, unsatisfied, and indeterminate requirements
+  before deployment. The report must not treat unavailable target facts or
+  unclaimed checks as satisfied.
 - **REQ-034 Binding separation.** Runtime bindings must remain distinguishable
   from portable meaning. Replacing a binding must not appear to change portable
   meaning unless the replacement also changes a portable declaration.
@@ -291,15 +325,18 @@ quality goal to at least one use case or constraint.
   unsupported concepts, approximations, substitutions, and information loss.
   It must not claim portable equivalence when a gap remains.
 - **REQ-036 Framework import.** An importer must identify the source framework
-  and version, the source artifacts examined, each mapped portable concept,
-  each generated extension, each unresolved value, and each omitted or
-  unsupported behavior.
+  and version and publish a coverage statement for the import operation. Within
+  the observed input boundary, it must report each known mapped portable
+  concept, generated extension, unresolved value, unsupported behavior, and
+  known omission. Behavior that the importer cannot observe or determine must
+  be classified as unknown rather than reported as absent.
 - **REQ-037 Import provenance.** Imported descriptions must retain enough
   provenance to repeat or audit the import and to distinguish imported facts
   from author-supplied corrections or later edits.
 - **REQ-038 Round-trip accounting.** Import and export tools must be able to
-  report which information can round-trip to a target framework and which
-  information will change or be lost. Round-trip success must not by itself
+  report, within their declared round-trip capability and observed input
+  boundary, which information is preserved, changes, is lost, or remains
+  unknown for a target framework. Round-trip success must not by itself
   establish behavioral equivalence.
 
 ## Quality goals
@@ -330,6 +367,13 @@ quality goal to at least one use case or constraint.
 - **QUAL-008 Evolvability.** New optional concepts should be introducible through
   versioned profiles or extensions while older processors can still identify
   what they do not understand.
+- **QUAL-009 Human reviewability.** People should be able to find and understand
+  the declarations covered by REQ-001. A documented review procedure should
+  define the reviewer profile, representative descriptions, questions to
+  answer, permitted supporting material, and recorded failures. The procedure
+  should record whether reviewers locate and interpret each applicable
+  declaration correctly rather than treating readability as an intrinsic
+  property.
 
 ## Non-goals
 
@@ -382,16 +426,19 @@ quality goal to at least one use case or constraint.
 An author describes one support agent, its inputs and outputs, model
 requirements, approved tools, knowledge sources, memory boundary, permissions,
 human escalation, failure policy, telemetry, evaluation suite, and deployment
-needs. A reviewer validates the description offline and identifies an excessive
-tool permission. No multi-agent topology is added merely to satisfy the model.
+needs. A reviewer validates the description offline. The review records which
+declarations were located and identifies an excessive tool permission among
+the declared operations. No multi-agent topology is added merely to satisfy the
+model.
 
 ### UC-002 Review delegation in a multi-agent system
 
 An architect describes a coordinator, specialist agents, routing conditions,
 delegation limits, handoff payloads, shared and isolated state, trust boundaries,
 approval points, and failure paths. A reviewer follows a delegated operation
-from entry to completion or escalation and detects a message path that lacks a
-declared authorization check.
+from its declared entry to completion or escalation and detects, within that
+operation and observed input boundary, a message path that lacks a declared
+authorization check.
 
 ### UC-003 Compose a reusable subsystem
 
@@ -413,8 +460,9 @@ conformance claim.
 
 A maintainer compares two versions of a system. The report separates a changed
 approval policy and a new agent relationship from a telemetry vendor binding
-change and editorial reordering. The maintainer uses the portable changes to
-select the required security and evaluation reviews.
+change and editorial reordering. Its coverage statement identifies the compared
+change categories and any unknowns. The maintainer uses the known portable
+changes to select the required security and evaluation reviews.
 
 ### UC-006 Plan deployment to two environments
 
@@ -422,15 +470,18 @@ An operator compares one portable description with a managed cloud environment
 and an isolated on-premises environment. The cloud target lacks a required data
 residency control. The on-premises target cannot resolve one model capability.
 The processor reports the first as unsatisfied and the second as indeterminate.
-It predicts neither deployment success nor runtime performance.
+The coverage statement identifies the target facts examined. The processor
+predicts neither deployment success nor runtime performance.
 
 ### UC-007 Import a framework application
 
 An adapter inspects framework configuration and source artifacts. It maps
 agents, tools, and explicit routing to portable concepts, records a
 framework-specific callback as an extension, and marks dynamically constructed
-prompts as unresolved. The resulting provenance report distinguishes imported
-facts from a maintainer's later corrections.
+prompts as unresolved. It publishes a coverage statement for the inspected
+artifacts and classifies behavior beyond that boundary as unknown. The resulting
+provenance report distinguishes imported facts from a maintainer's later
+corrections.
 
 ### UC-008 Audit execution evidence
 
@@ -482,8 +533,8 @@ establish behavioral equivalence.
 
 An importer parses a framework project but cannot observe a callback registered
 dynamically at runtime. The importer must report the source boundary and the
-unknown behavior. A generated description cannot claim complete or lossless
-coverage.
+unknown category without claiming that it identified every hidden behavior. A
+generated description cannot claim complete or lossless coverage.
 
 ### CC-005 Passing evaluation outside its assumptions
 
@@ -504,13 +555,13 @@ this proposal.
 
 | ID | Primary use case or constraint | Acceptance focus |
 | --- | --- | --- |
-| REQ-001 | UC-001, UC-002 | Offline human inspection exposes purpose, boundary, components, relationships, ownership, and controls. |
+| REQ-001 | UC-001, UC-002 | An inspection procedure locates applicable declarations and distinguishes absence from unknown values. |
 | REQ-002 | UC-003, UC-008 | References and evidence resolve to unambiguous stable identities. |
 | REQ-003 | UC-001 | A complete one-agent system validates without synthetic topology. |
 | REQ-004 | UC-002 | Multi-agent relationships and resource boundaries are representable and reviewable. |
 | REQ-005 | UC-006, UC-007, CON-005 | Reports preserve declared, resolved, unspecified, unsupported, and absent states. |
-| REQ-006 | UC-001, UC-004 | Validation reports each structural violation with a rule and location. |
-| REQ-007 | UC-002, UC-003 | Cross-component violations are detected independently of execution. |
+| REQ-006 | UC-001, UC-004 | A claimed structural validation phase reports every known finding with a rule and location within its coverage. |
+| REQ-007 | UC-002, UC-003 | A claimed semantic validation phase reports every known cross-component finding independently of execution. |
 | REQ-008 | UC-004 | Reports list the core, profiles, extensions, and target checks applied. |
 | REQ-009 | UC-004, CON-003 | Claims name their version, scope, profiles, extensions, and tested level. |
 | REQ-010 | UC-003 | Composition resolves scope and conflicts without implicit precedence. |
@@ -518,7 +569,7 @@ this proposal.
 | REQ-012 | UC-004 | Sender and receiver can detect incomplete exchange packages. |
 | REQ-013 | UC-003, UC-005 | Meaningful language, system, component, dependency, and extension versions remain distinguishable. |
 | REQ-014 | UC-003, UC-004 | Compatibility reports separate compatible, incompatible, and indeterminate results. |
-| REQ-015 | UC-005, UC-009 | Comparison separates portable, extension, binding, and presentation changes. |
+| REQ-015 | UC-005, UC-009 | Comparison coverage separates known portable, extension, binding, and presentation changes and marks unexamined categories unknown. |
 | REQ-016 | UC-004 | Bad targets, kinds, resolution, and integrity are diagnosed. |
 | REQ-017 | UC-001, UC-004 | Resolution inputs and sources are explicit, and offline validation is available. |
 | REQ-018 | UC-004, UC-010 | Extension identity, version, support, and necessity are reportable. |
@@ -526,7 +577,7 @@ this proposal.
 | REQ-020 | UC-010 | Optional extensions have portable fallback; required extensions block unsupported operations. |
 | REQ-021 | UC-001, UC-002 | Principals, resources, operations, trust boundaries, and controls can be inspected. |
 | REQ-022 | UC-001, CON-006 | Inspection and validation use secret references rather than secret values. |
-| REQ-023 | UC-001, UC-002 | Granted permissions can be compared with declared operations. |
+| REQ-023 | UC-001, UC-002 | Granted permissions are compared with declared operations inside a stated input boundary; unobserved operations remain unknown. |
 | REQ-024 | UC-001, UC-002 | Human decision points include actor, trigger, choices, absence policy, and flow effect. |
 | REQ-025 | UC-001, UC-002 | Failure responses are explicit and distinguishable. |
 | REQ-026 | UC-001, UC-002 | Cross-boundary content and its expected controls are identifiable. |
@@ -536,12 +587,12 @@ this proposal.
 | REQ-030 | UC-008 | Definitions, results, and claims cannot be mistaken for one another. |
 | REQ-031 | UC-008, CC-001 | Expected outcomes remain distinct from observations and guarantees. |
 | REQ-032 | UC-006 | Runtime needs are portable unless explicitly bound or extended. |
-| REQ-033 | UC-006 | Target assessment reports satisfied, unsatisfied, and indeterminate requirements. |
+| REQ-033 | UC-006 | Target assessment reports satisfied, unsatisfied, and indeterminate requirements against the target facts examined. |
 | REQ-034 | UC-009 | Binding replacement remains separate from portable semantic change. |
 | REQ-035 | UC-006, UC-010 | Gaps, approximations, substitutions, and loss prevent false equivalence claims. |
-| REQ-036 | UC-007 | Import reports source scope and every mapping, extension, unknown, omission, and unsupported behavior. |
+| REQ-036 | UC-007, CC-004 | Import states its coverage and reports known mappings, extensions, omissions, unsupported behavior, unresolved values, and unknown behavior. |
 | REQ-037 | UC-007 | Provenance supports repeatable audit and distinguishes later edits. |
-| REQ-038 | UC-007, CC-003 | Round-trip reports loss without claiming behavioral equivalence. |
+| REQ-038 | UC-007, CC-003 | Round-trip coverage reports preserved, changed, lost, and unknown information without claiming behavioral equivalence. |
 | QUAL-001 | UC-003, CON-003 | Equivalent declared inputs produce the same portable interpretation and structural result. |
 | QUAL-002 | UC-001, UC-003 | Diagnostics identify subject, rule, and correction path without secrets. |
 | QUAL-003 | UC-001 | Single-agent descriptions omit inapplicable multi-agent and deployment structure. |
@@ -550,6 +601,7 @@ this proposal.
 | QUAL-006 | UC-001, UC-004 | Core review works offline, without secrets or execution. |
 | QUAL-007 | UC-001, UC-002, UC-003 | The same identity, reference, composition, and diagnostic model works at both scales. |
 | QUAL-008 | UC-010 | Older processors identify unsupported optional additions without silent reinterpretation. |
+| QUAL-009 | UC-001, UC-002 | A documented human-review procedure records whether representative reviewers locate and interpret applicable declarations correctly. |
 
 ## Proposed consequences
 
