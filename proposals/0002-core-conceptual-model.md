@@ -33,7 +33,7 @@ execution engine, transport, provider API, or conformance level.
 
 ## Modeling conventions
 
-### Definitions and occurrences
+### Definitions, runtime instances, execution occurrences, and immutable artifacts
 
 A **definition** is a versioned description of intended structure or behavior.
 Definitions are static for the purpose of one resolution and validation
@@ -41,15 +41,35 @@ operation. They may be edited between versions, but an edit produces a distinct
 definition version rather than changing the meaning of an already resolved
 version.
 
-An **occurrence** is data created or observed during an execution. Occurrences
-include messages, state snapshots, approval decisions, trace records, and
-evaluation results. An occurrence identifies the definition versions under
-which it arose when those versions are known.
+The model classifies each identified subject as a **definition**, **runtime
+instance**, **execution occurrence**, or **immutable artifact**. These categories
+are disjoint for one subject identity, even when records in different categories
+describe the same component or execution.
 
-Definitions can constrain occurrences. Occurrences cannot alter the meaning of
-the definitions that constrain them. A runtime may use an occurrence to select
-new behavior, but that selection is itself behavior described or permitted by a
-definition.
+An **execution occurrence** is data created or observed during an execution.
+Occurrences include messages, state snapshots, approval decisions, trace
+records, and evaluation results. An occurrence identifies the definition
+versions under which it arose when those versions are known.
+
+A **runtime instance** is an addressable realization of a definition in a
+deployment. Runtime instances include deployed runtime processes and other
+deployed components that need lifecycle, placement, or principal identity. They
+exist before, during, or after any one execution and are not execution
+occurrences. A runtime instance identifies the deployment definition and
+realized definition versions that established it.
+
+An **immutable artifact** is fixed content preserved for distribution or later
+evidence. Package versions, package files, and sealed trace exports are
+artifacts. An artifact has content identity or an integrity reference and, when
+derived from another category, records the source identity and applicable
+definition versions. Creating an artifact during an execution does not make the
+artifact an execution occurrence after it has been sealed. The creation event
+remains an occurrence and refers to the artifact.
+
+Definitions can constrain runtime instances, execution occurrences, and
+artifacts. None of those subjects can alter the meaning of the definitions that
+constrain them. A runtime may use an occurrence to select new behavior, but that
+selection is itself behavior described or permitted by a definition.
 
 Some concerns therefore have two or more named forms:
 
@@ -64,7 +84,9 @@ Some concerns therefore have two or more named forms:
 A **message occurrence** has no corresponding message definition in this model.
 Interfaces and protocols define its contract. The relationship model names
 occurrence forms explicitly so that an execution result is never treated as a
-reusable definition.
+reusable definition. A trace or evaluation may also emit an immutable report
+artifact. That artifact refers to the trace or evaluation result rather than
+replacing its occurrence identity.
 
 ### Portable requirements and resolved bindings
 
@@ -128,7 +150,7 @@ optional topology, control flow, and execution requirements. It is the root used
 to resolve and validate a complete description.
 
 The system owns definitions that are local to it and uses definitions supplied
-by packages. It does not own runtime occurrences.
+by packages. It does not own runtime instances or execution occurrences.
 
 Invariants:
 
@@ -228,6 +250,15 @@ Invariants:
 - Tool availability does not imply authorization to invoke it.
 - A tool result is an occurrence and cannot silently redefine the tool contract.
 
+A tool contract is distinct from four adjacent concerns. A **packaged skill**
+is a skill definition distributed in a package. An **externally advertised
+service** is a claim at a system boundary that others may discover and request a
+bounded service. An **authority grant** permits an identified principal to take
+specified actions. An **implementation feature** is behavior that a processor,
+runtime, or adapter claims to support. Availability or support in any one of
+these concerns does not imply the others. The final name and contract for an
+externally advertised service remain open.
+
 ### Skill
 
 A **skill** is a reusable behavioral capability composed from instructions,
@@ -242,6 +273,8 @@ Invariants:
 - Recursive skill composition has an explicit termination condition or finite
   expansion bound.
 - Assigning a skill does not transfer ownership of its dependencies to the agent.
+- Packaging a skill does not expose it as an external service, grant authority
+  to use it, or prove that a runtime supports its requirements.
 
 ### Memory
 
@@ -265,8 +298,8 @@ Invariants:
 **Knowledge** is a definition of information sources an agent may consult as
 evidence. It states source identity, subject, provenance expectations, freshness
 expectations, and access method. Retrieved or embedded content is an occurrence
-or package artifact, depending on whether it is acquired at runtime or shipped
-with a package.
+or immutable package artifact, depending on whether it is acquired at runtime
+or shipped with a package.
 
 Invariants:
 
@@ -413,6 +446,33 @@ Invariants:
 - Every cycle has a termination condition, a finite bound, or an explicit
   declaration that it is a long-lived loop.
 
+### Model-selected transition
+
+A **model-selected transition definition** permits a model-assisted choice from
+a closed set of successor steps. It names the selection authority responsible
+for accepting the choice, the observation evidence required, and the policy to
+apply when the model returns no allowed successor, several successors, or an
+unusable result. It does not define a deterministic branch predicate or promise
+that repeated executions choose the same successor.
+
+A **transition selection observation** is an execution occurrence that records
+the candidate produced by the model, the allowed set in force, the accepted or
+rejected outcome, the selection authority, and the successor selected when one
+is accepted. Protected model content may be referenced or redacted under the
+applicable trace requirement, but the observation must still prove that the
+accepted successor belonged to the declared closed set.
+
+Invariants:
+
+- The allowed successor set is finite, non-empty, and fixed by the resolved
+  definition before the model returns a candidate.
+- The model proposes a candidate. The declared selection authority accepts or
+  rejects it and remains accountable for the transition.
+- The failure policy identifies the fallback, retry, wait, escalation, or
+  terminal failure behavior for every unusable selection outcome.
+- A model-selected transition cannot target a step outside its allowed set,
+  even when instructions or runtime defaults suggest that step.
+
 ### Policy
 
 A **policy** is a definition of rules that permit, deny, require, or constrain an
@@ -435,6 +495,11 @@ An **authorization requirement** is a definition of the evidence and decision
 mechanism required at an application point. An **authorization decision** is an
 occurrence stating whether an identified principal may perform a specified
 action on a specified resource under the effective policy and context.
+
+An **authority grant** is a definition of the bounded authority considered by
+that mechanism. It identifies the principal, permitted actions, protected
+resources, scope, lifetime, and delegation limits. It is neither a tool or skill
+assignment nor an implementation feature claim.
 
 Invariants:
 
@@ -468,27 +533,37 @@ Invariants:
 
 ### Evaluation definition and result
 
-An **evaluation definition** is a method that assesses a definition, occurrence,
-execution trace, or system outcome against stated criteria. An **evaluation
-result** is an occurrence containing observations, scores or judgments, and the
-identity of the evaluated subject.
+An **evaluation definition** is a method that assesses a definition, runtime
+instance, execution occurrence, immutable artifact, execution trace, or system
+outcome against stated criteria. An **evaluation result** is an execution
+occurrence containing observations, scores or judgments, and the identity and
+category of the evaluated subject.
 
 Invariants:
 
 - An evaluation definition states its subject type, inputs, procedure, criteria,
   and result contract.
-- An evaluation result identifies the evaluation definition version and subject
-  version or occurrence identity.
+- An evaluation result identifies the evaluation definition version and the
+  subject's definition version, runtime-instance identity, occurrence identity,
+  or artifact integrity reference, as applicable.
 - An evaluator's model, tools, data, or human judgment are declared when they
   affect reproducibility or interpretation.
-- An evaluation result does not alter the evaluated occurrence.
+- An evaluation result does not alter the evaluated subject.
 
-### Trace requirement, execution trace, and trace record
+### Trace requirement, execution trace, trace record, and trace artifact
 
 A **trace requirement** is a definition of required event kinds, correlation,
-retention, redaction, and access rules. An **execution trace** is an occurrence
-aggregate containing an ordered or causally linked collection of immutable
-**trace records** about one execution.
+retention, redaction, and access rules. An **execution trace** is an execution
+occurrence aggregate containing an ordered or causally linked collection of
+immutable **trace records** about one execution.
+
+A trace record is immutable within the occurrence history. It becomes an
+immutable artifact only when a sealing operation preserves it as fixed content.
+
+A **trace artifact** is an immutable artifact that seals some or all of an
+execution trace for exchange or retention. It identifies the source execution
+trace and preserves its record identities. Exporting or filtering a trace does
+not change the source occurrence.
 
 Invariants:
 
@@ -515,7 +590,7 @@ Invariants:
 - A runtime reports unsupported required capabilities before claiming it can
   execute the system.
 - Runtime defaults cannot change portable meaning. Any added behavior is a
-  declared profile choice or extension.
+  declared configuration profile choice or extension.
 - A runtime cannot claim policy enforcement for an application point it cannot
   mediate or verify.
 
@@ -524,7 +599,8 @@ Invariants:
 A **deployment** is a definition that places a system and its runtime bindings
 into one or more target environments. It states placement, scaling, lifecycle,
 connectivity, and binding requirements without requiring a particular platform.
-A deployed instance is a runtime occurrence.
+A **deployed instance** is a runtime instance established under the deployment,
+not data created or observed during one execution.
 
 Invariants:
 
@@ -537,35 +613,47 @@ Invariants:
 - Scaling preserves identity, state authority, and message-delivery semantics
   declared by the system.
 - Deployment changes do not rewrite the referenced system definition.
+- Every deployed instance identifies the deployment definition and the system,
+  runtime, or component definition versions it realizes.
 
 ### Package
 
-A **package** is a versioned distribution unit containing definitions, artifacts,
-and dependency declarations. It provides a resolution boundary and a reusable
-namespace. Packaging changes location and distribution, not entity semantics.
+A **package version** is an immutable artifact containing definitions, other
+artifacts, and dependency declarations. It provides a resolution boundary and a
+reusable namespace. Its package metadata identifies the package identity and
+artifact version. Packaging changes location and distribution, not entity
+semantics.
 
 Invariants:
 
-- A package version is immutable once referenced by a fixed version.
+- Package-version content does not change. A content change creates a new
+  package version.
 - Every exported definition has identity unique within the package version.
 - Package dependencies declare compatible target versions and resolve without
   ambiguity.
 - A package does not gain authority over a system merely because the system uses
   its definitions.
 
-### Profile
+### Configuration profile
 
-A **profile** is a named set of constrained choices applied to a base definition
-for a stated operational context. It can select among declared options, supply
-bindings, or tighten constraints. It cannot remove base requirements or change
-the kind of an entity.
+A **configuration profile** is a named set of constrained choices applied to a
+base definition for a stated operational context. It can select among declared
+options, supply bindings, or tighten constraints. It cannot remove base
+requirements or change the kind of an entity.
+
+A **conformance profile** is a separate concept defined by the conformance model.
+It groups named conformance contracts and does not customize a base definition.
+Neither profile kind can be used where the other is required. Whether a
+configuration profile may require a conformance profile remains open.
 
 Invariants:
 
-- A profile names exactly one base definition or profile as its direct base.
-- Profile application order is explicit when several profiles compose.
+- A configuration profile names exactly one base definition or configuration
+  profile as its direct base.
+- Configuration profile application order is explicit when several
+  configuration profiles compose.
 - The resolved result satisfies every constraint inherited from its base chain.
-- A profile cycle is invalid.
+- A configuration profile cycle is invalid.
 
 ### Extension
 
@@ -580,7 +668,7 @@ Invariants:
   unsupported. It cannot silently ignore an extension marked as required.
 - An extension cannot redefine a core term or weaken a core invariant.
 - Extension data remains associated with its declared target through package,
-  profile, and deployment resolution.
+  configuration profile, and deployment resolution.
 
 ## Relationship model
 
@@ -630,14 +718,17 @@ resolved and validated without selecting a runtime or target environment.
 | Control flow | contains | Control-flow step | 1..* | 1 |
 | Control-flow step | invokes | Agent, Tool, Skill, Evaluation definition, or Approval requirement | 0..1 | 0..* |
 | Control-flow step | transitions to | Control-flow step | 0..* | 0..* |
+| Control-flow step | may select through | Model-selected transition definition | 0..1 | 1 |
+| Model-selected transition definition | allows | Control-flow step | 1..* | 0..* |
 | Policy | applies to | Definition, binding requirement, message occurrence kind, or application point | 1..* | 0..* |
 | Authorization requirement | applies | Policy | 1..* | 0..* |
+| Authorization requirement | considers | Authority grant | 0..* | 0..* |
 | Authorization requirement | may require | Approval requirement | 0..* | 0..* |
-| Evaluation definition | evaluates | Definition, occurrence kind, execution trace, or system outcome | 1..* | 0..* |
+| Evaluation definition | evaluates | Definition, runtime instance kind, execution occurrence kind, immutable artifact kind, execution trace, or system outcome | 1..* | 0..* |
 | Trace requirement | describes observation of | System | 1 | 0..* |
-| Package | contains | Definition or artifact | 1..* | 0..1 |
-| Package | depends on | Package | 0..* | 0..* |
-| Profile | based on | Definition or Profile | 1 | 0..* |
+| Package version | contains | Definition or immutable artifact | 1..* | 0..1 |
+| Package version | depends on | Package version | 0..* | 0..* |
+| Configuration profile | based on | Definition or Configuration profile | 1 | 0..* |
 | Extension | targets | Core entity definition | 1..* | 0..* |
 
 Deployment relations select implementations but remain separate from portable
@@ -654,11 +745,13 @@ meaning:
 | Resolved binding | selects | Runtime or Environment element | 1 | 0..* |
 | Runtime | realizes | System or component definition | 1..* | 0..* |
 | Runtime | operates in | Environment | 1..* | 0..* |
+| Deployment | establishes | Runtime instance | 1..* | 1 |
+| Runtime instance | realizes | Runtime, System, or component definition | 1..* | 0..* |
 
-Occurrence relations describe execution evidence. They do not make their
-sources reusable definitions:
+Execution and evidence relations describe runtime subjects and preserved
+evidence. They do not make their sources reusable definitions:
 
-| Source occurrence | Relation | Target | Targets per source | Sources per target |
+| Source subject | Relation | Target | Targets per source | Sources per target |
 | --- | --- | --- | --- | --- |
 | Message occurrence | sent by | Runtime principal identity | 1 | 0..* |
 | Message occurrence | addressed to | Runtime principal identity or broadcast scope | 1..* | 0..* |
@@ -675,16 +768,19 @@ sources reusable definitions:
 | Approval decision | supplied by | Human principal identity | 1 | 0..* |
 | Approval decision | contributes to | Authorization decision | 0..1 | 0..* |
 | Evaluation result | produced under | Evaluation definition | 1 | 0..* |
-| Evaluation result | evaluates | Definition, occurrence, execution trace, or system outcome | 1..* | 0..* |
+| Evaluation result | evaluates | Definition, runtime instance, execution occurrence, immutable artifact, execution trace, or system outcome | 1..* | 0..* |
+| Transition selection observation | produced under | Model-selected transition definition | 1 | 0..* |
+| Transition selection observation | selects | Control-flow step | 0..1 | 0..* |
 | Execution trace | satisfies | Trace requirement | 0..* | 0..* |
 | Execution trace | records | Trace record | 0..* | 1 |
 | Execution trace | describes execution of | System | 1 | 0..* |
+| Trace artifact | seals | Execution trace | 1 | 0..* |
 
 An `Environment element`, `Human participant`, `Control-flow step`, `Model
-invocation`, `System outcome`, package `artifact`, binding requirement, and
-resolved binding are subordinate records rather than additional top-level entity
-kinds. Each subordinate record has identity within its owning definition or
-occurrence.
+invocation`, `System outcome`, binding requirement, and resolved binding are
+subordinate records rather than additional top-level entity kinds. Each
+subordinate record has identity within its owning definition, runtime instance,
+execution occurrence, or immutable artifact.
 
 ## Recursion, reuse, references, and cycles
 
@@ -717,8 +813,9 @@ evidence or history, but it cannot treat them as mutable shared templates.
 
 ### Reference resolution
 
-Resolution starts at the root system, applies profiles in their declared order,
-loads package dependencies, and resolves every required reference to one target.
+Resolution starts at the root system, applies configuration profiles in their
+declared order, loads package dependencies, and resolves every required
+reference to one target.
 The resolved graph records the exact definition versions selected. Runtime
 bindings happen after conceptual resolution and cannot repair an ambiguous or
 kind-invalid reference.
@@ -736,7 +833,7 @@ Cycles are classified rather than rejected as one category:
 | --- | --- |
 | Ownership or containment | Invalid. An entity cannot own or contain itself, directly or indirectly. |
 | Package dependency | Invalid for the initial model. Resolution order must be acyclic. |
-| Profile base | Invalid. Profile constraints require a finite ordered base chain. |
+| Configuration profile base | Invalid. Configuration profile constraints require a finite ordered base chain. |
 | Static use or reference | Valid if every reference resolves and no entity's definition depends on infinite expansion. |
 | Topology | Valid when policy permits the edges and the associated behavior defines progress or an intentional long-lived loop. |
 | Control flow or protocol | Valid only with a termination condition, finite bound, or explicit long-lived-loop declaration. |
@@ -749,7 +846,8 @@ The resolved model obeys these invariants in addition to each entity's local
 invariants:
 
 1. Every required reference resolves to exactly one target of the expected kind.
-2. Every definition and occurrence identity is unique within its declared scope.
+2. Every definition, runtime instance, execution occurrence, and artifact
+   identity is unique within its declared scope.
 3. Ownership and containment graphs are acyclic, and each owned entity has at
    most one owner in one resolved system.
 4. Every boundary-crossing interaction uses a declared interface and direction.
@@ -757,10 +855,12 @@ invariants:
    or external event.
 6. Every governed effect passes through the policy application points and
    produces the authorization and approval occurrences required at that effect.
-7. Reuse preserves definition identity. Customization uses a profile, a new
-   definition, or an extension rather than mutating an imported definition.
-8. Runtime occurrences identify the applicable definition versions when needed
-   to interpret, audit, or reproduce them.
+7. Reuse preserves definition identity. Customization uses a configuration
+   profile, a new definition, or an extension rather than mutating an imported
+   definition.
+8. Runtime instances, execution occurrences, and immutable artifacts identify
+   the applicable definition versions when needed to interpret, audit, or
+   reproduce them.
 9. Core validation is independent of provider, framework, transport, runtime,
    deployment platform, and extension payload semantics.
 10. A required extension that a consumer does not understand prevents a claim of
@@ -778,8 +878,8 @@ work is complete.
 | REQ-001, REQ-002 | System, component identities, references, ownership, interfaces, and governing-control relations expose the principal facts for inspection and stable addressing. |
 | REQ-003 | System, Agent, Interface, runtime binding requirements, Trace requirement, and Evaluation definition can describe a complete single-agent system. Topology is optional. |
 | REQ-004 | Topology, Protocol, Control flow, shared reusable definitions, ownership, and policy relations cover the core multi-agent structure. Explicit routing, delegation, and handoff definitions remain to be defined. |
-| REQ-010, REQ-011, REQ-016, REQ-017 | Package, Profile, Reference, identity scopes, dependency relations, and deterministic reference-resolution invariants cover composition and controlled resolution. |
-| REQ-018 through REQ-020 | Extension identity, required-extension failure behavior, and preservation through package, profile, and deployment resolution cover extension boundaries. Portable fallback still needs precise processing rules. |
+| REQ-010, REQ-011, REQ-016, REQ-017 | Package version, Configuration profile, Reference, identity scopes, dependency relations, and deterministic reference-resolution invariants cover composition and controlled resolution. |
+| REQ-018 through REQ-020 | Extension identity, required-extension failure behavior, and preservation through package, configuration profile, and deployment resolution cover extension boundaries. Portable fallback still needs precise processing rules. |
 | REQ-021 through REQ-026 | Identity, Environment, Policy, Authorization requirement and decision, Approval requirement, request, and decision, Tool, Interface, and boundary invariants represent principals, protected actions, secret references, supervision, and trust crossings. Review, override, interruption, escalation, and failure-policy vocabularies remain to be defined. |
 | REQ-027 through REQ-031 | Trace requirement, execution trace, trace record, Evaluation definition, and Evaluation result preserve observable identity and definition-result separation. Metric definitions, probabilistic targets, and conformance claims remain to be defined. |
 | REQ-032 through REQ-035 | Binding requirements, resolved bindings, Runtime, Deployment, Environment, and the binding-separation rules distinguish portable needs from selected implementations and visible capability gaps. Target-assessment report behavior remains to be defined. |
@@ -805,6 +905,22 @@ expand to the same conceptual relations.
 The relationship table is a conceptual constraint set, not a schema. Later work
 must decide which relations are written directly, inferred from containment, or
 represented through intermediate records.
+
+### Syntax-free boundary examples
+
+Consider a travel-planning system with a planner agent and a booking agent. The
+planner's `request booking` operation is an interface fact. A request, tentative
+offer, acceptance, and final confirmation form a protocol fact. A directed path
+from the planner to the booking agent through that interface is a topology fact.
+A control-flow step that invokes the planner, then permits a booking invocation
+after approval, is a control-flow fact. None of these facts implies the other
+three.
+
+A one-agent summarization system may expose one `submit document` interface
+operation and use a control flow that invokes its sole agent and then returns
+the result. It needs no participant protocol when the interaction is a single
+operation, and no topology when there is no static inter-participant path to
+declare.
 
 ## Alternatives considered
 
@@ -837,10 +953,11 @@ Separating them preserves who decided what, under which rule, and for how long.
 
 ### Model only static definitions
 
-Static definitions alone cannot express correlation, traceability, state
-transitions, approval scope, or evaluation subjects. This proposal introduces
-the definition and occurrence distinction while leaving event syntax and storage
-to later work.
+Static definitions alone cannot express deployed identity, correlation,
+traceability, state transitions, approval scope, durable artifacts, or
+evaluation subjects. This proposal separates definitions, runtime instances,
+execution occurrences, and immutable artifacts while leaving event syntax and
+storage to later work.
 
 ## Security considerations
 
@@ -863,14 +980,15 @@ extensions fail closed when a consumer cannot interpret their semantics.
 
 AgSDL has no published syntax or compatibility promise, so this proposal breaks
 no existing conforming document. If accepted, later terminology, schemas, and
-conformance rules should use these entity names and preserve the definition and
-occurrence distinction.
+conformance rules should use these entity names and preserve the four subject
+categories.
 
 Framework adapters may map several conceptual entities to one framework object,
 or one conceptual entity to several implementation objects. Such a mapping is
 compatible when it preserves the declared relationships, invariants, and
 observable behavior. A framework default has no portable meaning unless an
-adapter represents it as a definition, profile choice, or extension.
+adapter represents it as a definition, configuration profile choice, or
+extension.
 
 ## Open questions
 
@@ -885,11 +1003,20 @@ adapter represents it as a definition, profile choice, or extension.
 5. Should package dependency cycles remain forbidden if a later resolver can
    prove finite symbol resolution?
 6. What minimum trace event set is required for a portable conformance claim?
-7. Which runtime occurrence kinds belong in the core specification rather than
-   an observability profile?
+7. Which runtime instance, execution occurrence, and immutable artifact kinds
+   belong in the core specification rather than a later observability proposal?
 8. Can policy conflict resolution have one portable default, or must every
    applicable policy set declare it?
 9. How should a definition express capability compatibility without importing
    provider-specific model and tool taxonomies?
 10. Which extension effects must always be marked required because ignoring them
     could change security, control flow, or externally visible behavior?
+11. What core term, if any, should name an externally advertised service, and
+    how should it relate to an interface operation or packaged skill without
+    equating discovery, assignment, authority, and implementation support?
+12. May a configuration profile require a conformance profile, and if so, does
+    that reference constrain deployment resolution without changing the base
+    definition's portable meaning?
+13. Which entities may act as the selection authority for a model-selected
+    transition, and what minimum observation evidence supports audit without
+    requiring disclosure of protected model inputs or reasoning?
