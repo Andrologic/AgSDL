@@ -6,8 +6,11 @@ required_files=(
   AGENTS.md
   CONTRIBUTING.md
   GOVERNANCE.md
+  LICENSE
   ROADMAP.md
+  docs/decisions/0002-version-0.0.1.md
   docs/scope.md
+  examples/README.md
   spec/README.md
   proposals/README.md
 )
