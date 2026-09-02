@@ -115,9 +115,9 @@ outbound exchanges governed by a multi-message Protocol. The HTTP request, SSE
 framing, WebSocket, webhook, and Protobuf choices are transport or encoding
 bindings. They are not part of the portable Interface operation by default.
 
-`RunAgentInput` is one request occurrence. Its nested message array can contain
-history from earlier runs, so each nested record must not be treated as a new
-Message occurrence merely because the request carries it. State, context,
+`RunAgentInput` is one protocol Message occurrence. Its nested message array can
+contain history from earlier runs, so each nested record must not be treated as
+a new Message occurrence merely because the request carries it. State, context,
 tools, and `forwardedProps` also retain their distinct meanings.
 
 ## Event families and progressive output
@@ -128,16 +128,16 @@ mapping analysis, not a replacement for the upstream schemas.
 | AG-UI family | Upstream role | Candidate AgSDL interpretation | Information that is not established |
 | --- | --- | --- | --- |
 | `RUN_STARTED`, `RUN_FINISHED`, `RUN_ERROR` | Bound one run and report its terminal outcome | Execution and trace occurrences linked to the bound definitions | Runtime conformance, successful effects, or a portable error taxonomy |
-| `TEXT_MESSAGE_START`, `CONTENT`, `END` | Build one text message progressively by `messageId` | One Message occurrence plus fragment observations | Three separate semantic messages or transport-independent delivery evidence |
-| `TEXT_MESSAGE_CHUNK` | Convenience form expanded by the client | Same Message occurrence after normalization | A distinct portable occurrence |
-| `TOOL_CALL_START`, `ARGS`, `END` | Build one tool-call request progressively by `toolCallId` | Proposed Action occurrence or invocation observation, subject to a resolved Tool mapping | Execution, authorization, approval, or an Effect |
+| `TEXT_MESSAGE_START`, `CONTENT`, `END` | Build one text record progressively by `messageId` | Protocol Message occurrences that materialize one conversation record | One AgSDL Message occurrence for the assembled record or transport-independent delivery evidence |
+| `TEXT_MESSAGE_CHUNK` | Convenience form expanded by the client | One protocol Message occurrence normalized into lifecycle observations | Another occurrence for each normalized observation |
+| `TOOL_CALL_START`, `ARGS`, `END` | Build one tool-call request progressively by `toolCallId` | Protocol Message occurrences that materialize a call proposal | An Action occurrence, execution, authorization, approval, or an Effect |
 | `TOOL_CALL_RESULT` | Report a result associated with a tool call | Tool-result or Action-outcome observation | Which side executed the Tool or whether an external Effect occurred |
 | `STATE_SNAPSHOT`, `STATE_DELTA` | Replace state or apply ordered RFC 6902 operations | State occurrence and transition observations when a State definition is bound | State schema, writer authority, conflict resolution, persistence, or concurrency semantics |
 | `MESSAGES_SNAPSHOT` | Replace the client's materialized message collection | Snapshot observation of prior and current messages | New delivery of every contained Message occurrence |
 | `ACTIVITY_SNAPSHOT`, `ACTIVITY_DELTA` | Maintain structured in-progress UI activity | Progress observation or optional presentation extension | Portable Control flow or completion evidence |
 | `STEP_STARTED`, `STEP_FINISHED` | Mark named execution steps | Trace records correlated with a Control-flow step when a binding supplies that correlation | A Control flow definition, allowed successors, or branch semantics |
 | `REASONING_*` | Stream readable or encrypted reasoning-related data | Protected observation or extension under explicit disclosure policy | A required portable decision explanation or reliable causal account |
-| `SUBAGENT_*` and `subagentRunId` | Attribute nested work in one AG-UI stream | Trace attribution to an Agent or runtime participant when identity mapping exists | A2A communication, Delegation, Handoff, authority transfer, or a separate state scope |
+| `SUBAGENT_*` and `subagentRunId` | Attribute nested work in one AG-UI stream | Nested execution and Trace attribution; Agent or Runtime mapping requires resolved identity | A2A communication, Delegation, Handoff, authority transfer, or a separate state scope |
 | `RAW` | Preserve an event from another source | External occurrence preserved as an extension | Meaning of the enclosed event |
 | `CUSTOM` | Carry application-defined data by name | Named extension occurrence | Portable semantics without a separately identified extension contract |
 | Deprecated `THINKING_*` | Legacy input translated to reasoning events by compatibility middleware | Versioned compatibility input only | A current preferred event family |
@@ -185,6 +185,13 @@ the application can execute the selected client tool. Tool arguments arrive as
 JSON text fragments. A tool result becomes a tool message correlated by
 `toolCallId`. A tool-message `error` field distinguishes a failed client-side
 execution from successful content.
+
+The result path depends on the executor. An agent-side tool can return
+`TOOL_CALL_RESULT` in its event stream. A frontend tool finishes the calling run
+without that event; the application sends its result as a tool message in the
+next run input. The published 0.x tool-bound interrupt pattern is a third path:
+after resume, the agent executes the protected tool and emits
+`TOOL_CALL_RESULT` in the resumed run. These paths are not interchangeable.
 
 **AgSDL assessment.** A frontend tool can map to an AgSDL Tool only when the
 binding also identifies its Action, inputs, outputs, Effects, failures,
@@ -305,7 +312,7 @@ fallback, compensation, authorization denial, invalid input, or partial Effect.
 An omitted or unknown code remains unknown rather than being inferred from the
 message text.
 
-## Boundary with A2A, MCP, and AgSDL
+## Boundary with A2UI, A2A, MCP, and AgSDL
 
 **Source facts.** Upstream documentation presents AG-UI as the agent-to-user
 application protocol, MCP as the tool and context protocol, and A2A as the
@@ -314,10 +321,17 @@ tools in an AG-UI run and another integration that can route work to A2A
 agents. These are transformations implemented by middleware, not a shared wire
 contract.
 
+The same documentation distinguishes AG-UI from A2UI and other generative UI
+specifications. AG-UI carries interaction events. It does not define component
+trees, widget catalogs, or rendering semantics.
+
 **AgSDL assessment.** The boundaries are:
 
 - AG-UI binds interactive run input, event output, UI state materialization,
   and application-mediated actions at a user-facing Interface.
+- A2UI or another generative UI contract binds declarative UI content and
+  rendering semantics. Carrying that content through AG-UI does not give it
+  portable meaning without a separate binding.
 - A2A binds discovery and remote agent task or message exchanges. An AG-UI
   subagent event does not prove an A2A exchange, Delegation, or Handoff.
 - MCP binds discovery and invocation of external tools, resources, and prompts.
@@ -327,10 +341,9 @@ contract.
   authorization, state ownership, and evidence requirements. It can reference
   AG-UI as a binding but must not import AG-UI event names as universal AgSDL
   semantics.
-- An AG-UI event is a wire-level exchange and may be a Trace record. It maps to
-  a Message occurrence, State occurrence, Action occurrence, Approval request,
-  or other AgSDL occurrence only when the applicable correlation and semantic
-  conditions are satisfied.
+- An AG-UI event crossing the bound Interface is a protocol Message occurrence.
+  Its content may also evidence a State transition, Action occurrence, Approval
+  request, or Trace record only when the applicable semantic conditions hold.
 
 ## Candidate test obligations
 
@@ -344,8 +357,8 @@ inputs to a proposal, not executable AgSDL tests or passing claims:
 - verify in-band version declarations, unknown-versus-malformed processing,
   downgrade warnings, and late-error behavior when the 1.0 draft is selected;
 - reject invalid run, message, tool-call, interrupt, and resume sequences;
-- assemble progressive messages and tool arguments without creating duplicate
-  semantic occurrences;
+- materialize progressive conversation records and tool arguments without
+  inventing an assembled Message or Action occurrence;
 - preserve unknown `RAW` and `CUSTOM` data as identified extensions or report
   their loss;
 - apply snapshots and deltas against a declared baseline and detect divergence;
@@ -357,8 +370,8 @@ inputs to a proposal, not executable AgSDL tests or passing claims:
   tool-call visibility;
 - inject stream loss, duplicate events, reordered fragments, local abort, and
   remote non-termination, then report the declared failure behavior;
-- test every AG-UI-to-MCP or AG-UI-to-A2A transformation separately and report
-  information loss.
+- test every AG-UI-to-A2UI, AG-UI-to-MCP, or AG-UI-to-A2A transformation
+  separately and report information loss.
 
 ## Primary sources
 
@@ -387,6 +400,7 @@ Repository file links below are pinned to one of the two reviewed commits.
 - [Cross-SDK fixtures](https://github.com/ag-ui-protocol/ag-ui/blob/3f38925d0e6c19bf1f19502ee12e410e772ac142/sdks/fixtures/README.md)
 - [Cross-SDK source-of-truth and parity rules](https://github.com/ag-ui-protocol/ag-ui/blob/3f38925d0e6c19bf1f19502ee12e410e772ac142/.github/skills/agui-cross-sdk-parity/SKILL.md)
 - [AG-UI, A2A, and MCP positioning](https://github.com/ag-ui-protocol/ag-ui/blob/3f38925d0e6c19bf1f19502ee12e410e772ac142/docs/agentic-protocols.mdx)
+- [AG-UI and generative UI specifications](https://github.com/ag-ui-protocol/ag-ui/blob/3f38925d0e6c19bf1f19502ee12e410e772ac142/docs/concepts/generative-ui-specs.mdx)
 - [MCP middleware behavior](https://github.com/ag-ui-protocol/ag-ui/blob/3f38925d0e6c19bf1f19502ee12e410e772ac142/middlewares/mcp-middleware/README.md)
 - [1.0 draft status and authority](https://github.com/ag-ui-protocol/ag-ui/blob/a8a1bcba0b82e4ebb8c4579ef6a86cd1bb01316e/docs/spec/draft/index.mdx)
 - [1.0 draft changelog from 0.x](https://github.com/ag-ui-protocol/ag-ui/blob/a8a1bcba0b82e4ebb8c4579ef6a86cd1bb01316e/docs/spec/draft/changelog.mdx)

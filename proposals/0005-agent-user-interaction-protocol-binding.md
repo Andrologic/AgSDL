@@ -16,8 +16,8 @@ tool calls, shared state, activity, nested work, human input, and run outcomes.
 
 A direct field-for-field import would create several errors:
 
-- every AG-UI event would look like an AgSDL Message occurrence even when it is
-  a fragment, state update, trace record, or control observation;
+- protocol Message occurrences would be confused with assembled conversation,
+  tool, state, trace, or control records;
 - a visible frontend tool would look authorized and executed;
 - an interrupt response would look like an accountable Approval decision;
 - aborting an HTTP request would look like a verified remote stop;
@@ -36,19 +36,19 @@ This proposal defines conceptual semantics for:
 
 - binding an AgSDL Interface and Protocol to an identified AG-UI contract;
 - starting, observing, completing, interrupting, and resuming interactive runs;
-- mapping progressive events to Message, State, Action, Approval, and Trace
-  occurrences without duplicating them;
+- mapping AG-UI event messages to conversation records, State, Action,
+  Approval, and Trace occurrences without inventing occurrences;
 - binding client-provided tools to AgSDL Tools and Actions;
 - separating AG-UI interruption, local stream control, transport behavior, and
   portable stop controls;
-- composing AG-UI with separate A2A and MCP bindings;
+- composing AG-UI with separate A2UI, A2A, and MCP bindings;
 - defining candidate implementation features and executable test obligations
   for later normative work.
 
 This proposal does not define AgSDL serialization, copy AG-UI schemas, select a
 transport, implement a runtime adapter, or create a present interoperability
-claim. It does not make AG-UI, A2A, MCP, a frontend framework, or an agent
-runtime part of the AgSDL core.
+claim. It does not make AG-UI, A2UI, A2A, MCP, a frontend framework, or an
+agent runtime part of the AgSDL core.
 
 ## Proposed terms
 
@@ -88,19 +88,12 @@ property as satisfied, unsatisfied, or indeterminate.
 An **interactive run occurrence** is one execution occurrence initiated through
 the bound run operation. It has the AG-UI `threadId` and `runId`, the applicable
 AgSDL definition versions, the initiating and acting Principal identities when
-known, and a terminal observation or an explicit missing-terminal condition.
+known, every terminal observation permitted by the selected contract, or an
+explicit missing-terminal condition.
 
 An AG-UI thread is a correlation scope. It is not an AgSDL System, Agent,
 Principal, State definition, or durable execution guarantee. An AG-UI run is an
 execution occurrence. It is not a Runtime instance or Control flow definition.
-
-### Progressive occurrence
-
-A **progressive occurrence** is one semantic occurrence assembled from several
-ordered observations with a shared correlation identity. Text content, tool
-arguments, activity deltas, and state deltas can be progressive. The fragments
-remain Trace records when required, but they do not become several Message,
-Action, Activity, or State occurrences merely because they arrived separately.
 
 ### Frontend tool binding
 
@@ -109,13 +102,6 @@ its call lifecycle to one AgSDL Tool and Action. It identifies the executor,
 execution Principal, input and output mapping, Effect and failure mapping,
 authorization requirement, policy application point, correlation rules, and
 result-return path.
-
-### Interrupt continuation
-
-An **interrupt continuation** maps one AG-UI interrupt outcome and a later
-same-thread resume request to an AgSDL wait and continuation. It can map to an
-Approval request and decision only when the additional approval conditions in
-this proposal hold.
 
 ## Binding structure
 
@@ -126,19 +112,24 @@ The bound AgSDL Interface has two endpoint roles:
 - the **application endpoint** represents the user-facing application side;
 - the **agent endpoint** represents the exposed agent or system side.
 
-The Interface has one inbound operation relative to the agent endpoint:
+A resolved binding identifies both concrete endpoints. If a selected feature
+requires Principal attribution, an endpoint role without that identity leaves
+the requirement unsatisfied.
+
+The Interface has two operations relative to the agent endpoint:
 
 - **start or continue interactive run** accepts the mapped AG-UI run input and
-  initiates a new interactive run occurrence.
+  is inbound;
+- **observe run event** carries one AG-UI event and is outbound.
 
-The operation participates in an **interactive run protocol** whose outbound
-exchanges carry the mapped AG-UI event stream. A resolved binding may expose
+Both operations participate in an **interactive run protocol**. One event on
+the stream is one protocol Message occurrence. A resolved binding may expose
 capability discovery through another operation, but discovery does not alter
 the run Protocol and does not negotiate authority.
 
 The Interface contract declares which parts of run input are required:
 
-- new user input or replayed Message records;
+- new user input or replayed conversation records;
 - current State occurrence or no state;
 - client-provided frontend Tool descriptions;
 - application context;
@@ -158,19 +149,24 @@ contracts do not implement them.
 
 ### Interactive run protocol states
 
-The candidate portable protocol has these conceptual states:
+The candidate protocol uses the selected AG-UI lifecycle instead of creating a
+second lifecycle:
 
-| State | Meaning | Permitted transition |
-| --- | --- | --- |
-| `ready` | No run is active for this protocol instance | A valid start request creates an interactive run occurrence and moves to `active` |
-| `active` | The run has begun and event observations may arrive | Progressive or snapshot observations keep it active; a success terminal moves to `completed`; a run error moves to `failed`; an interrupt terminal moves to `awaiting-input` |
-| `awaiting-input` | The prior run is terminal but its thread has open interrupts | One valid same-thread request addressing every open interrupt creates a new run and moves to `active`; other input is processed according to the selected contract set |
-| `completed` | The run ended without a pending interrupt | A separate later run may start under the Interface policy |
-| `failed` | The run ended in error or the binding detected a required terminal failure | Retry, fallback, compensation, or a later run follows the declared failure policy |
+| Source | Trigger | Sender | Receiver | Result |
+| --- | --- | --- | --- | --- |
+| `ready`, `completed`, or `failed` | start request | application | agent | `waiting` |
+| `awaiting-input` | complete resume request | application | agent | `waiting` |
+| `waiting` | `RUN_STARTED` | agent | application | `active` |
+| `waiting` | initial `RUN_ERROR`, when allowed | agent | application | `failed` |
+| `active` | nonterminal event | agent | application | `active` |
+| `active` | successful `RUN_FINISHED` | agent | application | `completed` |
+| `active` | interrupting `RUN_FINISHED` | agent | application | `awaiting-input` |
+| `active`, `completed`, or `awaiting-input` | `RUN_ERROR`, when allowed | agent | application | `failed` |
+| `completed`, `awaiting-input`, or `failed` | replayed `RUN_STARTED` on the same stream | agent | application | `active` |
 
-`awaiting-input` is a thread-level continuation condition, not an active run.
-The interrupted run has already ended. A resumed interaction creates a new
-`runId` and a new interactive run occurrence.
+`awaiting-input` is a thread-level continuation condition. The interrupted run
+has ended. A resume request creates a new `runId` and interactive run
+occurrence.
 
 A published 0.x resolved binding states whether it follows the stricter
 documented lifecycle that requires `RUN_STARTED` or the reference TypeScript
@@ -191,13 +187,12 @@ is selected:
 - activity message for activity snapshots and deltas;
 - control-flow step identity for mapped step observations;
 - interrupt and prior run for resume;
-- subagent runtime participant for nested attribution.
+- nested execution occurrence for subagent attribution.
 
-Transport receive order is the default event order only when the selected
-transport binding guarantees it for the observed stream. If the deployment can
-reorder, duplicate, omit, or replay events, the resolved binding supplies event
-identity, ordering, deduplication, and recovery rules. A timestamp alone is not
-an ordering or deduplication key.
+The selected transport restores complete producer order before semantic
+mapping. If its channel can reorder, duplicate, omit, or replay events, the
+resolved binding supplies the restoration, deduplication, and recovery rules.
+A timestamp alone is not an ordering or deduplication key.
 
 ## Semantic mapping
 
@@ -225,26 +220,28 @@ branch conditions, or completion criteria.
 ### Text, activity, and reasoning
 
 A valid `TEXT_MESSAGE_START`, zero or more content fragments, and
-`TEXT_MESSAGE_END` with one `messageId` map to one Message occurrence. The
-binding identifies sender and intended recipient Principal identities from
-resolved endpoint roles or reports them unknown. AG-UI role strings alone do
-not establish Principal identity, authentication, or authority.
+`TEXT_MESSAGE_END` with one `messageId` materialize one conversation record.
+Each source event remains a protocol Message occurrence with the agent and
+application endpoint identities as sender and receiver. The assembled record is
+not a second Message occurrence because no endpoint sent it as one message.
+AG-UI role strings do not establish Principal identity, authentication, or
+authority.
 
 A chunk convenience event is normalized before semantic mapping. The original
-chunk can remain a Trace record, but it does not create another Message
-occurrence beside the normalized lifecycle.
+chunk is the protocol Message occurrence. Its normalized lifecycle observations
+can become Trace records, but not additional Message occurrences.
 
-`MESSAGES_SNAPSHOT` maps to a materialized collection of Message records. The
-binding correlates records already known by identity. A record not previously
-observed remains a snapshot-contained record whose original occurrence and
-delivery status are unknown. A snapshot cannot prove original delivery,
-acceptance, or processing.
+`MESSAGES_SNAPSHOT` maps to a materialized collection of conversation records.
+The binding correlates records already known by identity. A record not
+previously observed remains a snapshot-contained record whose original
+occurrence and delivery status are unknown. A snapshot cannot prove original
+delivery, acceptance, or processing.
 
 Activity events map to progress observations. They map to State transitions or
-Messages only when a separate definition selects that meaning. Reasoning events
-are protected observations or extensions. A binding declares disclosure,
-retention, redaction, and access rules and must not treat model reasoning as an
-authoritative explanation of a decision.
+conversation records only when a separate definition selects that meaning.
+Reasoning events are protected observations or extensions. A binding declares
+disclosure, retention, redaction, and access rules and must not treat model
+reasoning as an authoritative explanation of a decision.
 
 ### State
 
@@ -269,38 +266,38 @@ The bidirectional presence of state does not permit concurrent writes by
 implication. A binding with several writers is unsatisfied until it supplies
 and tests a conflict rule consistent with the State definition.
 
-### Frontend tools and actions
+### Tool calls and actions
 
-Each frontend Tool description resolves to one AgSDL Tool definition and one
-Action. Name matching alone is insufficient. The resolved frontend tool binding
-records the schema or contract transformation and any loss.
+Tool-call events materialize one call proposal. They remain protocol Message
+occurrences and optional Trace records. They do not create an Action occurrence
+until an identified executor attempts the mapped Action.
 
-The call event sequence maps as follows:
+The result path depends on the selected contract:
 
-1. tool-call start and argument fragments assemble one proposed Action
-   occurrence;
-2. tool-call end closes the proposal and makes its material parameters
-   available for policy and approval;
-3. the declared policy application point authenticates and authorizes the
-   acting Principal immediately before execution;
-4. the identified frontend or middleware executor performs or refuses the
-   Action;
-5. a correlated result reports the observed outcome and any mapped Effect
-   evidence.
+| Call kind | Executor | Result path |
+| --- | --- | --- |
+| Agent-side Tool | agent side | `TOOL_CALL_RESULT` can arrive in the same run |
+| Frontend Tool advertised in run input | application | the run finishes successfully without `TOOL_CALL_RESULT`; the next run input carries a correlated tool message |
+| Published 0.x tool-bound interrupt | agent side after resume | the interrupted run ends, the next run carries `resume`, and that run can emit `TOOL_CALL_RESULT` |
 
-No event before step 3 grants authority. No tool-call result alone proves an
-external Effect. If the application edits arguments, the trace preserves the
-original and replacement values, and the binding reevaluates any authorization
-or Approval decision whose material context changed.
+Each frontend Tool description resolves to one AgSDL Tool definition and
+Action. Name matching alone is insufficient. Immediately before an attempt,
+the policy application point authenticates and authorizes the acting Principal.
+The attempt creates one Action occurrence. A correlated result records the
+reported outcome, but does not by itself prove an external Effect.
 
-Backend tools are outside a frontend tool binding. MCP tools exposed by AG-UI
-middleware need an additional MCP binding and transformation record.
+If the application edits arguments, the trace preserves the original and
+replacement values. The binding reevaluates authorization and Approval when
+their material context changed.
+
+Agent-side Tools are outside a frontend tool binding. MCP tools exposed by
+AG-UI middleware need an additional MCP binding and transformation record.
 
 ### Interrupts and human approval
 
-Every AG-UI interrupt maps to an explicit wait occurrence with its identifier,
-reason, prompt, response contract, expiry, tool correlation, and extension
-metadata preserved.
+Every AG-UI interrupt creates an explicit Protocol wait condition. Its
+identifier, reason, prompt, response contract, expiry, tool correlation, and
+extension metadata are preserved in Trace records.
 
 An interrupt maps to an AgSDL Approval request only when all of these conditions
 hold:
@@ -343,8 +340,9 @@ requirements.
 
 ### Nested agents, A2A, and handoffs
 
-`SUBAGENT_*` and `subagentRunId` can attribute observations to a nested runtime
-participant. They map to an AgSDL Agent only through a resolved identity map.
+`SUBAGENT_*` and `subagentRunId` can attribute observations to a nested
+execution occurrence. They map to an AgSDL Agent or Runtime only through a
+resolved identity map.
 They do not establish:
 
 - a Delegation definition or occurrence;
@@ -356,6 +354,9 @@ They do not establish:
 If nested work uses A2A, the deployment declares a separate A2A binding and
 causal links between the AG-UI observations and A2A occurrences. The same rule
 applies to MCP calls reached through middleware.
+
+A2UI and other generative UI contracts are separate too. They define component
+and rendering semantics that AG-UI can carry but does not supply.
 
 ### Raw and custom events
 
@@ -388,8 +389,7 @@ Effect prevention.
 ## Transport and encoding bindings
 
 The event semantics and transport are separate. A resolved binding selects one
-or more transport and encoding profiles, for example JSON over HTTP and SSE or
-the upstream Protobuf subset. Each selection declares:
+or more transport and encoding profiles. Each selection declares:
 
 - media types, request method, endpoint, framing, and authentication;
 - event subset and field fidelity;
@@ -399,9 +399,10 @@ the upstream Protobuf subset. Each selection declares:
 - confidentiality, integrity, origin authentication, and replay protection;
 - transformations between the wire representation and the semantic event set.
 
-Protobuf support cannot inherit the full JSON event feature set by name. The
-resolved binding lists supported event and field mappings and rejects or reports
-loss for events outside that subset.
+Published 0.x Protobuf is a subset of its JSON event set, so a 0.x binding lists
+supported mappings and reports loss. The 1.0 draft instead requires its HTTP
+and Protobuf binding to match the draft schema and shared byte corpus. Evidence
+from the 0.x package does not prove that draft requirement.
 
 ## Candidate conformance model
 
@@ -411,10 +412,10 @@ suite supplies executable evidence, as required by proposal 0003.
 
 ### Candidate feature: AG-UI observation import
 
-The processor consumes an identified AG-UI event stream and emits correlated
-AgSDL occurrences without duplicating progressive messages, Action proposals,
-or snapshot records. It preserves required extensions and reports every unknown
-or lossy mapping.
+The processor consumes an identified AG-UI event stream and emits protocol
+Message occurrences, materialized conversation records, and mapped AgSDL
+occurrences. It preserves required extensions and reports every unknown or
+lossy mapping without inventing an assembled Message or Action occurrence.
 
 Candidate tests include valid and invalid lifecycle streams, interleaved
 message and tool fragments, snapshots after progressive events, unknown custom
@@ -422,14 +423,15 @@ events, deprecated inputs, and JSON versus Protobuf fidelity cases.
 
 ### Candidate feature: AG-UI interactive run
 
-The runtime realizes the bound start operation, applies the selected lifecycle
-contract, and emits one terminal observation for every started run or an
-explicit evidence-loss result. It preserves thread, run, parent, definition,
-and Principal correlation required by the binding.
+The runtime realizes the bound operations and applies the selected lifecycle.
+It preserves every terminal event, including a permitted late `RUN_ERROR`, or
+records evidence loss. It also preserves the required thread, run, parent,
+definition, and Principal correlation.
 
 Candidate tests include normal success, initial error according to the selected
-lifecycle variant, unfinished progressive entities at termination, duplicate
-terminal events, branch lineage, and missing-terminal transport loss.
+lifecycle variant, permitted late error, unfinished progressive entities at
+termination, forbidden events after close, branch lineage, and missing-terminal
+transport loss.
 
 ### Candidate feature: AG-UI frontend tool execution
 
@@ -439,8 +441,8 @@ without treating visibility as permission.
 
 Candidate tests include malformed and fragmented arguments, parallel calls,
 unknown tools, denial, edited parameters, failed client execution, duplicate
-results, replay, external partial Effects, and an MCP-backed tool that requires
-a second binding.
+results, the next-run frontend result path, the separate 0.x interrupt path,
+external partial Effects, and an MCP-backed tool that requires a second binding.
 
 ### Candidate feature: AG-UI state synchronization
 
@@ -474,25 +476,20 @@ agents and Tools.
 ## Conceptual example
 
 A procurement assistant exposes an AG-UI-bound Interface. The application sends
-a start request containing a new user Message record, current form State, and a
-frontend Tool that can submit a purchase order. The run emits a text Message
-progressively, then a tool-call proposal.
+a start request containing a new user conversation record, current form State,
+and a frontend Tool that can submit a purchase order. The run emits text events,
+then a tool-call proposal.
 
 The frontend tool binding maps the proposal to the protected **submit purchase
-order** Action. Before execution, the run emits the state and message snapshots
-needed for continuation and finishes with a `tool_call` interrupt. The
-interrupt binding maps it to the existing **purchase approval** Approval
-requirement because it identifies the order, supplier, amount, currency,
-requesting Principal, approver qualifications, expiry, and invalidation rules.
-
-The authenticated purchasing manager edits the quantity and responds. The
-resume request starts a new run on the same thread. Because quantity is material,
-the policy application point invalidates the old proposed Action, constructs a
-new proposal, and reevaluates approval and authorization according to the
-declared rule. Only a matching permitted Authorization decision lets the
-frontend executor call the purchasing service. A tool result records the local
-outcome, while separate service evidence records whether the external order
-Effect occurred.
+order** Action. The run finishes successfully without `TOOL_CALL_RESULT`. The
+application asks an authenticated purchasing manager to approve the proposal.
+The manager edits the quantity, so the application reevaluates approval and
+authorization for the changed proposal. A matching permitted Authorization
+decision lets the application attempt the Action and create its Action
+occurrence. Separate service evidence records whether the external order Effect
+occurred. The next run input carries the correlated tool message with the
+reported result. No interrupt or `resume` entry is involved in this frontend
+Tool path.
 
 Counterexamples:
 
@@ -540,12 +537,12 @@ verified decision evidence merely because it is encrypted.
 Positive consequences:
 
 - AG-UI can realize a user-facing Interface without becoming AgSDL core syntax.
-- Progressive events map to one semantic occurrence while retaining optional
-  trace detail.
+- Protocol events remain Message occurrences while conversation, tool, and
+  state records materialize without invented occurrences.
 - State, frontend tools, human approval, interruption, and stop controls keep
   their distinct security and control meanings.
-- A2A and MCP middleware can be described through composed bindings with
-  explicit loss analysis.
+- A2UI content and A2A or MCP middleware use composed bindings with explicit
+  loss analysis.
 - Version and encoding drift becomes visible in the resolved external contract
   set.
 
@@ -587,6 +584,12 @@ Rejected. AG-UI client tools and MCP server tools have different discovery,
 execution, transport, and result contracts. Middleware can bridge them through
 two explicit bindings.
 
+### Treat AG-UI as a generative UI specification
+
+Rejected. AG-UI carries interaction events but does not define component trees,
+widget catalogs, or rendering behavior. Those need an A2UI or other generative
+UI binding.
+
 ### Claim adapter conformance from upstream SDK tests
 
 Rejected. Upstream tests provide evidence about AG-UI packages and selected
@@ -609,8 +612,8 @@ points.
 
 1. Should the first AG-UI profile select JSON over HTTP and SSE only, leaving
    WebSocket, webhook, and Protobuf to separate profiles?
-2. Should a profile require `RUN_STARTED`, or follow the TypeScript verifier
-   that accepts `RUN_ERROR` as the first event?
+2. Should a published 0.x profile require `RUN_STARTED`, or follow the
+   TypeScript verifier that accepts `RUN_ERROR` as the first event?
 3. Which progressive fragments must the minimum Trace profile retain after
    materialization or compaction?
 4. Does AgSDL need a first-class progress occurrence, or can activity remain a
