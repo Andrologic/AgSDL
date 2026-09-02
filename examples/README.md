@@ -1,8 +1,13 @@
 # Conceptual examples for AgSDL 0.0.1
 
-These two examples illustrate the proposed AgSDL 0.0.1 conceptual model. They
+The first two examples illustrate the proposed AgSDL 0.0.1 conceptual model. They
 are non-normative and deliberately independent of serialization syntax,
 frameworks, providers, transports, and runtimes.
+
+The separate [A2UI declarative-interface
+example](a2ui-declarative-interface.md) explores proposal 0005 against an
+external format. It remains non-normative, pins the reviewed A2UI version, and
+does not claim an implemented adapter or interoperability.
 
 ## 1. Single-agent document assistant
 
