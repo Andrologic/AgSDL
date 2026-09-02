@@ -9,10 +9,13 @@ This note surveys standards, protocols, formats, and implementation models that
 can inform the Agentic Systems Definition Language. It does not propose AgSDL
 syntax or change the normative specification.
 
-The survey gives preference to current primary sources maintained by the body
-that owns each work. Older work appears only where it still supplies a useful
-concept that newer specifications do not replace. Every cited source was
-accessed on 2026-09-02.
+The survey gives preference to primary sources maintained by the body that owns
+each work. Older work appears only where it still supplies a useful concept
+that newer specifications do not replace. Citations use a release edition, tag,
+or commit when the publisher provides one. A citation marked as living
+documentation had no published immutable edition at the time of review; its
+retrieval date and, when available, repository commit preserve the reviewed
+state. Every cited source was accessed on 2026-09-02.
 
 Each source record separates two kinds of statement:
 
@@ -28,9 +31,11 @@ integration boundary, a runtime programming model, or one cross-cutting concern.
 
 ### OpenAI Agents SDK
 
-**Source facts.** OpenAI maintains the [Agents SDK agent
-model](https://openai.github.io/openai-agents-python/agents/) and its
-[orchestration model](https://openai.github.io/openai-agents-python/multi_agent/).
+**Source facts.** OpenAI maintains the Agents SDK. The [agent
+model](https://github.com/openai/openai-agents-python/blob/v0.22.0/docs/agents.md)
+and [orchestration
+model](https://github.com/openai/openai-agents-python/blob/v0.22.0/docs/multi_agent.md)
+reviewed here are from release `v0.22.0`.
 An SDK agent combines a name, instructions, model settings, tools, handoffs,
 guardrails, and an output type. The orchestration documentation distinguishes
 manager-controlled calls to agents as tools from handoffs that transfer control
@@ -48,7 +53,7 @@ definitions.
 ### A2A Agent Cards and core protocol
 
 **Source facts.** The A2A Project under the Linux Foundation maintains the
-[A2A protocol specification](https://a2a-protocol.org/latest/specification/). An
+[A2A protocol specification 1.0.1](https://a2a-protocol.org/v1.0.1/specification/). An
 Agent Card advertises an agent's identity, interfaces, capabilities, security
 schemes, and skills. The protocol defines messages, content parts, stateful
 tasks, task status, artifacts, streaming, push notifications, context
@@ -126,7 +131,10 @@ or model selection guidance. `operation`, `server`, `security`, `callback`,
 ### Agent Skills
 
 **Source facts.** The Agent Skills open specification project maintains the
-[Agent Skills specification](https://agentskills.io/specification). A skill is
+[Agent Skills
+specification](https://github.com/agentskills/agentskills/blob/69ef37e9424c0a7ea9dd2293b559e43ec8176379/docs/specification.mdx).
+The project did not publish a numbered specification edition at review time, so
+this citation pins the living documentation to the reviewed commit. A skill is
 a directory with a required `SKILL.md` file containing YAML metadata and
 Markdown instructions. Optional scripts, references, and assets support the
 instructions. The specification defines progressive disclosure from discovery
@@ -138,9 +146,11 @@ metadata, progressive loading, and separation of instructions from executable
 assets are reusable concepts. The format does not define the meaning of the
 instructions, a portable execution sandbox, dependency resolution, signing, or
 a stable permission model. `skill`, `tool`, `asset`, `reference`,
-`compatibility`, and `metadata` could collide. AgSDL should distinguish a
-packaged instruction skill from an advertised A2A skill and from a generic
-capability.
+`compatibility`, and `metadata` could collide. AgSDL needs separate candidate
+concepts for an invocable tool operation, an Agent Skills instruction package,
+and a service advertised through A2A. None implies that an authority grant
+permits its use or that a runtime implements it. The final terms and mappings
+remain open pending a proposal.
 
 ### OpenAI Model Spec
 
@@ -164,7 +174,9 @@ its authority levels or message roles. `root`, `system`, `developer`, `user`,
 ### LangGraph memory and persistence
 
 **Source facts.** LangChain maintains the [LangGraph memory
-documentation](https://langchain-ai.github.io/langgraph/how-tos/memory/manage-conversation-history/).
+documentation](https://github.com/langchain-ai/docs/blob/b090b0076ae72fe8882570ff6b25033f8205ed85/src/oss/langgraph/add-memory.mdx).
+The documentation has no independent edition, so this citation pins the living
+documentation to the reviewed repository commit.
 It separates short-term memory held in agent state from long-term memory held in
 a store. Short-term state can be checkpointed by thread. Long-term records can
 be organized by namespace and retrieved directly, by metadata, or by semantic
@@ -261,8 +273,10 @@ to runtime semantics. `schema`, `vocabulary`, `dialect`, `annotation`,
 ### OpenTelemetry
 
 **Source facts.** The Cloud Native Computing Foundation maintains the
-[OpenTelemetry Specification 1.60.0](https://opentelemetry.io/docs/specs/otel/)
-and [Semantic Conventions 1.44.0](https://opentelemetry.io/docs/specs/semconv/).
+[OpenTelemetry Specification
+1.60.0](https://github.com/open-telemetry/opentelemetry-specification/tree/v1.60.0/specification)
+and [Semantic Conventions
+1.44.0](https://github.com/open-telemetry/semantic-conventions/tree/v1.44.0/docs).
 OpenTelemetry defines APIs, SDK behavior, resources, context propagation,
 traces, metrics, and logs. Semantic conventions assign stable names and
 attributes to operations. Generative AI conventions are maintained in a
@@ -280,11 +294,11 @@ OpenTelemetry meanings.
 ### Open Policy Agent and Rego
 
 **Source facts.** The Cloud Native Computing Foundation maintains [Open Policy
-Agent](https://www.openpolicyagent.org/docs) and the [Rego policy
-language](https://www.openpolicyagent.org/docs/policy-language). OPA separates
-policy decision-making from enforcement. A caller supplies structured input;
-Rego evaluates policy and data to return a decision. OPA also defines bundles,
-discovery, status, decision logs, and policy tests.
+Agent and the Rego policy
+language](https://github.com/open-policy-agent/opa/tree/v1.20.1) under release
+`v1.20.1`. OPA separates policy decision-making from enforcement. A caller
+supplies structured input; Rego evaluates policy and data to return a decision.
+OPA also defines bundles, discovery, status, decision logs, and policy tests.
 
 **AgSDL assessment.** The policy-decision-point and policy-enforcement-point
 separation is directly useful. AgSDL can reference an external policy set and
@@ -330,8 +344,10 @@ not be reused as unqualified AgSDL terms.
 ### OCI Image and Distribution specifications
 
 **Source facts.** The Open Container Initiative under the Linux Foundation
-maintains the [OCI Image Specification](https://github.com/opencontainers/image-spec/blob/main/spec.md)
-and [Distribution Specification](https://github.com/opencontainers/distribution-spec/blob/main/spec.md).
+maintains the [OCI Image Specification
+1.1.1](https://github.com/opencontainers/image-spec/blob/v1.1.1/spec.md) and
+[Distribution Specification
+1.1.1](https://github.com/opencontainers/distribution-spec/blob/v1.1.1/spec.md).
 OCI descriptors bind a media type, digest, and size to content. Manifests can
 package non-container artifacts with an artifact type, annotations, and a
 subject relationship. Registries distribute manifests and blobs and expose
@@ -369,9 +385,19 @@ extensions, capability negotiation, and profiles. Calling all four an
 
 ## Coverage matrix
 
-The entries show whether a source gives strong coverage, partial coverage, or
-only a useful adjacent concept. A blank cell means that the source should not be
-used for that domain.
+The ratings measure coverage of each column's subject, not the quality or
+maturity of a source:
+
+- `Strong` means the source directly defines most of the subject's concepts and
+  behavior well enough to support a candidate external reference or mapping.
+- `Partial` means the source directly defines part of the subject, but excludes
+  a material concept or restricts it to a narrower protocol, runtime, or role.
+- An adjacent label, such as `Context only`, `Tool spans`, or `Artifacts`, names
+  a useful analogy or supporting datum but not a contract for the subject.
+- A blank cell means the survey found no material coverage for that subject.
+
+Qualifiers after `Strong` or `Partial` state the boundary that affected the
+rating. These research ratings do not establish compatibility with AgSDL.
 
 | Source | Agent description | Multi-agent and orchestration | Tools and skills | Prompts and policy | Memory and knowledge | Communication | Workflow | Observability | Authorization | Packaging and provenance | Extensions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -402,7 +428,9 @@ These are conclusions from the comparison, not claims made by any one source.
    protocol boundaries. Frameworks cover internal behavior but are not portable.
 2. `Skill` has at least three incompatible uses: an A2A-advertised service, an
    Agent Skills instruction package, and a generic learned or executable
-   capability.
+   capability. These are also independent of an invocable tool operation, an
+   authority grant that permits use, and an implementation feature that a
+   runtime supports.
 3. Memory has no common interchange model. Frameworks disagree on whether it
    means conversation history, checkpointed state, durable records, retrieved
    knowledge, or model-managed state.
@@ -427,19 +455,22 @@ It is a research agenda, not a set of proposed answers.
 
 1. Define the conformance boundary: document parsing, structural validation,
    portable semantics, runtime behavior, and implementation-specific claims.
-2. Define `agent`, `system`, `component`, `role`, and `capability`, including
-   whether an externally advertised agent and an internal agent use the same
-   entity type.
+2. Define `agent`, `system`, `component`, and `role`. Keep supported
+   implementation behavior distinct from authority granted over a resource and
+   from externally advertised service metadata. Decide their final names only
+   through a terminology proposal.
 3. Separate definition-time entities from runtime instances, executions, tasks,
    messages, state, and generated artifacts.
 4. Define the system graph and ownership model: containment, reference,
    composition, delegation, handoff, call, routing, and supervision.
 5. Define the boundary between deterministic orchestration and model-selected
    orchestration, including how implementations report unsupported semantics.
-6. Define tool and capability interfaces, side-effect metadata, failure modes,
-   approval gates, and mappings to MCP, OpenAPI, and other external contracts.
-7. Define distinct concepts for packaged skills, advertised skills, and generic
-   capabilities, then decide whether mappings among them are normative.
+6. Define tool operation interfaces, side-effect metadata, failure modes, and
+   approval gates. Treat mappings to MCP, OpenAPI, and other external contracts
+   as separate hypotheses until proposals and tests establish them.
+7. Define distinct concepts for Agent Skills packages and A2A-advertised
+   services. Keep both separate from tool availability, authority grants, and
+   runtime implementation features, then investigate mappings among them.
 8. Define instruction sources, authority, composition, conflict resolution,
    mutability, and treatment of untrusted content without assuming one model
    provider's message roles.
@@ -464,11 +495,13 @@ It is a research agenda, not a set of proposed answers.
 
 ## Overall conclusion
 
-The most defensible path is composition, not replacement. AgSDL can describe a
-portable system model while referring to MCP and OpenAPI for tool interfaces,
-A2A for remote agent interaction, AsyncAPI for asynchronous interfaces,
-OpenTelemetry for telemetry, OPA-compatible policy decision points for
-authorization, and SPDX, SLSA, and OCI for software-chain evidence and
-distribution. That approach still leaves AgSDL responsible for the missing
-center: agent definitions, topology, instruction authority, memory boundaries,
-portable orchestration meaning, permissions, failure policy, and conformance.
+Composition is a candidate direction, not an integration result. Possible
+mapping hypotheses include MCP or OpenAPI for tool interfaces, A2A for remote
+agent interaction, AsyncAPI for asynchronous interfaces, OpenTelemetry for
+telemetry, OPA for one possible policy-decision architecture, and SPDX, SLSA,
+or OCI for software-chain evidence and distribution. Each hypothesis requires
+its own proposal, semantic mapping, loss analysis, and executable tests before
+AgSDL can claim integration, compatibility, or round-trip preservation. None of
+these sources supplies the still-open AgSDL concepts for agent definitions,
+topology, instruction authority, memory boundaries, portable orchestration
+meaning, permissions, failure policy, or conformance.
