@@ -13,11 +13,11 @@ fail to implement a declaration.
 
 This proposal separates three kinds of security evidence:
 
-1. **Declared policy** states the intended permissions, restrictions, human
+1. **Declared policy** states the intended authority grants, restrictions, human
    controls, and evidence requirements.
-2. **Attested capability** states what an identified implementation claims it
-   can enforce, with the issuer, subject, scope, validity, and evidence needed to
-   evaluate that claim.
+2. **Attested security capability claim** states which security property an
+   identified implementation claims it can provide, with the issuer, subject,
+   scope, validity, and evidence needed to evaluate that claim.
 3. **Observed execution** records what happened during a particular execution,
    including decisions, approvals, resource use, policy violations, and
    termination.
@@ -37,7 +37,7 @@ runtimes with different isolation, identity, approval, and audit mechanisms.
 A portable definition needs enough information to answer these questions:
 
 - Who or what is trusted, for which action, and on what evidence?
-- Which permissions are necessary, and where must they be enforced?
+- Which authority grants are necessary, and where must they be enforced?
 - Which data and authority may cross each trust boundary?
 - Which actions require a person's consent or approval?
 - How can an operator limit, suspend, terminate, investigate, and revoke a
@@ -70,30 +70,41 @@ It does not:
 **Principal** is a human or machine identity that may receive authority or be
 held accountable for an action.
 
-**Resource** is data, a service, a capability, or an execution facility to which
-access can be controlled.
+**Resource** is data, a service, or an execution facility to which access can be
+controlled.
 
-**Capability** is bounded authority to perform an operation on a resource.
+**Authority grant** is bounded authority given to a principal to perform an
+operation on a resource. It does not state what an implementation supports or
+provide evidence that the authority was enforced.
+
+**Implementation feature** is a named behavior that an implementation supports
+and may advertise or negotiate. Support for a feature does not grant authority
+to use it.
 
 **Trust boundary** is a point where data, control, identity, or authority moves
 between parties or protection domains with different security assumptions.
 
 **Declared policy** is security intent expressed by an AgSDL definition.
 
-**Attested capability** is a verifiable, scoped claim that an implementation can
-provide a security property.
+**Security capability claim** is a scoped claim that an identified
+implementation can provide a security property. An attested security capability
+claim binds that claim to an issuer, subject, scope, validity period, and
+verification evidence. It neither grants authority nor proves that a particular
+execution complied.
 
 **Observed execution** is evidence about events and outcomes from one execution.
 
-**Consent** is a user's informed and revocable agreement to a stated use of
-their data or authority.
+**Consent requirement** is an externally governed policy obligation that
+identifies its issuer, governing jurisdiction or policy profile, subject,
+purpose, and evidence reference. AgSDL does not define whether consent is valid,
+informed, freely given, or legally sufficient.
 
 **Approval** is an accountable decision that permits a specific pending action.
-Consent does not imply approval of every action, and approval does not create
-consent for another purpose.
+A consent record does not imply approval of every action, and approval does not
+satisfy a consent requirement for another purpose.
 
-**Revocation** withdraws authority, trust, consent, or approval before its
-previously expected end.
+**Revocation** withdraws an authority grant, trust, a consent record, or an
+approval before its previously expected end.
 
 **Emergency stop** is an operator control intended to prevent new work and
 terminate or contain work already in progress.
@@ -108,7 +119,7 @@ The system model should be able to declare:
 - trust boundaries and the resources that cross them;
 - allow rules, deny rules, and the default when no rule matches;
 - the subject, resource, operation, purpose, conditions, and duration of each
-  permission;
+  authority grant;
 - isolation and confidentiality requirements;
 - accepted provenance and integrity evidence;
 - consent and approval requirements;
@@ -118,15 +129,15 @@ The system model should be able to declare:
 - emergency-stop behavior and the authority allowed to invoke it;
 - evidence that a deployment must produce before and during execution.
 
-Policy should be deny by default whenever the definition does not grant an
-operation. Implementations may support broader ambient authority, but such
-authority does not satisfy the declared policy and must not be reported as
-conforming enforcement.
+Every effective policy set must declare the decision made when no rule matches.
+The core model does not supply an implicit allow or deny default. A security
+profile may require deny by default and may reject a deployment whose
+implementation cannot enforce that rule. Ambient authority outside an authority
+grant does not satisfy a policy that selects deny by default.
 
-### Attested capability
+### Attested security capability claim
 
-The model should let a deployment associate an implementation capability claim
-with:
+The model should let a deployment associate a security capability claim with:
 
 - the issuer and the subject implementation;
 - the property claimed and its exact scope;
@@ -196,7 +207,7 @@ Nested systems may introduce more boundaries.
 | Definition to runtime | Declared policy and deployment requirements | Semantic mismatch or unsupported policy treated as enforced |
 | Control plane to execution plane | Configuration, credentials references, approvals, stop and revoke commands | Privileged command spoofing, stale state, or enforcement delay |
 | Runtime to execution host or sandbox | Code, context, environment access, results | Isolation failure and ambient host authority |
-| Agent to agent | Goals, context, identity, capability, results | Authority laundering, context leakage, and loss of accountability |
+| Agent to agent | Goals, context, identity, authority grants, results | Authority laundering, context leakage, and loss of accountability |
 | Agent to model | Instructions, sensitive context, model output | Provider disclosure and untrusted output controlling actions |
 | Agent to tool or skill | Arguments, delegated credentials, instructions, results | Excessive authority, injection, and hidden effects |
 | Agent to memory or knowledge | Queries, records, embeddings, retrieved content | Poisoning, unauthorized disclosure, and retention beyond purpose |
@@ -216,10 +227,11 @@ that the mechanism covered the execution.
 
 ### Least privilege and authority
 
-Permissions should identify the principal, resource, operation, purpose,
+Authority grants should identify the principal, resource, operation, purpose,
 conditions, and lifetime. Broad categories should be refinable by deployment
-policy. Authority should be limited by default and should not expand through
-composition, retries, fallback, delegation, or handoff.
+policy. Each effective policy set should declare its unmatched-rule default and
+how composition, retries, fallback, delegation, or handoff affect authority.
+A security profile may require that these operations never expand authority.
 
 A component that needs several authorities should receive them separately when
 the implementation can enforce that separation. Unused, expired, denied, or
@@ -264,23 +276,22 @@ credential, memory, accelerator, storage, and observability domains. The model
 should express the required property without claiming that a named sandbox or
 deployment technology provides it.
 
-### Consent and approvals
+### Approvals and externally governed consent
 
-Consent should identify the person or represented party, purpose, data or
-authority covered, notice presented, collection method, validity period, and
-withdrawal path. Consent must be collected before the covered use unless an
-explicit policy basis permits another sequence.
+Approval is a portable control-flow and authorization concept. An approval
+requirement should identify the approver role, pending action, target, material
+parameters, expiry, and the definition and policy versions in force. It should
+also state what changes invalidate approval and whether the decision is
+single-use, delegable, or subject to separation of requester and approver.
 
-An approval should bind the approver, pending action, target, material
-parameters, expected effects, expiry, and the definition and policy versions in
-force. A material change after approval requires a new approval. Policy should
-support separation of requester and approver, multiple approvers, denial,
-timeout, and non-delegable decisions.
-
-Interfaces and repeated prompts can manipulate users into approval. A
-declaration can require an informed approval flow, but only interface review and
-execution evidence can show whether the person received accurate information
-and made an uncoerced choice.
+A definition may declare that an external consent obligation applies. The
+consent requirement should identify its issuer, governing jurisdiction or
+policy profile, subject, purpose, covered data or authority, and evidence
+reference. Detailed rules for notice, collection, withdrawal, accessibility,
+recourse, interface design, and legal basis belong in optional profiles or
+external policy systems. Structural validation can check the declaration and
+references. It cannot establish legal sufficiency or the quality of a person's
+choice.
 
 ### Budgets and failure containment
 
@@ -341,42 +352,48 @@ delegates, transports, and external services must receive and enforce it.
 
 ## Threat and control matrix
 
-The declarative column states what AgSDL should be able to require. The
-implementation column states what a conforming deployment would need to do. The
-verification column describes evidence, not a guarantee that AgSDL validation
-can provide.
+The classification column limits how each row may influence later normative
+work. A candidate core requirement is portable model information that may
+belong in the base specification. A profile requirement is optional until a
+named security profile selects it. A deployment check evaluates one resolved
+deployment without creating a new conformance subject. An external assurance
+concern depends on legal, organizational, product, interface, provider, or
+independent-assessment evidence outside AgSDL. The declarative controls are
+requirements AgSDL might represent. The other controls and verification methods
+are examples of evidence sources, not requirements already imposed by this
+proposal.
 
-| Threat | Actors or boundary | Declarative controls | Implementation controls | Verification method |
-| --- | --- | --- | --- | --- |
-| Unauthorized or deceptive definition publication | Authors; authoring to publication | Authorized publishers, required reviewers, content identity, signature and withdrawal policy | Protected signing keys, review workflow, authenticated registry, revocation distribution | Verify signature chain and review records; attempt unauthorized publication; confirm withdrawal propagation |
-| Dependency substitution, confusion, or downgrade | Packages, references, skills; resolver boundary | Allowed sources and publishers, immutable content identity, version constraints, transitive policy, freshness and revocation rules | Authenticated resolver, digest and signature checks, lock or resolution record, fail-closed downgrade handling | Reproduce resolution; compare all digests; inject a conflicting or revoked package and confirm refusal |
-| Malicious or compromised imported instructions | Packages, skills, knowledge | Provenance, review state, requested permissions, policy precedence, isolation requirement | Content scanning, permission mediation, instruction and data separation, sandboxing | Review dependency graph; test adversarial imports; compare requested with granted authority; inspect execution trace |
-| Runtime silently ignores declared policy | Definition to runtime | Required capabilities, evidence, unsupported-policy behavior, fail-closed requirement | Capability negotiation, policy compiler, enforcement points, refusal on unsupported requirements | Negative conformance tests; signed capability evidence; policy-decision and denial records |
-| Excessive or ambient authority | Agents, tools, runtimes | Deny by default, scoped and time-bound grants, purpose restriction, no implicit inheritance | Reference monitor, short-lived credentials, account and network isolation, syscall or API mediation | Enumerate effective permissions; attempt out-of-scope operations; inspect credential lifetime and denial logs |
-| Prompt or content injection changes authority | Users, knowledge, tools, models, skills | Trusted instruction sources, untrusted-data labels, non-overridable policy, approval gates | Separate instruction and data channels, policy enforcement outside model output, argument validation | Adversarial injection suite; confirm unchanged effective policy and blocked unauthorized calls |
-| Confused deputy or authority laundering | Agents, tools, delegates | Caller identity propagation, purpose-bound grants, delegation intersection and depth | End-to-end identity binding, per-call authorization, non-transferable tokens | Trace authority lineage; test cross-principal requests and redelegation beyond scope |
-| Model or provider substitution | Models; agent to model | Accepted provider and model identity, version policy, capabilities, data-use and location limits | Authenticated endpoint, deployment identity checks, controlled fallback | Compare request records with accepted identities; force fallback and confirm declared behavior |
-| Sensitive data disclosed to a model or provider | Models, users, memories | Data classification, purpose, provider, region, retention, training-use, consent and redaction policy | Data-loss prevention, field filtering, regional routing, provider configuration, credential broker | Synthetic canary tests; provider configuration evidence; sampled redacted traces; consent records |
-| Untrusted model output triggers a side effect | Models, agents, tools | Output trust classification, schema or constraint requirements, approval and tool policy | Parse and validate output, authorize tool calls independently, preview consequential effects | Fuzz malformed output; adversarial model tests; confirm approval binding and independent policy decisions |
-| Tool argument injection or hidden side effect | Tools; agent to tool | Allowed operation, target and parameters, effect class, idempotency and approval requirements | Typed API boundary, allowlists, escaping, dry run or preview, transaction and replay protection | Fuzz arguments; compare preview to committed effect; replay calls; inspect external audit records |
-| Compromised tool or external service | Tools, external organizations | Provider identity, integrity and attestation requirements, data and network limits, failure behavior | Service authentication, egress control, sandbox, response validation, circuit breaker | Substitute endpoint or certificate; simulate malicious responses; review egress and containment records |
-| Secret exposure or credential reuse | Runtime, tools, models, logs | Secret by reference, intended consumer, purpose, scope, lifetime, redaction and revocation | Secret broker, scoped ephemeral credentials, isolated injection, rotation, zeroization, log filtering | Secret scanning; canary credential; inspect process exposure; rotate and revoke during execution |
-| Memory poisoning or unauthorized modification | Memories, knowledge, users, agents | Writer permissions, provenance, integrity, review, correction and conflict policy | Authenticated writes, versioning, validation, quarantine, integrity checks | Attempt unauthorized write; trace retrieved claims to sources; restore and compare versions |
-| Cross-user, cross-tenant, or cross-run leakage | Memories, runtime, observability | Isolation domains, read and write scopes, lifecycle, export and deletion policy | Separate namespaces and keys, access control, cache partitioning, tenant-aware logging | Isolation penetration tests; seeded canaries; access-log review; deletion and cache-eviction tests |
-| Retention beyond purpose or incomplete deletion | Memories, logs, backups, providers | Purpose, retention period, deletion trigger, derived-copy and backup policy, verification evidence | Lifecycle jobs, deletion propagation, tombstones, backup expiry, provider deletion API | Inventory copies and derivatives; run deletion exercise; verify expiry and record exceptions |
-| Message interception, tampering, replay, or impersonation | Transports, agents, control plane | Peer identity, confidentiality, integrity, freshness, ordering, replay and delivery requirements | Mutual authentication, encryption, signed or authenticated messages, nonce or sequence checks | Protocol tests; replay and reorder messages; inspect key and peer identity evidence |
-| Ambiguous delivery causes duplicate or missing effects | Transports, tools | Delivery semantics, idempotency, acknowledgement, retry and reconciliation policy | Stable operation identifiers, deduplication, transactional outbox or equivalent, reconciliation | Inject loss and timeout; repeat messages; compare intended and external effects |
-| Sandbox escape or host compromise | Runtime; runtime to execution host | Required isolation properties, host trust assumptions, network and filesystem policy, containment behavior | Hardened isolation, patching, minimal host services, egress filtering, detection and shutdown | Escape tests, configuration audit, vulnerability evidence, incident exercise; independent assessment where required |
-| Operator or administrator abuse | Operators; operator to system | Role separation, least privilege, strong authentication, dual approval, override limits and audit | Privileged access management, separate accounts, immutable audit trail, alerting | Access review; attempt self-approval; inspect override records; periodic insider-threat exercise |
-| Approval is stale, vague, replayed, or manipulated | Users, operators, agents | Immutable action binding, material parameters, approver role, expiry, single-use rule, reason and user notice | Authenticated approval service, nonce, transaction binding, accessible and accurate interface | Modify parameters after approval; replay or expire approval; usability and interface review; inspect audit chain |
-| Consent is absent, coerced, or used for another purpose | Users and affected people | Notice, purpose, data, basis, validity, withdrawal, affected-party and recourse requirements | Consent service, purpose enforcement, preference propagation, non-coercive interface | Consent-record audit; withdraw during execution; product and legal review; affected-person testing |
-| Budget bypass through retries, restart, or delegation | Agents, runtime, delegates | Shared accounting scope, units, nested limits, reset rules, exhaustion behavior | Central or consistent metering, atomic reservations, inherited budgets, rate limiting | Fault injection across restart and delegation; reconcile meter with provider and tool records |
-| Runaway or harmful work cannot be stopped | Agents, tools, runtime, operators | Emergency-stop authority, scope, response target, safe state, propagation, recovery rule | Independent control path, cancellation, credential revocation, queue purge, network containment | Timed stop drills with nested delegates, partitions, hung tools, and external side effects; document residual work |
-| Revoked authority remains usable | Delegates, tools, secrets, transports | Revocation target, propagation and response requirements, cache and in-flight policy | Short-lived tokens, online status checks, push invalidation, cancellation and reconciliation | Revoke during active and partitioned runs; test cached credentials; inspect completion evidence |
-| Audit evidence is altered, suppressed, or leaks data | Runtime, operators, observability | Required events, integrity, access, redaction, retention, missing-evidence behavior | Append-only or tamper-evident storage, separate audit authority, encryption, filtering, health monitoring | Tamper and collector-loss tests; verify chain or signature; access review; sensitive-data scanning |
-| False or stale capability attestation | Runtime, provider, attestation issuer | Trusted issuers, subject and configuration binding, scope, validity, revocation, assurance level | Protected attestation process, evidence collection, revocation publication | Validate issuer and subject; change configuration; expire or revoke claim and confirm deployment refusal |
-| Unsafe fallback after control failure | Runtime, model, tool, transport | Explicit failure policy, forbidden fallback, degraded-mode authority and disclosure | Fail closed for protected actions, circuit breakers, isolated degraded mode | Disable policy, approval, secret, meter, or audit dependency and observe behavior |
-| User relies on fabricated or unsafe output | Models, agents, users | Output status, source and uncertainty requirements, human review, contest and correction path | Grounding, validation, calibrated user interface, review workflow, incident handling | Task-specific evaluations; source checks; user testing; review correction and appeal records |
+| Threat | Actors or boundary | Classification | Declarative controls | Implementation controls | Verification method |
+| --- | --- | --- | --- | --- | --- |
+| Unauthorized or deceptive definition publication | Authors; authoring to publication | External assurance concern | Authorized publishers, required reviewers, content identity, signature and withdrawal policy | Protected signing keys, review workflow, authenticated registry, revocation distribution | Verify signature chain and review records; attempt unauthorized publication; confirm withdrawal propagation |
+| Dependency substitution, confusion, or downgrade | Packages, references, skills; resolver boundary | Candidate core requirement | Allowed sources and publishers, immutable content identity, version constraints, transitive policy, freshness and revocation rules | Authenticated resolver, digest and signature checks, lock or resolution record, fail-closed downgrade handling | Reproduce resolution; compare all digests; inject a conflicting or revoked package and confirm refusal |
+| Malicious or compromised imported instructions | Packages, skills, knowledge | Profile requirement | Provenance, review state, requested permissions, policy precedence, isolation requirement | Content scanning, permission mediation, instruction and data separation, sandboxing | Review dependency graph; test adversarial imports; compare requested with granted authority; inspect execution trace |
+| Runtime silently ignores declared policy | Definition to runtime | Deployment check | Required implementation features and security capability claims, evidence, unsupported-policy behavior, declared failure policy | Implementation-feature negotiation, policy compiler, enforcement points, refusal on unsupported requirements | Negative conformance tests; attested security capability claims; policy-decision and denial records |
+| Excessive or ambient authority | Agents, tools, runtimes | Candidate core requirement | Declared unmatched-rule default, scoped and time-bound authority grants, purpose restriction, no implicit inheritance | Reference monitor, short-lived credentials, account and network isolation, syscall or API mediation | Enumerate effective permissions; attempt out-of-scope operations; inspect credential lifetime and denial logs |
+| Prompt or content injection changes authority | Users, knowledge, tools, models, skills | Profile requirement | Trusted instruction sources, untrusted-data labels, non-overridable policy, approval gates | Separate instruction and data channels, policy enforcement outside model output, argument validation | Adversarial injection suite; confirm unchanged effective policy and blocked unauthorized calls |
+| Confused deputy or authority laundering | Agents, tools, delegates | Candidate core requirement | Caller identity propagation, purpose-bound grants, delegation intersection and depth | End-to-end identity binding, per-call authorization, non-transferable tokens | Trace authority lineage; test cross-principal requests and redelegation beyond scope |
+| Model or provider substitution | Models; agent to model | Profile requirement | Accepted provider and model identity, version policy, implementation features, data-use and location limits | Authenticated endpoint, deployment identity checks, controlled fallback | Compare request records with accepted identities; force fallback and confirm declared behavior |
+| Sensitive data disclosed to a model or provider | Models, users, memories | Profile requirement | Data classification, purpose, provider, region, retention, training-use, consent and redaction policy | Data-loss prevention, field filtering, regional routing, provider configuration, credential broker | Synthetic canary tests; provider configuration evidence; sampled redacted traces; consent records |
+| Untrusted model output triggers a side effect | Models, agents, tools | Profile requirement | Output trust classification, schema or constraint requirements, approval and tool policy | Parse and validate output, authorize tool calls independently, preview consequential effects | Fuzz malformed output; adversarial model tests; confirm approval binding and independent policy decisions |
+| Tool argument injection or hidden side effect | Tools; agent to tool | Profile requirement | Allowed operation, target and parameters, effect class, idempotency and approval requirements | Typed API boundary, allowlists, escaping, dry run or preview, transaction and replay protection | Fuzz arguments; compare preview to committed effect; replay calls; inspect external audit records |
+| Compromised tool or external service | Tools, external organizations | Deployment check | Provider identity, integrity and attestation requirements, data and network limits, failure behavior | Service authentication, egress control, sandbox, response validation, circuit breaker | Substitute endpoint or certificate; simulate malicious responses; review egress and containment records |
+| Secret exposure or credential reuse | Runtime, tools, models, logs | Profile requirement | Secret by reference, intended consumer, purpose, scope, lifetime, redaction and revocation | Secret broker, scoped ephemeral credentials, isolated injection, rotation, zeroization, log filtering | Secret scanning; canary credential; inspect process exposure; rotate and revoke during execution |
+| Memory poisoning or unauthorized modification | Memories, knowledge, users, agents | Profile requirement | Writer permissions, provenance, integrity, review, correction and conflict policy | Authenticated writes, versioning, validation, quarantine, integrity checks | Attempt unauthorized write; trace retrieved claims to sources; restore and compare versions |
+| Cross-user, cross-tenant, or cross-run leakage | Memories, runtime, observability | Profile requirement | Isolation domains, read and write scopes, lifecycle, export and deletion policy | Separate namespaces and keys, access control, cache partitioning, tenant-aware logging | Isolation penetration tests; seeded canaries; access-log review; deletion and cache-eviction tests |
+| Retention beyond purpose or incomplete deletion | Memories, logs, backups, providers | External assurance concern | Purpose, retention period, deletion trigger, derived-copy and backup policy, verification evidence | Lifecycle jobs, deletion propagation, tombstones, backup expiry, provider deletion API | Inventory copies and derivatives; run deletion exercise; verify expiry and record exceptions |
+| Message interception, tampering, replay, or impersonation | Transports, agents, control plane | Profile requirement | Peer identity, confidentiality, integrity, freshness, ordering, replay and delivery requirements | Mutual authentication, encryption, signed or authenticated messages, nonce or sequence checks | Protocol tests; replay and reorder messages; inspect key and peer identity evidence |
+| Ambiguous delivery causes duplicate or missing effects | Transports, tools | Candidate core requirement | Delivery semantics, idempotency, acknowledgement, retry and reconciliation policy | Stable operation identifiers, deduplication, transactional outbox or equivalent, reconciliation | Inject loss and timeout; repeat messages; compare intended and external effects |
+| Sandbox escape or host compromise | Runtime; runtime to execution host | External assurance concern | Required isolation properties, host trust assumptions, network and filesystem policy, containment behavior | Hardened isolation, patching, minimal host services, egress filtering, detection and shutdown | Escape tests, configuration audit, vulnerability evidence, incident exercise; independent assessment where required |
+| Operator or administrator abuse | Operators; operator to system | External assurance concern | Role separation, least privilege, strong authentication, dual approval, override limits and audit | Privileged access management, separate accounts, immutable audit trail, alerting | Access review; attempt self-approval; inspect override records; periodic insider-threat exercise |
+| Approval is stale, vague, replayed, or manipulated | Users, operators, agents | Candidate core requirement | Immutable action binding, material parameters, approver role, expiry, single-use rule, reason and user notice | Authenticated approval service, nonce, transaction binding, accessible and accurate interface | Modify parameters after approval; replay or expire approval; usability and interface review; inspect audit chain |
+| Consent is absent, coerced, or used for another purpose | Users and affected people | External assurance concern | Notice, purpose, data, basis, validity, withdrawal, affected-party and recourse requirements | Consent service, purpose enforcement, preference propagation, non-coercive interface | Consent-record audit; withdraw during execution; product and legal review; affected-person testing |
+| Budget bypass through retries, restart, or delegation | Agents, runtime, delegates | Candidate core requirement | Shared accounting scope, units, nested limits, reset rules, exhaustion behavior | Central or consistent metering, atomic reservations, inherited budgets, rate limiting | Fault injection across restart and delegation; reconcile meter with provider and tool records |
+| Runaway or harmful work cannot be stopped | Agents, tools, runtime, operators | Deployment check | Emergency-stop authority, scope, response target, safe state, propagation, recovery rule | Independent control path, cancellation, credential revocation, queue purge, network containment | Timed stop drills with nested delegates, partitions, hung tools, and external side effects; document residual work |
+| Revoked authority remains usable | Delegates, tools, secrets, transports | Deployment check | Revocation target, propagation and response requirements, cache and in-flight policy | Short-lived tokens, online status checks, push invalidation, cancellation and reconciliation | Revoke during active and partitioned runs; test cached credentials; inspect completion evidence |
+| Audit evidence is altered, suppressed, or leaks data | Runtime, operators, observability | Profile requirement | Required events, integrity, access, redaction, retention, missing-evidence behavior | Append-only or tamper-evident storage, separate audit authority, encryption, filtering, health monitoring | Tamper and collector-loss tests; verify chain or signature; access review; sensitive-data scanning |
+| False or stale security capability claim | Runtime, provider, attestation issuer | Deployment check | Trusted issuers, subject and configuration binding, scope, validity, revocation, assurance level | Protected attestation process, evidence collection, revocation publication | Validate issuer and subject; change configuration; expire or revoke the claim and confirm the declared deployment behavior |
+| Unsafe fallback after control failure | Runtime, model, tool, transport | Candidate core requirement | Explicit failure policy, forbidden fallback, degraded-mode authority and disclosure | Fail closed for protected actions, circuit breakers, isolated degraded mode | Disable policy, approval, secret, meter, or audit dependency and observe behavior |
+| User relies on fabricated or unsafe output | Models, agents, users | External assurance concern | Output status, source and uncertainty requirements, human review, contest and correction path | Grounding, validation, calibrated user interface, review workflow, incident handling | Task-specific evaluations; source checks; user testing; review correction and appeal records |
 
 ## Static validation and runtime verification
 
@@ -385,10 +402,10 @@ cryptographically bound to, the definition and its resolved inputs. Depending on
 the future model, validation may establish that:
 
 - required security declarations exist and use recognized terms;
-- referenced principals, resources, boundaries, permissions, budgets, and
+- referenced principals, resources, boundaries, authority grants, budgets, and
   policies resolve consistently;
 - no secret value appears where only a secret reference is allowed;
-- a permission is narrower than a declared enclosing limit;
+- an authority grant is narrower than a declared enclosing limit;
 - delegation and approval declarations contain required constraints;
 - an imported artifact matches a declared content identity or signature;
 - an attestation is well formed, in scope, current, and issued by an accepted
@@ -397,7 +414,7 @@ the future model, validation may establish that:
 Static validation cannot establish that:
 
 - the author, runtime, operator, provider, or attestation issuer is honest;
-- an implementation enforces a declared permission or isolation boundary;
+- an implementation enforces a declared authority grant or isolation boundary;
 - a model will follow instructions, resist injection, or produce safe output;
 - a tool has no hidden side effects or vulnerabilities;
 - a secret was never exposed outside its intended consumer;
@@ -418,16 +435,27 @@ residual uncertainty.
 
 ## Conformance implications
 
-Future conformance work should distinguish at least these claims:
+This proposal does not create security-specific conformance subjects.
+Security-related claims use the document, producer, consumer, validator,
+runtime, and adapter subjects defined by proposal 0003. A claim names the
+applicable subject, specification version, implementation features or
+conformance profile, normative items, and evidence used.
 
-- **Definition conformance** means the document expresses a structurally valid
-  security model. It says nothing about enforcement.
-- **Capability conformance** means an implementation presents acceptable
-  evidence for the security capabilities required by a definition.
-- **Deployment conformance** means a specific deployment resolves every
-  requirement to an enforcement or evidence mechanism and reports gaps.
-- **Execution conformance** means observed evidence for a specific execution
-  satisfies the declared verification rules, subject to stated evidence gaps.
+| Proposal 0003 subject | Security-specific claim | Permitted evidence scope |
+| --- | --- | --- |
+| Document | The definition contains a structurally valid declared policy and the required references. This says nothing about enforcement. | Definition and resolved-graph inspection |
+| Producer | The producer emits the security declarations required by its claimed output contract. | Produced-artifact inspection |
+| Consumer | The consumer interprets supported security declarations and exposes unsupported required information before the requested operation. | Structural tests and operation-specific observations |
+| Validator | The validator checks the security rules assigned to its declared validation phase and reports skipped deployment or execution checks. | Definition or resolved-graph inspection |
+| Runtime | An identified runtime configuration supports claimed implementation features and presents acceptable security capability claims for the declared policy. | Deployment evidence and bounded execution evidence |
+| Adapter | The adapter preserves or reports loss of security declarations and authority grants for its claimed mapping. | Mapping inspection, loss reports, and bounded target execution evidence |
+
+Deployment and execution are evidence scopes. They are not additional
+conformance subjects. Deployment evidence associates one resolved definition,
+runtime configuration, enforcement mechanisms, security capability claims, and
+reported gaps. Execution evidence associates observations and evidence gaps
+with one execution. Neither scope proves that the deployment is secure or that
+all executions comply.
 
 An implementation must not collapse these claims into a generic "secure" or
 "compliant" status. Unsupported requirements, weaker substitutions, overrides,
@@ -449,7 +477,8 @@ missing evidence, and unverifiable external dependencies must remain visible.
 
 - Authors must model principals, resources, boundaries, and evidence instead of
   using a single trust flag.
-- Runtimes need capability reporting and must expose unsupported requirements.
+- Runtimes need implementation-feature reporting and must expose unsupported
+  requirements.
 - Strong verification may need external identity, signature, attestation,
   policy, audit, and test systems.
 - Detailed execution evidence creates storage, confidentiality, and retention
@@ -480,8 +509,8 @@ and evidence requirements, then let profiles or deployments select mechanisms.
 ### Record only execution traces
 
 Traces describe observed events, but they do not define allowed behavior or
-prove that omitted events did not occur. Policy and capability evidence remain
-necessary.
+prove that omitted events did not occur. Declared policy and security capability
+claim evidence remain necessary.
 
 ## Security considerations
 
