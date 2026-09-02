@@ -15,6 +15,7 @@ required_files=(
   proposals/README.md
   docs/research/a2a-v1.0.1.sha256
   scripts/verify-a2a-1.0.1-sources.sh
+  scripts/test-verify-a2a-1.0.1-sources.sh
 )
 
 for file in "${required_files[@]}"; do
@@ -33,4 +34,6 @@ fi
 
 git diff --check
 bash -n scripts/verify-a2a-1.0.1-sources.sh
+bash -n scripts/test-verify-a2a-1.0.1-sources.sh
+./scripts/test-verify-a2a-1.0.1-sources.sh
 echo "AgSDL repository checks passed."
