@@ -1,11 +1,26 @@
 # Roadmap
 
+## Version 0.0.1: conceptual pre-draft
+
+Version `0.0.1` packages the reviewed conceptual work without making it
+normative. Its release tag will be `v0.0.1`.
+
+The version is ready only when:
+
+- the corrected conceptual core is present;
+- the repository contains exactly two non-normative conceptual examples;
+- the repository license and release documentation are present; and
+- `./scripts/check.sh` succeeds.
+
+Version `0.0.1` does not define syntax, compatibility, conformance, execution,
+or interoperability. The four proposals remain proposed inputs to later work.
+
 ## Phase 0: foundation
 
 - Fix the project scope and non-goals.
 - Establish terminology and a requirements inventory.
 - Inventory existing standards and agent frameworks.
-- Decide governance, licensing, and versioning rules.
+- Establish governance and versioning rules.
 
 ## Phase 1: conceptual model
 
