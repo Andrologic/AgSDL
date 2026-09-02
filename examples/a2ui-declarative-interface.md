@@ -66,10 +66,12 @@ Request expense submission.
 
 ## Binding requirements
 
-The Expense renderer requirement selects the stable A2UI `v0.9.1` family and
-pins the reviewed upstream schemas and catalog by immutable identity. It does
-not accept `v1.0` candidate envelopes, inline catalogs, unknown components, or
-unknown renderer functions.
+The Expense renderer requirement selects the current production release
+`v0.9.1` in the stable A2UI `v0.9` protocol family. It pins the reviewed
+upstream schemas and catalog by immutable identity. The selected format binding
+disables inline catalogs: the agent does not advertise acceptance, and the
+renderer supplies none. The binding also rejects `v1.0` candidate envelopes,
+unknown components, and unknown renderer functions.
 
 The selected transport binding must provide ordered and framed outbound
 messages, a correlated return path, endpoint authentication, confidentiality,
@@ -145,9 +147,9 @@ Expense approval requirement or the Authorization decision.
 - The renderer shows a submit button before later component updates provide the
   final amount and warning text, then accepts a click. This treats partial
   progressive state as a complete interface and breaks the declared lifecycle.
-- The agent sends an inline catalog with a familiar identifier, and the renderer
-  accepts it without immutable content or publisher checks. The identifier is
-  not integrity evidence, and this example forbids inline catalogs.
+- The renderer sends an inline catalog in its client capabilities, and the agent
+  accepts it despite this binding's policy. A familiar identifier is not
+  integrity evidence, and this example forbids client-supplied inline catalogs.
 - The system treats `sourceComponentId: submit_button` and the message timestamp
   as proof that the employee approved the final expense. Both are payload
   claims. Neither authenticates the employee or satisfies the Approval

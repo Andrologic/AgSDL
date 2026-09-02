@@ -76,6 +76,8 @@ An A2UI format binding should identify:
   status at the time the binding is published;
 - the immutable commit, digest, or release identity of the protocol prose,
   envelope schemas, catalog schemas, and extension documents used;
+- the precedence among pinned prose, schemas, examples, and implementation
+  behavior, plus every known conflict that changes accepted messages;
 - the accepted version spelling and schema identity at every envelope,
   capability, metadata, and catalog location;
 - supported directions and message kinds;
@@ -138,7 +140,8 @@ authority. The binding should record:
 - protocol version and catalog-schema version;
 - accepted component and function names;
 - renderer implementation and version that realizes them;
-- whether inline catalogs are accepted and under which provenance policy;
+- whether the agent or server accepts client-supplied inline catalogs, which
+  renderer Principals may supply them, and under which provenance policy;
 - unsupported properties, functions, composition rules, and extensions.
 
 The renderer declares binding requirements for catalog validation, component
@@ -154,10 +157,12 @@ still govern protected Actions.
 
 ### Progressive update mapping
 
-The A2UI surface lifecycle maps to a Protocol whose states include absent,
-active but incomplete, renderable, invalid or degraded, and deleted. A binding
-may use different state names, but it should preserve these distinctions when
-they affect user interaction or failure behavior.
+An A2UI binding adds a Protocol view of the surface lifecycle. Its binding-
+defined safety states should distinguish absent, active but incomplete,
+renderable, invalid or degraded, and deleted surfaces. A2UI does not name this
+complete state set. A binding may use different state names, but it should
+preserve the distinctions when they affect user interaction or failure
+behavior.
 
 For each supported envelope kind, the binding should declare:
 
@@ -201,7 +206,9 @@ it beyond the declared surface or execution lifetime.
 An A2UI `action` maps first to a Message occurrence at a renderer-to-agent
 Interface operation. The mapping preserves the event name, surface occurrence,
 source component, claimed timestamp, resolved context, sender, intended
-recipient, and transport correlation.
+recipient, and transport correlation. A `v1.0` candidate mapping also preserves
+the optional resolved `userMessage` without treating it as trusted evidence of
+what the human saw or intended.
 
 The action message may request an AgSDL Action. When it does, the binding must
 name that Action and map material context fields to its inputs and target
@@ -225,9 +232,12 @@ defined by the applicable Approval requirement.
 
 The `v1.0` candidate's renderer and agent function calls map to bidirectional
 Interface operations with correlation identifiers and result or error
-messages. A function that can change a Resource or information flow maps to an
-AgSDL Action and possible Effects. The binding should declare timeouts,
-duplicate-call handling, cancellation, late results, and failure behavior.
+messages. An agent-to-renderer call must preserve the renderer-initiated session
+precondition. Every call mapping should preserve caller and target roles, local
+or remote routing, request correlation, and the required response or error. A
+function that can change a Resource or information flow maps to an AgSDL Action
+and possible Effects. The binding should declare timeouts, duplicate-call
+handling, cancellation, late results, and failure behavior.
 
 Static catalog metadata such as allowed callers, return type, or required user
 activation can contribute to a binding requirement. It cannot replace Policy,
@@ -272,7 +282,8 @@ An A2UI binding should expose these Trust boundaries when present:
 The effective Policy should define:
 
 - accepted publishers, versions, digests, and catalog sources;
-- handling for inline catalogs and unknown extensions;
+- acceptance of client-supplied inline catalogs and handling for unknown
+  extensions;
 - component, function, URL scheme, origin, and remote-resource restrictions;
 - data-path read and write limits;
 - sensitive-data display and synchronization rules;
@@ -283,9 +294,10 @@ The effective Policy should define:
 
 The renderer must treat agent-generated labels, choices, URLs, component
 relationships, validation messages, and function arguments as untrusted input.
-The agent must treat action context, timestamps, component identifiers, errors,
-and synchronized data as untrusted input. Each side validates the selected
-schema and applies independent Policy before relying on the content.
+The agent must treat renderer capabilities, inline catalogs, action context,
+timestamps, component identifiers, errors, and synchronized data as untrusted
+input. Each side validates the selected schema and applies independent Policy
+before relying on the content.
 
 Declarative rendering is not a complete sandbox. Local widget and function
 implementations can process sensitive data, contact external origins, open
@@ -304,6 +316,8 @@ directions and kinds, selected transport bindings, catalog set, and test-suite
 version. Tests should include at least:
 
 - structural fixtures accepted and rejected by the pinned A2UI schemas;
+- conflict fixtures that exercise the binding's chosen version keys, component
+  form, metadata placement, and DataPart batching rule;
 - ordered lifecycle transitions, including updates before creation, duplicate
   creation, deletion, and version-specific identifier reuse;
 - partial component graphs, later completion, invalid references, and failure

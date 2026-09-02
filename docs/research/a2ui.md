@@ -135,8 +135,12 @@ binding, and renderer roles do not need new core AgSDL entities.
 
 The upstream README describes A2UI as declarative data rather than agent-
 generated executable code. A renderer maps catalog component names to locally
-implemented widgets. The protocol lets the peers exchange supported catalog
-identifiers and, when accepted, inline catalog definitions.
+implemented widgets. In `v0.9.1`, the client advertises supported catalog
+identifiers through
+[`client_capabilities.json`](https://github.com/a2ui-project/a2ui/blob/715abe092b9ba12174a579c2de75b6dd0c90a502/specification/v0_9_1/json/client_capabilities.json).
+It may also supply `inlineCatalogs` there when the server advertises
+`acceptsInlineCatalogs` through
+[`server_capabilities.json`](https://github.com/a2ui-project/a2ui/blob/715abe092b9ba12174a579c2de75b6dd0c90a502/specification/v0_9_1/json/server_capabilities.json).
 
 The `v0.9.1` envelope schema is catalog-agnostic. Validation substitutes the
 selected catalog for the generic `catalog.json` reference. A custom catalog
@@ -166,11 +170,14 @@ separate:
 - authority to invoke a function or perform an Effect;
 - execution evidence that the renderer enforced the claimed restriction.
 
-Inline catalogs expand the accepted schema and function vocabulary. A trust
-policy should identify who may supply them, which immutable content is allowed,
-and what happens when validation or integrity checks fail. Merely recognizing a
-catalog identifier is not enough because the identifier may be non-resolvable
-and mutable associations can change outside the A2UI message.
+Client-supplied inline catalogs expand the schema and function vocabulary that
+the agent may generate against. The agent's acceptance policy should identify
+which renderer Principals may supply them, which immutable content is allowed,
+and what happens when validation or integrity checks fail. The renderer must
+still restrict execution to its implemented and permitted catalog behavior.
+Merely recognizing a catalog identifier is not enough because the identifier
+may be non-resolvable and mutable associations can change outside the A2UI
+message.
 
 ## Data models and progressive updates
 
@@ -188,11 +195,11 @@ collection templates. A path without a leading slash resolves relative to the
 current collection item. That relative form is A2UI behavior, not strict RFC
 6901 syntax, and an adapter must preserve or reject it explicitly.
 
-For the A2A binding, a DataPart contains an array of A2UI messages. The
-[`v0.9.1` A2A extension](https://github.com/a2ui-project/a2ui/blob/715abe092b9ba12174a579c2de75b6dd0c90a502/specification/v0_9_1/docs/a2ui_extension_specification.md)
-requires sequential processing. The array is not a transaction. A receiver
-continues after a message fails, although a renderer should delay repainting
-until it has processed the array.
+The [`v0.9.1` A2A extension](https://github.com/a2ui-project/a2ui/blob/715abe092b9ba12174a579c2de75b6dd0c90a502/specification/v0_9_1/docs/a2ui_extension_specification.md)
+says a DataPart contains an array of A2UI messages and requires sequential
+processing. The array is not a transaction. A receiver continues after a
+message fails, although a renderer should delay repainting until it has
+processed the array.
 
 ### AgSDL assessment
 
@@ -225,13 +232,34 @@ The reviewed A2A extension uses the media type `application/a2ui+json`, A2A
 DataParts, versioned extension URIs, and A2A message metadata for capabilities
 and synchronized data models.
 
+The pinned [extension
+document](https://github.com/a2ui-project/a2ui/blob/715abe092b9ba12174a579c2de75b6dd0c90a502/specification/v0_9_1/docs/a2ui_extension_specification.md)
+is internally inconsistent with its schemas, examples, and reviewed [Python
+SDK](https://github.com/a2ui-project/a2ui/blob/715abe092b9ba12174a579c2de75b6dd0c90a502/agent_sdks/python/a2ui_agent/src/a2ui/a2a/parts.py):
+
+- the prose places the A2UI media type at `DataPart.data.metadata`, while its
+  examples and the reviewed Python SDK place it at `DataPart.metadata`;
+- the prose requires a list of A2UI messages in each DataPart, while the
+  reviewed Python SDK emits one DataPart for each message;
+- its server-to-client example uses a wrapped component form
+  `{"Text": {...}}`, while the pinned envelope and catalog schemas require a
+  flat component object with `id` and `component` fields;
+- its client capability example and prose refer to a `v0.9.1` object key, while
+  the pinned client and server capability schemas require the `v0.9` key.
+
+These conflicts are source facts, not AgSDL interpretations. A transport
+binding cannot claim conformance to the extension document as a whole without
+selecting an interpretation and testing it.
+
 ### AgSDL assessment
 
 An AgSDL A2UI mapping should have a transport-independent format binding and a
 separate transport binding. Naming A2A, MCP, WebSockets, or REST does not prove
 that the required order, framing, metadata, peer identity, confidentiality,
 integrity, replay handling, or return path exists. Each selected transport
-needs its own binding requirements and tests.
+needs its own binding requirements and tests. It must also define which pinned
+artifact prevails when protocol prose, schemas, examples, and SDK behavior
+disagree, and record every known exception to that rule.
 
 The reviewed A2A extension is a candidate external binding, not an AgSDL-A2A
 integration. AgSDL has not yet implemented or tested an A2A adapter. No A2UI
@@ -251,9 +279,9 @@ The following are AgSDL conclusions drawn from the reviewed contracts:
 - A renderer must treat agent-supplied components, bindings, URLs, action
   context, and extensions as untrusted content until applicable policy accepts
   them.
-- An agent must treat renderer-supplied action context and synchronized data as
-  untrusted input. A timestamp and source component identifier are claims in a
-  message, not authentication evidence.
+- An agent must treat renderer-supplied capabilities, inline catalogs, action
+  context, and synchronized data as untrusted input. A timestamp and source
+  component identifier are claims in a message, not authentication evidence.
 - Rendering an approval control does not create an AgSDL Approval decision.
   Protected Actions still require a matching decision from an identified human
   Principal and an Authorization decision at the relevant application point.
