@@ -5,8 +5,10 @@ It is an open, implementation-independent specification for describing complete
 agentic systems in a form that people and software can read, validate, exchange,
 and version.
 
-The project is at the pre-draft stage. No syntax or compatibility promise exists
-yet.
+The project is at the pre-draft stage. The planned version `0.0.1` is a
+non-normative conceptual release. It makes no promise of syntax, compatibility,
+conformance, execution, or interoperability. See
+[`Decision 0002`](docs/decisions/0002-version-0.0.1.md) for its exact status.
 
 ## Intended scope
 
@@ -26,15 +28,23 @@ agent framework, model provider, transport, or execution engine.
 
 - `spec/` will contain normative specification text.
 - `schemas/` will contain machine-readable validation artifacts.
-- `examples/` will contain conforming examples and counterexamples.
+- `examples/` contains non-normative conceptual examples during the pre-draft
+  stage.
 - `proposals/` records proposed normative changes before they enter the spec.
 - `docs/` contains scope, rationale, and architecture decisions.
 
 ## Current work
 
 The first milestone is a terminology and requirements draft. Syntax comes only
-after the system model and conformance boundaries are clear. See
-[`ROADMAP.md`](ROADMAP.md) and [`docs/scope.md`](docs/scope.md).
+after the system model and conformance boundaries are clear.
+
+- [`Roadmap`](ROADMAP.md)
+- [`Project scope`](docs/scope.md)
+- [`Prior-art research`](docs/research/prior-art.md)
+- [`Cross-proposal review`](docs/reviews/0001-cross-proposal-review.md)
+- [`Post-correction review`](docs/reviews/0002-post-correction-review.md)
+- [`Proposals`](proposals/README.md)
+- [`Version 0.0.1 decision`](docs/decisions/0002-version-0.0.1.md)
 
 ## Contributing
 
@@ -43,6 +53,5 @@ Run `./scripts/check.sh` before committing.
 
 ## License
 
-No license has been selected yet. Choosing licenses for the specification,
-schemas, examples, and future reference implementations is an explicit project
-decision before public release.
+The entire repository is licensed under the
+[Apache License 2.0](LICENSE).
