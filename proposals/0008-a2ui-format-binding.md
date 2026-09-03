@@ -166,10 +166,10 @@ authority. The binding should record:
   renderer Principals may supply them, and under which provenance policy;
 - unsupported properties, functions, composition rules, and extensions.
 
-The renderer declares binding requirements for catalog validation, component
-implementation, function execution, accessibility behavior, and error
-reporting. A resolved renderer binding shows which requirements its identified
-implementation claims to satisfy.
+The System declares a Runtime binding requirement for catalog validation,
+component implementation, function execution, accessibility behavior, and
+error reporting. A resolved renderer binding selects an identified
+implementation and shows which requirements it claims to satisfy.
 
 The supported catalog list is an implementation-feature claim. It does not
 authorize an agent to invoke a function, load a URL, access a Resource, or

@@ -119,15 +119,18 @@ binding, and renderer roles do not need new core AgSDL entities.
 - A catalog is a separately governed external artifact plus renderer
   implementation behavior. A catalog identifier is not necessarily
   resolvable, so it cannot serve as content integrity evidence.
-- A2UI envelopes are Message occurrences at an Interface. Their required
+- A2UI envelopes are Message occurrences at Interface operations. Each
+  operation makes exactly one protocol Action available. Their required
   ordering and surface lifecycle are a candidate Protocol mapping.
-- An A2UI `action` is a user-interaction message. It maps to an AgSDL Action
-  only when a binding names the exact Action or Interface operation requested.
-  The event does not prove user identity, intent, approval, authorization, or
-  an external Effect.
-- Renderer or agent function calls in the `v1.0` candidate are interface calls.
-  Catalog caller restrictions describe implementation support. They do not
-  grant authority.
+- An A2UI `action` is a user-interaction message whose Interface operation makes
+  a protocol Action available. The message requests a separate business Action
+  only when the binding names that Action and maps its inputs and Resources. The
+  event does not prove user identity, intent, approval, authorization, or an
+  external Effect.
+- Remote renderer or agent function calls in the `v1.0` candidate are Interface
+  operations, each of which makes an Action available even when it has no
+  possible Effect. Catalog caller restrictions describe implementation support.
+  They do not grant authority.
 
 ## Catalogs and executable behavior
 
