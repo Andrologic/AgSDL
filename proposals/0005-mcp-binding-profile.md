@@ -93,12 +93,13 @@ Every MCP binding profile should identify:
 - the protocol era, either modern per-request metadata or legacy
   initialization;
 - every extension through a separate MCP contract reference;
+- the allocation of MCP host, client, and server roles, including the host's
+  responsibility for connection lifecycle, security policy, consent,
+  authorization, and context coordination;
+- each participant's position inside or outside the AgSDL System boundary and
+  the rule that each client communicates with exactly one server;
 - the client or server endpoint role AgSDL expects the selected element to
   perform;
-- the AgSDL Runtime or runtime instance responsible for the MCP host and
-  its security, consent, authorization, and client-lifecycle decisions;
-- the local MCP client and its one-to-one server relationship when the selected
-  element is a server endpoint;
 - the standard or custom transport contract; and
 - any earlier MCP revisions that may be selected, each as a separate binding
   variant with an explicit compatibility and degradation policy.
@@ -121,10 +122,10 @@ An MCP binding profile should contain or reference these facts:
 | Fact | Meaning in AgSDL |
 | --- | --- |
 | Core contract | Exact external MCP revision and authoritative schema |
-| Participants | MCP host, local client, server endpoint, and their assigned responsibilities |
+| Participants | MCP host, client, server, boundary positions, and assigned responsibilities |
 | Endpoint role | MCP client or MCP server role required from the selected element |
 | Transport | `stdio`, Streamable HTTP, or an identified custom binding |
-| Server selection | External endpoint or process selection constraints, without embedded secrets |
+| Selected element | Role and selection constraints for the required Runtime or Environment element |
 | Required server capabilities | Capabilities and settings that discovery must report |
 | Required client capabilities | Capabilities and settings that the client must send on each applicable request |
 | Entry mappings | MCP names or URIs related to AgSDL definitions |
@@ -134,8 +135,16 @@ An MCP binding profile should contain or reference these facts:
 | Degradation | Predeclared outcomes for every optional or unavailable dependency |
 | Evidence | Structural, resolution, and execution checks needed for the claim |
 
-The profile should identify the MCP endpoint as an external endpoint or
-Environment element and place an Interface at the relevant AgSDL boundary. It
+The portable profile states participant roles and boundary constraints without
+naming deployment subjects. A Resolved binding selects one Runtime or
+Environment element. Deployment evidence identifies the runtime instances and
+endpoints that fill the remaining roles. The host and client may both be
+external when the selected element performs the server role.
+
+The profile should identify a counterpart outside the AgSDL System boundary as
+an external endpoint or Environment element. When the selected element performs
+the server role inside that boundary, the System or a contained Agent exposes
+an Interface and the selected Runtime realizes that definition. The profile
 should reference MCP as the external Protocol contract. It should not duplicate
 MCP JSON-RPC methods as AgSDL operations unless an AgSDL Interface operation
 needs a stable local identity for policy, tracing, or composition.
@@ -164,6 +173,13 @@ invalidate or refresh cached server discovery according to the applicable MCP
 cache contract. Discovery and catalog evidence must remain scoped to the
 resolved endpoint, MCP revision, principal or authorization context, cache
 scope, and lifetime that produced it.
+
+The optional `server/discover.instructions` value is server-controlled runtime
+or deployment content. It cannot create or alter an AgSDL Instructions
+definition. Before adding it to model context, a runtime should apply the
+declared trust classification and policy. If portable behavior depends on this
+content, the profile should define the outcome when it is absent, changes, or
+is rejected.
 
 Modern negotiation should use `server/discover` or handle the MCP
 `UnsupportedProtocolVersionError`. A recognized modern error should lead only
@@ -344,6 +360,7 @@ claim.
 | Required MCP extension absent or incompatible | Fail | None for the affected operation |
 | Optional MCP extension absent | Follow the extension contract and declared degradation case | Use core behavior only when both explicitly permit it |
 | Mapped tool, resource, template, or prompt absent | Mark the mapping unsatisfied | Use a named alternative supported by bounded adapter execution evidence |
+| Required discovery instructions absent, changed, or rejected | Mark dependent behavior unsatisfied | Continue only when the declared operation does not depend on them |
 | Catalog-change subscription unavailable | Mark freshness requirement unsatisfied | Bounded relisting under the declared staleness limit |
 | Authorization missing or invalid | Refuse the protected operation | Start the declared authorization branch |
 | Scope insufficient | Refuse the protected operation | Bounded step-up authorization without expanding AgSDL authority |
@@ -366,27 +383,36 @@ credential references, and detect missing mappings. Network discovery produces
 runtime or deployment evidence, not unresolved-document evidence.
 
 A future MCP binding adapter should claim conformance only for named
-implementation features. At minimum, executable suites should cover:
+implementation features. Structural suites should cover binding ownership, one
+selected element per Resolved binding, both endpoint role orientations, one
+server per client, and entry-mapping identity across endpoints, revisions, and
+entry kinds. This includes resource-template mappings and identical names or
+URIs used by different entry kinds.
 
-1. modern discovery, scoped caching, rejection of self-reported server
+At minimum, execution suites should cover:
+
+1. isolation between clients of one host and both endpoint role orientations;
+2. modern discovery, scoped caching, rejection of self-reported server
    information as security identity, and direct version-error negotiation;
-2. rejection of an undeclared revision and separation of legacy fallback;
-3. per-request client capability emission, missing-capability errors, and HTTP
+3. rejection of an undeclared revision and separation of legacy fallback;
+4. per-request client capability emission, missing-capability errors, and HTTP
    header-to-body mismatch rejection;
-4. positive and negative tool, resource, prompt, and catalog-change mappings,
-   including pagination, authorization-dependent catalogs, remote schema
-   references, calls to unadvertised methods, JSON-RPC errors, and tool results
-   with `isError`;
-5. required and optional extension negotiation, including Task lifecycle,
+5. positive and negative tool, resource, resource-template, prompt, and
+   catalog-change mappings, including pagination, authorization-dependent
+   catalogs, remote schema references, calls to unadvertised methods, JSON-RPC
+   errors, and tool results with `isError`;
+6. rejection of attempts by `prompts/get` or `server/discover.instructions` to
+   alter an Instructions definition;
+7. required and optional extension negotiation, including Task lifecycle,
    cancellation, polling, and input if Tasks are claimed;
-6. HTTP authorization discovery, audience checks, insufficient-scope recovery,
+8. HTTP authorization discovery, audience checks, insufficient-scope recovery,
    token isolation, and refusal paths;
-7. stdio credential injection without applying the HTTP authorization flow;
-8. MRTR success, decline, cancellation, timeout, unsupported input, changed
-   authorization, bounded retry, and opaque `requestState` handling; and
-9. subscription acknowledgement, reconnection, relisting, and bounded
+9. stdio credential injection without applying the HTTP authorization flow;
+10. MRTR success, decline, cancellation, timeout, unsupported input, changed
+   authorization, bounded retry, and opaque `requestState` handling;
+11. subscription acknowledgement, reconnection, relisting, and bounded
    staleness; and
-10. loss reports and trace correlation across every declared degradation case.
+12. loss reports and trace correlation across every declared degradation case.
 
 Passing structural checks would support only a mapping or readiness claim.
 Behavioral interoperability requires execution against identified MCP client
@@ -477,12 +503,12 @@ binding with implicit fallback would make incompatible behavior look portable.
 
 ## Security considerations
 
-MCP endpoints, catalogs, prompt content, tool metadata, resource content,
-extension data, and continuation state cross trust boundaries. The binding
-should identify those crossings and the controls applied to each. Discovery
-identity is self-reported. Tool annotations are untrusted hints. Remote JSON
-Schema references should not be fetched merely because an MCP entry contains
-them.
+MCP endpoints, catalogs, prompt content, discovery instructions, tool metadata,
+resource content, extension data, and continuation state cross trust
+boundaries. The binding should identify those crossings and the controls
+applied to each. Discovery identity is self-reported. Tool annotations are
+untrusted hints. Remote JSON Schema references should not be fetched merely
+because an MCP entry contains them.
 
 Formal MCP extensions belong in the `extensions` capability map. Entries in an
 `experimental` capability map should remain implementation-specific unless a
