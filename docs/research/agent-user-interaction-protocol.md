@@ -195,7 +195,7 @@ after resume, the agent executes the protected tool and emits
 
 **AgSDL assessment.** A frontend tool can map to an AgSDL Tool only when the
 binding also identifies its Action, inputs, outputs, target Resources, Effects,
-failures, execution Principal, and implementation location. When that Action is
+failures, acting Principal, and implementation location. When that Action is
 protected, the binding must also identify its authorization requirement and
 policy application point. AG-UI tool visibility and selection prove neither
 authorization nor execution. The binding must record whether the agent backend,
@@ -416,3 +416,4 @@ Repository file links below are pinned to one of the two reviewed commits.
 - [1.0 draft interrupt and resume rules](https://github.com/ag-ui-protocol/ag-ui/blob/a8a1bcba0b82e4ebb8c4579ef6a86cd1bb01316e/docs/spec/draft/basic/patterns/interrupt-resume.mdx)
 - [1.0 draft processing model](https://github.com/ag-ui-protocol/ag-ui/blob/a8a1bcba0b82e4ebb8c4579ef6a86cd1bb01316e/docs/spec/draft/basic/processing.mdx)
 - [1.0 draft HTTP and SSE binding](https://github.com/ag-ui-protocol/ag-ui/blob/a8a1bcba0b82e4ebb8c4579ef6a86cd1bb01316e/docs/spec/draft/basic/transports/http-sse.mdx)
+- [1.0 draft HTTP and Protobuf binding](https://github.com/ag-ui-protocol/ag-ui/blob/a8a1bcba0b82e4ebb8c4579ef6a86cd1bb01316e/docs/spec/draft/basic/transports/http-protobuf.mdx)

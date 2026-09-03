@@ -101,7 +101,7 @@ execution occurrence. It is not a Runtime instance or Control flow definition.
 
 A **frontend tool binding** maps one client-provided AG-UI tool description and
 its call lifecycle to one AgSDL Tool and Action. It identifies the executor,
-execution Principal, input and output mapping, target Resource mapping, Effect
+acting Principal, input and output mapping, target Resource mapping, Effect
 and failure mapping, correlation rules, and result-return path. When the mapped
 Action is protected, it also identifies the authorization requirement and
 policy application point.
@@ -115,15 +115,30 @@ The bound AgSDL Interface has two endpoint roles:
 - the **application endpoint** represents the user-facing application side;
 - the **agent endpoint** represents the exposed agent or system side.
 
-A resolved binding identifies both concrete endpoints. If a selected feature
-requires Principal attribution, an endpoint role without that identity leaves
-the requirement unsatisfied.
+A resolved binding identifies both concrete endpoints and their Principal
+identities. Without those identities, an event can remain external data or a
+Trace record, but it cannot map to a Message occurrence and the corresponding
+feature is unsatisfied.
 
 The Interface has two operations relative to the agent endpoint:
 
 - **start or continue interactive run** accepts the mapped AG-UI run input and
   is inbound;
 - **observe run event** carries one AG-UI event and is outbound.
+
+Each operation references the AgSDL Action that it makes available. The Action
+declares its permitted acting Principals, target Resource kinds, input, possible
+Effects, and failure behavior. If the Action is protected, it also declares the
+policy application points required by the core model. This operation mapping is
+distinct from any Action proposed by a tool-call event.
+
+For every Action mapped by this binding, the executor validates the complete
+input and resolves target Resources before an attempt. An attempt creates an
+Action occurrence that identifies the executor, acting Principal, target
+Resources, and outcome. A reported result remains distinct from evidence that
+an Effect occurred. Only a protected Action adds an authorization requirement,
+policy application points, required authentication evidence, and an
+Authorization decision.
 
 Both operations participate in an **interactive run protocol**. One event on
 the stream is one protocol Message occurrence. A resolved binding may expose
@@ -342,8 +357,11 @@ hold:
 - the information presented to the human is identified;
 - allowed decisions, expiry, invalidation rules, single-use rule, and no-response
   behavior are declared;
-- protected execution remains blocked until a matching permitted Authorization
-  decision exists.
+- execution subject to the Approval remains blocked until a matching Approval
+  decision permits it;
+- when the proposed Action is protected, execution also remains blocked until a
+  matching permitted Authorization decision exists and includes the Approval
+  decision when the Authorization requirement requires it.
 
 The `tool_call` reason and `toolCallId` can provide correlation but do not
 satisfy the remaining conditions. `input_required`, `confirmation`, and custom
@@ -473,9 +491,10 @@ transport loss.
 ### Candidate feature: AG-UI frontend tool execution
 
 The runtime maps selected client tools to AgSDL Tools and Actions, validates
-their arguments, attributes each attempt to its executor and Action occurrence,
-and reports result and Effect evidence. For a protected Action, it also applies
-the declared authorization requirement and policy application point.
+their arguments and target Resources, attributes each attempt to its executor,
+acting Principal, and Action occurrence, and reports result and Effect evidence.
+For a protected Action, it also applies the declared authorization requirement
+and policy application point.
 
 Candidate tests include malformed and fragmented arguments, parallel calls,
 unknown tools, unresolved target Resources, unprotected execution, protected
@@ -619,8 +638,8 @@ Protocol concepts.
 ### Map every interrupt to human approval
 
 Rejected. AG-UI also uses interrupts for structured input and confirmation,
-and its core record lacks several approval and authorization facts required by
-AgSDL.
+and its core record lacks several Approval facts required by AgSDL. For a
+protected Action, it also lacks the required Authorization facts.
 
 ### Treat frontend tools as MCP tools
 
