@@ -66,6 +66,8 @@ to an Agent Card without treating it as a complete system definition. `agent`,
 `skill`, `capability`, `task`, `message`, `artifact`, `context`, and `extension`
 all collide with broader concepts in AgSDL's scope. In particular, an A2A skill
 is advertised service metadata, not necessarily an Agent Skills package.
+The dedicated [A2A 1.0.1 integration research](a2a-1.0.1.md) records the exact
+source edition, state mappings, security boundary, and verification limits.
 
 ### FIPA agent architecture and interaction protocols
 
