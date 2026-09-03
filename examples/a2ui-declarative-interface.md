@@ -20,9 +20,10 @@ claim that an adapter or renderer implements the mapping.
 - **Expense review agent**, an Agent definition acting through an identified
   service Principal and Principal Identity.
 - **Employee**, a human Principal with an authenticated employee Identity.
-- **Expense renderer requirement**, a Runtime binding requirement for an
-  identified renderer runtime instance. Its resolved binding must support the
-  pinned A2UI `v0.9.1` format binding and the selected catalog implementation.
+- **Expense renderer requirement**, a Runtime binding requirement for renderer
+  capabilities and behavior. Its resolved binding selects the identified
+  renderer runtime instance and must show support for the pinned A2UI `v0.9.1`
+  format binding and selected catalog implementation.
 - **Expense surface state**, a State definition for the component graph and data
   model of each active expense surface. Progressive updates produce successive
   State occurrences. The renderer runtime instance is the declared authority
@@ -38,18 +39,31 @@ claim that an adapter or renderer implements the mapping.
   implementation version, and allowed components and functions remain
   distinct evidence.
 - **Generated expense interface**, a bidirectional Interface. Its outbound
-  operations carry A2UI surface lifecycle messages. Its inbound operation
-  carries A2UI user-action messages and renderer errors.
+  operations carry A2UI surface lifecycle messages. Its inbound operations
+  carry A2UI user-action messages and renderer errors.
+- **Create expense surface**, **Update expense surface**, and **Delete expense
+  surface**, unprotected protocol Actions made available by the corresponding
+  outbound Interface operations. The renderer Principal performs them against
+  Expense surface after the agent service Principal initiates each request.
+- **Process expense interaction**, an unprotected protocol Action made available
+  by the inbound user-action operation. The agent service Principal performs it
+  against Expense surface. Its action occurrence may lead to a separate business
+  Action occurrence.
+- **Record expense renderer error**, an unprotected protocol Action made
+  available by the inbound error operation. The agent service Principal performs
+  it against Expense surface and records the outcome in the execution trace.
 - **Expense surface lifecycle**, a Protocol with absent, active-incomplete,
   renderable, invalid, and deleted states. User submission is disabled outside
   the renderable state.
 - **Request expense submission**, an unprotected Action that records the user's
-  request for review against **Expense review queue**, an internal Resource.
-  It may produce a **submission requested** Effect. The A2UI `submit_expense`
-  event requests this Action but is not itself proof of identity, approval, or
+  request for review against **Expense review queue**, an internal Resource. The
+  agent service Principal performs it after Process expense interaction. It may
+  produce a **submission requested** Effect. The A2UI `submit_expense` event
+  requests this Action but is not itself proof of identity, approval, or
   execution.
-- **Submit approved expense**, a protected Action that can produce an
-  **expense recorded** Effect against the external expense service Resource.
+- **Submit approved expense**, a protected Action performed by the service
+  Principal against the external expense service Resource. It can produce an
+  **expense recorded** Effect.
 - **Expense approval requirement**, which requires a separate, matching human
   Approval decision for the final amount, currency, merchant, date, and receipt
   identity.
@@ -101,11 +115,13 @@ test and execution evidence can show that an implementation satisfies them.
 ## Narrative path
 
 1. Expense review agent sends a surface creation message for a new expense
-   surface using Reviewed expense catalog. Expense surface lifecycle moves from
+   surface using Reviewed expense catalog. The renderer performs a Create
+   expense surface action occurrence. Expense surface lifecycle moves from
    absent to active-incomplete.
 2. The agent sends progressive component and data updates. The renderer applies
-   each valid update in order. Missing child references keep the surface in
-   active-incomplete, and the employee cannot submit it.
+   each valid update in order through Update expense surface action occurrences.
+   Missing child references keep the surface in active-incomplete, and the
+   employee cannot submit it.
 3. Once the root, required fields, component references, validation rules, and
    policy controls resolve, the renderer moves the surface to renderable. The
    employee corrects the amount. This changes Expense surface state locally.
@@ -113,9 +129,10 @@ test and execution evidence can show that an implementation satisfies them.
    `submit_expense` action message with the current surface correlation,
    component source, timestamp, and minimized context. The message crosses
    Renderer boundary as untrusted input.
-5. Generated expense interface maps the message to Request expense submission
-   after verifying the authenticated employee session, current surface
-   occurrence, expected component, freshness, and non-replay conditions.
+5. After verifying the authenticated employee session, current surface
+   occurrence, expected component, freshness, and non-replay conditions, the
+   agent performs Process expense interaction. That protocol action occurrence
+   requests the separate Request expense submission business Action.
 6. The system presents a separate Approval request containing the final
    material context. A matching human Approval decision may contribute to the
    Authorization decision for Submit approved expense. The earlier A2UI action
@@ -124,11 +141,12 @@ test and execution evidence can show that an implementation satisfies them.
    approved expense across Expense service boundary. Expense recorded remains
    a distinct Effect occurrence. A denied or indeterminate decision produces no
    permitted submission.
-8. The agent requests surface deletion. The renderer produces the terminal
-   State occurrence, ends the active surface state, and records deletion. State
-   history and trace records remain subject to their declared retention rules.
-   A later `v0.9.1` surface may reuse the external identifier, but it receives a
-   new Resource identity and a separate State history.
+8. The agent requests surface deletion. The renderer performs Delete expense
+   surface, produces the terminal State occurrence, ends the active surface
+   state, and records deletion. State history and trace records remain subject
+   to their declared retention rules. A later `v0.9.1` surface may reuse the
+   external identifier, but it receives a new Resource identity and a separate
+   State history.
 
 ## Version-candidate variation
 

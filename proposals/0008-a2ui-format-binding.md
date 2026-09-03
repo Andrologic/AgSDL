@@ -105,6 +105,28 @@ Principal Identity expected at each endpoint. Authentication evidence and
 Authority grants remain separate. A role name in an A2UI envelope or transport
 binding supplies neither.
 
+### Interface-operation and Action mapping
+
+Every supported A2UI message kind maps to a Message occurrence at an Interface
+operation. As required by the core model, each Interface operation makes
+available exactly one Action. The binding names that Action, its permitted
+acting Principal kinds or identities, target Resource kinds, inputs, possible
+Effects, failure behavior, and applicable policy application point. It also
+distinguishes the initiating Principal from the acting Principal when one peer
+requests that the other apply a message.
+
+Surface creation, component and data updates, surface deletion, user-action
+delivery, renderer error handling, and remote function exchange therefore
+produce action occurrences when their Interface operations run. A binding may
+group message kinds under one Interface operation only when they share the same
+Action contract. The resulting action occurrence remains distinct from its
+Message occurrence, State occurrences, and any Effect occurrences.
+
+The Action made available by a protocol operation describes processing that
+operation. Message content may also request a separate business Action. The
+binding preserves both identities and their causal relationship instead of
+treating an A2UI event name as the business Action itself.
+
 ### Surface and state mapping
 
 An active A2UI surface maps to:
@@ -195,25 +217,31 @@ default. A binding should state:
 - synchronization scope, destination, minimization, retention, and failure
   behavior.
 
-When full data-model synchronization is enabled, the outbound metadata is an
-information-flow Effect across a Trust boundary. The declaration must identify
-the destination Principal and applicable Policy. A synchronized value does not
-become Memory unless a separate Memory definition and update operation retain
-it beyond the declared surface or execution lifetime.
+When full data-model synchronization is enabled, outbound metadata carries the
+synchronized value. The Action that sends the containing message across a Trust
+boundary can produce an information-flow Effect occurrence. The metadata is not
+itself that Effect. The declaration must identify the destination Principal and
+applicable Policy. A synchronized value does not become Memory unless a
+separate Memory definition and update operation retain it beyond the declared
+surface or execution lifetime.
 
 ### User-action mapping
 
 An A2UI `action` maps first to a Message occurrence at a renderer-to-agent
-Interface operation. The mapping preserves the event name, surface occurrence,
-source component, claimed timestamp, resolved context, sender, intended
-recipient, and transport correlation. A `v1.0` candidate mapping also preserves
-the optional resolved `userMessage` without treating it as trusted evidence of
-what the human saw or intended.
+Interface operation and to the protocol Action that operation makes available.
+That Action processes the interaction against a target Resource such as the
+active surface. The mapping preserves the event name, surface occurrence,
+source component, claimed timestamp, resolved context, initiating and acting
+Principals, intended recipient, and transport correlation. A `v1.0` candidate
+mapping also preserves the optional resolved `userMessage` without treating it
+as trusted evidence of what the human saw or intended.
 
-The action message may request an AgSDL Action. When it does, the binding must
-name that Action and map material context fields to its inputs and target
-Resources. It should report unmapped or missing material fields. An A2UI event
-name alone is not a stable AgSDL Action identity.
+The action message may request a separate business Action. When it does, the
+binding must name that Action and map material context fields to its inputs and
+target Resources. It should report unmapped or missing material fields. The
+protocol Action occurrence records message processing and causally precedes any
+business Action occurrence. An A2UI event name alone is not a stable business
+Action identity.
 
 The message does not prove:
 
@@ -230,14 +258,16 @@ defined by the applicable Approval requirement.
 
 ### Function-call mapping for the candidate
 
-The `v1.0` candidate's renderer and agent function calls map to bidirectional
-Interface operations with correlation identifiers and result or error
-messages. An agent-to-renderer call must preserve the renderer-initiated session
-precondition. Every call mapping should preserve caller and target roles, local
-or remote routing, request correlation, and the required response or error. A
-function that can change a Resource or information flow maps to an AgSDL Action
-and possible Effects. The binding should declare timeouts, duplicate-call
-handling, cancellation, late results, and failure behavior.
+The `v1.0` candidate's remote renderer and agent function calls map to
+bidirectional Interface operations with correlation identifiers and result or
+error messages. Each operation makes available an Action even when the function
+has no possible Effect. The Action targets the Resource that provides or is
+acted on by the function. An agent-to-renderer call must preserve the renderer-
+initiated session precondition. Every call mapping should preserve caller and
+target roles, local or remote routing, request correlation, and the required
+response or error. A function that can change a Resource or information flow
+also declares its possible Effects. The binding should declare timeouts,
+duplicate-call handling, cancellation, late results, and failure behavior.
 
 Static catalog metadata such as allowed callers, return type, or required user
 activation can contribute to a binding requirement. It cannot replace Policy,
@@ -316,8 +346,9 @@ directions and kinds, selected transport bindings, catalog set, and test-suite
 version. Tests should include at least:
 
 - structural fixtures accepted and rejected by the pinned A2UI schemas;
-- conflict fixtures that exercise the binding's chosen version keys, component
-  form, metadata placement, and DataPart batching rule;
+- conflict fixtures that exercise the binding's chosen version keys, capability
+  wrappers, component form, message and Part metadata placement, and DataPart
+  batching rule;
 - ordered lifecycle transitions, including updates before creation, duplicate
   creation, deletion, and version-specific identifier reuse;
 - partial component graphs, later completion, invalid references, and failure

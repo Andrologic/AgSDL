@@ -186,7 +186,9 @@ message.
 Dynamic component properties can contain literal values, JSON Pointer data
 bindings, or catalog function calls. Input components update the renderer's
 local data model. When `sendDataModel` is true, the renderer sends the full
-current model in transport metadata on the next renderer-to-agent message. The
+current model in transport metadata on every renderer-to-agent message sent to
+the server that created the surface. Passive local changes wait for the next
+outbound message; they do not initiate transmission on their own. The
 [`client_data_model.json`](https://github.com/a2ui-project/a2ui/blob/715abe092b9ba12174a579c2de75b6dd0c90a502/specification/v0_9_1/json/client_data_model.json)
 schema groups models by surface identifier.
 
@@ -239,13 +241,22 @@ SDK](https://github.com/a2ui-project/a2ui/blob/715abe092b9ba12174a579c2de75b6dd0
 
 - the prose places the A2UI media type at `DataPart.data.metadata`, while its
   examples and the reviewed Python SDK place it at `DataPart.metadata`;
-- the prose requires a list of A2UI messages in each DataPart, while the
-  reviewed Python SDK emits one DataPart for each message;
+- the core protocol maps each A2UI envelope to one A2A Part, while the extension
+  requires a list of messages in each DataPart; the reviewed Python SDK follows
+  the core protocol and emits one DataPart for each message;
 - its server-to-client example uses a wrapped component form
   `{"Text": {...}}`, while the pinned envelope and catalog schemas require a
   flat component object with `id` and `component` fields;
-- its client capability example and prose refer to a `v0.9.1` object key, while
-  the pinned client and server capability schemas require the `v0.9` key.
+- the extension says AgentCard `params` corresponds directly to the server
+  capability schema, but its example omits the schema's required top-level
+  `v0.9` wrapper; the following prose instead refers to a nonexistent `v0.9.1`
+  object in that schema;
+- the client capability example uses a `v0.9.1` object key, while the pinned
+  client capability schema requires the `v0.9` key;
+- two prose assignments place `a2uiClientCapabilities` and
+  `a2uiClientDataModel` directly under the A2A message, while their examples,
+  the core protocol, and other extension passages place both under message
+  metadata.
 
 These conflicts are source facts, not AgSDL interpretations. A transport
 binding cannot claim conformance to the extension document as a whole without
