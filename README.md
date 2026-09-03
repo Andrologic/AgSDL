@@ -42,7 +42,7 @@ after the system model and conformance boundaries are clear.
 - [`Project scope`](docs/scope.md)
 - [`Prior-art research`](docs/research/prior-art.md)
 - [`AG-UI research`](docs/research/agent-user-interaction-protocol.md)
-- [`AG-UI binding proposal`](proposals/0005-agent-user-interaction-protocol-binding.md)
+- [`AG-UI binding proposal`](proposals/0007-agent-user-interaction-protocol-binding.md)
 - [`Cross-proposal review`](docs/reviews/0001-cross-proposal-review.md)
 - [`Post-correction review`](docs/reviews/0002-post-correction-review.md)
 - [`Proposals`](proposals/README.md)

@@ -1,4 +1,4 @@
-# Proposal 0005: Agent User Interaction Protocol binding
+# Proposal 0007: Agent User Interaction Protocol binding
 
 - Status: proposed
 - Date: 2026-09-02
@@ -100,8 +100,8 @@ execution occurrence. It is not a Runtime instance or Control flow definition.
 A **frontend tool binding** maps one client-provided AG-UI tool description and
 its call lifecycle to one AgSDL Tool and Action. It identifies the executor,
 execution Principal, input and output mapping, Effect and failure mapping,
-authorization requirement, policy application point, correlation rules, and
-result-return path.
+correlation rules, and result-return path. When the mapped Action is protected,
+it also identifies the authorization requirement and policy application point.
 
 ## Binding structure
 
@@ -281,14 +281,20 @@ The result path depends on the selected contract:
 | Published 0.x tool-bound interrupt | agent side after resume | the interrupted run ends, the next run carries `resume`, and that run can emit `TOOL_CALL_RESULT` |
 
 Each frontend Tool description resolves to one AgSDL Tool definition and
-Action. Name matching alone is insufficient. Immediately before an attempt,
-the policy application point authenticates and authorizes the acting Principal.
-The attempt creates one Action occurrence. A correlated result records the
-reported outcome, but does not by itself prove an external Effect.
+Action. Name matching alone is insufficient. Before an attempt, the executor
+validates the complete arguments against the mapped input contract. The attempt
+creates one Action occurrence that identifies the executor and acting Principal.
+A correlated result records the reported outcome, but does not by itself prove
+an external Effect.
+
+When the mapped Action is protected, its policy application point authenticates
+and authorizes the acting Principal immediately before the attempt. An
+unprotected Action has no authorization requirement by implication.
 
 If the application edits arguments, the trace preserves the original and
-replacement values. The binding reevaluates authorization and Approval when
-their material context changed.
+replacement values and the executor validates the replacement. For a protected
+Action, the binding reevaluates authorization and Approval when their material
+context changed.
 
 Agent-side Tools are outside a frontend tool binding. MCP tools exposed by
 AG-UI middleware need an additional MCP binding and transformation record.
@@ -435,14 +441,16 @@ transport loss.
 
 ### Candidate feature: AG-UI frontend tool execution
 
-The runtime maps selected client tools to AgSDL Tools and Actions, authorizes
-each execution, attributes the executor, and reports result and Effect evidence
-without treating visibility as permission.
+The runtime maps selected client tools to AgSDL Tools and Actions, validates
+their arguments, attributes each attempt to its executor and Action occurrence,
+and reports result and Effect evidence. For a protected Action, it also applies
+the declared authorization requirement and policy application point.
 
 Candidate tests include malformed and fragmented arguments, parallel calls,
-unknown tools, denial, edited parameters, failed client execution, duplicate
-results, the next-run frontend result path, the separate 0.x interrupt path,
-external partial Effects, and an MCP-backed tool that requires a second binding.
+unknown tools, unprotected execution, protected denial, edited parameters,
+failed client execution, duplicate results, the next-run frontend result path,
+the separate 0.x interrupt path, external partial Effects, and an MCP-backed
+tool that requires a second binding.
 
 ### Candidate feature: AG-UI state synchronization
 
@@ -458,8 +466,8 @@ cross-run persistence, and trace retention of overwritten values.
 The runtime terminates an interrupted run, preserves required state and message
 materialization, validates a same-thread all-open resume, handles any other
 input according to the selected contract set, and creates a new run. An
-approval subfeature also proves the additional Approval and Authorization
-mappings.
+approval subfeature also proves the Approval mapping and, for a protected
+Action, the additional Authorization mapping.
 
 Candidate tests include parallel interrupts, partial resume, wrong thread,
 unknown identifier, expiry, schema mismatch, denial, cancellation, approve with
@@ -494,7 +502,8 @@ Tool path.
 Counterexamples:
 
 - The runtime executes the frontend Tool because it appeared in
-  `RunAgentInput.tools`. Availability has been confused with authorization.
+  `RunAgentInput.tools`, without resolving the Action, validating its arguments,
+  identifying the executor, or applying declared protection.
 - The runtime records `resume.status = resolved` as approval without inspecting
   the payload or authenticating the manager. Resolution has been confused with
   an Approval decision.
@@ -509,8 +518,9 @@ Counterexamples:
 
 The user-to-application, application-to-agent, application-to-Tool, and
 application-to-state paths can cross different trust boundaries. A resolved
-binding identifies each boundary, endpoint Principal, protected Resource,
-authentication mechanism, policy application point, and failure policy.
+binding identifies each boundary, endpoint Principal, Resource, and failure
+policy. It identifies authentication mechanisms and policy application points
+where the mapped Actions or boundary controls require them.
 
 Run input, streamed content, Tool arguments, interrupt prompts, response
 schemas, resume payloads, state, raw events, and custom values are untrusted
@@ -521,7 +531,8 @@ the binding classifies, limits, redacts, and preserves them according to policy.
 Progressive rendering can expose content before a complete validation result.
 The application declares whether it buffers protected content, supports
 correction, or visibly marks provisional output. Tool arguments remain
-proposals until complete, validated, authorized, and approved when required.
+proposals until complete and validated, and until authorized or approved when
+either is required.
 
 Approval UI quality and legal consent remain outside this binding. The binding
 can require authenticated, scoped Approval evidence. It cannot prove that a
@@ -549,8 +560,8 @@ Positive consequences:
 Costs:
 
 - Authors must supply semantic information that AG-UI intentionally leaves to
-  applications, especially identity, authorization, state authority, Effects,
-  and error mapping.
+  applications, especially identity, conditional authorization, state
+  authority, Effects, and error mapping.
 - A useful conformance claim needs fixtures and live fault-injection tests, not
   only structural inspection.
 - JSON and Protobuf targets may need different binding profiles.
