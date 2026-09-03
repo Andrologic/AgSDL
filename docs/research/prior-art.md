@@ -222,6 +222,24 @@ risks.
 
 ## Messages, events, and workflows
 
+### A2UI
+
+**Source facts.** The A2UI project maintains a declarative JSON format for
+agent-generated user interfaces. At the upstream commit reviewed on 2026-09-02,
+`v0.9.1` was the current production version and `v1.0` was a release candidate.
+The format defines surface lifecycle messages, flat component graphs selected
+from catalogs, data bindings and updates, renderer-to-agent user actions, and
+transport requirements. See the dedicated [A2UI research
+note](a2ui.md) for pinned sources and version differences.
+
+**AgSDL assessment.** A2UI is a suitable candidate external format binding for
+generated presentation state. It is not a core system model, transport,
+authorization protocol, or proof that a renderer behaves safely. Surface,
+catalog, component, data model, and action concepts map to existing AgSDL
+Resource, State, Interface, Protocol, Message, Action, Runtime, and binding
+concepts with explicit losses. Stable and candidate versions need separate
+bindings.
+
 ### AsyncAPI
 
 **Source facts.** The AsyncAPI Initiative under the Linux Foundation maintains
@@ -412,6 +430,7 @@ rating. These research ratings do not establish compatibility with AgSDL.
 | OpenAI Model Spec | Assistant only |  | Tool behavior | Strong | Conversation context | Message roles |  |  | Authority, not access control |  |  |
 | LangGraph | Runtime agent | Graph runtime | Nodes and tools |  | Strong | State transitions | Strong |  |  | Checkpoints | Framework-specific |
 | W3C PROV | Agent as responsibility | Delegation relation |  |  | Provenance only |  | Activities |  |  | Strong | Bundles |
+| A2UI | External generator role |  | Renderer functions |  | Surface data model | Strong UI messages | Surface lifecycle | Errors only | Catalog caller limits only | Catalog references | Catalogs and metadata |
 | AsyncAPI |  |  | Interface only |  |  | Strong async | Replies and correlation |  | Security schemes |  | Strong |
 | BPMN | Participants | Strong | Service task only |  | Data objects only | Message flows | Strong |  | Lanes only |  | Extension elements |
 | JSON Schema |  |  | Input/output shape |  | Data shape | Payload shape |  | Validation output |  | Schema bundles | Strong |

@@ -16,3 +16,6 @@ change must be applied separately and reviewed against the accepted proposal.
 - [`0003: conformance and versioning`](0003-conformance-and-versioning.md)
 - [`0004: trust, security, and human control`](0004-trust-security-and-control.md)
 - [`0005: Model Context Protocol binding profile`](0005-mcp-binding-profile.md)
+- [`0006: A2A 1.0 external binding`](0006-a2a-1.0-external-binding.md)
+- [`0007: Agent User Interaction Protocol binding`](0007-agent-user-interaction-protocol-binding.md)
+- [`0008: external A2UI format binding`](0008-a2ui-format-binding.md)
