@@ -16,4 +16,4 @@ Current proposals:
 - [`0003`](0003-conformance-and-versioning.md): conformance and versioning;
 - [`0004`](0004-trust-security-and-control.md): trust, security, and human
   control;
-- [`0005`](0005-a2ui-format-binding.md): external A2UI format binding.
+- [`0008`](0008-a2ui-format-binding.md): external A2UI format binding.

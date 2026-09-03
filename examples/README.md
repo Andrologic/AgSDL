@@ -5,7 +5,7 @@ are non-normative and deliberately independent of serialization syntax,
 frameworks, providers, transports, and runtimes.
 
 The separate [A2UI declarative-interface
-example](a2ui-declarative-interface.md) explores proposal 0005 against an
+example](a2ui-declarative-interface.md) explores proposal 0008 against an
 external format. It remains non-normative, pins the reviewed A2UI version, and
 does not claim an implemented adapter or interoperability.
 

@@ -7,7 +7,7 @@ External basis: A2UI `v0.9.1` as reviewed in `docs/research/a2ui.md`
 
 An expense-review agent asks a renderer to present one interactive expense
 surface. The user can correct fields and request submission. The example shows
-how proposal 0005 keeps A2UI presentation, runtime state, user interaction,
+how proposal 0008 keeps A2UI presentation, runtime state, user interaction,
 approval, and protected effects separate.
 
 This is an AgSDL conceptual example, not A2UI JSON or AgSDL syntax. It does not

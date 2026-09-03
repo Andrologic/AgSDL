@@ -1,4 +1,4 @@
-# Proposal 0005: A2UI external format binding
+# Proposal 0008: A2UI external format binding
 
 - Status: proposed
 - Date: 2026-09-02
