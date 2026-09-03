@@ -1,4 +1,4 @@
-# Proposal 0005: Open Agent Specification binding
+# Proposal 0010: Open Agent Specification binding
 
 - Status: proposed
 - Date: 2026-09-02
