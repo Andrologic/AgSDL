@@ -44,7 +44,6 @@ after the system model and conformance boundaries are clear.
 - [`MCP 2026-07-28 binding research`](docs/research/mcp-2026-07-28.md)
 - [`A2A 1.0.1 binding research`](docs/research/a2a-1.0.1.md)
 - [`AG-UI research`](docs/research/agent-user-interaction-protocol.md)
-- [`AG-UI binding proposal`](proposals/0007-agent-user-interaction-protocol-binding.md)
 - [`A2UI research`](docs/research/a2ui.md)
 - [`AP2 v0.2.0 binding research`](docs/research/ap2-v0.2.0.md)
 - [`Open Agent Specification research`](docs/research/open-agent-specification.md)
