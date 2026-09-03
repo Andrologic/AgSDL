@@ -194,13 +194,16 @@ after resume, the agent executes the protected tool and emits
 `TOOL_CALL_RESULT` in the resumed run. These paths are not interchangeable.
 
 **AgSDL assessment.** A frontend tool can map to an AgSDL Tool only when the
-binding also identifies its Action, inputs, outputs, Effects, failures,
-execution Principal, policy application point, and implementation location.
-AG-UI tool visibility and selection prove neither authorization nor execution.
-The binding must record whether the agent backend, UI process, middleware, or
-another system executes the call. It must preserve the original proposal,
-material argument changes, the decision that authorized execution, and the
-result when those facts are required for audit.
+binding also identifies its Action, inputs, outputs, target Resources, Effects,
+failures, execution Principal, and implementation location. When that Action is
+protected, the binding must also identify its authorization requirement and
+policy application point. AG-UI tool visibility and selection prove neither
+authorization nor execution. The binding must record whether the agent backend,
+UI process, middleware, or another system executes the call. It must preserve
+the original proposal, material argument changes, validation result, attempted
+execution, reported result, and Effect evidence when those facts are required
+for audit. A protected attempt also preserves the required authentication
+evidence and its distinct Authorization decision.
 
 MCP-backed tools remain MCP operations even if AG-UI middleware exposes their
 schemas and events. That middleware is a composition of an AG-UI binding and an
@@ -366,8 +369,9 @@ inputs to a proposal, not executable AgSDL tests or passing claims:
   plus exact-tuple replay when the selected 0.x contract set requires it;
 - distinguish approval, cancellation, denial, expiry, invalid input, and run
   error according to declared mappings;
-- verify frontend Tool authorization and effect evidence independently from
-  tool-call visibility;
+- verify frontend Tool argument validation, execution attribution, and Effect
+  evidence independently from tool-call visibility, plus authentication and
+  Authorization evidence when the mapped Action is protected;
 - inject stream loss, duplicate events, reordered fragments, local abort, and
   remote non-termination, then report the declared failure behavior;
 - test every AG-UI-to-A2UI, AG-UI-to-MCP, or AG-UI-to-A2A transformation

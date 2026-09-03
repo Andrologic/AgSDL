@@ -48,7 +48,9 @@ This proposal defines conceptual semantics for:
 This proposal does not define AgSDL serialization, copy AG-UI schemas, select a
 transport, implement a runtime adapter, or create a present interoperability
 claim. It does not make AG-UI, A2UI, A2A, MCP, a frontend framework, or an
-agent runtime part of the AgSDL core.
+agent runtime part of the AgSDL core. It does not map execution of
+backend-defined Tools that run outside the application endpoint; such execution
+needs a separate Tool binding.
 
 ## Proposed terms
 
@@ -99,9 +101,10 @@ execution occurrence. It is not a Runtime instance or Control flow definition.
 
 A **frontend tool binding** maps one client-provided AG-UI tool description and
 its call lifecycle to one AgSDL Tool and Action. It identifies the executor,
-execution Principal, input and output mapping, Effect and failure mapping,
-correlation rules, and result-return path. When the mapped Action is protected,
-it also identifies the authorization requirement and policy application point.
+execution Principal, input and output mapping, target Resource mapping, Effect
+and failure mapping, correlation rules, and result-return path. When the mapped
+Action is protected, it also identifies the authorization requirement and
+policy application point.
 
 ## Binding structure
 
@@ -126,6 +129,12 @@ Both operations participate in an **interactive run protocol**. One event on
 the stream is one protocol Message occurrence. A resolved binding may expose
 capability discovery through another operation, but discovery does not alter
 the run Protocol and does not negotiate authority.
+
+Each start or continue request is a protocol Message occurrence sent by the
+application endpoint to the agent endpoint. It conforms to the corresponding
+Interface operation and carries the `threadId` and new `runId` correlation.
+Nested conversation records can describe earlier exchanges and do not become
+new Message occurrences merely because the request carries them.
 
 The Interface contract declares which parts of run input are required:
 
@@ -259,8 +268,11 @@ and occurrence scope for each state stream. It declares:
 
 `STATE_SNAPSHOT` creates or replaces the materialized State occurrence at its
 declared point. `STATE_DELTA` records a proposed or accepted transition according
-to the writer authority. The AG-UI producer identified by `subagentRunId` is
-provenance, not state ownership.
+to the writer authority. Every mapped replacement or transition identifies its
+initiating Agent, Runtime, Control-flow step, Action, or external event. A
+binding that cannot establish that attribution reports the state feature as
+unsatisfied. The AG-UI producer identified by `subagentRunId` is provenance,
+not state ownership.
 
 The bidirectional presence of state does not permit concurrent writes by
 implication. A binding with several writers is unsatisfied until it supplies
@@ -282,22 +294,36 @@ The result path depends on the selected contract:
 
 Each frontend Tool description resolves to one AgSDL Tool definition and
 Action. Name matching alone is insufficient. Before an attempt, the executor
-validates the complete arguments against the mapped input contract. The attempt
-creates one Action occurrence that identifies the executor and acting Principal.
-A correlated result records the reported outcome, but does not by itself prove
-an external Effect.
+validates the complete arguments against the mapped input contract and resolves
+the target Resources against the Action contract.
 
-When the mapped Action is protected, its policy application point authenticates
-and authorizes the acting Principal immediately before the attempt. An
-unprotected Action has no authorization requirement by implication.
+When the mapped Action is protected, its policy application point obtains the
+required authentication evidence, applies the declared Policies, and records a
+distinct Authorization decision immediately before the attempt. The decision
+binds the acting Principal, Action, target Resources, material context, Policy
+versions, result, and decision time. An unprotected Action has no authorization
+requirement by implication.
+
+Invalid arguments create no Action occurrence. A denied or indeterminate
+Authorization decision prevents the attempt and is recorded without an Action
+or Effect occurrence. Once the executor attempts the Action after validation
+and, when protected, a permitted Authorization decision, the binding creates an
+Action occurrence identifying the executor, acting Principal, target Resources,
+and outcome even if execution fails. A correlated result records the reported
+outcome, but does not by itself prove an external Effect.
 
 If the application edits arguments, the trace preserves the original and
 replacement values and the executor validates the replacement. For a protected
 Action, the binding reevaluates authorization and Approval when their material
 context changed.
 
-Agent-side Tools are outside a frontend tool binding. MCP tools exposed by
-AG-UI middleware need an additional MCP binding and transformation record.
+Agent-side Tools are outside this frontend execution feature. Their AG-UI events
+can be imported as call proposals and reported results, but mapping their
+execution to Action and Effect occurrences requires a separate Tool binding
+that identifies the executor, acting Principal, target Resources, and any
+protection. A conformance report lists that mapping as not claimed, unsatisfied,
+or separately satisfied instead of claiming general AG-UI Tool execution. MCP tools
+exposed by AG-UI middleware also need an MCP binding and transformation record.
 
 ### Interrupts and human approval
 
@@ -336,6 +362,11 @@ A resume entry maps to an Approval decision only when the binding:
 the proposed Action was approved. `cancelled` means the respondent abandoned
 the interrupt without a meaningful payload. It is distinct from a denial
 expressed inside a resolved payload.
+
+For the reviewed 1.0 draft, the external contract set records that the
+authoritative schema permits `cancelled` while the prose says `abandoned`. The
+binding validates structure against `cancelled` and does not accept
+`abandoned` unless an explicit compatibility transform declares that loss.
 
 The resume request addresses every open interrupt as one complete protocol
 input. If the selected 0.x contract includes the documented exact-tuple replay
@@ -447,10 +478,11 @@ and reports result and Effect evidence. For a protected Action, it also applies
 the declared authorization requirement and policy application point.
 
 Candidate tests include malformed and fragmented arguments, parallel calls,
-unknown tools, unprotected execution, protected denial, edited parameters,
-failed client execution, duplicate results, the next-run frontend result path,
-the separate 0.x interrupt path, external partial Effects, and an MCP-backed
-tool that requires a second binding.
+unknown tools, unresolved target Resources, unprotected execution, protected
+denial without an Action occurrence, edited parameters, failed attempted
+execution with an Action occurrence, duplicate results, the next-run frontend
+result path, the separate 0.x interrupt path, external partial Effects, an
+excluded agent-side Tool, and an MCP-backed tool that requires a second binding.
 
 ### Candidate feature: AG-UI state synchronization
 
@@ -471,8 +503,9 @@ Action, the additional Authorization mapping.
 
 Candidate tests include parallel interrupts, partial resume, wrong thread,
 unknown identifier, expiry, schema mismatch, denial, cancellation, approve with
-edited arguments, changed policy version, and an unauthenticated responder.
-Exact-tuple replay is added when the selected 0.x contract requires it.
+edited arguments, changed policy version, an unauthenticated responder, and the
+1.0 draft's `cancelled` versus `abandoned` divergence. Exact-tuple replay is
+added when the selected 0.x contract requires it.
 
 ### Candidate feature: AG-UI stop control
 
