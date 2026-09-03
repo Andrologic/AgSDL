@@ -19,3 +19,4 @@ change must be applied separately and reviewed against the accepted proposal.
 - [`0006: A2A 1.0 external binding`](0006-a2a-1.0-external-binding.md)
 - [`0007: Agent User Interaction Protocol binding`](0007-agent-user-interaction-protocol-binding.md)
 - [`0008: external A2UI format binding`](0008-a2ui-format-binding.md)
+- [`0009: Agent Payments Protocol binding extension model`](0009-agent-payments-protocol-binding.md)
