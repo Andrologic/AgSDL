@@ -133,12 +133,22 @@ policy application points required by the core model. This operation mapping is
 distinct from any Action proposed by a tool-call event.
 
 For every Action mapped by this binding, the executor validates the complete
-input and resolves target Resources before an attempt. An attempt creates an
-Action occurrence that identifies the executor, acting Principal, target
-Resources, and outcome. A reported result remains distinct from evidence that
-an Effect occurred. Only a protected Action adds an authorization requirement,
-policy application points, required authentication evidence, and an
-Authorization decision.
+input and resolves target Resources before an attempt. A proposal with an
+unknown Tool, incompatible mapping, invalid input, or unresolved target Resource
+creates no Action or Effect occurrence. For a protected Action, the policy
+application point obtains the required authentication evidence, applies the
+declared Policies, and records a distinct Authorization decision immediately
+before the attempt. The decision binds the acting Principal, Action, target
+Resources, material context, Policy versions, result, and decision time. A
+denied or indeterminate decision prevents the attempt and creates no Action or
+Effect occurrence.
+
+An attempt creates an Action occurrence that identifies the executor, acting
+Principal, target Resources, and outcome, even if execution fails. A reported
+result remains distinct from evidence that an Effect occurred. When evidence
+establishes an Effect, the binding creates a distinct Effect occurrence
+attributable to the Action occurrence. Without sufficient evidence, the Effect
+remains unknown unless the declared observation boundary can prove its absence.
 
 Both operations participate in an **interactive run protocol**. One event on
 the stream is one protocol Message occurrence. A resolved binding may expose
@@ -308,29 +318,15 @@ The result path depends on the selected contract:
 | Published 0.x tool-bound interrupt | agent side after resume | the interrupted run ends, the next run carries `resume`, and that run can emit `TOOL_CALL_RESULT` |
 
 Each frontend Tool description resolves to one AgSDL Tool definition and
-Action. Name matching alone is insufficient. Before an attempt, the executor
-validates the complete arguments against the mapped input contract and resolves
-the target Resources against the Action contract.
-
-When the mapped Action is protected, its policy application point obtains the
-required authentication evidence, applies the declared Policies, and records a
-distinct Authorization decision immediately before the attempt. The decision
-binds the acting Principal, Action, target Resources, material context, Policy
-versions, result, and decision time. An unprotected Action has no authorization
+Action. Name matching alone is insufficient. Frontend execution follows the
+common Action mapping above. An unprotected Action has no authorization
 requirement by implication.
 
-Invalid arguments create no Action occurrence. A denied or indeterminate
-Authorization decision prevents the attempt and is recorded without an Action
-or Effect occurrence. Once the executor attempts the Action after validation
-and, when protected, a permitted Authorization decision, the binding creates an
-Action occurrence identifying the executor, acting Principal, target Resources,
-and outcome even if execution fails. A correlated result records the reported
-outcome, but does not by itself prove an external Effect.
-
 If the application edits arguments, the trace preserves the original and
-replacement values and the executor validates the replacement. For a protected
-Action, the binding reevaluates authorization and Approval when their material
-context changed.
+replacement values and the executor validates the replacement. The binding
+reevaluates any applicable Approval when its material context changed. For a
+protected Action, it also reevaluates authorization when its material context
+changed.
 
 Agent-side Tools are outside this frontend execution feature. Their AG-UI events
 can be imported as call proposals and reported results, but mapping their

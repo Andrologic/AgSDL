@@ -190,7 +190,7 @@ The result path depends on the executor. An agent-side tool can return
 `TOOL_CALL_RESULT` in its event stream. A frontend tool finishes the calling run
 without that event; the application sends its result as a tool message in the
 next run input. The published 0.x tool-bound interrupt pattern is a third path:
-after resume, the agent executes the protected tool and emits
+after resume, the agent executes the proposed tool and emits
 `TOOL_CALL_RESULT` in the resumed run. These paths are not interchangeable.
 
 **AgSDL assessment.** A frontend tool can map to an AgSDL Tool only when the
