@@ -15,4 +15,4 @@ change must be applied separately and reviewed against the accepted proposal.
 - [`0002: core conceptual model`](0002-core-conceptual-model.md)
 - [`0003: conformance and versioning`](0003-conformance-and-versioning.md)
 - [`0004: trust, security, and human control`](0004-trust-security-and-control.md)
-- [`0005: Agent Payments Protocol binding extension model`](0005-agent-payments-protocol-binding.md)
+- [`0009: Agent Payments Protocol binding extension model`](0009-agent-payments-protocol-binding.md)

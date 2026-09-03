@@ -1,4 +1,4 @@
-# Proposal 0005: Agent Payments Protocol binding extension model
+# Proposal 0009: Agent Payments Protocol binding extension model
 
 - Status: proposed
 - Date: 2026-09-02
@@ -470,10 +470,12 @@ The following claims remain distinct:
 - a party was attributable to a signed statement; and
 - an adjudicator assigned legal or scheme liability.
 
-AP2 mandates and receipts can support the first claims within declared evidence
-boundaries. External payment, fulfillment, dispute, and legal systems supply the
-rest. The extension must not label a cryptographically valid chain as proof of
-liability.
+AP2 mandates and receipts can support a verifier's result, observed checkout
+completion, attribution to a signed statement, and only those payment Action or
+Effect occurrences within the issuer's declared observation boundary. External
+payment, fulfillment, dispute, and legal systems supply evidence for the other
+claims. The extension must not label a cryptographically valid chain as proof
+of liability.
 
 The execution trace should preserve distinct identities for the user,
 Shopping Agent, Agent Provider or credential issuer, Trusted Surface, Merchant,

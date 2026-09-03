@@ -21,11 +21,6 @@ Protocol". The v0.2 specification heading says "Agentic Payment Protocol".
 This note uses the public project name and records the heading difference
 rather than treating it as another protocol.
 
-The phrase "Agent Payments ProtocolContent Protocol" does not identify a
-contract in the reviewed AP2 sources. It appears to concatenate names. This
-review does not infer a second Content Protocol or confuse AP2 with Model
-Context Protocol.
-
 Google contributed AP2 to the FIDO Alliance in April 2026. The
 [FIDO announcement](https://fidoalliance.org/fido-alliance-to-develop-standards-for-trusted-ai-agent-interactions/)
 says its Payments Technical Working Group will develop agent-initiated commerce
