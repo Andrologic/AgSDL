@@ -1,6 +1,6 @@
 # Local implementation-preparation work plan
 
-- Status: active, non-normative maintenance plan
+- Status: bounded maintenance completed; continuation awaits maintainer decisions
 - Date: 2026-09-04
 - Starting integration commit: `3fac313`
 - Coordinator: Codex task `01a06e19-35e4-70f0-a295-1e7a26c5ed6a`
@@ -86,13 +86,48 @@ Documenting alternatives does not select or accept them. Work on schemas,
 parsers, adapters, or another product starts only after the applicable decisions
 and scope have been explicitly authorized.
 
+## Conditional continuation after maintainer decisions
+
+The [implementation-readiness review](../reviews/0003-implementation-readiness.md#five-decisions-for-maintainer-review)
+records five decision gates and small witnesses for checking the answers. A
+general redesign is not an exit criterion. Preserve the existing distinctions
+unless a reviewed decision changes them.
+
+| Next phase | Prerequisite | Work and reviewable result |
+| --- | --- | --- |
+| Reconcile proposed core rules | Explicit answers to the relevant D1 through D4 questions | Update the affected proposals and traceability together. Reuse the witnesses to check both accepted and rejected cases. Serialize edits to the same proposal; parallelize only independent files. |
+| Bound the first external contract | D5 scope, plus D3, D4, and the Identity-row interpretation where applicable | Name the intended third-party operation, required inputs, preserved information, diagnostics, and verdict rules. Include D1 and D2 only if their constructs enter that scope. |
+| Adopt a normative subset | Review and acceptance of that bounded contract | Put adopted semantics in `spec/`, then derive syntax, schemas, and positive and negative conformance cases. Keep unresolved features explicitly outside the claim. |
+| Demonstrate independent interoperability | Stable adopted input and result contracts, plus separate authorization for any other repository | Compare independent readers on the same corpus. Verify preservation and loss reporting before claiming compatibility with a third-party product such as Agent Graph Studio. |
+
+Keep the two-task capacity limit in these phases. Each phase ends with a
+reviewed result and a passing integrated check; the next phase is dispatched
+only when its prerequisite is actually satisfied. These phases are a proposed
+sequence, not authorization to settle the reserved questions or start work in
+another repository.
+
 ## Execution record
 
 | Lot | State | Evidence |
 | --- | --- | --- |
 | 0 | Integrated | `3fac313`; `./scripts/check.sh` passed before and after integration |
-| A | Dispatched | Sol high, isolated worktree |
-| B | Dispatched | Astra medium, isolated worktree |
-| C | Queued | Wait for capacity and confirm the smallest useful checking scope |
-| D | Conditional | Depends on verified findings from B |
-| E | Pending | Coordinator records integrated commits and remaining decisions here |
+| A | Integrated | `95b1720`, merged as `d8e9e07`; coordinator reviewed source summaries and requested corrections before integration |
+| B | Integrated | `8c2a2ff` and correction `47ece89`, merged as `bf4aa27`; separate Astra review identified the REQ-009 wording nuance, corrected before integration |
+| C | Integrated | `4f55e45`, merged as `4409d1d`; coordinator and separate Astra reviewer verified the limited checker. Two false positives were corrected before approval; seven focused tests and the integrated repository check passed |
+| D | Integrated | `83d381c`, merged as `3cf8e27`; coordinator verified the definition against proposal 0002; relation meanings and cardinalities are unchanged |
+| E | Completed | Coordinator reviewed the integrated scope and reran repository checks. Remaining conceptual work stops at D1 through D5; no proposed language semantics were adopted |
+
+The two production tasks were reused rather than multiplied:
+
+- `01a06e2f-cee5-7db0-97fa-1c3a4d6bf6c9`: lots A and C, Sol high.
+- `01a06e30-24a9-7692-a2c6-f97e5920e8d8`: lots B and D, Astra medium.
+
+Both tasks completed their assigned work and await further instructions. The
+independent review agent completed its checks. The primary checkout remains on
+`develop`; integration commits are local. No push, publication, deployment, or
+change in another project was performed.
+
+The readiness review describes its recorded base commit. Lot D subsequently
+corrected the Principal wording it identified; the separate Agent Identity-row
+question remains open. The Markdown checker verifies repository links only and
+does not establish AgSDL conformance or third-party interoperability.
