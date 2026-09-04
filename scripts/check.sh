@@ -16,6 +16,8 @@ required_files=(
   docs/research/a2a-v1.0.1.sha256
   scripts/verify-a2a-1.0.1-sources.sh
   scripts/test-verify-a2a-1.0.1-sources.sh
+  scripts/check-markdown-links.py
+  scripts/test-check-markdown-links.py
 )
 
 for file in "${required_files[@]}"; do
@@ -24,6 +26,11 @@ for file in "${required_files[@]}"; do
     exit 1
   fi
 done
+
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "Python 3 is required for repository checks." >&2
+  exit 1
+fi
 
 if command -v rg >/dev/null 2>&1; then
   if rg -n '[[:blank:]]+$' --glob '*.md' --glob '*.toml' --glob '*.yaml' .; then
@@ -36,4 +43,6 @@ git diff --check
 bash -n scripts/verify-a2a-1.0.1-sources.sh
 bash -n scripts/test-verify-a2a-1.0.1-sources.sh
 ./scripts/test-verify-a2a-1.0.1-sources.sh
+python3 scripts/test-check-markdown-links.py
+python3 scripts/check-markdown-links.py
 echo "AgSDL repository checks passed."
