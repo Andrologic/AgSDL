@@ -3,6 +3,10 @@
 AgSDL is in a pre-draft incubation phase. Repository maintainers approve changes
 through reviewed pull requests.
 
+Governance applies to changes within the repository boundary established by
+Decision 0003 and maintained in `docs/scope.md`. Rules for conformance claims
+take effect only when adopted by the normative specification.
+
 Normative decisions require:
 
 1. a written proposal;
