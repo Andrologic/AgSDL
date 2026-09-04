@@ -5,9 +5,9 @@ It is an open, implementation-independent specification for describing complete
 agentic systems in a form that people and software can read, validate, exchange,
 and version.
 
-The project is at the pre-draft stage. The planned version `0.0.1` is a
-non-normative conceptual release. It makes no promise of syntax, compatibility,
-conformance, execution, or interoperability. See
+The project is at the pre-draft stage. Version `0.0.1` was published as a
+non-normative conceptual release under the tag `v0.0.1`. It makes no promise of
+syntax, compatibility, conformance, execution, or interoperability. See
 [`Decision 0002`](docs/decisions/0002-version-0.0.1.md) for its exact status.
 
 ## Intended scope
@@ -50,10 +50,14 @@ boundary.
 
 ## Current work
 
-The first milestone is a terminology and requirements draft. Syntax comes only
-after the system model and conformance boundaries are clear.
+The repository now contains ten non-normative proposals. Proposals 0001 through
+0004 were the conceptual inputs included in `v0.0.1`; proposals 0005 through
+0010 were added later to investigate external bindings. None has been accepted
+into the normative specification. Syntax comes only after the system model and
+conformance boundaries are clear.
 
 - [`Roadmap`](ROADMAP.md)
+- [`Local implementation-preparation work plan`](docs/plans/2026-09-04-local-work.md)
 - [`Project scope`](docs/scope.md)
 - [`Prior-art research`](docs/research/prior-art.md)
 - [`MCP 2026-07-28 binding research`](docs/research/mcp-2026-07-28.md)
