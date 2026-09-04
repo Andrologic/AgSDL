@@ -45,3 +45,15 @@ Run:
 ```
 
 The check must succeed before a change is committed.
+
+The command requires Python 3 and uses no third-party Python packages. Its
+Markdown link check verifies that local inline-link and image destinations
+exist. It resolves relative paths from the Markdown file, strips query and
+fragment suffixes, decodes percent escapes, and skips fenced code blocks,
+same-line inline code spans, external URI schemes, site-root paths, and
+anchor-only links.
+
+This is a repository check, not a CommonMark parser. It recognizes destinations
+on the same line as `](`, including paths enclosed in angle brackets. It does
+not check reference-style or HTML links, heading anchors, remote URLs, indented
+code blocks, multiline code spans, or destinations with nested parentheses.
