@@ -1,5 +1,8 @@
 # Roadmap
 
+Every phase follows the repository boundary established by
+`docs/decisions/0003-repository-boundary.md` and maintained in `docs/scope.md`.
+
 ## Version 0.0.1: conceptual pre-draft
 
 Version `0.0.1` packages the reviewed conceptual work without making it
@@ -34,11 +37,14 @@ or interoperability. The four proposals remain proposed inputs to later work.
 - Choose canonical and authoring serializations.
 - Publish schemas and validation rules.
 - Define conformance levels and compatibility rules.
-- Build a reference parser and validator.
+- Build non-normative reference tooling after the relevant behavior is accepted.
+- Candidate operations include parsing, validation, normalization, reference
+  resolution, and static inspection.
 
 ## Phase 3: interoperability
 
 - Map AgSDL concepts to selected frameworks and protocols.
 - Add round-trip and portability tests.
 - Publish a conformance test suite.
+- Publish versioned binding fixtures and evidence requirements.
 - Produce the first public draft.

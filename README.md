@@ -24,12 +24,27 @@ An AgSDL document should eventually be able to describe:
 AgSDL will define a portable system model. It will not require a particular
 agent framework, model provider, transport, or execution engine.
 
+## Repository boundary
+
+This repository maintains the specification, its supporting artifacts, and the
+material needed to govern, publish, and verify them. It may also publish
+non-normative reference tooling for reading, transforming, and analyzing AgSDL
+documents. Planned operations include parsing, validation, normalization,
+reference resolution, and static inspection.
+
+Reference tooling may produce transformed artifacts, diagnostics, and reports.
+It does not execute the systems described by AgSDL documents. See the
+[`project scope`](docs/scope.md) and
+[`Decision 0003`](docs/decisions/0003-repository-boundary.md) for the complete
+boundary.
+
 ## Repository structure
 
 - `spec/` will contain normative specification text.
 - `schemas/` will contain machine-readable validation artifacts.
 - `examples/` contains non-normative conceptual examples during the pre-draft
   stage.
+- `scripts/` contains repository and source-verification checks.
 - `proposals/` records proposed normative changes before they enter the spec.
 - `docs/` contains scope, rationale, and architecture decisions.
 
@@ -51,6 +66,7 @@ after the system model and conformance boundaries are clear.
 - [`Post-correction review`](docs/reviews/0002-post-correction-review.md)
 - [`Proposals`](proposals/README.md)
 - [`Version 0.0.1 decision`](docs/decisions/0002-version-0.0.1.md)
+- [`Repository boundary decision`](docs/decisions/0003-repository-boundary.md)
 
 ## Contributing
 

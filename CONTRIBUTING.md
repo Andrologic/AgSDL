@@ -3,6 +3,17 @@
 AgSDL is still defining its problem and vocabulary. Early contributions should
 reduce ambiguity rather than add syntax quickly.
 
+## Repository boundary
+
+Read `docs/scope.md` before proposing a new artifact or tool. Contributions may
+address any category included in that boundary, including language artifacts,
+repository maintenance material, and reference tooling. Research, proposals,
+examples, and normative text keep the status defined by the repository's source
+hierarchy. Submitting a contribution does not make its content normative.
+
+Base descriptions of external systems on published interfaces and documented
+behavior relevant to an AgSDL mapping or conformance requirement.
+
 ## Types of change
 
 Editorial corrections may go directly through a pull request when they do not
