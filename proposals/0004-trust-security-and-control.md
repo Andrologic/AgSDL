@@ -67,8 +67,9 @@ It does not:
 
 ## Terms
 
-**Principal** is a human or machine identity that may receive authority or be
-held accountable for an action.
+**Principal** is an actor that may receive authority or be held accountable for
+an action. An Identity identifies the actor, as defined in
+[proposal 0002](0002-core-conceptual-model.md#principals-identities-and-authentication-evidence).
 
 **Resource** is data, a service, or an execution facility to which access can be
 controlled.
