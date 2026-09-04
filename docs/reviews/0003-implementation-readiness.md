@@ -27,7 +27,7 @@ the external protocols or claims that an adapter exists.
 | Complete system using exclusively imported Agent definitions | The System ownership minimum rejects it. | Demonstrated restriction; intent needs confirmation. |
 | One Action occurrence with distinct authorization requirements at several points | The occurrence cannot directly retain all corresponding decisions under the current relation limit. | Demonstrated representation conflict; no general impossibility of multi-point execution is proved. |
 | Coherent Principal and Identity | The core permits distinct actor and identifier records; proposal 0004 defines Principal as an identity. | Terminological conflict, with a separate underspecified Identity relation. |
-| Earlier conformance levels alongside implementation features | The mandatory level claim has no defined interpretation in the feature model. | Unreconciled requirement, not proof that features and all possible levels are logically incompatible. |
+| Earlier conformance levels alongside implementation features | The required ability to express a level has no defined correspondence in the feature model. | Unreconciled requirement, not proof that features and all possible levels are logically incompatible. |
 | Incomplete fragment before resolution | The intent and binding procedure exist; applicability of mandatory core relations by phase remains incomplete. | Missing common validation rule, not missing fragment support. |
 | Third-party reading, validation, and exchange | Useful obligations exist, but their normative input and result contracts do not. | Deliberate pre-draft incompleteness and remaining semantic decisions. |
 
@@ -158,10 +158,12 @@ proposes no universal level and forbids publishing feature identities before
 their normative scope is stable.
 
 [Proposal 0001, REQ-009](../../proposals/0001-requirements-and-use-cases.md#validation-and-conformance)
-still requires descriptions and processors to state a claimed conformance
-level, and its traceability entry refers to a tested level. No rule identifies
-the level for this consumer or equates a level with a feature set. The proposals
-cannot supply a determinate combined claim contract as written. This is not
+requires descriptions and processors to be able to state a claimed conformance
+level. This requires expressive capability; it does not require every
+description or processor to declare a level systematically. Its traceability
+entry says that claims name their tested level. No rule defines how that level
+corresponds to this consumer's feature set. The proposals therefore cannot
+supply a determinate combined claim contract as written. This is not
 proof that all possible level systems contradict feature sets: an explicit
 translation could allow both. It would be a substantive reconciliation of a
 mandatory requirement, not merely a word substitution.
@@ -228,7 +230,7 @@ is a dependency of the fifth decision rather than an assumed correction.
 | --- | --- | --- | --- |
 | D1. Must a complete System own an Agent locally? | Retain the restriction and document it, or permit all-imported Agent composition while preserving source ownership. Recommend permitting that composition; the exact participation relation still needs review. | System minimum requirements, package composition verdicts, complete imports under 0010. | Provenance review and examples of fragments that retain source ownership. |
 | D2. How does one occurrence account for every required authorization point? | Permit multiple directly associated decisions, or define an explicit aggregate or indirect accounting contract. Recommend direct accounting for distinct requirements; do not assume that a shared Policy implies a shared decision. | Complete authorization evidence, multi-point validation, related trace requirements. | Review of distinct Actions and their individual decisions in AP2 and other bindings. |
-| D3. What replaces or interprets the mandatory level claim? | Revise REQ-009 around feature and profile claims, or retain levels with an explicit mapping and scope. Recommend the feature model already developed in 0003. | Claim completeness, requirement traceability, comparable processor evidence. | Inventory of operation-specific obligations, without minting feature identifiers. |
+| D3. How is the required ability to express a level reconciled with feature claims? | Revise REQ-009 around feature and profile claims, or retain the ability to express levels with an explicit mapping and scope. Recommend the feature model already developed in 0003. | Claim completeness, requirement traceability, comparable processor evidence. | Inventory of operation-specific obligations, without minting feature identifiers. |
 | D4. Which missing relations can remain valid before resolution? | Define phase-specific deferral through explicit unresolved requirements, or require structurally complete definitions and keep incomplete material outside a positive document verdict. Recommend explicit deferral consistent with 0010, with the permitted cases reviewed. | Incomplete fragment verdicts, import completion, composition and resolver checks. | Inspection of declarations and separate reporting of missing facts without a positive conformance claim. |
 | D5. What is the first normative third-party operation contract? | Select a bounded reading, validation, and exchange scope, or postpone conformance claims until a broader model is adopted. Recommend scoping that contract before implementation claims, without selecting syntax here. | Stable feature contracts, phase rules, preservation and loss semantics, agreement on verdicts. D3 and D4 and the Identity-row interpretation affect the selected scope; D1 and D2 apply when their constructs are included. | A non-normative requirements inventory and reference-tooling reports that identify inputs, covered checks, and unknowns. |
 
@@ -241,7 +243,8 @@ references to a profile with its already established configuration or
 conformance qualifier. No source edits are made by this report.
 
 Changing ownership or authorization cardinalities, giving the Agent Identity
-row a previously unspecified interpretation, retiring mandatory level claims,
+row a previously unspecified interpretation, removing the required ability to
+express conformance levels,
 allowing missing relations to satisfy an initial validation phase, or defining
 aggregate verdicts changes meaning. These require proposal review and maintainer
 validation. Binding-specific support and existing safeguards should survive
