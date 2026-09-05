@@ -39,8 +39,9 @@ accepted design directions:
 - prepare a bounded contract for reading, inspection, structural validation,
   and exchange, including missing information, preservation, and loss reporting.
 
-The [active work plan](docs/plans/2026-09-05-conceptual-reconciliation.md)
-reconciles the proposals with those directions and prepares proposal 0011.
+The [reconciliation work plan](docs/plans/2026-09-05-conceptual-reconciliation.md)
+records the reviewed proposal changes and preparation of the
+[first contract candidate](proposals/0011-first-exchange-contract.md).
 The exact first contract, including its normative subset, permitted deferral
 inventory, identity-relation interpretation, and input and result rules, still
 requires maintainer review. Neither the directions nor the reconciled proposals
