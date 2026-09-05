@@ -1,7 +1,8 @@
 # Prior art for AgSDL
 
 Status: research note, non-normative
-Last reviewed: 2026-09-02
+Source review date: 2026-09-02
+Comparative summary updated: 2026-09-04
 
 ## Purpose and method
 
@@ -24,8 +25,10 @@ Each source record separates two kinds of statement:
   terminology. These conclusions belong to this research note, not to the
   cited source.
 
-No source below covers AgSDL's intended scope by itself. Most define an
-integration boundary, a runtime programming model, or one cross-cutting concern.
+The AgSDL side of each comparison is the proposed conceptual model recorded in
+proposals 0001 through 0004. It is not an accepted or published external
+contract. The surveyed sources define narrower integration boundaries, runtime
+programming models, or cross-cutting concerns.
 
 ## Agent definitions and orchestration
 
@@ -50,6 +53,29 @@ model, not an interoperability standard. Its `Agent`, `Runner`, `context`,
 would risk implying that behavior if it reused those names without narrower
 definitions.
 
+### Open Agent Specification
+
+**Source facts.** Oracle maintains the [Open Agent Specification, or Agent
+Spec](https://github.com/oracle/agent-spec/tree/agent-spec-26.1.2). The
+[language specification
+26.1.2](https://oracle.github.io/agent-spec/26.1.2/agentspec/language_spec_26_1_2.html)
+defines serialized components for conversational agents, structured flows,
+models, tools, remote services, multi-agent patterns, datastores, control-flow
+edges, and data-flow edges. PyAgentSpec and TSAgentSpec implement serialization,
+validation, and parts of this model. Framework adapters translate supported
+components to other runtimes. The released source contains SDK and adapter tests,
+but no merged versioned cross-runtime conformance suite was found.
+
+**AgSDL assessment.** Agent Spec is direct prior art for declarative agent and
+workflow exchange. Its concrete flow, I/O, reference, and adapter rules are
+valuable test cases. Its root components do not describe AgSDL's complete system
+boundary, ownership, principal, authority, policy, trust, deployment, or
+conformance model. Agent Spec's implicit data space, type conversions, shared
+conversation, runtime configuration, and plugin behavior must remain qualified
+external semantics. The focused [Agent Spec and AgSDL research
+note](open-agent-specification.md) records the versioned comparison, terminology
+collisions, mapping hypotheses, and evidence gaps.
+
 ### A2A Agent Cards and core protocol
 
 **Source facts.** The A2A Project under the Linux Foundation maintains the
@@ -66,6 +92,8 @@ to an Agent Card without treating it as a complete system definition. `agent`,
 `skill`, `capability`, `task`, `message`, `artifact`, `context`, and `extension`
 all collide with broader concepts in AgSDL's scope. In particular, an A2A skill
 is advertised service metadata, not necessarily an Agent Skills package.
+The dedicated [A2A 1.0.1 integration research](a2a-1.0.1.md) records the exact
+source edition, state mappings, security boundary, and verification limits.
 
 ### FIPA agent architecture and interaction protocols
 
@@ -220,6 +248,44 @@ risks.
 
 ## Messages, events, and workflows
 
+### Agent User Interaction Protocol
+
+**Source facts.** The AG-UI project defines an event protocol between agent
+backends and user-facing applications. The reviewed published contracts are
+the packages from release `2026-08-31`, including `@ag-ui/core` 0.0.59 and
+`ag-ui-protocol` for Python 0.1.22. They cover run input, ordered lifecycle,
+text, tool-call, state, interrupt, step, activity, reasoning, and subagent event
+families, with different subsets across packages and encodings. The separate
+1.0 draft adds an authoritative schema and normative processing rules but was
+not a published replacement for the 0.x packages at review time.
+
+**AgSDL assessment.** AG-UI is a candidate external binding for interactive run
+input and event output at a user-facing interface. It does not describe the
+agent backend's internal system graph. Tool-call events do not prove tool
+execution or authorization, interrupt records do not by themselves establish
+an approval, and state events do not define ownership or conflict resolution.
+The focused [AG-UI research note](agent-user-interaction-protocol.md) records
+the package versions, pinned release and draft commits, contract differences,
+mapping hypotheses, and candidate tests.
+
+### A2UI
+
+**Source facts.** The A2UI project maintains a declarative JSON format for
+agent-generated user interfaces. At the upstream commit reviewed on 2026-09-02,
+`v0.9.1` was the current production version and `v1.0` was a release candidate.
+The format defines surface lifecycle messages, flat component graphs selected
+from catalogs, data bindings and updates, renderer-to-agent user actions, and
+transport requirements. See the dedicated [A2UI research
+note](a2ui.md) for pinned sources and version differences.
+
+**AgSDL assessment.** A2UI is a suitable candidate external format binding for
+generated presentation state. It is not a core system model, transport,
+authorization protocol, or proof that a renderer behaves safely. Surface,
+catalog, component, data model, and action concepts map to existing AgSDL
+Resource, State, Interface, Protocol, Message, Action, Runtime, and binding
+concepts with explicit losses. Stable and candidate versions need separate
+bindings.
+
 ### AsyncAPI
 
 **Source facts.** The AsyncAPI Initiative under the Linux Foundation maintains
@@ -306,6 +372,25 @@ declare where decisions must be enforced without embedding Rego. OPA does not
 define agent instruction precedence, human approval UX, secret distribution,
 or tool-side enforcement. `policy`, `rule`, `decision`, `input`, `data`,
 `bundle`, and `enforcement` need precise qualification.
+
+### Agent Payments Protocol
+
+**Source facts.** AP2 `v0.2.0` defines payment-specific authorization through
+open and closed Checkout and Payment Mandates, protocol roles, deterministic
+verification, constraint evaluation, and signed acceptance or rejection
+receipts. The release depends on separately identified credential contracts.
+It does not define the surrounding commerce API, transport, settlement, or
+general agent-to-agent mandate redelegation.
+
+**AgSDL assessment.** AP2 is a candidate external binding for a payment
+authorization flow, not a general agent or authority model. Its roles have
+different agentic requirements, and several may be occupied by non-agentic
+entities. They cannot be mapped uniformly to the proposed AgSDL Agent or Role
+concepts. Signed mandates and receipts can supply evidence for bounded
+decisions, but they do not establish every external effect, legal consent, or
+liability. The focused [AP2 v0.2.0
+research note](ap2-v0.2.0.md) records the release-pinned sources, dependency
+gaps, mapping hypotheses, and conformance limits.
 
 ## Software-chain artifacts and packaging
 
@@ -402,6 +487,7 @@ rating. These research ratings do not establish compatibility with AgSDL.
 | Source | Agent description | Multi-agent and orchestration | Tools and skills | Prompts and policy | Memory and knowledge | Communication | Workflow | Observability | Authorization | Packaging and provenance | Extensions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | OpenAI Agents SDK | Strong | Strong | Strong | Partial | Partial | Partial | Partial | Strong | Partial |  | Partial |
+| Open Agent Specification 26.1.2 | Strong | Partial, named patterns | Strong | Partial, prompts and confirmation | Partial, datastores and conversation | Partial, remote components | Strong | Partial, tracing and evaluation | Confirmation only | Partial, serialized components | Plugins and metadata |
 | A2A | Strong, external | Partial | Partial |  | Context only | Strong | Task lifecycle | Partial | Security declaration | Artifacts | Strong |
 | FIPA | Strong, platform-era | Strong | Capability discovery |  | Ontology only | Strong | Interaction protocols |  | Agent identity |  | Protocol library |
 | MCP |  |  | Strong | Prompts only | Resources only | Strong client-server | Task extension | Logging hooks | OAuth boundary | Resource links | Strong |
@@ -410,11 +496,14 @@ rating. These research ratings do not establish compatibility with AgSDL.
 | OpenAI Model Spec | Assistant only |  | Tool behavior | Strong | Conversation context | Message roles |  |  | Authority, not access control |  |  |
 | LangGraph | Runtime agent | Graph runtime | Nodes and tools |  | Strong | State transitions | Strong |  |  | Checkpoints | Framework-specific |
 | W3C PROV | Agent as responsibility | Delegation relation |  |  | Provenance only |  | Activities |  |  | Strong | Bundles |
+| AG-UI published 0.x |  | Subagent attribution only | Partial, client tools |  | State and messages only | Strong, agent-to-UI | Run lifecycle | Partial, run events | Interrupts only |  | Raw and custom events |
+| A2UI | External generator role |  | Renderer functions |  | Surface data model | Strong UI messages | Surface lifecycle | Errors only | Catalog caller limits only | Catalog references | Catalogs and metadata |
 | AsyncAPI |  |  | Interface only |  |  | Strong async | Replies and correlation |  | Security schemes |  | Strong |
 | BPMN | Participants | Strong | Service task only |  | Data objects only | Message flows | Strong |  | Lanes only |  | Extension elements |
 | JSON Schema |  |  | Input/output shape |  | Data shape | Payload shape |  | Validation output |  | Schema bundles | Strong |
 | OpenTelemetry | Runtime attributes | Trace relationships | Tool spans | Prompt attributes | Data-source attributes | Messaging spans | Runtime trace | Strong |  | Trace evidence | Semantic conventions |
 | OPA/Rego |  |  | Invocation decisions | Policy decisions | Policy data |  |  | Decision logs | Strong | Policy bundles | Built-ins and bundles |
+| AP2 0.2.0 |  | Protocol roles |  | Payment constraints |  | Partial, mandate exchange | Strong, payment authorization | Signed receipts | Strong, payment-specific | Signed mandates and receipts | Namespaced constraints |
 | SPDX | AI profile elements | Relationships | Components |  | Datasets |  | Build profile |  | Security profile | Strong | Profiles |
 | SLSA |  |  |  |  |  |  | Build process |  | Build controls | Strong | Tracks |
 | OCI |  |  | Packaged content |  |  | Distribution API |  |  | Registry auth boundary | Strong | Strong |
@@ -423,26 +512,29 @@ rating. These research ratings do not establish compatibility with AgSDL.
 
 These are conclusions from the comparison, not claims made by any one source.
 
-1. No surveyed standard describes both an agent's internal definition and the
-   complete system graph around it. A2A and MCP deliberately stop at external
-   protocol boundaries. Frameworks cover internal behavior but are not portable.
+1. No surveyed source provides every part of the proposed AgSDL system model.
+   Agent Spec describes agents and execution graphs but omits proposed system
+   boundary, ownership, authority, and conformance facts. A2A, MCP, AG-UI, and
+   AP2 define narrower external contracts.
 2. `Skill` has at least three incompatible uses: an A2A-advertised service, an
    Agent Skills instruction package, and a generic learned or executable
    capability. These are also independent of an invocable tool operation, an
    authority grant that permits use, and an implementation feature that a
    runtime supports.
-3. Memory has no common interchange model. Frameworks disagree on whether it
-   means conversation history, checkpointed state, durable records, retrieved
-   knowledge, or model-managed state.
+3. The survey found no common interchange model spanning conversation history,
+   checkpointed state, durable records, retrieved knowledge, and model-managed
+   state. Individual sources cover subsets with different ownership and
+   lifetime rules.
 4. Prompt precedence and authorization policy are separate concerns in the
    available work. A model's instruction hierarchy does not enforce access to a
    tool, and an OPA decision does not determine which instruction a model follows.
-5. Workflow standards specify deterministic process semantics, while current
+5. Workflow standards specify deterministic process semantics, while reviewed
    agent frameworks mix deterministic control with model-selected transitions.
-   No surveyed standard gives a portable boundary between the two.
-6. Interface schemas describe valid messages and calls, but they do not express
-   side-effect reversibility, approval gates, trust boundaries, or recovery
-   obligations in a common way.
+   The survey found no single contract for preserving that boundary across the
+   reviewed runtimes and protocols.
+6. The surveyed interface schemas describe valid messages and calls, but do not
+   express side-effect reversibility, approval gates, trust boundaries, and
+   recovery obligations in one common model.
 7. Observability standards can record executions but do not prove conformance of
    an execution to an intended agentic system definition.
 8. Supply-chain standards establish composition and provenance, not behavioral
@@ -496,12 +588,14 @@ It is a research agenda, not a set of proposed answers.
 ## Overall conclusion
 
 Composition is a candidate direction, not an integration result. Possible
-mapping hypotheses include MCP or OpenAPI for tool interfaces, A2A for remote
-agent interaction, AsyncAPI for asynchronous interfaces, OpenTelemetry for
-telemetry, OPA for one possible policy-decision architecture, and SPDX, SLSA,
-or OCI for software-chain evidence and distribution. Each hypothesis requires
-its own proposal, semantic mapping, loss analysis, and executable tests before
-AgSDL can claim integration, compatibility, or round-trip preservation. None of
-these sources supplies the still-open AgSDL concepts for agent definitions,
-topology, instruction authority, memory boundaries, portable orchestration
-meaning, permissions, failure policy, or conformance.
+mapping hypotheses include Agent Spec for declarative agents and flows, MCP or
+OpenAPI for tool interfaces, A2A for remote agent interaction, AG-UI for
+agent-to-user interaction, AP2 for payment authorization, AsyncAPI for
+asynchronous interfaces, OpenTelemetry for telemetry, OPA for one possible
+policy-decision architecture, and SPDX, SLSA, or OCI for software-chain
+evidence and distribution. Each hypothesis requires its own proposal, semantic
+mapping, loss analysis, and executable tests before AgSDL can claim
+integration, compatibility, or round-trip preservation. Together the surveyed
+sources cover parts of the proposed AgSDL model, but none covers every concern.
+Their narrower terms and contracts must remain external until a reviewed
+mapping states what is preserved, lost, or supplied separately.

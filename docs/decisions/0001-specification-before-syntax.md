@@ -12,7 +12,12 @@ conformance boundary.
 ## Decision
 
 AgSDL will define terminology, entities, relationships, requirements, and
-conformance levels before selecting a canonical serialization.
+conformance contracts before selecting a canonical serialization.
+
+The original decision referred to conformance levels. [Decision
+0004](0004-approved-design-directions.md) amends that direction to implementation
+features and conformance profiles; it preserves the requirement to define the
+model before syntax.
 
 Examples created during this phase are exploratory. They do not establish
 normative syntax.

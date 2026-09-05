@@ -2,6 +2,11 @@
 
 - Status: proposed
 - Date: 2026-09-02
+- Revised: 2026-09-05 under [Decision 0004](../docs/decisions/0004-approved-design-directions.md)
+
+Decision 0004 approves the directions for imported-Agent composition, direct
+authorization accounting, and validation by phase. The relations and detailed
+rules below remain proposed; they are not adopted normative semantics.
 
 ## Problem
 
@@ -104,6 +109,17 @@ must resolve every required binding. Replacing a resolved binding does not
 change portable meaning unless the replacement also changes a portable
 definition or requirement.
 
+### Applicability by validation phase
+
+The obligations below, including relation minima, use the two phases in
+[proposal 0003, Validation by phase](0003-conformance-and-versioning.md#validation-by-phase-and-declared-missing-obligations).
+An incomplete fragment may pass unresolved-document validation only when its
+missing obligations are explicitly declared and permitted to be deferred at
+that phase under the applicable contract. A declaration alone grants no
+permission to defer an invariant. At resolved-graph validation, a required
+obligation still missing prevents a positive verdict for the graph in scope.
+This proposal defines no general inventory of deferrable minima.
+
 ### Ownership, use, and containment
 
 This proposal uses three distinct relation kinds:
@@ -125,6 +141,14 @@ an unpackaged reusable fragment, or a Package version for definitions local to
 a reusable package. A definition imported by reference keeps its original
 lifecycle owner. Use, containment, configuration, packaging, and deployment do
 not transfer that ownership.
+
+System participation is expressed by `System uses Agent`. A participating Agent
+may be locally owned or imported from a Fragment, Package version, or another
+permitted source. Several Systems may use the same Agent definition. This
+relation identifies a definition participating in an application boundary; it
+does not create a runtime instance, transfer lifecycle ownership, or grant
+authority. A System may own no local definitions and use exclusively imported
+Agents, provided its other complete-System obligations are satisfied.
 
 ### Document roots
 
@@ -201,6 +225,13 @@ Invariants:
 - Authorization does not retroactively make missing or invalid authentication
   evidence valid when the applicable authorization requirement demands it.
 
+The `Agent represented by Identity` relation below remains underspecified. Its
+exact target meaning and cardinalities need review when preparing the first
+external contract under Decision 0004. The distinction between definition
+identity and Principal identity does not decide whether that row names the
+Agent definition or an acting identity. The row is retained as an open contract
+question and cannot establish an additional restriction on Principal identities.
+
 ### Cardinality notation
 
 `A --relation--> B [x..y]` means that one `A` has from `x` through `y` outgoing
@@ -212,16 +243,19 @@ table also states the inverse cardinality from one target back to its sources.
 ### System
 
 A **system** is the definition of one agentic application boundary. It declares
-the system's purpose, owned components, exposed interfaces, governing policies,
-optional topology, control flow, and execution requirements. It is the root used
-to resolve and validate a complete description.
+the system's purpose, participating Agents, owned components, exposed
+interfaces, governing policies, optional topology, control flow, and execution
+requirements. It is the root used to resolve and validate a complete description.
 
-The system owns definitions that are local to it and uses definitions supplied
-by packages. It does not own runtime instances or execution occurrences.
+The system owns definitions that are local to it and uses local or imported
+Agent definitions as participants. Imported definitions retain their source
+lifecycle owners. It does not own runtime instances or execution occurrences.
 
 Invariants:
 
 - A resolved complete system document has exactly one root System.
+- A System uses at least one Agent as a participant, even when it owns no Agent
+  locally. Ownership alone does not declare participation.
 - Every locally owned definition is reachable from that root by containment,
   ownership, or use relations.
 - Every interaction crossing the system boundary uses an interface declared by
@@ -562,10 +596,11 @@ Invariants:
 
 An **Action** is a definition of an operation that a principal may request or
 perform. It declares its target Resource kinds, inputs, possible Effects,
-failure behavior, and the policy application point that governs it when the
+failure behavior, and the policy application points that govern it when the
 action is protected. An **action occurrence** records one attempted or performed
 action, its initiating and acting principals, target Resources, applicable
-definition version, authorization decision, and outcome.
+definition version, associated authorization decisions, and outcome. Missing
+required decision evidence remains explicit rather than becoming a permission.
 
 A Tool invocation and an Interface operation each reference the Action they
 make available. A control-flow step may reference an Action directly. These use
@@ -587,8 +622,13 @@ Invariants:
   external event.
 - A protected Action identifies one or more policy application points that run
   before the governed Effect can occur.
-- A permitted authorization decision authorizes an Action within its stated
-  scope. It neither asserts that the Action ran nor that an Effect occurred.
+- A permitted authorization decision supports permission only for its evaluated
+  requirement and stated scope. It does not satisfy a different required check,
+  assert that the Action ran, or prove that an Effect occurred.
+- One Action occurrence may retain several decisions through the neutral
+  `has authorization decision` relation. Each association identifies the Policy
+  application point or points for which that decision is accounted, under the
+  authorization rules below. The relation records evidence, not permission.
 - An Action occurrence and its Effect occurrences preserve distinct identities
   and outcomes.
 
@@ -654,6 +694,39 @@ mechanism required at an application point. An **authorization decision** is an
 occurrence stating whether an identified principal may perform a specified
 action on a specified resource under the effective policy and context.
 
+A decision is `evaluated against` exactly one Authorization requirement and is
+`made at` exactly one Policy application point. That point requires the evaluated
+requirement. The neutral `evaluated against` and `has authorization decision`
+relations replace `satisfies` and `authorized by` for decision accounting so that
+denial does not read as permission. A decision may exist before any Action
+attempt; its existence does not create an Action occurrence. When an occurrence
+exists, its `has authorization decision` associations retain every decision
+used for its required checks, including
+denied or indeterminate outcomes when the attempt boundary permits them.
+
+For each required check, the evidence distinguishes:
+
+- a permitted decision with the required evidence and matching scope;
+- a denied decision, preserving the evaluated context and result;
+- an indeterminate decision, including recorded incomplete evidence; and
+- missing decision evidence, where no decision record is available for the
+  check. Missing evidence proves neither permission nor denial. A record whose
+  required contents are absent is incomplete evidence, not a valid permission.
+
+These are distinctions for each check, not a new aggregate decision or a result
+vocabulary for an authorization engine. A refusal or indeterminate result
+retains the Action, Resource, Principal, Policy version, context, and time of
+the evaluation even when it prevents an attempt.
+
+An occurrence association identifies the relevant point or points, each of
+which must require the decision's evaluated requirement. It preserves the
+original decision and its originating point. Accounting for a decision at
+another point or occurrence is allowed only when its scope and context remain
+valid and the applicable binding or authorization contract permits that reuse.
+Sharing an Authorization requirement is necessary but does not by itself
+authorize reuse. This rule preserves bounded evidence reuse without treating
+decisions as reusable definitions.
+
 An **authority grant** is a definition of the bounded authority considered by
 that mechanism. It identifies the principal, permitted actions, protected
 resources, scope, lifetime, and delegation limits. It is neither a tool or skill
@@ -662,7 +735,14 @@ assignment nor an implementation feature claim.
 Invariants:
 
 - An authorization decision binds principal, action, resource, context, policy
-  version, result, and decision time.
+  version, result, decision time, evaluated requirement, and originating Policy
+  application point. Every occurrence association matches that scope and
+  identifies the point or points where it accounts for a required check.
+- Every required check needs a matching permitted decision and its required
+  evidence before the governed Effect may proceed. A denied or indeterminate
+  decision, incomplete evidence, or missing decision evidence cannot stand in
+  for that permission. An observed Effect without those facts remains
+  reportable as an occurrence; observation does not establish authorization.
 - An authorization requirement identifies the authentication evidence,
   authority grants, Policy decisions, and Approval decisions required for the
   protected Action at its policy application point.
@@ -736,6 +816,11 @@ Invariants:
   attribution to a runtime principal or runtime component when known.
 - Trace records preserve causal links across delegation, tool calls, message
   occurrences, approval decisions, state transitions, and policy decisions.
+- Required authorization evidence preserves the Action occurrence association
+  when an occurrence exists, the evaluated requirement, the originating point,
+  and every point where the decision is accounted for. A trace distinguishes
+  denied or indeterminate decisions from missing or withheld decision evidence.
+  Pre-attempt decisions remain traceable without inventing an Action occurrence.
 - Redaction is represented so a consumer can distinguish absent data from
   withheld data.
 - Execution-trace immutability prevents silent alteration. Corrections append
@@ -846,8 +931,9 @@ they do not add a second owner.
 
 | Source definition | Relation | Target definition or requirement | Targets per source | Sources per target |
 | --- | --- | --- | --- | --- |
-| System | owns | Definition | 1..* | 0..1 |
-| System | owns | Agent | 1..* | 0..1 |
+| System | owns | Definition | 0..* | 0..1 |
+| System | owns | Agent | 0..* | 0..1 |
+| System | uses | Agent | 1..* | 0..* |
 | System | exposes | Interface | 1..* | 0..* |
 | System | uses | Topology | 0..1 | 0..* |
 | System | uses | Control flow | 0..* | 0..* |
@@ -955,7 +1041,7 @@ evidence. They do not make their sources reusable definitions:
 | Action occurrence | performed by | Acting Principal identity | 1 | 0..* |
 | Action occurrence | initiated by | Principal identity | 0..1 | 0..* |
 | Action occurrence | targets | Resource | 1..* | 0..* |
-| Action occurrence | authorized by | Authorization decision | 0..1 | 0..* |
+| Action occurrence | has authorization decision | Authorization decision | 0..* | 0..* |
 | Effect occurrence | caused by | Action occurrence or external event | 1 | 0..* |
 | Effect occurrence | instantiates | Effect | 0..1 | 0..* |
 | Delegation occurrence | governed by | Delegation | 1 | 0..* |
@@ -964,7 +1050,8 @@ evidence. They do not make their sources reusable definitions:
 | Handoff occurrence | transfers from and to | Principal identity or Control-flow step | 2 | 0..* |
 | Authorization decision | evaluates for | Principal identity | 1 | 0..* |
 | Authorization decision | applies | Policy | 1..* | 0..* |
-| Authorization decision | satisfies | Authorization requirement | 1 | 0..* |
+| Authorization decision | evaluated against | Authorization requirement | 1 | 0..* |
+| Authorization decision | made at | Policy application point | 1 | 0..* |
 | Authorization decision | considers | Authentication evidence | 0..* | 0..* |
 | Approval request | satisfies | Approval requirement | 1 | 0..* |
 | Approval request | requested by | Principal identity | 1 | 0..* |
@@ -979,6 +1066,12 @@ evidence. They do not make their sources reusable definitions:
 | Execution trace | records | Trace record | 0..* | 1 |
 | Execution trace | describes execution of | System | 1 | 0..* |
 | Trace artifact | seals | Execution trace | 1 | 0..* |
+
+The `has authorization decision` associations carry the relevant application
+point or points described in the authorization section. Their `0..*` minimum
+allows unprotected occurrences and honest records of missing evidence. It does
+not waive required checks for protected Effects. The `0..*` inverse permits
+bounded reuse; it does not make a decision globally valid.
 
 An `Environment element`, `Human participant`, `Control-flow step`, `Interface
 operation`, `Policy application point`, `Trust domain`, `Resource kind`, `Work
@@ -1005,7 +1098,7 @@ across a boundary.
 
 ### Reuse
 
-Roles, models, instructions, tools, skills, memory, knowledge, protocols,
+Agents, roles, models, instructions, tools, skills, memory, knowledge, protocols,
 policies, evaluation definitions, runtime definitions, and extensions are
 reusable definitions. Reuse creates another directed `uses`, `assigned`, or
 equivalent relation to the same identified definition. It does not clone the
@@ -1061,16 +1154,23 @@ invariants:
    identity is unique within its declared scope.
 3. Ownership and containment graphs are acyclic. Each local definition has
    exactly one lifecycle owner, and each imported definition keeps the owner
-   declared by its source.
+   declared by its source. A complete System has at least one participating
+   Agent through `uses`, independently of how many definitions it owns locally.
 4. Every boundary-crossing interaction uses a declared interface and direction.
 5. Every Action identifies its permitted acting Principal kinds or identities
    and target Resource kinds. Every Action occurrence identifies its acting
    Principal identity and target Resources. Every Effect is attributable to an
    Action occurrence or identified external event.
 6. Every protected Action passes through its policy application points before
-   any governed Effect. Each point applies the declared Policy and obtains the
-   Authorization decision, authentication evidence, and matching human Approval
-   decision required for that Action and context.
+   any governed Effect is permitted. Each point applies its declared Policy.
+   Each required check obtains a matching
+   permitted Authorization decision and the authentication evidence and human
+   Approval decision required for that Action and context. When an Action
+   occurrence exists, direct decision associations preserve every evaluated
+   requirement and relevant point. Denial, indeterminate results, incomplete
+   evidence, and missing evidence remain distinct; none supplies permission.
+   A decision for one requirement cannot satisfy another requirement. Reuse
+   follows the scope, context, and binding limits in the authorization section.
 7. Reuse preserves definition identity. Customization uses a configuration
    profile, a new definition, or an extension rather than mutating an imported
    definition.
@@ -1099,9 +1199,9 @@ work is complete.
 | REQ-001, REQ-002 | System, Fragment, Package version, Principal, Identity, references, lifecycle ownership, interfaces, and governing-control relations expose the principal facts for inspection and stable addressing. |
 | REQ-003 | System, Agent, Interface, runtime binding requirements, Trace requirement, and Evaluation definition can describe a complete single-agent system. Topology is optional. |
 | REQ-004 | Topology, Protocol, Control flow, Delegation, Handoff, shared reusable definitions, ownership, and Policy relations cover the core multi-agent structure. Explicit routing remains to be defined. |
-| REQ-010, REQ-011, REQ-016, REQ-017 | System and Fragment or Package version roots, Configuration profile, Reference, identity scopes, dependency relations, unresolved requirements, and deterministic reference-resolution invariants cover composition and controlled resolution without a synthetic System. |
+| REQ-010, REQ-011, REQ-016, REQ-017 | System and Fragment or Package version roots, Configuration profile, Reference, identity scopes, dependency relations, unresolved requirements, and deterministic reference-resolution invariants cover composition and controlled resolution without a synthetic System. System participation is independent of source lifecycle ownership and permits exclusively imported Agents. Missing obligations follow proposal 0003's phase rules and require explicit permission to defer. |
 | REQ-018 through REQ-020 | Extension identity, required-extension failure behavior, and preservation through package, configuration profile, and deployment resolution cover extension boundaries. Portable fallback still needs precise processing rules. |
-| REQ-021 through REQ-026 | Principal, Identity, authentication evidence, Resource, Trust boundary, Action, Effect, Policy application point, Policy, Authorization requirement and decision, Approval requirement, request, and decision, Delegation, Handoff, Environment, Tool, and Interface represent protected actions, secret references, supervision, and trust crossings. Review, override, interruption, and escalation vocabularies remain to be defined. |
+| REQ-021 through REQ-026 | Principal, Identity, authentication evidence, Resource, Trust boundary, Action, Effect, Policy application point, Policy, Authorization requirement and decision, Approval requirement, request, and decision, Delegation, Handoff, Environment, Tool, and Interface represent protected actions, secret references, supervision, and trust crossings. Multiple decisions for one occurrence retain each evaluated requirement, relevant point, context, and result without implying that denial or missing evidence grants permission. Review, override, interruption, and escalation vocabularies remain to be defined. |
 | REQ-027 through REQ-031 | Trace requirement, execution trace, trace record, Evaluation definition, and Evaluation result preserve observable identity and definition-result separation. Metric definitions, probabilistic targets, and conformance claims remain to be defined. |
 | REQ-032 through REQ-035 | Binding requirements, resolved bindings, Runtime, Deployment, Environment, and the binding-separation rules distinguish portable needs from selected implementations and visible capability gaps. Target-assessment report behavior remains to be defined. |
 
@@ -1142,6 +1242,11 @@ operation and use a control flow that invokes its sole agent and then returns
 the result. It needs no participant protocol when the interaction is a single
 operation, and no topology when there is no static inter-participant path to
 declare.
+
+The [composition and authorization example](../examples/conceptual/composition-and-authorization.md)
+uses two imported Agents in one System and retains two distinct authorization
+checks for one export Action occurrence, including refusal and missing-evidence
+variants. It also identifies the remaining identity and phase-contract limits.
 
 ## Alternatives considered
 
@@ -1211,6 +1316,23 @@ observable behavior. A framework default has no portable meaning unless an
 adapter represents it as a definition, configuration profile choice, or
 extension.
 
+## Reconciled directions
+
+[Decision 0004](../docs/decisions/0004-approved-design-directions.md) resolves
+the direction of these earlier design questions:
+
+- A complete System may use exclusively imported Agents as participants. The
+  proposed `System uses Agent` minimum preserves the need for an Agent while
+  both generic and Agent-specific ownership minima allow zero local ownership.
+- One Action occurrence may directly retain several Authorization decisions.
+  The proposed neutral relation names and point accounting keep each required
+  check visible, without an aggregate decision or implied permission on denial.
+- Incomplete fragments use proposal 0003's two validation phases. Only an
+  explicitly permitted and declared deferral can postpone an obligation.
+
+The approved directions do not adopt these detailed relations or determine
+the remaining contract choices below.
+
 ## Open questions
 
 1. Must a System declare a governing Principal in addition to the lifecycle
@@ -1245,3 +1367,12 @@ extension.
     profiles rather than the core, while preserving the core distinction among
     Principal, Identity, and authentication evidence?
 14. Which Effect categories need standardized names for portable risk analysis?
+15. What does `Agent represented by Identity` identify, and what cardinalities
+    should that relation have in the first external contract? Its interpretation
+    remains open; definition identity and Principal identity remain distinct.
+16. Which exact obligations may a future contract defer during unresolved-document
+    validation, and which declarations prove that permission? Proposal 0003
+    governs the phases; this proposal adds no general deferral inventory.
+17. How should the first contract represent and preserve the proposed neutral
+    decision associations and their application-point context? This proposal
+    defines conceptual accounting only, without syntax or result aggregation.

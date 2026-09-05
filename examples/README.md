@@ -1,8 +1,26 @@
-# Conceptual examples for AgSDL 0.0.1
+# Conceptual examples for AgSDL
 
-These two examples illustrate the proposed AgSDL 0.0.1 conceptual model. They
-are non-normative and deliberately independent of serialization syntax,
-frameworks, providers, transports, and runtimes.
+The first two examples originated in the AgSDL 0.0.1 conceptual release. The
+versions below follow the current proposed model, including the composition
+and authorization directions in [Decision
+0004](../docs/decisions/0004-approved-design-directions.md). The `v0.0.1` tag
+preserves the released versions. These examples remain non-normative and
+independent of serialization syntax, frameworks, providers, transports, and
+runtimes.
+
+The [imported-Agent composition and authorization
+example](conceptual/composition-and-authorization.md) illustrates the revised
+participation and decision-accounting rules, including refusal and missing
+evidence. It is not part of the tagged 0.0.1 release.
+
+An additional [A2A 1.0 external binding example](a2a-1.0-external-binding.md)
+illustrates proposal 0006. It is not part of the AgSDL 0.0.1 conceptual model
+and does not establish binding syntax or interoperability.
+
+The separate [A2UI declarative-interface
+example](a2ui-declarative-interface.md) explores proposal 0008 against an
+external format. It remains non-normative, pins the reviewed A2UI version, and
+does not claim an implemented adapter or interoperability.
 
 ## 1. Single-agent document assistant
 
@@ -54,7 +72,8 @@ that authority or ownership.
 - Handbook assistant system `owns` local definitions, one or more in total.
   Each local definition has exactly one lifecycle owner.
 - Handbook assistant system `owns` Handbook assistant, exactly one in this
-  example, and `exposes` Question interface, exactly one.
+  example, `uses` that Agent as its participant, and `exposes` Question
+  interface, exactly one.
 - Handbook assistant `acts as` Assistant service principal, exactly one, and is
   `represented by` one agent Identity distinct from that Principal's Identity.
 - Employee `identified by` Employee account, one of one or more possible
@@ -154,7 +173,8 @@ remain separate controls before the external effect.
 ### Directed relations and useful cardinalities
 
 - Supplier payment system `owns` both Agents and every other local definition.
-  Each local definition has exactly one lifecycle owner.
+  It `uses` both Agents as participants. Each local definition has exactly one
+  lifecycle owner.
 - Each Agent `acts as` exactly one Principal definition and is `represented by`
   exactly one agent Identity. Finance approver is `identified by` one of one or
   more human identities.
@@ -186,8 +206,11 @@ remain separate controls before the external effect.
   `responds to` that request; the decision is `supplied by` exactly one human
   Principal Identity and may `contribute to` one Authorization decision.
 - Each Authorization decision `evaluates for` exactly one Principal Identity,
-  `satisfies` exactly one Authorization requirement, and binds the Action,
-  Resource, context, Policy version, result, and decision time.
+  is `evaluated against` exactly one Authorization requirement, and is `made
+  at` Payment gate. It binds the Action, Resource, context, Policy version,
+  result, and decision time. When a Submit supplier payment Action occurrence
+  exists, it `has authorization decision` for the decision used at Payment
+  gate. A refusal before an attempt does not create an Action occurrence.
 - Each Funds transferred occurrence is `caused by` exactly one Submit supplier
   payment Action occurrence. A permitted Authorization decision does not prove
   that either occurrence happened.
