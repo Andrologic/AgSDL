@@ -4,7 +4,7 @@ Status: non-normative research, consulted 2026-09-05. This study prepares the
 runtime-interface questions in parts 22–31 of the local 0.1.0 work plan. It
 adopts no proposal, syntax, schema, identity rule, or graph behavior. Proposals
 0001 through 0011 considered in this study remain proposed. No agent CLI, SDK, server, or integration was run,
-installed, or downloaded for this study. Macro was neither inspected nor changed.
+installed, or downloaded for this study. No product implementation was changed.
 
 ## Evidence and version boundary
 
@@ -75,10 +75,12 @@ A future resolved-binding study could compare each requirement with a pinned
 candidate and a coverage report. This document supplies no binding serialization,
 `engineRef`, feature identity, default engine or compatibility claim.
 
-## Questions for a future Macro implementation
+## Questions for any engine implementation
 
-Macro has no defined engine contract for this study. Request the following from
-its implementer before making any capability claim:
+For any third-party or custom engine implementation, establish the following
+from its published interfaces before making a capability claim. The surveyed
+Codex and Claude interfaces are illustrative external sources, not prescribed
+engines or the source of portable AgSDL requirements:
 
 - Published interface entry points, transport, lifecycle handshake, versioning
   and experimental-feature policy.
@@ -97,5 +99,5 @@ its implementer before making any capability claim:
 - Unsupported-capability reporting and version-pinned integration evidence for
   each claimed requirement, including explicit unknowns.
 
-These questions also apply to other candidate engines. Answers would inform
-later research and proposals; they would not adopt an AgSDL runtime contract.
+Answers would inform later research and proposals; they would not adopt an
+AgSDL runtime contract or establish tested support.
