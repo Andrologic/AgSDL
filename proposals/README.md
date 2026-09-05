@@ -22,3 +22,4 @@ change must be applied separately and reviewed against the accepted proposal.
 - [`0009: Agent Payments Protocol binding extension model`](0009-agent-payments-protocol-binding.md)
 - [`0010: Open Agent Specification binding`](0010-open-agent-specification-binding.md)
 - [`0011: first reading, inspection, and exchange contract`](0011-first-exchange-contract.md)
+- [`0012: minimal candidate contract for 0.1.0`](0012-minimal-0.1.0-contract.md)

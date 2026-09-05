@@ -2,8 +2,8 @@
 
 Status: non-normative research, consulted 2026-09-05. This study prepares the
 runtime-interface questions in parts 22–31 of the local 0.1.0 work plan. It
-adopts no proposal, syntax, schema, identity rule, or graph behavior. All eleven
-proposals remain proposed. No agent CLI, SDK, server, or integration was run,
+adopts no proposal, syntax, schema, identity rule, or graph behavior. Proposals
+0001 through 0011 considered in this study remain proposed. No agent CLI, SDK, server, or integration was run,
 installed, or downloaded for this study. Macro was neither inspected nor changed.
 
 ## Evidence and version boundary
