@@ -10,6 +10,13 @@ non-normative conceptual release under the tag `v0.0.1`. It makes no promise of
 syntax, compatibility, conformance, execution, or interoperability. See
 [`Decision 0002`](docs/decisions/0002-version-0.0.1.md) for its exact status.
 
+Version `0.0.2` is prepared locally as the next non-normative conceptual
+candidate. It has not been published, and its planned tag `v0.0.2` has not been
+created. The candidate documents the work accumulated since `v0.0.1` without
+adopting a syntax, normative specification, binding, or implementation contract.
+See [`Decision 0005`](docs/decisions/0005-version-0.0.2.md) and the
+[`0.0.2 candidate release notes`](docs/releases/0.0.2.md).
+
 ## Intended scope
 
 An AgSDL document should eventually be able to describe:
@@ -61,6 +68,8 @@ Syntax comes only after the system model and conformance boundaries are clear.
 - [`Conceptual reconciliation and first-contract preparation`](docs/plans/2026-09-05-conceptual-reconciliation.md)
 - [`Approved design directions`](docs/decisions/0004-approved-design-directions.md)
 - [`First exchange contract candidate`](proposals/0011-first-exchange-contract.md)
+- [`Version 0.0.2 preparation decision`](docs/decisions/0005-version-0.0.2.md)
+- [`Version 0.0.2 candidate release notes`](docs/releases/0.0.2.md)
 - [`Local implementation-preparation work plan`](docs/plans/2026-09-04-local-work.md)
 - [`Project scope`](docs/scope.md)
 - [`Prior-art research`](docs/research/prior-art.md)

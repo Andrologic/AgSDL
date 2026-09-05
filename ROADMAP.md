@@ -19,7 +19,27 @@ Version `0.0.1` does not define syntax, compatibility, conformance, execution,
 or interoperability. Its four proposals remain proposed inputs to later work.
 This list describes the tagged release, not the current `develop` branch.
 
-## Proposed work after 0.0.1
+## Prepared locally: version 0.0.2 conceptual candidate
+
+Version `0.0.2` is prepared as a local, non-normative conceptual candidate. It
+has not been published. Its planned tag is `v0.0.2`, but that tag has not been
+created. [Decision 0005](docs/decisions/0005-version-0.0.2.md) fixes the scope of
+this preparation, and the [candidate release notes](docs/releases/0.0.2.md)
+describe the cumulative changes since `v0.0.1`.
+
+The candidate contains eleven proposals. It keeps proposals 0001
+through 0004 non-normative, adds six proposed external bindings, and includes
+proposal 0011 as a first exchange-contract candidate for maintainer review. It
+also records the accepted directions from Decision 0004, their reconciliation
+across proposed material and examples, the repository boundary, research, and
+local verification tools.
+
+This preparation does not claim software support for any binding. It does not
+adopt proposal 0011, define syntax or compatibility, or establish conformance,
+execution, or interoperability. Publication requires a separate maintainer
+action. No scope or schedule for version `0.1.0` is fixed by this candidate.
+
+## Conceptual work included in the 0.0.2 candidate
 
 Proposals 0005 through 0010 investigate versioned bindings to MCP, A2A, AG-UI,
 A2UI, AP2, and Open Agent Specification. They remain non-normative and do not
