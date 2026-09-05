@@ -51,8 +51,10 @@ requirements, and evidence. A runtime or adapter remains responsible for
 implementing those declarations and proving its own conformance.
 
 Later normative work should derive the conceptual model from the mandatory
-requirements below. It may split capabilities into profiles or conformance
-levels, but any split must keep unsupported information and loss visible.
+requirements below. Following [Decision 0004](../docs/decisions/0004-approved-design-directions.md),
+conformance claims use implementation features and conformance profiles as
+defined in [proposal 0003](0003-conformance-and-versioning.md#terms). Any split
+must keep unsupported information and loss visible.
 
 ## Terms used in this proposal
 
@@ -209,9 +211,12 @@ quality goal to at least one use case or constraint.
   core from optional profiles, extensions, and target-specific checks. A report
   must identify which rule sets it applied.
 - **REQ-009 Conformance claims.** A description and processor must be able to
-  state the AgSDL version, profiles, extension support, and conformance level
-  they claim. Claims must be inspectable and must not imply runtime guarantees
-  outside the tested level.
+  state the AgSDL version, extension support, and implementation features or
+  conformance profiles they claim, as applicable to the conformance subject.
+  This is a capability to express a claim, not an obligation for every
+  description or processor to make one. Claims must be inspectable, identify
+  their scope and evidence, and must not imply runtime guarantees beyond that
+  evidence.
 
 ### Composition, exchange, and lifecycle
 
@@ -563,7 +568,7 @@ this proposal.
 | REQ-006 | UC-001, UC-004 | A claimed structural validation phase reports every known finding with a rule and location within its coverage. |
 | REQ-007 | UC-002, UC-003 | A claimed semantic validation phase reports every known cross-component finding independently of execution. |
 | REQ-008 | UC-004 | Reports list the core, profiles, extensions, and target checks applied. |
-| REQ-009 | UC-004, CON-003 | Claims name their version, scope, profiles, extensions, and tested level. |
+| REQ-009 | UC-004, CON-003 | Descriptions and processors can express claims; when made, claims name their version, scope, extensions, implementation features or conformance profiles, and evidence. |
 | REQ-010 | UC-003 | Composition resolves scope and conflicts without implicit precedence. |
 | REQ-011 | UC-003, UC-004 | Every dependency has a declared delivery or resolution status. |
 | REQ-012 | UC-004 | Sender and receiver can detect incomplete exchange packages. |
@@ -611,10 +616,12 @@ requirements rather than defining them through syntax. Conformance design must
 separate document validity, processor behavior, profile support, adapter
 coverage, and runtime evidence.
 
-The breadth of the information inventory may produce profiles or conformance
-levels rather than one mandatory all-purpose document shape. That decision
-remains open. Whatever split is chosen must preserve traceability and must not
-weaken visibility of unsupported information.
+Implementation features and conformance profiles provide the chosen direction
+for conformance claims. Their exact requirement subsets remain proposed work;
+Decision 0004 does not adopt stable feature identities or normative contracts.
+Those subsets must preserve traceability and visibility of unsupported
+information. REQ-009 requires the ability to express bounded claims without
+requiring every description or processor to publish one.
 
 ## Alternatives considered
 
@@ -676,8 +683,9 @@ specification.
 
 ## Unresolved questions
 
-1. Which requirement subsets belong to the portable core, optional profiles,
-   processor conformance levels, or operation-specific capabilities?
+1. Which requirement subsets belong to the portable core, implementation
+   features, and conformance profiles within the direction approved by
+   Decision 0004?
 2. What minimum information makes an AgSDL description complete rather than a
    reusable fragment or an intentionally partial description?
 3. Which stable identity forms and scopes support composition, versioning,

@@ -2,7 +2,7 @@
 
 - Status: proposed
 - Target: pre-draft conformance model
-- Depends on: Decision 0001
+- Depends on: Decisions 0001 and 0004
 
 ## Problem
 
@@ -17,6 +17,10 @@ one version would make compatibility claims ambiguous and upgrades unsafe.
 This proposal defines the subjects of conformance, the evidence each claim
 requires, and the compatibility rules that later normative text should express.
 It does not define field names, a serialization, or a wire protocol.
+[Decision 0004](../docs/decisions/0004-approved-design-directions.md) approves
+the directions for feature-based claims and validation by phase. The rules
+below remain proposed; the exact first contract still requires maintainer
+review.
 
 ## Scope
 
@@ -71,7 +75,10 @@ Conformance is a claim about one identified subject, one specification version,
 and one set of implementation features or one conformance profile. The claim
 cites the applicable normative requirements and identifies the test-suite
 version or documented inspection procedure used as evidence. A bare claim of
-"AgSDL conformant" is incomplete.
+"AgSDL conformant" is incomplete. REQ-009 requires descriptions and processors
+to be able to express claims applicable to their subject type; it does not
+require every description or processor to make a claim. The obligations below
+govern a claim or validation operation when made.
 
 Each report records the subject identity and version, the applicable
 specification version, the claimed implementation features or conformance
@@ -97,7 +104,8 @@ conformance profile. Unresolved-document validation examines the document as
 supplied without fetching referenced components. It must:
 
 - identify the governing specification version unambiguously;
-- satisfy every applicable structural requirement;
+- satisfy every structural requirement applicable at this phase, including
+  the declaration conditions for any permitted deferral described below;
 - contain only core constructs, declared extensions, and references permitted
   by that specification version and conformance profile;
 - meet all local cross-reference and reference-declaration constraints that can
@@ -105,10 +113,11 @@ supplied without fetching referenced components. It must:
 - avoid claiming execution behavior as a property proven by document
   validation.
 
-An unresolved-document conformance verdict proves that the artifact is
-well-formed under the stated rules. It does not prove that a runtime can execute
-it, that referenced components are available, or that executions satisfy the
-declared goals.
+A positive unresolved-document conformance verdict establishes that the
+artifact satisfies the rules for that phase. It may still contain obligations
+explicitly permitted to be deferred; it is not a verdict of graph completeness.
+It does not prove that a runtime can execute it, that referenced components are
+available, or that executions satisfy the declared goals.
 
 Resolved-graph validation evaluates the graph produced by an identified
 resolver environment. It checks resolved identities and versions, integrity
@@ -123,6 +132,90 @@ unresolved-document validation, but a reproducible resolved-graph verdict must
 record the exact resolved component and integrity evidence. An invalid reference
 declaration fails unresolved-document validation; invalid resolved content fails
 resolved-graph validation.
+
+### Validation by phase and declared missing obligations
+
+An Unresolved requirement records a missing obligation; recording it does not
+satisfy that obligation. Under the proposed phase mechanism, an incomplete
+Fragment may receive a positive unresolved-document verdict only if every
+missing mandatory obligation has an explicit declaration and an applicable
+rule expressly permits that type of obligation to be deferred at this phase.
+The rule must identify the covered obligation, its scope and preconditions,
+and the phase by which it must be satisfied. A processor must check those
+preconditions rather than infer permission from the Fragment document form or
+from a binding's ability to produce an Unresolved requirement.
+
+For each proposed deferral, the declaration must identify the affected
+definition within its scope, the missing obligation and its governing rule,
+and the condition for satisfaction. For a missing relation, it must also
+identify the required relation, expected target kind, any known target identity
+or constraint, and the cardinality still to be met. If the target identity is
+not yet known, that absence must be explicit. The declaration must provide
+enough information to determine which later relation and target would satisfy
+the obligation without inventing a target or changing the identity of the
+affected definition.
+The validator's report must associate the declaration with the applicable
+deferral rule, phase, checks performed, and obligation still outstanding.
+
+An absent relation differs from an external reference whose target has not
+been retrieved. The former needs express permission to defer the relation
+obligation. The latter already declares a relation and target reference, whose
+local identity, expected kind, integrity metadata, and resolution-policy
+requirements are checked as applicable without retrieval. It provides no
+proof of the target's resolved content or availability. Declaring a missing
+relation as unresolved does not create an external reference or authorize
+retrieval.
+
+Deferral is limited to the missing obligation expressly covered by the rule.
+It does not excuse ambiguous identities, conflicting lifecycle owners, invalid
+local references, invalid integrity declarations, or contradictory supplied
+facts. A missing identity or owner obligation cannot be deferred merely
+because a relation is deferrable; it requires its own express allowance and
+enough remaining information to identify the affected definition and check
+the declaration. An integrity failure is a failed check, not a missing fact
+that can be relabeled for deferral.
+
+Without an applicable deferral rule, a declaration of a missing obligation
+provides no basis for a positive verdict. A known violation of a requirement
+applicable at the requested phase fails that phase; an unsettled proposed rule
+is not evidence of permission. At resolved-graph validation, every required
+obligation for the graph in scope must be satisfied. An obligation still
+missing prevents a positive verdict, even if its deferral was valid earlier.
+Reports keep permitted deferrals distinct from violations, unsupported checks,
+and unavailable required references, and keep the two phase verdicts separate.
+
+This mechanism does not select a universal list of deferrable obligations.
+The exact inventory and declaration requirements for the first bounded contract
+will be candidates in proposal 0011 and return to the maintainer for review.
+In particular, a binding's incomplete-import procedure, including that in
+[proposal 0010](0010-open-agent-specification-binding.md#materialized-import-boundary),
+cannot itself grant permission to defer a core obligation.
+
+#### Conceptual phase examples
+
+These examples are conditional illustrations, not permission to defer the
+listed relations or executable conformance fixtures.
+
+- A Fragment owns an Agent with all mandatory facts except its Interface
+  relation. If an applicable rule expressly permits that relation minimum to
+  be deferred at unresolved-document validation, and the declaration identifies
+  the Agent, relation, expected Interface target kind, missing cardinality,
+  satisfaction condition, and rule, that phase may pass when all other checks
+  pass. The resolved graph cannot pass until a suitable Interface relation
+  satisfies the obligation.
+- The same Fragment declares the same missing relation, but no applicable rule
+  permits its deferral. The declaration alone cannot justify a positive
+  unresolved-document verdict. If the relation minimum applies at this phase,
+  the missing relation fails it.
+- An Agent already has a permitted external Interface reference, but nothing
+  has been fetched. Valid local declarations may pass unresolved-document
+  validation without a missing-relation deferral. If the required target is
+  unavailable during resolved-graph validation, that graph verdict fails.
+- A Fragment has conflicting lifecycle owners or an ambiguous definition
+  identity and labels the conflict an Unresolved requirement. A permission to
+  defer an Interface relation does not cover either defect; the applicable
+  local checks fail. Likewise, an integrity mismatch in retrieved content
+  fails resolved-graph validation despite any declaration of incompleteness.
 
 ### Producer conformance
 
@@ -437,7 +530,15 @@ This model makes conformance claims longer but auditable. Implementers can ship
 partial support without pretending to support the whole language. Users can
 compare products by implementation feature and evidence. The cost is a
 maintained registry of implementation features, conformance profiles,
-diagnostics, compatibility relations, and tests.
+diagnostics, compatibility relations, and tests. These remain future artifacts
+until their normative scope is stable. Decision 0004 settles the direction
+away from required general levels, not the feature inventory.
+
+Validation by phase permits explicitly bounded incomplete fragments while
+keeping graph completeness separately testable. Bindings and producers must
+check permission for each missing obligation; a mapping report or declaration
+alone cannot establish document conformance. The first contract must supply a
+reviewed applicability and deferral inventory before processors can rely on it.
 
 The model also blocks several shortcuts. Schema validation cannot stand in for
 semantic validation, runtime execution, or adapter equivalence. Version order
@@ -518,3 +619,6 @@ experience and conformance fixtures exist:
 5. Which observations form the deterministic minimum for runtime tests?
 6. How should test-suite errata affect previously published verdicts?
 7. Which party signs or attests conformance reports, if any?
+8. Which obligations may be deferred at unresolved-document validation in the
+   first contract, under which preconditions and declaration requirements?
+   Proposal 0011 will present a candidate inventory for maintainer review.
