@@ -57,6 +57,8 @@ into the normative specification. Syntax comes only after the system model and
 conformance boundaries are clear.
 
 - [`Roadmap`](ROADMAP.md)
+- [`Conceptual reconciliation and first-contract preparation`](docs/plans/2026-09-05-conceptual-reconciliation.md)
+- [`Approved design directions`](docs/decisions/0004-approved-design-directions.md)
 - [`Local implementation-preparation work plan`](docs/plans/2026-09-04-local-work.md)
 - [`Project scope`](docs/scope.md)
 - [`Prior-art research`](docs/research/prior-art.md)
