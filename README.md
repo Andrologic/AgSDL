@@ -64,6 +64,7 @@ for maintainer review. None has been accepted into the normative specification.
 Syntax comes only after the system model and conformance boundaries are clear.
 
 - [`Roadmap`](ROADMAP.md)
+- [`Local 0.1.0 preparation record`](docs/plans/2026-09-05-version-0.1.0-preparation.md)
 - [`Conceptual reconciliation and first-contract preparation`](docs/plans/2026-09-05-conceptual-reconciliation.md)
 - [`Approved design directions`](docs/decisions/0004-approved-design-directions.md)
 - [`First exchange contract candidate`](proposals/0011-first-exchange-contract.md)
