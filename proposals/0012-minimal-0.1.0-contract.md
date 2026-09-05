@@ -230,8 +230,11 @@ I/O contracts are finite maps from port names to `string`, `boolean` or `json`.
 All declared inputs/outputs are required; undeclared ports fail. `json` accepts
 any JSON value but has no selector or implicit coercion. A binding is a graph
 input port or a prior step output port, both identified explicitly; matching
-types must be equal. The producing step must dominate its consumer on every
-path to that consumer. No ambient state or merge inference supplies a value.
+types must be equal. Only invoke steps produce step output ports. The producing invocation must
+dominate its consumer, and every path to that consumer must traverse the
+producer's `success` edge. Its `failure` edge makes none of its outputs
+available. These rules apply to end-step output bindings as well. No ambient
+state or merge inference supplies a value.
 G validates these static properties without invoking a participant.
 
 | Step | Candidate content and outcomes |
