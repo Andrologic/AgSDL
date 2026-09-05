@@ -98,3 +98,7 @@ executable corpus still need definition before independent software can claim
 implementation support. No syntax, schema, parser, runtime, or other-project
 work has started. All integration remains local on `develop`; both production
 tasks and the reviewer have finished their assigned work.
+
+The [closure record](../reviews/0004-closure-record.md) records the subsequent
+independent audit of the final revisions, coordinator validation, verified
+worktree removals, and archival of both production tasks.
