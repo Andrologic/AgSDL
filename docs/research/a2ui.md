@@ -297,8 +297,11 @@ The following are AgSDL conclusions drawn from the reviewed contracts:
   context, and synchronized data as untrusted input. A timestamp and source
   component identifier are claims in a message, not authentication evidence.
 - Rendering an approval control does not create an AgSDL Approval decision.
-  Protected Actions still require a matching decision from an identified human
-  Principal and an Authorization decision at the relevant application point.
+  Protected Actions still require Authorization decisions at the applicable
+  Policy application points. When an Authorization requirement requires human
+  approval, its permitted decision also requires a matching, unexpired Approval
+  decision from an identified human Principal for the same Action, Resources,
+  principal scope, and material context.
 - Accessibility metadata, visible labels, and validation messages need renderer
   behavior and human-interface testing. Schema validation cannot prove their
   effective presentation.
