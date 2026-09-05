@@ -1,7 +1,14 @@
 # Decision 0005: prepare version 0.0.2 as a conceptual candidate
 
-- Status: accepted for local preparation; not published
+- Status: accepted historical preparation decision
 - Date: 2026-09-05
+
+## Publication follow-up
+
+This decision records the local preparation phase, before publication was
+authorized. [Decision 0006](0006-publish-version-0.0.2.md) records the maintainer's
+subsequent authorization to publish that prepared scope. The text below
+preserves the earlier decision and its authorization boundary at that time.
 
 ## Context
 

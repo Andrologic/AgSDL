@@ -5,17 +5,16 @@ It is an open, implementation-independent specification for describing complete
 agentic systems in a form that people and software can read, validate, exchange,
 and version.
 
-The project is at the pre-draft stage. Version `0.0.1` was published as a
-non-normative conceptual release under the tag `v0.0.1`. It makes no promise of
-syntax, compatibility, conformance, execution, or interoperability. See
-[`Decision 0002`](docs/decisions/0002-version-0.0.1.md) for its exact status.
+The project is at the pre-draft stage. Version `0.0.2` is a non-normative
+conceptual release under the tag `v0.0.2`. It makes no promise of syntax,
+compatibility, conformance, execution, or interoperability. All eleven proposals
+remain non-normative, including the first exchange-contract candidate.
 
-Version `0.0.2` is prepared locally as the next non-normative conceptual
-candidate. It has not been published, and its planned tag `v0.0.2` has not been
-created. The candidate documents the work accumulated since `v0.0.1` without
-adopting a syntax, normative specification, binding, or implementation contract.
-See [`Decision 0005`](docs/decisions/0005-version-0.0.2.md) and the
-[`0.0.2 candidate release notes`](docs/releases/0.0.2.md).
+See the [0.0.2 release](https://github.com/Andrologic/AgSDL/releases/tag/v0.0.2),
+[release notes](docs/releases/0.0.2.md), and
+[publication decision](docs/decisions/0006-publish-version-0.0.2.md).
+The earlier `v0.0.1` release retains the status recorded in
+[Decision 0002](docs/decisions/0002-version-0.0.1.md).
 
 ## Intended scope
 
@@ -69,7 +68,7 @@ Syntax comes only after the system model and conformance boundaries are clear.
 - [`Approved design directions`](docs/decisions/0004-approved-design-directions.md)
 - [`First exchange contract candidate`](proposals/0011-first-exchange-contract.md)
 - [`Version 0.0.2 preparation decision`](docs/decisions/0005-version-0.0.2.md)
-- [`Version 0.0.2 candidate release notes`](docs/releases/0.0.2.md)
+- [`Version 0.0.2 release notes`](docs/releases/0.0.2.md)
 - [`Local implementation-preparation work plan`](docs/plans/2026-09-04-local-work.md)
 - [`Project scope`](docs/scope.md)
 - [`Prior-art research`](docs/research/prior-art.md)
