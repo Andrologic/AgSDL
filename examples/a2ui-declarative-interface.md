@@ -22,8 +22,9 @@ claim that an adapter or renderer implements the mapping.
 - **Employee**, a human Principal with an authenticated employee Identity.
 - **Expense renderer requirement**, a Runtime binding requirement for renderer
   capabilities and behavior. Its resolved binding selects the identified
-  renderer runtime instance and must show support for the pinned A2UI `v0.9.1`
-  format binding and selected catalog implementation.
+  renderer Runtime definition and must show support for the pinned A2UI `v0.9.1`
+  format binding and selected catalog implementation. The Deployment establishes
+  the renderer runtime instance that realizes that definition.
 - **Expense surface state**, a State definition for the component graph and data
   model of each active expense surface. Progressive updates produce successive
   State occurrences. The renderer runtime instance is the declared authority
