@@ -50,15 +50,17 @@ boundary.
 
 ## Current work
 
-The repository now contains ten non-normative proposals. Proposals 0001 through
+The repository now contains eleven non-normative proposals. Proposals 0001 through
 0004 were the conceptual inputs included in `v0.0.1`; proposals 0005 through
-0010 were added later to investigate external bindings. None has been accepted
-into the normative specification. Syntax comes only after the system model and
-conformance boundaries are clear.
+0010 were added later to investigate external bindings. Proposal 0011 prepares
+a bounded reading, inspection, structural-validation, and exchange contract
+for maintainer review. None has been accepted into the normative specification.
+Syntax comes only after the system model and conformance boundaries are clear.
 
 - [`Roadmap`](ROADMAP.md)
 - [`Conceptual reconciliation and first-contract preparation`](docs/plans/2026-09-05-conceptual-reconciliation.md)
 - [`Approved design directions`](docs/decisions/0004-approved-design-directions.md)
+- [`First exchange contract candidate`](proposals/0011-first-exchange-contract.md)
 - [`Local implementation-preparation work plan`](docs/plans/2026-09-04-local-work.md)
 - [`Project scope`](docs/scope.md)
 - [`Prior-art research`](docs/research/prior-art.md)
