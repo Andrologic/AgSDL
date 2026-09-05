@@ -7,8 +7,9 @@ and version.
 
 The project is at the pre-draft stage. Version `0.0.2` is a non-normative
 conceptual release under the tag `v0.0.2`. It makes no promise of syntax,
-compatibility, conformance, execution, or interoperability. All eleven proposals
-remain non-normative, including the first exchange-contract candidate.
+compatibility, conformance, execution, or interoperability. The eleven proposals
+included in that release remain proposed and non-normative, including the first
+exchange-contract candidate.
 
 See the [0.0.2 release](https://github.com/Andrologic/AgSDL/releases/tag/v0.0.2),
 [release notes](docs/releases/0.0.2.md), and
@@ -56,14 +57,17 @@ boundary.
 
 ## Current work
 
-The repository now contains eleven non-normative proposals. Proposals 0001 through
+The repository now contains twelve proposals, all proposed and non-normative. Proposals 0001 through
 0004 were the conceptual inputs included in `v0.0.1`; proposals 0005 through
 0010 were added later to investigate external bindings. Proposal 0011 prepares
 a bounded reading, inspection, structural-validation, and exchange contract
-for maintainer review. None has been accepted into the normative specification.
+for maintainer review. Proposal 0012 presents a minimal 0.1.0 contract candidate
+and delivery choices. None has been accepted into the normative specification.
 Syntax comes only after the system model and conformance boundaries are clear.
 
 - [`Roadmap`](ROADMAP.md)
+- [`Minimal 0.1.0 contract candidate`](proposals/0012-minimal-0.1.0-contract.md)
+- [`Candidate 0.1.0 delivery plan`](docs/plans/2026-09-05-0.1.0-delivery.md)
 - [`Local 0.1.0 preparation record`](docs/plans/2026-09-05-version-0.1.0-preparation.md)
 - [`Conceptual reconciliation and first-contract preparation`](docs/plans/2026-09-05-conceptual-reconciliation.md)
 - [`Approved design directions`](docs/decisions/0004-approved-design-directions.md)
