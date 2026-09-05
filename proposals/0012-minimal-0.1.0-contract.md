@@ -241,8 +241,10 @@ G validates these static properties without invoking a participant.
 | approval | ApprovalRequirement reference, protected immediate successor invoke id, bindings identifying proposed Action definition, Resources, requesting Principal and material context; positive integer `timeoutMs`; `approved`, `denied`, `failure` successors. Approved targets that protected invocation. |
 | end | Outcome `success`, `failure` or `denied`, no successors. Success binds all graph output ports; failure/denied emit no success output and name a nonempty reason. |
 
-Recommend that an approval step dominates its protected invocation and is its
-only immediate predecessor. The ApprovalRequirement identifies allowed human
+Recommend that an approval step dominates its protected invocation. The only
+incoming edge of that invocation is this step's `approved` edge; neither its
+`denied` nor its `failure` path may reach the protected invocation. The
+ApprovalRequirement identifies allowed human
 Principal definitions, presented context, approve/deny decisions and expiry.
 Its decision is scoped to one request and proposed Action/context and expires
 at the earlier of its stated expiry or the graph timeout. No response at the
