@@ -37,8 +37,8 @@ Publication does not claim software support for any binding. It does not adopt
 proposal 0011, define syntax or compatibility, or establish conformance,
 execution, or interoperability.
 
-The next intended milestone is `0.1.0`, an implementable draft for software
-including Macro and Agent Graph Studio. Its exact contract, graph behavior,
+The next intended milestone is `0.1.0`, an implementable draft for third-party
+software and independent implementations. Its exact contract, graph behavior,
 serialization, implementation scope, and acceptance criteria remain to be
 agreed. The `0.0.2` publication does not resolve those choices.
 

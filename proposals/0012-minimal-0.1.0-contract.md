@@ -24,7 +24,7 @@ and exact exchange. G covers static meaning and validation of simple control
 flows. R covers runtime requirement and selection declarations. A claim names
 its operations and units; D does not imply G, R or execution support. None
 establishes whole-model conformance under proposal 0003. There is no universal
-runtime, Studio codec contract, Macro implementation or engine default here.
+runtime, product integration contract or engine default here.
 
 ## Concepts and invariants before representation
 
@@ -72,7 +72,7 @@ candidate details; approval must identify rows accepted, amended or deferred.
 | C7: findings | Per-operation and per-phase reports; fail, unsupported, inconclusive, then pass precedence. | One verdict hides evidence boundaries; global aggregation would revisit 0003 beyond this scope. |
 | C8: simple graph | Finite acyclic, single active step, explicit I/O and outcomes; Boolean conditions and one-action human gates. | Documentary graph inventory alone avoids new semantics; parallelism, loops or general expressions need separate contracts. |
 | C9: runtime declarations | Open exact engine identities, optional selection, explicit requirement evidence; no defaults. | Deferring R keeps engine metadata opaque. A vendor enum or inferred default contradicts the recorded user direction. |
-| C10: delivery evidence | Two independent validation implementations and Macro integration documentation. Actual Macro execution remains a pending maintainer gate. | Requiring execution before 0.1.0 adds external implementation work, a reviewed mapping and observed runs. |
+| C10: delivery evidence | Two independent validation implementations and scope-labelled evidence, with no required product integration. | Adding execution conformance would require a separately reviewed general contract and observed runs by third-party implementations; structural evidence alone cannot support it. |
 
 ## Candidate JSON representation for D
 
@@ -282,7 +282,8 @@ separate optional model identity/version, provider identity, hosting reference,
 and evidence references for each requirement. There is no vendor enum or
 inference between those fields. An absent selection is valid documentary input,
 recorded as unselected. An unknown custom engine is retained as declared, with
-support unassessed. Macro's custom engine may remain undefined.
+support unassessed. A custom engine contract may remain undefined; naming it
+does not establish capabilities or compatibility.
 
 A future deployment assessment records each requirement as satisfied,
 unsatisfied or indeterminate against versioned evidence, separate from R's
@@ -341,8 +342,9 @@ Before adoption, record acceptance or amendment of C1-C10. In particular:
 - The exact G/R field inventories, Interface I/O representation, diagnostic rule
   inventory and capability contracts must be written and reviewed after scope
   selection. Until then G/R are concrete conceptual contracts, not parser-ready.
-- Actual Macro execution as a release gate remains unanswered. Documentation
-  cannot close that gate if the maintainer selects it.
+- Execution conformance is outside the proposed structural delivery evidence.
+  Any later execution claim requires a reviewed general contract and observed
+  runs; no particular product supplies or determines portable semantics.
 
 Adoption would create the first bounded syntax, not compatibility with an
 existing AgSDL codec. No framework mapping or execution-equivalence promise is
