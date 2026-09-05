@@ -25,9 +25,26 @@ Proposals 0005 through 0010 investigate versioned bindings to MCP, A2A, AG-UI,
 A2UI, AP2, and Open Agent Specification. They remain non-normative and do not
 establish implementation support or interoperability.
 
-The relation between the conformance levels named in Decision 0001 and the
-implementation features and profiles proposed in proposal 0003 remains an open
-design decision. The roadmap does not select one model.
+[Decision 0004](docs/decisions/0004-approved-design-directions.md) records five
+accepted design directions:
+
+- allow a complete System to use exclusively imported Agent definitions while
+  preserving their lifecycle ownership;
+- associate one Action occurrence directly with several Authorization decisions,
+  each tied to its evaluated requirement and Policy application point;
+- use implementation features and conformance profiles for claims, amending
+  Decision 0001's reference to general conformance levels;
+- permit validation by phase, with explicit declarations and applicable rules
+  for each permitted deferral in an incomplete Fragment;
+- prepare a bounded contract for reading, inspection, structural validation,
+  and exchange, including missing information, preservation, and loss reporting.
+
+The [active work plan](docs/plans/2026-09-05-conceptual-reconciliation.md)
+reconciles the proposals with those directions and prepares proposal 0011.
+The exact first contract, including its normative subset, permitted deferral
+inventory, identity-relation interpretation, and input and result rules, still
+requires maintainer review. Neither the directions nor the reconciled proposals
+adopt a language, stable feature identities, syntax, or implementation support.
 
 ## Phase 0: foundation
 
@@ -55,7 +72,8 @@ Status: future work, pending accepted conceptual semantics.
 
 - Choose canonical and authoring serializations.
 - Publish schemas and validation rules.
-- Resolve the conformance model and define compatibility rules.
+- Define precise feature and conformance-profile contracts, validation-phase
+  rules, and compatibility rules within the accepted design directions.
 - Build non-normative reference tooling after the relevant behavior is accepted.
 - Candidate operations include parsing, validation, normalization, reference
   resolution, and static inspection.
