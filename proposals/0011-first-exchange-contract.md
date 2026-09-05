@@ -262,6 +262,14 @@ exchange cannot claim exact preservation. No exchange result establishes
 behavioral equivalence. The representation needed to demonstrate exact
 preservation remains to be selected before implementation claims.
 
+Successful preservation of an invalid artifact does not satisfy the obligation
+to emit conforming documents in
+[proposal 0003's producer conformance rules](0003-conformance-and-versioning.md#producer-conformance).
+Calling an exchanging processor a producer here does not grant that conformance.
+Whether and how this preservation operation can support a future producer
+conformance claim requires an explicit decision before adoption; this proposal
+does not change the existing producer obligation.
+
 ## Results, coverage, and candidate verdict rules
 
 Each report identifies the processor and version, operation, exact inputs,
@@ -350,7 +358,10 @@ artifact would unnecessarily prevent useful inspection and preservation.
 
 The maintainer must review the exact scope, single Interface deferral, excluded
 root cases, non-deferrable obligations, Agent Identity interpretation, and
-operation-specific verdict rules above. None follows automatically from D5.
+operation-specific verdict rules above. The relation between preservation of
+invalid artifacts and future producer conformance also requires an explicit
+decision, as described in the preservation section. None follows automatically
+from D5.
 
 Two independent readers still need the following settled before they can
 reliably produce the same results:
