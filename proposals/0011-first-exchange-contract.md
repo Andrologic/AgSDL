@@ -76,6 +76,12 @@ being evaluated, extension support, and the observed input boundary. Candidate
 reviews identify the proposal revision rather than invent an AgSDL version.
 A future conformance operation would require an adopted specification version.
 
+Each validation verdict names exactly one primary document. Its root, local
+definitions, and declared references determine the validation scope. The input
+must distinguish that document from annexed dependency artifacts; if the
+boundary cannot be determined, validation is inconclusive. Validating several
+documents produces separate verdicts, not a merged graph verdict.
+
 Reading and inspection may return a partial inventory when those facts are
 missing. They must distinguish absent declarations, explicitly unknown values,
 unsupported interpretation, and information they could not observe. Such a
@@ -85,7 +91,7 @@ For positive validation of this scope, the supplied material must expose:
 
 | Information | Candidate minimum and covered check |
 | --- | --- |
-| Document root | Exactly one System, Fragment, or Package version root, with identity and declared root form; a fragment root never causes creation of a System. |
+| Document root | Exactly one System, Fragment, or Package version root in the primary document, with identity and declared root form; a fragment root never causes creation of a System. |
 | Local definitions | Every local definition's scoped identifier, kind, version identity, location, and exactly one lifecycle owner of the kind required by proposal 0002's document-root rules. The root identifies the ownership boundary; it does not own itself. |
 | Exports and edges | A Fragment exports at least one definition. Preserve every declared export and each definition reference's source, relation, target, and local or external status; each local target exists uniquely and has the expected kind and compatible declared version. |
 | Ownership and containment | Their declared edges, unambiguous owners, and no cycle in the supplied local graph. Imported declarations retain source ownership; a use or containment edge does not transfer it. |
@@ -102,9 +108,14 @@ without one, the compatibility check is inconclusive. Numeric order alone
 proves nothing.
 
 Dependencies supplied as separate artifacts are inventoried with their own
-source boundaries. They do not become local definitions of the requesting
-document. Checking the document's external declarations does not certify those
-artifacts; validating another document requires a separate scope result.
+source boundaries. Their roots do not count toward the primary document's
+single-root check, and their definitions do not become local to it. Annexes
+provide evidence only for covered dependency-accounting and declared integrity
+checks; attaching them does not activate validation of their internal Agent
+relations. Checking the primary document's external declarations does not
+certify those artifacts; validating another document requires a separate scope
+result. An Agent referenced externally cannot fail the primary document's
+local-Agent checks because its internal Principal relation is unobserved.
 
 A declaration outside the named validation scope can be inventoried as missing
 without becoming an additional covered obligation. A required unknown that
@@ -254,7 +265,8 @@ preservation remains to be selected before implementation claims.
 ## Results, coverage, and candidate verdict rules
 
 Each report identifies the processor and version, operation, exact inputs,
-rule edition, phase when applicable, fixed validation scope, extension support,
+rule edition, primary document for validation, phase when applicable, fixed
+validation scope, extension support,
 checks performed, and exclusions. It associates each finding with the artifact,
 location or scoped subject, relation when applicable, rule, evidence, and
 outcome. It lists permitted deferrals and checks not performed separately.
@@ -298,6 +310,7 @@ review questions, not executable fixtures or evidence of AgSDL conformance.
 | An imported Agent retains its package owner and is the System's only participant. | No failure for absence of a locally owned Agent. System completeness remains outside this verdict. |
 | One Agent definition identifier, one Principal relation, and two scoped Principal identities. | The Agent Identity check passes under the recommended interpretation; no acting identity or authority is inferred. |
 | A materialized import creates a local Agent lacking its Principal relation but records the missing fact. | Scope validation fails; inspection and exact preservation may succeed with that failure retained. |
+| A primary System references an external Agent and an annexed package supplies a separate root; the Agent's Principal relation is not inspected. | No double-root failure or local-Agent failure follows. Check the primary document's reference and dependency declarations; annex internals require a separate verdict. |
 | An optional unknown annotation has a supplied governing rule allowing it to be ignored for validation, and is preserved in context. | It does not prevent scope validation; exchange makes no interpretation claim. |
 | An unknown required extension changes identifier equality. | Positive validation is unavailable, with unsupported interpretation reported; exact preservation can still be considered separately. |
 | A version constraint has no shared compatibility rule, or extension requiredness is indeterminate. | With no known failure or unsupported required check, validation is inconclusive. |
