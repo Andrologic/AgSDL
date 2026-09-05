@@ -183,6 +183,15 @@ authorized overlay satisfies every such requirement. If the binding cannot
 represent a mandatory missing relation as an Unresolved requirement, or if the
 requested operation requires a resolved graph, the import fails.
 
+Declaring these missing facts does not itself permit their deferral for a
+positive unresolved-document verdict. That verdict follows the applicable
+phase rules in [proposal 0003](0003-conformance-and-versioning.md#validation-by-phase-and-declared-missing-obligations)
+and the explicit-deferral direction in [Decision
+0004](../docs/decisions/0004-approved-design-directions.md). The declaration
+inventory remains complete even when a missing obligation is not permitted to
+be deferred. Preserving an incomplete import and its mapping report is separate
+from claiming that it passes either validation phase.
+
 The adapter must not synthesize a System boundary, purpose, principal,
 authority, policy, trust boundary, Effect, or deployment guarantee merely to
 make the result appear complete.
