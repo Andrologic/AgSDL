@@ -532,8 +532,16 @@ def validate_r(doc):
             requires_complete = requires_ok and len(requirements) == len(requires_value)
             claims_value = binding.get('claims')
             claims_ok = isinstance(claims_value, list)
-            claims = [item for item in claims_value if good('CapabilityClaim', item)] if claims_ok else []
-            claims_complete = claims_ok and len(claims) == len(claims_value)
+            claim_identities = ([item for item in claims_value
+                                 if isinstance(item, dict)
+                                 and good('Edition', item.get('capability'))]
+                                if claims_ok else [])
+            claims = [item for item in claim_identities
+                      if good(('enum', ('supported', 'unsupported', 'unknown')),
+                              item.get('status'))]
+            claims_complete = (claims_ok
+                               and all(good('CapabilityClaim', item)
+                                       for item in claims_value))
             tools_value = binding.get('tools')
             tools_ok = isinstance(tools_value, list)
             tool_bindings = [(tool, bp + '/tools/' + str(k)) for k, tool in enumerate(tools_value)
@@ -541,15 +549,14 @@ def validate_r(doc):
             tools_complete = tools_ok and len(tool_bindings) == len(tools_value)
             applications_value = binding.get('applications')
             applications_ok = isinstance(applications_value, list)
-            application_records = [(application, bp + '/applications/' + str(k))
-                                   for k, application in enumerate(applications_value)
-                                   if isinstance(application, dict)] if applications_ok else []
-            applications = [(application, ap) for application, ap in application_records
+            application_slots = [(application, bp + '/applications/' + str(k))
+                                 for k, application in enumerate(applications_value)] if applications_ok else []
+            applications = [(application, ap) for application, ap in application_slots
+                            if isinstance(application, dict)
                             if good('Ref', application.get('content'))]
             applications_complete = (applications_ok
-                                     and len(application_records) == len(applications_value)
                                      and all(good('Application', application)
-                                             for application, _ in application_records))
+                                             for application, _ in application_slots))
             application_catalog_complete = (applications_ok
                                             and len(applications) == len(applications_value))
 
@@ -563,7 +570,7 @@ def validate_r(doc):
                 state(bp + '/engine', 'absent' if binding['engine'] is None else 'declared')
             duplicate_requirements = duplicates(requirements, 'R-BINDING', bp,
                                                 'duplicate engine requirement')
-            duplicate_claims = duplicates([claim['capability'] for claim in claims], 'R-BINDING', bp,
+            duplicate_claims = duplicates([claim['capability'] for claim in claim_identities], 'R-BINDING', bp,
                                           'duplicate engine capability claim')
             for k, claim in enumerate(claims_value if claims_ok else []):
                 if good('CapabilityClaim', claim) and claim['evidence'] is None:
@@ -586,6 +593,7 @@ def validate_r(doc):
                                           and all(good('Ref', tool.get('tool'))
                                                   for tool, _ in tool_bindings)),
                 'applications': applications, 'applications_complete': applications_complete,
+                'application_slots': application_slots,
                 'application_catalog_complete': application_catalog_complete,
                 'binding_shape_ok': good('AgentBinding', binding),
             })
@@ -732,7 +740,8 @@ def validate_r(doc):
                 statuses.append('not-provided')
             elif claim and claim['status'] == 'unsupported':
                 statuses.append('incompatible')
-            elif not claim or claim['status'] == 'unknown' or claim['evidence'] is None:
+            elif (not claim or claim['status'] == 'unknown'
+                  or not good('hash', claim.get('evidence'))):
                 statuses.append('unknown')
             else:
                 statuses.append('declared-supported')
@@ -912,12 +921,17 @@ def validate_r(doc):
         required_tokens = set()
         for ref in required_content:
             required_tokens.update(reachable(frozen(ref), content_graph))
-        application_tokens = [frozen(application['content']) for application, _ in applications]
+        application_tokens = [(frozen(application['content'])
+                               if isinstance(application, dict)
+                               and good('Ref', application.get('content')) else None)
+                              for application, _ in entry['application_slots']]
         if entry['application_catalog_complete']:
             for token in required_tokens:
                 if token not in application_tokens:
                     result.find('R-CONTENT', bp, 'required content Application missing')
-        for i, (application, ap) in enumerate(applications):
+        application_positions = {ap: i for i, (_, ap) in enumerate(entry['application_slots'])}
+        for application, ap in applications:
+            i = application_positions[ap]
             token = frozen(application['content'])
             if token not in required_tokens and not external_agent:
                 if content_closure_complete:
@@ -934,8 +948,11 @@ def validate_r(doc):
                         earlier = application_tokens[:i]
                         if any(frozen(dep) not in earlier for dep in dependencies_value
                                if good('Ref', dep)):
-                            result.find('R-CONTENT', ap,
-                                        'Skill dependency Application must be earlier')
+                            if None in earlier:
+                                result.block('R-CONTENT', ap)
+                            else:
+                                result.find('R-CONTENT', ap,
+                                            'Skill dependency Application must be earlier')
                     else:
                         result.block('R-CONTENT', ap)
         result.complete('R-CONTENT')
@@ -1008,14 +1025,21 @@ def validate_r(doc):
                 readable_tool_bindings.append((tool, tp))
             else:
                 result.block('R-TOOL', tp)
-        if entry['tool_catalog_complete']:
-            for ref in required_tools:
-                matches = [(tool, tp) for tool, tp in readable_tool_bindings
-                           if tool['tool'] == ref]
-                if len(matches) != 1:
-                    result.find('R-TOOL', bp,
-                                'missing or duplicate required ToolBinding')
-        else:
+        tool_groups = defaultdict(list)
+        for tool, tp in readable_tool_bindings:
+            tool_groups[frozen(tool['tool'])].append(tp)
+        ambiguous_tool_bindings = {tp for group in tool_groups.values() if len(group) > 1
+                                   for tp in group}
+        for ref in required_tools:
+            matches = [(tool, tp) for tool, tp in readable_tool_bindings
+                       if tool['tool'] == ref]
+            if len(matches) > 1:
+                result.find('R-TOOL', bp, 'missing or duplicate required ToolBinding')
+            elif not matches and entry['tool_catalog_complete']:
+                result.find('R-TOOL', bp, 'missing or duplicate required ToolBinding')
+            elif not matches:
+                result.block('R-TOOL', bp)
+        if not entry['tool_catalog_complete']:
             result.block('R-TOOL', bp)
 
         for tool, tp in entry['tool_bindings']:
@@ -1052,18 +1076,23 @@ def validate_r(doc):
                     result.find('R-TOOL', cp, 'duplicate Implementation id')
                     ambiguous_choices.add(choice['id'])
                 claims_value = choice.get('claims')
-                valid_claims = ([claim for claim in claims_value
-                                if good('CapabilityClaim', claim)]
-                               if isinstance(claims_value, list) else [])
+                claim_identities = ([claim for claim in claims_value
+                                     if isinstance(claim, dict)
+                                     and good('Edition', claim.get('capability'))]
+                                    if isinstance(claims_value, list) else [])
+                valid_claims = [claim for claim in claim_identities
+                                if good(('enum', ('supported', 'unsupported', 'unknown')),
+                                        claim.get('status'))]
                 complete = (isinstance(claims_value, list)
-                            and len(valid_claims) == len(claims_value)
+                            and all(good('CapabilityClaim', claim)
+                                    for claim in claims_value)
                             and good('Edition', choice.get('implementation'))
                             and 'parameters' in choice)
                 choice_claims[cp] = valid_claims
                 choice_complete[cp] = complete
                 if not complete:
                     result.block('R-TOOL', cp)
-                if duplicates([claim['capability'] for claim in valid_claims],
+                if duplicates([claim['capability'] for claim in claim_identities],
                               'R-TOOL', cp,
                               'duplicate implementation capability claim'):
                     ambiguous_choices.add(choice['id'])
@@ -1099,6 +1128,7 @@ def validate_r(doc):
                        blocked=(configuration_blocked.get(id(configuration), True)
                                 or agent_prerequisite_blocked
                                 or bp in ambiguous_agent_bindings
+                                or tp in ambiguous_tool_bindings
                                 or selection_blocked or tool_blocked
                                 or not tool_ref_ok or not choices_complete
                                 or (bool(chosen) and not choice_complete.get(chosen[0][1], False))

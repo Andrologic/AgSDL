@@ -318,6 +318,53 @@ class AuditRegressionTests(unittest.TestCase):
         self.assertIn('declared-supported',
                       {item['detail'] for item in states(actual, prefix + '1')})
 
+    def test_unreadable_earlier_application_blocks_order_conclusion(self):
+        value = fixture()
+        binding = value['runtime']['configurations'][0]['agents'][0]
+        binding['applications'][0]['content'] = None
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0/applications/1'
+        self.assertFalse(any(item['location']['pointer'] == pointer
+                             and 'Skill dependency Application must be earlier'
+                             in item['details']
+                             for item in findings(actual, 'R-CONTENT', 'fail')))
+        self.assertTrue(any(check['rule'] == 'R-CONTENT' and check['state'] == 'blocked'
+                            and {'pointer': pointer} in check['locations']
+                            for check in actual['results'][-1]['checks']))
+
+    def test_duplicate_tool_bindings_block_only_their_aggregates(self):
+        value = fixture()
+        tools = value['runtime']['configurations'][0]['agents'][0]['tools']
+        tools.append(copy.deepcopy(tools[0]))
+        actual = report(value)
+        prefix = '/runtime/configurations/0/agents/0/tools/'
+        for index in ('0', '1'):
+            self.assertIn('blocked',
+                          {item['detail'] for item in states(actual, prefix + index)})
+        self.assertTrue(any('missing or duplicate required ToolBinding' in item['details']
+                            for item in findings(actual, 'R-TOOL', 'fail')))
+
+    def test_extra_claim_field_keeps_known_incompatibility(self):
+        value = fixture()
+        claim = value['runtime']['configurations'][0]['agents'][0]['claims'][0]
+        claim['status'] = 'unsupported'
+        claim['extra'] = True
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0'
+        self.assertTrue(any(item['location']['pointer'] == pointer
+                            for item in findings(actual, 'R-COMPATIBILITY', 'fail')))
+
+    def test_extra_implementation_claim_field_keeps_known_incompatibility(self):
+        value = fixture()
+        claim = (value['runtime']['configurations'][0]['agents'][0]
+                 ['tools'][0]['choices'][0]['claims'][0])
+        claim['status'] = 'unsupported'
+        claim['extra'] = True
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0/tools/0'
+        self.assertTrue(any(item['location']['pointer'] == pointer
+                            for item in findings(actual, 'R-COMPATIBILITY', 'fail')))
+
 
 class GraphTests(unittest.TestCase):
     def test_duplicate_selected_operation_blocks_lookup(self):
