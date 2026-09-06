@@ -280,7 +280,6 @@ export function validateR(ctx, inventory) {
       const needed = new Set(used.map(canonical));
       if (needed.size !== groups.size || [...needed].some(identity => !groups.has(identity))) {
         result.find('R-BINDING', cp, 'AgentBinding coverage differs from graph Agents');
-        structuralBlocked = true;
       }
     }
     analyses.set(configuration, { cp, groups, used, structuralBlocked });
@@ -292,6 +291,7 @@ export function validateR(ctx, inventory) {
     let unknownExternal = agent.status === 'external';
     let missingContent = false;
     let contentClosureComplete = agent.status === 'local';
+    let contentClosureBlocked = agent.status === 'blocked';
     let toolClosureComplete = agent.status === 'local';
     let toolClosureBlocked = agent.status === 'blocked';
     let toolClosureUnknown = agent.status === 'external';
@@ -303,6 +303,7 @@ export function validateR(ctx, inventory) {
 
     function incompleteContentClosure(reason) {
       contentClosureComplete = false;
+      if (reason === 'blocked') contentClosureBlocked = true;
       toolClosureComplete = false;
       if (reason === 'blocked') toolClosureBlocked = true;
       else toolClosureUnknown = true;
@@ -347,6 +348,7 @@ export function validateR(ctx, inventory) {
           result.mark('R-CONTENT', 'blocked', ap);
           assessmentBlocked = true;
           contentClosureComplete = false;
+          contentClosureBlocked = true;
         }
         if (toolRelationsBlocked) {
           result.mark('R-TOOL', 'blocked', ap);
@@ -530,6 +532,11 @@ export function validateR(ctx, inventory) {
       } else if (found.status === 'local' && !['Instructions', 'Skill'].includes(found.v.kind)) {
         result.find('R-CONTENT', pointer, 'Application content has wrong kind');
       }
+      if (found.status === 'local' && ['Instructions', 'Skill'].includes(found.v.kind)) {
+        // A declared Application selects its payload even outside the required closure.
+        // Intrinsic engine requirements still come only from the required closure.
+        payload(found, found.v.kind, 'R-CONTENT', pointer);
+      }
       if (!S.valid(S.Ref, application.content)) {
         applicationIndexComplete = false;
         unreadableApplicationPositions.push(index);
@@ -555,7 +562,6 @@ export function validateR(ctx, inventory) {
         const prerequisites = applicationPositions.get(canonical(dependency)) || [];
         for (const dependent of dependents) if (prerequisites.length && !prerequisites.some(prerequisite => prerequisite < dependent) && !unreadableApplicationPositions.some(position => position < dependent)) {
           result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
-          missingContent = true;
         }
       }
     }
@@ -563,6 +569,13 @@ export function validateR(ctx, inventory) {
       for (const [identity, positions] of applicationPositions) if (!requiredContent.has(identity)) {
         for (const position of positions) result.find('R-CONTENT', `${ap}/applications/${position}`, 'Application is not reachable from Agent direction');
       }
+    } else {
+      for (const [identity, positions] of applicationPositions) if (!requiredContent.has(identity)) {
+        for (const position of positions) result.mark('R-CONTENT', contentClosureBlocked ? 'blocked' : 'excluded', `${ap}/applications/${position}`);
+      }
+    }
+    for (const [identity, entry] of content) if (entry.kind === 'Skill' && !Array.isArray(entry.info?.value?.dependencies)) {
+      for (const position of applicationPositions.get(identity) || []) result.mark('R-CONTENT', 'blocked', `${ap}/applications/${position}`);
     }
 
     const tools = Array.isArray(binding.tools) ? binding.tools : [];

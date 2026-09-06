@@ -367,6 +367,46 @@ test('malformed claims do not become absent capability evidence',()=>{
   }
 });
 
+test('interpreted Tool failure text keeps its exact opaque bytes',()=>{
+  const raw=fixture('modular-system.json'),x=execute('validateR',raw),p='/definitions/9/payload/failures/0';
+  const slice=x.report.inventory.opaque.find(s=>s.pointer===p);
+  assert.ok(slice);assert.equal(raw.subarray(slice.start,slice.end).toString(),'"unavailable"');
+  assert.ok(!x.report.inventory.opaque.some(s=>s.pointer==='/definitions/9/payload'));
+});
+
+test('a missing AgentBinding does not block distinct existing assessments',()=>{
+  const x=execute('validateR',fixture('missing-agent-binding.json')),r=result(x,'R');
+  assert.ok(r.findings.some(f=>f.rule==='R-BINDING'));
+  assert.ok(!r.checks.some(c=>c.rule==='R-COMPATIBILITY'&&c.state==='blocked'));
+  for(const pointer of['/runtime/configurations/0/agents/0','/runtime/configurations/0/agents/0/tools/0'])assert.ok(x.report.inventory.states.some(s=>s.pointer===pointer&&s.detail==='declared-supported'));
+});
+
+test('invalid prerequisite order is not a missing Application',()=>{
+  for(const name of['skill-dependency-after-dependent.json','skill-dependency-cycle.json']){
+    const x=execute('validateR',fixture(name)),r=result(x,'R');
+    assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.details.includes('earlier')));
+    assert.ok(!r.findings.some(f=>f.rule==='R-COMPATIBILITY'&&f.outcome==='inconclusive'));
+    assert.ok(!x.report.inventory.states.some(s=>s.detail==='not-provided'));
+  }
+});
+
+test('Applications select observable payloads outside an incomplete required closure',()=>{
+  for(const name of['skill-dependency-cycle.json','partial-content-prerequisite.json']){
+    const d=JSON.parse(fixture(name)),x=execute('validateR',d);
+    assert.ok(x.report.inventory.opaque.some(s=>s.pointer==='/definitions/11/payload/body'));
+    assert.ok(!x.report.inventory.opaque.some(s=>s.pointer==='/definitions/11/payload'));
+    d.definitions[11].payload.body=17;
+    assert.ok(finding(execute('validateR',d),'R','P-SHAPE','/definitions/11/payload/body'));
+  }
+});
+
+test('unavailable content prerequisites block affected Application records',()=>{
+  const d=JSON.parse(fixture('partial-content-prerequisite.json')),r=result(execute('validateR',d),'R');
+  const blocked=r.checks.find(c=>c.rule==='R-CONTENT'&&c.state==='blocked').locations.map(l=>l.pointer);
+  assert.ok(blocked.includes('/definitions/12/payload'));
+  for(const[ci,c]of d.runtime.configurations.entries())for(const[ai,a]of c.agents.entries())for(const[index]of a.applications.entries())assert.ok(blocked.includes(`/runtime/configurations/${ci}/agents/${ai}/applications/${index}`));
+});
+
 test('an empty graph entry blocks path lookup',()=>{
   const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));

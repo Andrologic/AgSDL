@@ -52,7 +52,7 @@ git diff --check
 
 Using two labels for one command validates this reader twice against every
 targeted corpus assertion. It does not establish independence or agreement
-between languages. The 22-case corpus is a bounded witness set, so the local
+between languages. The 26-case corpus is a bounded witness set, so the local
 tests also cover marker separation, partial prerequisites, duplicate operation
 selection, outbound operations, additional content, multi-node Skill cycles and
 host-request errors.
