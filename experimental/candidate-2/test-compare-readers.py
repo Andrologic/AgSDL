@@ -313,7 +313,7 @@ class ObservationTests(unittest.TestCase):
 
     def test_findings_still_use_observable_parent_for_missing_field(self):
         case,response,source=fixture()
-        # Finding P-SHAPE at an absent member remains invalid, unlike a blocked Check.
+        # Finding P-SHAPE for a missing member points to its observable parent.
         case['operation']=response['report']['operation']='validateD'
         result=response['report']['results'][0]
         result.update(unit='D',phase='unresolved-document',verdict='fail',findings=[dict(rule='P-SHAPE',location={'pointer':'/relations'},outcome='fail',details='Missing')])
