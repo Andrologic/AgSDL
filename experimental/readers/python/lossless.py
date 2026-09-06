@@ -220,9 +220,15 @@ class Parser:
                 length = 2 if 0xC2 <= c <= 0xDF else 3 if 0xE0 <= c <= 0xEF else 4 if 0xF0 <= c <= 0xF4 else 0
                 if not length:
                     self.error('invalid UTF-8')
-                chunk = self.raw[self.i:self.i + length]
-                try:
-                    chars.append(chunk.decode('utf-8', errors='strict'))
-                except UnicodeDecodeError as error:
-                    self.error('invalid UTF-8', self.i + error.start)
+                for offset in range(1, length):
+                    position = self.i + offset
+                    if position >= len(self.raw):
+                        self.error('incomplete UTF-8', len(self.raw))
+                    lower, upper = 0x80, 0xBF
+                    if offset == 1:
+                        lower = 0xA0 if c == 0xE0 else 0x90 if c == 0xF0 else lower
+                        upper = 0x9F if c == 0xED else 0x8F if c == 0xF4 else upper
+                    if not lower <= self.raw[position] <= upper:
+                        self.error('invalid UTF-8', position)
+                chars.append(self.raw[self.i:self.i + length].decode('utf-8'))
                 self.i += length

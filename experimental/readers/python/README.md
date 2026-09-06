@@ -89,3 +89,17 @@ authorization, engine execution or product integration. Resource exhaustion
 can terminate a request; deeply nested JSON is subject to the Python host's
 recursion limit and memory availability. Such a host error is not a pass or a
 new AgSDL language restriction. No source-network or runtime evidence is claimed.
+
+
+Pending candidate clarification: unpaired surrogate locations
+-----------------------------------------------------------
+
+The JSON byte sequences `"\ud800"` (hex `225c756438303022`) and
+`"\ud800\u0041"` (hex `225c75643830305c753030343122`) are rejected with
+P-SYNTAX at byte 1, the initial escape. Candidate-2 does not explicitly settle
+whether this location should instead identify the byte revealing that a valid
+pair cannot follow. For the first witness that would be the closing quote at
+byte 7; for the second, the first incompatible low-surrogate hexadecimal digit
+at byte 9. Recommendation: specify these witnesses, together with truncation at
+EOF, before comparison or adoption. This reader retains its existing escape-start
+convention pending that decision; it does not amend the proposal.

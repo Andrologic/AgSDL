@@ -606,19 +606,24 @@ class GraphValidation:
     def graph(self, graph, path):
         result, doc = self.result, self.primary
         steps_list = items(graph, 'steps')
-        steps, step_paths, edges = {}, {}, {}
+        steps, edges, records, ambiguous = {}, {}, [], set()
+        index_readable = isinstance(graph.get('steps'), list)
         path_shape = isinstance(graph.get('steps'), list) and good('text', graph.get('entry'))
         path_bad = not steps_list
         for i, step in enumerate(steps_list):
             sp = path + '/steps/' + str(i)
+            if isinstance(step, dict):
+                records.append((step.get('id'), step, sp))
             if not isinstance(step, dict) or not good('text', step.get('id')):
+                index_readable = False
                 path_shape = False
                 result.block('G-PATH', path)
                 continue
             sid = step['id']
             if sid in steps:
                 path_bad = True
-            steps[sid], step_paths[sid] = step, sp
+                ambiguous.add(sid)
+            steps[sid] = step
             labels = {'invoke': ('success', 'failure'), 'condition': ('true', 'false', 'failure'), 'approval': ('approved', 'denied', 'failure'), 'end': ()}.get(step.get('kind')) if isinstance(step.get('kind'), str) else None
             if labels is None or any(not good('text', step.get(label)) for label in labels):
                 path_shape = False
@@ -646,8 +651,16 @@ class GraphValidation:
                     result.find('G-DATA', consumer_path, 'graph input missing or wrong type')
             else:
                 producer = steps.get(binding_value['step'])
-                if not producer or producer.get('kind') != 'invoke' or not good('Ports', producer.get('outputs')):
-                    result.find('G-DATA', consumer_path, 'binding producer missing or not typed invoke')
+                if binding_value['step'] in ambiguous or (producer is None and not index_readable):
+                    result.block('G-DATA', consumer_path)
+                elif producer is None:
+                    result.find('G-DATA', consumer_path, 'binding producer missing')
+                elif producer.get('kind') not in ('invoke', 'condition', 'approval', 'end'):
+                    result.block('G-DATA', consumer_path)
+                elif producer['kind'] != 'invoke':
+                    result.find('G-DATA', consumer_path, 'binding producer is not invoke')
+                elif not good('Ports', producer.get('outputs')):
+                    result.block('G-DATA', consumer_path)
                 elif producer['outputs'].get(binding_value['port']) != expected:
                     result.find('G-DATA', consumer_path, 'producer output missing or wrong type')
                 if not paths_ok:
@@ -666,8 +679,7 @@ class GraphValidation:
                 result.block('G-DATA', consumer_path)
             binding(step.get('context'), 'json', consumer_id, consumer_path)
 
-        for sid, step in steps.items():
-            sp = step_paths[sid]
+        for sid, step, sp in records:
             kind = step.get('kind')
             if kind == 'invoke':
                 input_bindings(step, sid, sp)
@@ -739,7 +751,9 @@ class GraphValidation:
                         self.ref(ref, 'Principal', owner, sp, dp + '/payload/approvers/' + str(j), ar, dp + '/payload')
                 approved = step.get('approved')
                 protected = steps.get(approved) if isinstance(approved, str) else None
-                if not good('text', approved):
+                if not good('text', approved) or approved in ambiguous or (protected is None and not index_readable):
+                    result.block('G-APPROVAL', sp)
+                elif protected is not None and protected.get('kind') not in ('invoke', 'condition', 'approval', 'end'):
                     result.block('G-APPROVAL', sp)
                 elif protected is None or protected.get('kind') != 'invoke':
                     result.find('G-APPROVAL', sp, 'approved successor is not invoke')

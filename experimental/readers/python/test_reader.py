@@ -97,6 +97,13 @@ class ParserTests(unittest.TestCase):
                 Parser(data).parse()
             self.assertEqual(caught.exception.offset, expected)
 
+    def test_utf8_continuation_and_eof_offsets(self):
+        for hex_bytes, offset in [('22e25822', 2), ('22e282', 3), ('22e0808022', 2),
+                                  ('22eda08022', 2), ('22f490808022', 2), ('22f0908022', 4)]:
+            with self.subTest(hex_bytes=hex_bytes), self.assertRaises(SyntaxFailure) as caught:
+                Parser(bytes.fromhex(hex_bytes)).parse()
+            self.assertEqual(caught.exception.offset, offset)
+
     def test_safe_uint_without_rounding(self):
         for value, expected in [('1.0e0', 1), ('100e-2', 1), ('1.01', None), ('-0', 0), ('9007199254740991', 9007199254740991),
                                 ('9007199254740992', None), ('1e999999999999999', None), ('1e-99999999999', None)]:
@@ -403,6 +410,26 @@ class GraphTests(unittest.TestCase):
                     report = run(changed, 'validateG')
                     self.assertEqual(report['results'][-1]['verdict'], 'fail')
                     self.assertTrue(findings(report, 'P-SHAPE'))
+
+    def test_duplicate_steps_preserve_independent_targets(self):
+        d = graph_doc()
+        duplicate = copy.deepcopy(d['graphs'][0]['steps'][0])
+        d['graphs'][0]['steps'][0]['agent'] = k('missing')
+        d['graphs'][0]['steps'].append(duplicate)
+        report = run(d, 'validateG')
+        self.assertTrue(findings(report, 'G-PATH'))
+        self.assertTrue(findings(report, 'G-TARGET'))
+        self.assertFalse(findings(report, 'G-DATA'))
+        self.assertTrue(any(c['rule'] == 'G-DATA' and c['state'] == 'blocked'
+                            for c in report['results'][-1]['checks']))
+
+    def test_unreadable_producer_ports_block_consumer(self):
+        d = graph_doc(); d['graphs'][0]['steps'][0]['outputs'] = 17
+        report = run(d, 'validateG')
+        self.assertTrue(findings(report, 'P-SHAPE'))
+        self.assertFalse(findings(report, 'G-DATA'))
+        self.assertTrue(any(c['rule'] == 'G-DATA' and c['state'] == 'blocked'
+                            for c in report['results'][-1]['checks']))
 
     def test_malformed_step_shapes_do_not_crash(self):
         for field in graph_doc()['graphs'][0]['steps'][0]:
