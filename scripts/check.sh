@@ -48,5 +48,8 @@ python3 scripts/test-check-markdown-links.py
 python3 scripts/check-markdown-links.py
 python3 experimental/candidate-2/check-fixtures.py
 python3 experimental/candidate-2/test-compare-readers.py
+python3 experimental/modular-candidate-1/check-fixtures.py
+PYTHONDONTWRITEBYTECODE=1 python3 experimental/modular-candidate-1/test_check_fixtures.py
+PYTHONDONTWRITEBYTECODE=1 python3 experimental/modular-candidate-1/test_compare_readers.py
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experimental/readers/python -v
 echo "AgSDL repository checks passed."
