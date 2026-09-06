@@ -522,6 +522,38 @@ class GraphTests(unittest.TestCase):
                             in item['details']
                             for item in findings(actual, 'G-APPROVAL', 'fail')))
 
+    def test_unreadable_call_keeps_other_chain_gate_incoming_failures(self):
+        def two_chains():
+            value = fixture('approval-two-gates.json')
+            graph = value['graphs'][0]
+            second = copy.deepcopy(graph['steps'][:3])
+            renamed = {'legal': 'legal2', 'finance': 'finance2', 'call': 'call2'}
+            for step in second:
+                for field in ('id', 'call', 'approved', 'success', 'failure', 'denied'):
+                    if step.get(field) in renamed:
+                        step[field] = renamed[step[field]]
+            graph['steps'][2]['success'] = 'legal2'
+            graph['steps'].extend(second)
+            graph['steps'][0]['call'] = None
+            return value, graph
+
+        value, graph = two_chains()
+        graph['steps'][2]['failure'] = 'finance2'
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/8'
+                            and 'later gate has another incoming edge' in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
+        value, graph = two_chains()
+        legal3 = copy.deepcopy(graph['steps'][7])
+        legal3['id'] = 'legal3'
+        graph['steps'][2]['failure'] = 'legal3'
+        graph['steps'].append(legal3)
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/8'
+                            and 'gate has multiple approved predecessors' in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
 
 if __name__ == '__main__':
     unittest.main()

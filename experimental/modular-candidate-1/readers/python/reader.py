@@ -1676,7 +1676,16 @@ class GraphValidation:
                     for _, _, sp in final:
                         result.find('G-APPROVAL', sp,
                                     'call must have one final approved gate')
-                for _, step, sp in gates:
+                gate_ids = {sid for sid, _, _ in gates}
+                for sid, step, sp in gates:
+                    approved_predecessors = [(source, label) for source, label in incoming[sid]
+                                             if source in gate_ids and label == 'approved']
+                    if len(approved_predecessors) > 1:
+                        result.find('G-APPROVAL', sp,
+                                    'gate has multiple approved predecessors')
+                    elif approved_predecessors and incoming[sid] != approved_predecessors:
+                        result.find('G-APPROVAL', sp,
+                                    'later gate has another incoming edge')
                     if (call_id in reachable(step['denied'], edges)
                             or call_id in reachable(step['failure'], edges)):
                         result.find('G-APPROVAL', sp,
