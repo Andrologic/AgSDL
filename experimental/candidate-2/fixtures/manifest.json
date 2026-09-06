@@ -1,8 +1,8 @@
 {
   "format": "agsdl-candidate-corpus-1",
   "contract": "proposal-0012-candidate-2",
-  "contractBase": "40f9a8b28a957c6dad7fdd065fd10e29fa611eae",
-  "contractSha256": "c2247e8b821544a34eeb93c9c2d75f42777f5a5ac2c9cb62bd6eebcfd4748c9a",
+  "contractBase": "dbec97e64f37b6161eb69c6475e19ee7190e3618",
+  "contractSha256": "9f0ead2cbe9a5e158e3017f1ba692cbd3cba69e9240048130dc49c19c1222e07",
   "coverage": {
     "P-SYNTAX": {
       "cases": {
@@ -8681,7 +8681,7 @@
       "operation": "resolveG",
       "source": {
         "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
-        "section": "Candidate rule table and operation matrix."
+        "section": "Dependencies, unknowns and extension handling; exact results, locations and experimental diagnostics; rule execution and exact exclusion records: transitive resolution and cross-document selected-key collisions."
       },
       "coverage": [
         {
@@ -8705,6 +8705,12 @@
             "verdict": "pass"
           },
           {
+            "input": "annex/dep",
+            "unit": "G",
+            "phase": "resolved-graph",
+            "verdict": "pass"
+          },
+          {
             "input": "primary",
             "unit": "G",
             "phase": "resolved-graph",
@@ -8712,7 +8718,7 @@
           }
         ],
         "findings": {
-          "mode": "contains",
+          "mode": "exact",
           "items": [
             {
               "input": "primary",
@@ -8791,12 +8797,101 @@
                 "pointer": ""
               }
             ]
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "P-SHAPE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "X-EXECUTION",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": ""
+              }
+            ]
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "X-FULL-MODEL",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": ""
+              }
+            ]
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-DATA",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-RESOLVE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": "/definitions/0/payload"
+              }
+            ]
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": "/graphs/0/steps/0"
+              }
+            ]
           }
         ],
         "states": [],
-        "absentStates": [],
+        "absentStates": [
+          {
+            "input": "annex/dep",
+            "pointerPrefix": "/definitions/0/payload"
+          }
+        ],
         "opaque": [],
-        "absentOpaque": [],
+        "absentOpaque": [
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/0/payload"
+          }
+        ],
         "preservation": "no-output"
       }
     },
@@ -9388,7 +9483,7 @@
       "operation": "resolveG",
       "source": {
         "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
-        "section": "Candidate rule table and operation matrix."
+        "section": "Dependencies, unknowns and extension handling; exact results, locations and experimental diagnostics; rule execution and exact exclusion records: transitive resolution and cross-document selected-key collisions."
       },
       "coverage": [
         {
@@ -9412,6 +9507,12 @@
             "verdict": "pass"
           },
           {
+            "input": "annex/dep",
+            "unit": "G",
+            "phase": "resolved-graph",
+            "verdict": "pass"
+          },
+          {
             "input": "primary",
             "unit": "G",
             "phase": "resolved-graph",
@@ -9419,7 +9520,7 @@
           }
         ],
         "findings": {
-          "mode": "contains",
+          "mode": "exact",
           "items": [
             {
               "input": "primary",
@@ -9498,12 +9599,90 @@
                 "pointer": ""
               }
             ]
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "P-SHAPE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "X-EXECUTION",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": ""
+              }
+            ]
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "X-FULL-MODEL",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": ""
+              }
+            ]
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-DATA",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-RESOLVE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "blocked",
+            "locations": [
+              {
+                "pointer": "/graphs/0/steps/0"
+              }
+            ]
           }
         ],
         "states": [],
-        "absentStates": [],
+        "absentStates": [
+          {
+            "input": "annex/dep",
+            "pointerPrefix": "/definitions/0/payload"
+          }
+        ],
         "opaque": [],
-        "absentOpaque": [],
+        "absentOpaque": [
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/0/payload"
+          }
+        ],
         "preservation": "no-output"
       }
     },
