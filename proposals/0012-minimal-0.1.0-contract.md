@@ -155,6 +155,22 @@ primary document. No other files, URLs, secrets or processes are accessed.
 | exchange | Exact byte preservation and dependency accounting, phase null; independent of semantic validation. |
 | lossyExchange | Refuse output, phase null; report all requested losses, or one whole-artifact loss if none supplied. |
 
+The requested Result's unit and phase are fixed, independent of input validity:
+
+| Operation | Result unit | Result phase |
+| --- | --- | --- |
+| inspect | inspect | null |
+| validateD | D | unresolved-document |
+| validateG | G | unresolved-document |
+| resolveG | G | resolved-graph |
+| validateR | R | unresolved-document |
+| exchange | exchange | null |
+| lossyExchange | exchange | null |
+
+D prerequisite Results always have unit D and phase unresolved-document;
+selected-annex G Results have unit G and phase resolved-graph. These assignments
+also apply when parsing fails or an operation refuses output.
+
 G/R operations include a separate D result in the report. A failing, unsupported
 or inconclusive D result prevents dependent checks from claiming success. It
 does not convert unchecked G/R rules into passes. No operation not requested,
@@ -434,9 +450,9 @@ No operation invents child absences beneath a malformed parent.
 | Scope | States recorded |
 | --- | --- |
 | Every operation with a parsed primary object | graphs and runtime: absent when missing; unchecked when present but opaque to this operation; declared when present and interpreted by G or R. No child states under an absent container. |
-| D boundaries, also used by inspect and exchange | Unknown at each null dependency sha256 in a well-shaped Dependency. No selection, model, provider, hosting or evidence states inside runtime. |
+| D boundaries, used by every operation including inspect/exchange/lossyExchange | Unknown at each null dependency sha256 in a well-shaped Dependency. Unchecked at each external target pointer /relations/i/target in a well-shaped Relation, without looking up its content. No selection, model, provider, hosting or evidence states inside runtime. |
 | G only | Unchecked at each external Ref whose target-dependent checks are excluded in validateG; no internal R states. Resolved target evidence is represented by checks/results, not a synthesized state tree. |
-| R only | Selection absent when missing, otherwise declared. Within a present well-shaped Selection, model/provider/hosting are absent or declared according to presence. Unknown at each null EvidenceClaim artifact. A missing claim records absent at /runtime/selection/evidence with detail naming its Requirement id, one state per missing claim. No missing-claim states if selection is absent. Present selection also records unchecked at /runtime/selection/engine for support and at each EvidenceClaim for evidence assessment. |
+| R only | Selection absent when missing, otherwise declared. Within a present well-shaped Selection, model/provider/hosting are absent or declared according to presence. Unknown at each null EvidenceClaim artifact. A missing claim records absent at /runtime/selection/evidence with detail naming its Requirement id, one state per missing claim. No missing-claim states if selection is absent. Present selection also records unchecked at /runtime/selection/engine for support and at each EvidenceClaim for evidence assessment. External hosting additionally records unchecked at /runtime/selection/hosting for target content, alongside its declared-presence state. |
 | inspect/exchange/lossyExchange dependency inventory | At /dependencies record absent if the primary parsed object lacks that member, declared if the full Dependency[] grammar is satisfied, unchecked if present but malformed, primary parsing failed, or the parsed root is not an object. When malformed, retain the entire /dependencies value as one opaque slice; when parsing failed, no JSON slice exists. These states are inventory observations, not validation findings. |
 | Required resolveG annexes | Apply D states to each annex with its own input id; additionally G external-target states only for selected G payloads/relations. No graph or runtime internals of annexes are inventoried. |
 
