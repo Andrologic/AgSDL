@@ -85,6 +85,22 @@ def validation_fixture():
     return case, {"report": report, "artifacts": {}}, {"primary": raw}
 
 
+def selected_binding_fixture():
+    case, response, _ = validation_fixture()
+    tree = {"runtime": {"configurations": [{"id": "chosen", "agents": [{}]}], "selected": "chosen"}}
+    raw = json.dumps(tree, separators=(",", ":")).encode()
+    response["report"]["inputs"] = [{"id": "primary", "sha256": hashlib.sha256(raw).hexdigest()}]
+    response["report"]["inventory"]["tree"] = tree
+    response["report"]["inventory"]["states"] = [{
+        "input": "primary",
+        "pointer": "/runtime/configurations/0/agents/0",
+        "state": "unknown",
+        "detail": "unknown",
+    }]
+    case["expected"]["states"] = []
+    return case, response, {"primary": raw}
+
+
 def resolve_fixture():
     primary = b'{"graphs":[]}'
     annex = b'{"contract":"proposal-0013-candidate-1"}'
@@ -212,15 +228,28 @@ class ComparatorTests(unittest.TestCase):
         self.assertTrue(compare.observe(case, response, source))
 
     def test_assessment_detail_is_a_comparison_key(self):
-        _, response, _ = validation_fixture()
+        case, response, source = selected_binding_fixture()
         first = deepcopy(response)
         second = deepcopy(response)
-        first["report"]["inventory"]["states"][0].update(pointer="/runtime", state="unknown", detail="unknown")
-        second["report"]["inventory"]["states"][0].update(pointer="/runtime", state="unknown", detail="declared-supported")
+        first["report"]["inventory"]["states"][0].update(state="unchecked", detail="blocked")
+        second["report"]["inventory"]["states"][0].update(state="unchecked", detail="declared-supported")
+        self.assertEqual(compare.observe(case, first, source), [])
+        self.assertEqual(compare.observe(case, second, source), [])
         self.assertNotEqual(compare.comparison(first)["states"], compare.comparison(second)["states"])
-        second["report"]["inventory"]["states"][0]["detail"] = "different prose"
-        first["report"]["inventory"]["states"][0]["detail"] = "other prose"
-        self.assertEqual(compare.comparison(first)["states"], compare.comparison(second)["states"])
+
+    def test_ordinary_state_prose_is_set_normalized(self):
+        case, response, source = validation_fixture()
+        baseline = deepcopy(response)
+        response["report"]["inventory"]["states"].append({
+            "input": "primary", "pointer": "/runtime/selected", "state": "absent",
+            "detail": "Selection not supplied",
+        })
+        self.assertEqual(compare.observe(case, response, source), [])
+        self.assertEqual(compare.comparison(baseline)["states"], compare.comparison(response)["states"])
+
+        response["report"]["inventory"]["states"][-1]["detail"] = "unknown"
+        self.assertEqual(compare.observe(case, response, source), [])
+        self.assertEqual(compare.comparison(baseline)["states"], compare.comparison(response)["states"])
 
     def test_compatibility_keeps_fail_and_inconclusive_at_one_binding(self):
         case, response, source = validation_fixture()
@@ -254,11 +283,53 @@ class ComparatorTests(unittest.TestCase):
         self.assertTrue(compare.observe(case, response, source))
 
     def test_assessment_state_mapping_is_enforced(self):
-        case, response, source = validation_fixture()
+        case, response, source = selected_binding_fixture()
         response["report"]["inventory"]["states"][0].update(
-            pointer="/runtime", state="declared", detail="declared-supported"
+            state="declared", detail="declared-supported"
         )
         self.assertTrue(compare.observe(case, response, source))
+
+    def test_conflicting_assessments_at_one_binding_are_rejected(self):
+        case, response, source = selected_binding_fixture()
+        response["report"]["inventory"]["states"].append({
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0",
+            "state": "declared",
+            "detail": "incompatible",
+        })
+        self.assertTrue(compare.observe(case, response, source))
+
+    def test_missing_binding_indices_are_not_assessment_locations(self):
+        case, response, _ = selected_binding_fixture()
+        tree = {"runtime": {"configurations": [{"id": "chosen", "agents": []}], "selected": "chosen"}}
+        raw = json.dumps(tree, separators=(",", ":")).encode()
+        response["report"]["inputs"] = [{"id": "primary", "sha256": hashlib.sha256(raw).hexdigest()}]
+        response["report"]["inventory"]["tree"] = tree
+        state = response["report"]["inventory"]["states"][0]
+        state["pointer"] = "/runtime/configurations/0/agents/99"
+        source = {"primary": raw}
+        self.assertFalse(compare.assessment_state(state, tree))
+        self.assertEqual(compare.observe(case, response, source), [])
+        prose = deepcopy(response)
+        prose["report"]["inventory"]["states"][0]["detail"] = "ordinary prose"
+        self.assertEqual(compare.comparison(response)["states"], compare.comparison(prose)["states"])
+
+        tree = {"runtime": {"configurations": [{"id": "chosen", "agents": [{"tools": []}]}], "selected": "chosen"}}
+        raw = json.dumps(tree, separators=(",", ":")).encode()
+        response["report"]["inputs"] = [{"id": "primary", "sha256": hashlib.sha256(raw).hexdigest()}]
+        response["report"]["inventory"]["tree"] = tree
+        state["pointer"] = "/runtime/configurations/0/agents/0/tools/99"
+        source = {"primary": raw}
+        self.assertFalse(compare.assessment_state(state, tree))
+        self.assertEqual(compare.observe(case, response, source), [])
+
+    def test_existing_tool_binding_is_an_assessment_location(self):
+        tree = {"runtime": {"configurations": [{"id": "chosen", "agents": [{"tools": [{}]}]}], "selected": "chosen"}}
+        state = {
+            "input": "primary", "pointer": "/runtime/configurations/0/agents/0/tools/0",
+            "state": "unknown", "detail": "unknown",
+        }
+        self.assertTrue(compare.assessment_state(state, tree))
 
     def test_unparseable_input_accepts_only_fixed_check_locations(self):
         case, response, source = syntax_failure_fixture()
