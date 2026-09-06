@@ -138,7 +138,7 @@ export function validateD(ctx, expectedContract=contract) {
   const exported=new Set();if(Array.isArray(d.exports)){
     if(S.valid(S.Root.fields.kind,d.root?.kind)&&((d.root.kind==='Fragment'&&!d.exports.length)||(d.root.kind==='System'&&d.exports.length)))r.find('D-EXPORT','/exports','Root export requirement');
     if(!S.valid(S.Root.fields.kind,d.root?.kind))r.mark('D-EXPORT','blocked','/exports');
-    for(const [i,k]of d.exports.entries()){const p=`/exports/${i}`;if(!S.valid(S.Key,k)){r.mark('D-EXPORT','blocked',p);continue;}r.mark('D-EXPORT');const found=ctx.defs.get(key(k));if(found?.length>1)r.mark('D-EXPORT','blocked',p);else if(!found||found[0].root||exported.has(key(k)))r.find('D-EXPORT',p,'Export is not a unique local definition');exported.add(key(k));}
+    for(const [i,k]of d.exports.entries()){const p=`/exports/${i}`;if(!S.valid(S.Key,k)){r.mark('D-EXPORT','blocked',p);continue;}const found=ctx.defs.get(key(k)),duplicate=exported.has(key(k));if(found?.length>1||(!duplicate&&!found?.[0]?.root&&!localIndexComplete(ctx)))r.mark('D-EXPORT','blocked',p);else{r.mark('D-EXPORT');if(!found||found[0].root||duplicate)r.find('D-EXPORT',p,'Export is not a unique local definition');}exported.add(key(k));}
   }
   const seenDef=new Set(), validDef=new Set();
   for(const x of defers){if(!x.ok){r.mark('D-DEFERRAL','blocked',x.p);continue;}r.mark('D-DEFERRAL');const a=lookup(ctx,x.v.subject);const ar=rels.filter(y=>S.valid(S.Key,y.v?.source)&&equal(y.v.source,x.v.subject)&&S.valid(S.Relation,{source:y.v.source,relation:y.v.relation,target:y.v.target,expectedKind:y.v.expectedKind}));

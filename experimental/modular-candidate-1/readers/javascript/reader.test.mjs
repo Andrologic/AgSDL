@@ -315,6 +315,15 @@ test('an unreadable local identity blocks absence findings',()=>{
   }
 });
 
+test('an unreadable definition index blocks export uniqueness',()=>{
+  const root={scope:'test',id:'package',version:'1'},exported={scope:'test',id:'exported',version:'1'};
+  for(const definitions of[null,[{key:null,kind:'Resource',owner:root,payload:{}}],[{key:exported,kind:'Resource',owner:root,payload:{}},{key:null,kind:'Resource',owner:root,payload:{}}]]){
+    const d={contract:'proposal-0013-candidate-1',root:{key:root,kind:'PackageVersion'},definitions,relations:[],exports:[exported],dependencies:[],unresolved:[],extensions:[]};const r=result(execute('validateD',d),'D');
+    assert.ok(r.checks.some(c=>c.rule==='D-EXPORT'&&c.state==='blocked'));
+    assert.ok(!r.findings.some(f=>f.rule==='D-EXPORT'&&f.details.includes('Export is not a unique local definition')));
+  }
+});
+
 test('an unreadable dependency identity blocks external absence findings',()=>{
   for(const id of[null,'',17]){
     const d=JSON.parse(fixture('external-runtime-content.json'));d.dependencies[0].id=id;const x=execute('validateR',d),dr=result(x,'D'),rr=result(x,'R');
