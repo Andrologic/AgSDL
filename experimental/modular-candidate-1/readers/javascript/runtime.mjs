@@ -509,6 +509,38 @@ export function validateR(ctx, inventory) {
     }
 
     const applications = Array.isArray(binding.applications) ? binding.applications : [];
+    const extraContent = new Map();
+    const extraTools = new Map();
+    const extraEdges = [];
+    function observeAdditionalContent(found, request) {
+      if (found.status !== 'local' || !['Instructions', 'Skill'].includes(found.v.kind)) return;
+      const identity = canonical(found.ref);
+      if (content.has(identity) || extraContent.has(identity)) return;
+      const info = payload(found, found.v.kind, 'R-CONTENT', request);
+      extraContent.set(identity, { found, info, kind: found.v.kind });
+      if (!info?.value) return;
+      editionMap(info.value.requires, 'R-CONTENT', info.pointer);
+      if (found.v.kind !== 'Skill') return;
+      for (const field of ['dependencies', 'tools']) {
+        const refs = info.value[field];
+        if (!Array.isArray(refs)) { result.mark('R-CONTENT', 'blocked', info.pointer); continue; }
+        const seen = new Set();
+        for (const [index, ref] of refs.entries()) {
+          if (!S.valid(S.Ref, ref)) { result.mark('R-CONTENT', 'blocked', info.pointer); continue; }
+          const targetIdentity = canonical(ref);
+          if (seen.has(targetIdentity)) result.find('R-CONTENT', info.pointer, field === 'tools' ? 'Duplicate Skill Tool' : 'Duplicate Skill dependency');
+          seen.add(targetIdentity);
+          const target = resolveRef(ref, field === 'tools' ? 'Tool' : null, 'R-CONTENT', info.pointer, `${info.pointer}/${field}/${index}`);
+          if (field === 'tools') extraTools.set(targetIdentity, { found: target, request: info.pointer });
+          else {
+            extraEdges.push([identity, targetIdentity]);
+            if (target.status === 'local' && !S.valid(S.Kind, target.v.kind)) result.mark('R-CONTENT', 'blocked', info.pointer);
+            else if (target.status === 'local' && !['Instructions', 'Skill'].includes(target.v.kind)) result.find('R-CONTENT', info.pointer, 'Content target has wrong kind');
+            else observeAdditionalContent(target, info.pointer);
+          }
+        }
+      }
+    }
     let applicationIndexComplete = Array.isArray(binding.applications);
     const unreadableApplicationPositions = [];
     const applicationPositions = new Map();
@@ -535,7 +567,7 @@ export function validateR(ctx, inventory) {
       if (found.status === 'local' && ['Instructions', 'Skill'].includes(found.v.kind)) {
         // A declared Application selects its payload even outside the required closure.
         // Intrinsic engine requirements still come only from the required closure.
-        payload(found, found.v.kind, 'R-CONTENT', pointer);
+        observeAdditionalContent(found, pointer);
       }
       if (!S.valid(S.Ref, application.content)) {
         applicationIndexComplete = false;
@@ -546,6 +578,18 @@ export function validateR(ctx, inventory) {
       applicationPositions.set(identity, [...(applicationPositions.get(identity) || []), index]);
     }
 
+    for (const [identity, entry] of extraContent) {
+      if (entry.found.v.kind !== 'Skill') continue;
+      const seen = new Set(), pending = extraEdges.filter(([from]) => from === identity).map(([, to]) => to);
+      while (pending.length) {
+        const next = pending.pop();
+        if (next === identity) { result.find('R-CONTENT', entry.info.pointer, 'Skill dependency cycle'); break; }
+        if (seen.has(next)) continue;
+        seen.add(next);
+        pending.push(...extraEdges.filter(([from]) => from === next).map(([, to]) => to));
+      }
+    }
+
     if (applicationIndexComplete) {
       for (const identity of requiredContent.keys()) {
         if (!applicationPositions.has(identity)) {
@@ -553,8 +597,10 @@ export function validateR(ctx, inventory) {
           missingContent = true;
         }
       }
+      for (const [, dependency] of extraEdges) if (!applicationPositions.has(dependency)) result.find('R-CONTENT', ap, 'Required Application missing');
     }
-    for (const [identity, entry] of content) {
+    const observedContent = new Map([...content, ...extraContent]);
+    for (const [identity, entry] of observedContent) {
       if (entry.kind !== 'Skill' || !Array.isArray(entry.info?.value?.dependencies)) continue;
       const dependents = applicationPositions.get(identity) || [];
       for (const dependency of entry.info.value.dependencies) {
@@ -575,7 +621,7 @@ export function validateR(ctx, inventory) {
         for (const position of positions) result.mark('R-CONTENT', contentClosureBlocked ? 'blocked' : 'excluded', `${ap}/applications/${position}`);
       }
     }
-    for (const [identity, entry] of content) if (entry.kind === 'Skill' && (!Array.isArray(entry.info?.value?.dependencies) || entry.info.value.dependencies.some(dependency => !S.valid(S.Ref, dependency)))) {
+    for (const [identity, entry] of observedContent) if (entry.kind === 'Skill' && (!Array.isArray(entry.info?.value?.dependencies) || entry.info.value.dependencies.some(dependency => !S.valid(S.Ref, dependency)))) {
       for (const position of applicationPositions.get(identity) || []) result.mark('R-CONTENT', 'blocked', `${ap}/applications/${position}`);
     }
 
@@ -653,7 +699,7 @@ export function validateR(ctx, inventory) {
     if (missingTool || (toolClosureComplete && extraTool)) result.find('R-TOOL', ap, 'ToolBinding coverage differs from required Tools');
 
     const toolPayloads = new Map();
-    const observedTools = new Map(requiredTools);
+    const observedTools = new Map([...extraTools, ...requiredTools]);
     for (const [identity, matches] of toolGroups) if (!observedTools.has(identity)) {
       const binding = matches[0];
       observedTools.set(identity, { found: binding.found, request: binding.tp });

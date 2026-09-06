@@ -433,6 +433,17 @@ test('an extra ToolBinding observes its local payload without making it required
   assert.ok(!x.report.inventory.opaque.some(s=>s.pointer===p));
 });
 
+test('additional content keeps semantic checks without extending engine requirements',()=>{
+  for(const kind of['Instructions','Skill']){
+    const d=source(),extra=structuredClone(d.definitions.find(v=>v.kind===kind)),a=d.runtime.configurations[0].agents[0];extra.key.id='extra-content';const capability={identity:'example/extra-capability',version:'1'};extra.payload.requires=[capability,capability];
+    if(kind==='Skill'){extra.payload.tools=[{scope:'mvp',id:'missing-tool',version:'1'}];extra.payload.dependencies=[extra.key];}
+    d.definitions.push(extra);a.applications.push({...structuredClone(a.applications[0]),content:extra.key});const x=execute('validateR',d),r=result(x,'R'),p=`/definitions/${d.definitions.length-1}/payload`;
+    assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer===p&&f.details.includes('Duplicate Edition')));
+    if(kind==='Skill')for(const detail of['Local target does not exist','Skill dependency cycle'])assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer===p&&f.details.includes(detail)));
+    assert.ok(!r.findings.some(f=>f.rule==='R-COMPATIBILITY'&&f.location.pointer==='/runtime/configurations/0/agents/0'));
+  }
+});
+
 test('an empty graph entry blocks path lookup',()=>{
   const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));
