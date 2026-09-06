@@ -13,6 +13,7 @@
     "sha256": "fa56fd4e723be942a8d089b5da479415e28fa170a32c9edf9f0f1f84b75da74a"
   },
   "requiredScenarios": [
+    "annex-target-unexported",
     "approval-call-invalid",
     "approval-input-unavailable",
     "approval-refusal-bypass",
@@ -21,9 +22,11 @@
     "content-dependency-cycle",
     "content-dependency-order",
     "content-reuse-order",
+    "cross-boundary-selected-key-collision",
     "declared-incompatible-not-readiness",
     "declared-supported",
     "declared-unknown-not-readiness",
+    "direct-annex-interface-operation",
     "engine-absent-no-fallback",
     "exact-agent-binding-coverage",
     "exact-exchange-accounting-refusal",
@@ -38,6 +41,7 @@
     "selection-unknown-no-fallback",
     "tool-choice-absent-no-fallback",
     "tool-specific-parameters",
+    "transitive-annex-reference-unsupported",
     "two-agents-different-engines",
     "two-configurations"
   ],
@@ -118,9 +122,28 @@
         "external-runtime-content"
       ]
     },
+    "G-RESOLVE": {
+      "positive": [
+        "annex-interface-operation"
+      ],
+      "negative": [
+        "annex-interface-unexported",
+        "annex-interface-key-collision"
+      ],
+      "unsupported": [
+        "annex-interface-transitive"
+      ]
+    },
     "G-TARGET": {
       "positive": [
+        "annex-interface-operation",
         "interface-two-operations"
+      ],
+      "excluded": [
+        "annex-interface-transitive"
+      ],
+      "blocked": [
+        "annex-interface-key-collision"
       ],
       "negative": [
         "operation-not-found"
@@ -1490,6 +1513,638 @@
         "absentStates": [],
         "opaque": [],
         "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "annex-interface-operation",
+      "status": "ready",
+      "primary": {
+        "path": "annex-interface-operation.json",
+        "sha256": "559d2b683d72d837b55b3b008fe2fcf2e001d983b298070ece60625e726d236e"
+      },
+      "annexes": {
+        "dep": {
+          "path": "annex-interface-operation--dep.json",
+          "sha256": "dc52e2541c8304c56e9659139469dc402f20cd5567d698aabbe9ebf98dc8fb4c"
+        }
+      },
+      "operation": "resolveG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "G operation and approval records",
+          "Scope, authority and continuity"
+        ],
+        "inherited": {
+          "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+          "sections": [
+            "Dependencies, unknowns and extension handling",
+            "Exact results, locations and experimental diagnostics",
+            "Rule execution and exact exclusion records"
+          ]
+        }
+      },
+      "coverage": [
+        "G-RESOLVE:positive",
+        "G-TARGET:positive"
+      ],
+      "scenarios": [
+        "direct-annex-interface-operation"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        },
+        {
+          "input": "annex/dep",
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "input": "annex/dep",
+          "entry": "InterfacePayload",
+          "pointer": "/definitions/0/payload",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "annex/dep",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "phase": "resolved-graph",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "resolved-graph",
+            "verdict": "pass"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": []
+        },
+        "checks": [
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "P-SHAPE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-RESOLVE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-DATA",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [],
+        "absentStates": [],
+        "opaque": [
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/1/payload"
+          },
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/2/payload"
+          }
+        ],
+        "absentOpaque": [
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/0/payload"
+          }
+        ],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "annex-interface-unexported",
+      "status": "ready",
+      "primary": {
+        "path": "annex-interface-unexported.json",
+        "sha256": "30b4f24659f86fc6272d10512dc262cf4fbeb5bdca9e1bbb8023bc55a02af7dc"
+      },
+      "annexes": {
+        "dep": {
+          "path": "annex-interface-unexported--dep.json",
+          "sha256": "b48be32254adacaeae056ce708baab5ac28567006d6bb635fe2799bca928e215"
+        }
+      },
+      "operation": "resolveG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Scope, authority and continuity"
+        ],
+        "inherited": {
+          "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+          "sections": [
+            "Dependencies, unknowns and extension handling",
+            "Exact results, locations and experimental diagnostics",
+            "Rule execution and exact exclusion records"
+          ]
+        }
+      },
+      "coverage": [
+        "G-RESOLVE:negative"
+      ],
+      "scenarios": [
+        "annex-target-unexported"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        },
+        {
+          "input": "annex/dep",
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "input": "annex/dep",
+          "entry": "InterfacePayload",
+          "pointer": "/definitions/0/payload",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "annex/dep",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "resolved-graph",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "G",
+              "rule": "G-RESOLVE",
+              "location": {
+                "pointer": "/graphs/0/steps/0"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-RESOLVE",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [],
+        "absentStates": [],
+        "opaque": [
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/0/payload"
+          },
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/1/payload"
+          },
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/2/payload"
+          }
+        ],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "annex-interface-transitive",
+      "status": "ready",
+      "primary": {
+        "path": "annex-interface-transitive.json",
+        "sha256": "988e8b8650e86d5d2d091346a44288a75ea69e0e5196d5be586ebc7c15beb8bb"
+      },
+      "annexes": {
+        "dep": {
+          "path": "annex-interface-transitive--dep.json",
+          "sha256": "66848029e40e2bd658ffb9c966f3c28b786a2158953eef8b05872628161e04cd"
+        }
+      },
+      "operation": "resolveG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "G operation and approval records",
+          "Scope, authority and continuity"
+        ],
+        "inherited": {
+          "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+          "sections": [
+            "Dependencies, unknowns and extension handling",
+            "Exact results, locations and experimental diagnostics",
+            "Rule execution and exact exclusion records"
+          ]
+        }
+      },
+      "coverage": [
+        "G-RESOLVE:unsupported",
+        "G-TARGET:excluded"
+      ],
+      "scenarios": [
+        "transitive-annex-reference-unsupported"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        },
+        {
+          "input": "annex/dep",
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "input": "annex/dep",
+          "entry": "InterfacePayload",
+          "pointer": "/definitions/0/payload",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "annex/dep",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "phase": "resolved-graph",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "resolved-graph",
+            "verdict": "unsupported"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "G",
+              "rule": "G-RESOLVE",
+              "location": {
+                "pointer": "/graphs/0/steps/0"
+              },
+              "outcome": "unsupported"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "P-SHAPE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": "/definitions/0/payload/operations/1"
+              }
+            ]
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-RESOLVE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": "/graphs/0/steps/0"
+              }
+            ]
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-DATA",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [],
+        "absentStates": [
+          {
+            "input": "annex/dep",
+            "pointerPrefix": "/definitions/0/payload"
+          }
+        ],
+        "opaque": [
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/1/payload"
+          },
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/2/payload"
+          }
+        ],
+        "absentOpaque": [
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/0/payload"
+          }
+        ],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "annex-interface-key-collision",
+      "status": "ready",
+      "primary": {
+        "path": "annex-interface-key-collision.json",
+        "sha256": "23025d411a47daa139daec04c0240160fce0c57b7b72f4bb2b3b23781c21b7ea"
+      },
+      "annexes": {
+        "dep": {
+          "path": "annex-interface-key-collision--dep.json",
+          "sha256": "3e52ad4d4f8722cedffcbc23308a00eda4a20d001fbb525400d1dcc5dccc21f2"
+        }
+      },
+      "operation": "resolveG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "G operation and approval records",
+          "Scope, authority and continuity"
+        ],
+        "inherited": {
+          "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+          "sections": [
+            "Dependencies, unknowns and extension handling",
+            "Exact results, locations and experimental diagnostics",
+            "Rule execution and exact exclusion records"
+          ]
+        }
+      },
+      "coverage": [
+        "G-RESOLVE:negative",
+        "G-TARGET:blocked"
+      ],
+      "scenarios": [
+        "cross-boundary-selected-key-collision"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        },
+        {
+          "input": "annex/dep",
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "input": "annex/dep",
+          "entry": "InterfacePayload",
+          "pointer": "/definitions/0/payload",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "annex/dep",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "phase": "resolved-graph",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "resolved-graph",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "G",
+              "rule": "G-RESOLVE",
+              "location": {
+                "pointer": "/graphs/0/steps/0"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "P-SHAPE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "annex/dep",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-RESOLVE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "blocked",
+            "locations": [
+              {
+                "pointer": "/graphs/0/steps/0"
+              }
+            ]
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-DATA",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [],
+        "absentStates": [
+          {
+            "input": "annex/dep",
+            "pointerPrefix": "/definitions/0/payload"
+          }
+        ],
+        "opaque": [
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/1/payload"
+          },
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/2/payload"
+          }
+        ],
+        "absentOpaque": [
+          {
+            "input": "annex/dep",
+            "pointer": "/definitions/0/payload"
+          }
+        ],
         "preservation": "no-output"
       }
     },
