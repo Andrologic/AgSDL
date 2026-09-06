@@ -30,14 +30,19 @@ export function validateR(ctx, inventory) {
     return { result: result.finish(), interpreted };
   }
 
-  const configurations = Array.isArray(runtime.configurations) ? runtime.configurations : [];
+  const configurationsReadable = Array.isArray(runtime.configurations);
+  const configurations = configurationsReadable ? runtime.configurations : [];
   if (!Array.isArray(runtime.configurations)) {
     for (const rule of ['R-SELECTION', 'R-BINDING', 'R-TOOL', 'R-CONTENT', 'R-COMPATIBILITY']) result.mark(rule, 'blocked', '/runtime');
   }
 
   const configurationIds = new Map();
+  let configurationIndexComplete = configurationsReadable;
   for (const [index, configuration] of configurations.entries()) {
-    if (typeof configuration?.id !== 'string' || !configuration.id) continue;
+    if (typeof configuration?.id !== 'string' || !configuration.id) {
+      configurationIndexComplete = false;
+      continue;
+    }
     const pointer = `/runtime/configurations/${index}`;
     const matches = configurationIds.get(configuration.id) || [];
     if (matches.length) result.find('R-SELECTION', pointer, 'Duplicate configuration id');
@@ -76,7 +81,10 @@ export function validateR(ctx, inventory) {
   } else {
     result.mark('R-SELECTION');
     const matches = configurationIds.get(runtime.selected);
-    if (!matches) {
+    if (!matches && !configurationIndexComplete) {
+      result.mark('R-SELECTION', 'blocked', '/runtime');
+      result.mark('R-COMPATIBILITY', 'blocked', '/runtime');
+    } else if (!matches) {
       result.find('R-SELECTION', '/runtime', 'Selected configuration does not exist');
       result.mark('R-COMPATIBILITY', 'blocked', '/runtime');
     } else if (matches.length !== 1) {
@@ -219,8 +227,10 @@ export function validateR(ctx, inventory) {
     result.mark('R-SELECTION');
     const graph = graphFor(configuration, cp);
     const used = projection(graph, cp);
-    const bindings = Array.isArray(configuration.agents) ? configuration.agents : [];
-    let structuralBlocked = !graph || !used || !Array.isArray(configuration.agents);
+    const bindingsReadable = Array.isArray(configuration.agents);
+    const bindings = bindingsReadable ? configuration.agents : [];
+    let bindingIndexComplete = bindingsReadable;
+    let structuralBlocked = !graph || !used || !bindingsReadable;
     if (!Array.isArray(configuration.agents)) for (const rule of ['R-BINDING', 'R-TOOL', 'R-CONTENT']) result.mark(rule, 'blocked', cp);
 
     const groups = new Map();
@@ -229,6 +239,7 @@ export function validateR(ctx, inventory) {
       if (!S.object(binding)) {
         for (const rule of ['R-BINDING', 'R-TOOL', 'R-CONTENT']) result.mark(rule, 'blocked', ap);
         structuralBlocked = true;
+        bindingIndexComplete = false;
         continue;
       }
       const agent = resolveRef(binding.agent, 'Agent', 'R-BINDING', ap, `${ap}/agent`);
@@ -253,10 +264,13 @@ export function validateR(ctx, inventory) {
         if (matches.length) result.find('R-BINDING', ap, 'Duplicate AgentBinding');
         matches.push(item);
         groups.set(identity, matches);
-      } else structuralBlocked = true;
+      } else {
+        structuralBlocked = true;
+        bindingIndexComplete = false;
+      }
     }
 
-    if (used) {
+    if (used && bindingIndexComplete) {
       result.mark('R-BINDING');
       const needed = new Set(used.map(canonical));
       if (needed.size !== groups.size || [...needed].some(identity => !groups.has(identity))) {
@@ -443,7 +457,7 @@ export function validateR(ctx, inventory) {
       return found;
     }
 
-    if (agent.status === 'local' && contentClosureComplete) {
+    if (agent.status === 'local') {
       for (const relation of relationRows.filter(row => equal(row.v.source, agent.v.key))) {
         if (relation.v.relation === 'directedBy' && ['Instructions', 'Skill'].includes(relation.v.expectedKind)) rememberContent(relation.v.target, relation.p, `${relation.p}/target`);
         if (relation.v.relation === 'uses' && relation.v.expectedKind === 'Tool') rememberTool(relation.v.target, relation.p, 'R-TOOL', `${relation.p}/target`);
@@ -468,12 +482,14 @@ export function validateR(ctx, inventory) {
     }
 
     const applications = Array.isArray(binding.applications) ? binding.applications : [];
+    let applicationIndexComplete = Array.isArray(binding.applications);
     const applicationPositions = new Map();
     for (const [index, application] of applications.entries()) {
       const pointer = `${ap}/applications/${index}`;
       if (!S.object(application)) {
         result.mark('R-CONTENT', 'blocked', pointer);
         assessmentBlocked = true;
+        applicationIndexComplete = false;
         continue;
       }
       if (S.valid(S.Edition, application.adapter)) engineRequirements.set(edition(application.adapter), application.adapter);
@@ -487,27 +503,32 @@ export function validateR(ctx, inventory) {
       } else if (found.status === 'local' && !['Instructions', 'Skill'].includes(found.v.kind)) {
         result.find('R-CONTENT', pointer, 'Application content has wrong kind');
       }
-      if (!S.valid(S.Ref, application.content)) continue;
+      if (!S.valid(S.Ref, application.content)) {
+        applicationIndexComplete = false;
+        continue;
+      }
       const identity = canonical(application.content);
       applicationPositions.set(identity, [...(applicationPositions.get(identity) || []), index]);
     }
 
-    for (const identity of requiredContent.keys()) {
-      if (!applicationPositions.has(identity)) {
-        result.find('R-CONTENT', ap, 'Required Application missing');
-        missingContent = true;
-      }
-    }
-    for (const [identity, entry] of content) {
-      if (entry.kind !== 'Skill' || !Array.isArray(entry.info?.value?.dependencies)) continue;
-      const dependents = applicationPositions.get(identity) || [];
-      for (const dependency of entry.info.value.dependencies) {
-        if (!S.valid(S.Ref, dependency)) continue;
-        const prerequisites = applicationPositions.get(canonical(dependency));
-        if (!prerequisites) continue;
-        for (const dependent of dependents) if (!prerequisites.some(prerequisite => prerequisite < dependent)) {
-          result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
+    if (applicationIndexComplete) {
+      for (const identity of requiredContent.keys()) {
+        if (!applicationPositions.has(identity)) {
+          result.find('R-CONTENT', ap, 'Required Application missing');
           missingContent = true;
+        }
+      }
+      for (const [identity, entry] of content) {
+        if (entry.kind !== 'Skill' || !Array.isArray(entry.info?.value?.dependencies)) continue;
+        const dependents = applicationPositions.get(identity) || [];
+        for (const dependency of entry.info.value.dependencies) {
+          if (!S.valid(S.Ref, dependency)) continue;
+          const prerequisites = applicationPositions.get(canonical(dependency));
+          if (!prerequisites) continue;
+          for (const dependent of dependents) if (!prerequisites.some(prerequisite => prerequisite < dependent)) {
+            result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
+            missingContent = true;
+          }
         }
       }
     }
@@ -518,24 +539,28 @@ export function validateR(ctx, inventory) {
     }
 
     const tools = Array.isArray(binding.tools) ? binding.tools : [];
+    let toolIndexComplete = Array.isArray(binding.tools);
     const toolGroups = new Map();
     for (const [index, toolBinding] of tools.entries()) {
       const tp = `${ap}/tools/${index}`;
       if (!S.object(toolBinding)) {
         result.mark('R-TOOL', 'blocked', tp);
         assessmentBlocked = true;
+        toolIndexComplete = false;
         continue;
       }
       const found = resolveRef(toolBinding.tool, 'Tool', 'R-TOOL', tp, `${tp}/tool`);
       const choiceIds = new Map();
       const choices = Array.isArray(toolBinding.choices) ? toolBinding.choices : [];
       let choiceBlocked = !Array.isArray(toolBinding.choices);
+      let choiceIndexComplete = Array.isArray(toolBinding.choices);
       if (!Array.isArray(toolBinding.choices)) result.mark('R-TOOL', 'blocked', tp);
       for (const [choiceIndex, choice] of choices.entries()) {
         const choicePointer = `${tp}/choices/${choiceIndex}`;
         if (!S.object(choice)) {
           result.mark('R-TOOL', 'blocked', choicePointer);
           choiceBlocked = true;
+          choiceIndexComplete = false;
           continue;
         }
         const choiceClaims = claimMap(choice.claims, 'R-TOOL', tp);
@@ -543,6 +568,7 @@ export function validateR(ctx, inventory) {
         if (typeof choice.id !== 'string' || !choice.id) {
           result.mark('R-TOOL', 'blocked', choicePointer);
           choiceBlocked = true;
+          choiceIndexComplete = false;
           continue;
         }
         const matches = choiceIds.get(choice.id) || [];
@@ -559,7 +585,10 @@ export function validateR(ctx, inventory) {
           selection = { status: 'blocked' };
         } else {
           const matches = choiceIds.get(toolBinding.selected);
-          if (!matches) {
+          if (!matches && !choiceIndexComplete) {
+            result.mark('R-TOOL', 'blocked', tp);
+            selection = { status: 'blocked' };
+          } else if (!matches) {
             result.find('R-TOOL', tp, 'Selected Implementation missing');
             selection = { status: 'blocked' };
           } else if (matches.length !== 1) {
@@ -575,10 +604,10 @@ export function validateR(ctx, inventory) {
         if (matches.length) result.find('R-TOOL', tp, 'Duplicate ToolBinding');
         matches.push(itemForTool);
         toolGroups.set(identity, matches);
-      }
+      } else toolIndexComplete = false;
     }
 
-    const missingTool = [...requiredTools.keys()].some(identity => !toolGroups.has(identity));
+    const missingTool = toolIndexComplete && [...requiredTools.keys()].some(identity => !toolGroups.has(identity));
     const extraTool = [...toolGroups.keys()].some(identity => !requiredTools.has(identity));
     if (missingTool || (toolClosureComplete && extraTool)) result.find('R-TOOL', ap, 'ToolBinding coverage differs from required Tools');
 

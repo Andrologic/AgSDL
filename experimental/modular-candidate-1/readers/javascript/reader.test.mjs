@@ -215,3 +215,49 @@ test('Application content keeps its local kind check',()=>{
   const d=source(),application=d.runtime.configurations[0].agents[0].applications[0];application.content=d.definitions[5].key;const x=execute('validateR',d);
   assert.ok(result(x,'R').findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer==='/runtime/configurations/0/agents/0/applications/0'&&f.details.includes('wrong kind')));
 });
+
+test('partial Agent relations preserve readable capability requirements',()=>{
+  const d=source(),binding=d.runtime.configurations[0].agents[0],ap='/runtime/configurations/0/agents/0';d.relations[1].target=null;binding.claims[2].status='unsupported';const x=execute('validateR',d),r=result(x,'R');
+  assert.ok(finding(x,'R','R-COMPATIBILITY',ap));
+  assert.ok(r.checks.some(c=>c.rule==='R-CONTENT'&&c.state==='blocked'));
+  assert.ok(x.report.inventory.states.some(s=>s.pointer===ap&&s.detail==='blocked'));
+});
+
+test('unreadable binding collections and identities do not prove omissions',()=>{
+  for(const field of['applications','tools']){
+    const d=source(),ap='/runtime/configurations/0/agents/0';d.runtime.configurations[0].agents[0][field]=null;const x=execute('validateR',d),r=result(x,'R');
+    assert.ok(r.checks.some(c=>c.rule===(field==='applications'?'R-CONTENT':'R-TOOL')&&c.state==='blocked'));
+    assert.ok(!r.findings.some(f=>f.location.pointer===ap&&f.details.includes(field==='applications'?'Required Application missing':'coverage differs')));
+  }
+  const d=source(),ap='/runtime/configurations/0/agents/0';d.runtime.configurations[0].agents[0].applications[0].content=null;d.runtime.configurations[0].agents[0].tools[0].tool=null;const r=result(execute('validateR',d),'R');
+  assert.ok(!r.findings.some(f=>f.location.pointer===ap&&['Required Application missing','ToolBinding coverage differs from required Tools'].includes(f.details)));
+});
+
+test('unreadable and ambiguous Operation selectors block dependent data checks',()=>{
+  let d=source(),step='/graphs/0/steps/0';d.graphs[0].steps[0].operation=null;let x=execute('validateG',d),r=result(x,'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+  assert.ok(r.checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+  assert.ok(!r.findings.some(f=>f.rule==='G-TARGET'&&f.details.includes('does not exist')));
+  d=source();d.definitions[4].payload.operations.push(structuredClone(d.definitions[4].payload.operations[0]));x=execute('validateG',d);r=result(x,'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+});
+
+test('approval gates block unreadable call data prerequisites',()=>{
+  for(const field of['inputs','bindings']){
+    const d=JSON.parse(fixture('approval-two-gates.json')),call=d.graphs[0].steps.find(s=>s.kind==='invoke');call[field]=null;const r=result(execute('validateG',d),'G');
+    for(const step of['/graphs/0/steps/0','/graphs/0/steps/1'])assert.ok(r.checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+    if(field==='inputs')for(const step of['/graphs/0/steps/0','/graphs/0/steps/1'])assert.ok(!r.findings.some(f=>f.rule==='G-DATA'&&f.location.pointer===step&&f.details.includes('wrong type')));
+  }
+});
+
+test('partial runtime indexes do not invent missing selected records',()=>{
+  let d=source();d.runtime.configurations=null;let x=execute('validateR',d),r=result(x,'R');
+  assert.ok(r.checks.some(c=>c.rule==='R-SELECTION'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>f.rule==='R-SELECTION'&&f.details.includes('does not exist')));
+  d=source();d.runtime.configurations[0].agents=null;x=execute('validateR',d);r=result(x,'R');
+  assert.ok(r.checks.some(c=>c.rule==='R-BINDING'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>f.rule==='R-BINDING'&&f.details.includes('coverage differs')));
+  d=source();const tool=d.runtime.configurations[0].agents[0].tools[0];tool.choices=null;tool.selected='missing';x=execute('validateR',d);r=result(x,'R');
+  assert.ok(r.checks.some(c=>c.rule==='R-TOOL'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>f.rule==='R-TOOL'&&f.details.includes('Selected Implementation missing')));
+});
