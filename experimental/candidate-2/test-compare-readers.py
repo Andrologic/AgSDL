@@ -89,7 +89,7 @@ class ObservationTests(unittest.TestCase):
 
     def test_rejects_duplicate_records(self):
         case, response, source = fixture()
-        for path in [('inputs',), ('results',), ('inventory', 'states')]:
+        for path in [('inputs',), ('results',)]:
             changed = copy.deepcopy(response)
             target = changed['report']
             for key in path:
@@ -278,6 +278,54 @@ class ObservationTests(unittest.TestCase):
         result['checks'].sort(key=lambda c:(c['rule'],c['state']))
         self.assertEqual(harness.observe(case,response,source),[])
 
+    def test_state_sets_ignore_repeated_tuples_only(self):
+        case,response,source=fixture()
+        response['report']['inventory']['states'].append(dict(response['report']['inventory']['states'][0],detail='Another description'))
+        self.assertEqual(harness.observe(case,response,source),[])
+        clean=copy.deepcopy(response)
+        clean['report']['inventory']['states'].pop()
+        self.assertEqual(harness.comparison(response),harness.comparison(clean))
+        # The state value remains significant even when the pointer is identical.
+        response['report']['inventory']['states'][-1]['state']='unchecked'
+        self.assertTrue(harness.observe(case,response,source))
+        self.assertNotEqual(harness.comparison(response),harness.comparison(clean))
+
+    def test_blocked_pointer_can_name_missing_immediate_child(self):
+        case,response,source=fixture(raw=b'{"record":{},"items":[],"scalar":1}')
+        case['operation']=response['report']['operation']='validateD'
+        result=response['report']['results'][0]
+        result.update(unit='D',phase='unresolved-document',verdict='inconclusive')
+        result['checks']=[dict(rule=r,state='completed',locations=[]) for r in harness.D_RULES]
+        result['checks'] += [dict(rule=r,state='excluded',locations=[{'pointer':p}]) for r,p in harness.BOUNDARY.items()]
+        blocked=dict(rule='D-RELATION',state='blocked',locations=[{'pointer':'/relations'}])
+        result['checks'].append(blocked);result['checks'].sort(key=lambda c:(c['rule'],c['state']))
+        response['report']['inventory']['states']=response['report']['inventory']['states'][:2]
+        case['expected']['results']=[];case['expected']['states']=[]
+        for path in ['/relations','/record/missing','/record/~0~1','/items/0']:
+            blocked['locations']=[{'pointer':path}]
+            with self.subTest(path=path): self.assertEqual(harness.observe(case,response,source),[])
+        for path in ['/missing/child','/scalar/child','/items/01','/items/-','/record/~2bad']:
+            blocked['locations']=[{'pointer':path}]
+            with self.subTest(path=path): self.assertTrue(harness.observe(case,response,source))
+        blocked.update(state='excluded',locations=[{'pointer':'/relations'}])
+        result['checks'].sort(key=lambda c:(c['rule'],c['state']))
+        self.assertTrue(harness.observe(case,response,source))
+
+    def test_findings_still_use_observable_parent_for_missing_field(self):
+        case,response,source=fixture()
+        # Finding P-SHAPE at an absent member remains invalid, unlike a blocked Check.
+        case['operation']=response['report']['operation']='validateD'
+        result=response['report']['results'][0]
+        result.update(unit='D',phase='unresolved-document',verdict='fail',findings=[dict(rule='P-SHAPE',location={'pointer':'/relations'},outcome='fail',details='Missing')])
+        result['checks']=[dict(rule=r,state='completed',locations=[]) for r in harness.D_RULES]
+        result['checks'] += [dict(rule=r,state='excluded',locations=[{'pointer':p}]) for r,p in harness.BOUNDARY.items()]
+        result['checks'].sort(key=lambda c:(c['rule'],c['state']))
+        response['report']['inventory']['states']=response['report']['inventory']['states'][:2]
+        case['expected']['results']=[];case['expected']['states']=[];case['expected']['findings']=dict(mode='contains',items=[])
+        self.assertTrue(harness.observe(case,response,source))
+        result['findings'][0]['location']={'pointer':''}
+        self.assertEqual(harness.observe(case,response,source),[])
+
 
 class ComparisonTests(unittest.TestCase):
     def test_ignores_processor_prose_and_state_order(self):
@@ -314,6 +362,11 @@ class ComparisonTests(unittest.TestCase):
         self.assertEqual(harness.comparison(response), harness.comparison(other))
         other['report']['inventory']['states'][0]['detail'] = 'Missing claim for other'
         self.assertNotEqual(harness.comparison(response), harness.comparison(other))
+        duplicate = copy.deepcopy(response)
+        duplicate['report']['inventory']['states'].append(dict(duplicate['report']['inventory']['states'][0], detail='Missing claim for cap'))
+        self.assertEqual(harness.comparison(response), harness.comparison(duplicate))
+        duplicate['report']['inventory']['states'].append(other['report']['inventory']['states'][0])
+        self.assertNotEqual(harness.comparison(response), harness.comparison(duplicate))
 
 
 class CliTests(unittest.TestCase):

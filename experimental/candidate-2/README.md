@@ -153,7 +153,7 @@ resolved by the harness.
 
 The harness validates closed Report records, domains, input and output hashes,
 Result stages, permitted rule sets, Check ordering/completeness, duplicate
-records and verdict aggregation from the supplied findings and prerequisites.
+records where uniqueness is required, and verdict aggregation from the supplied findings and prerequisites.
 It does not derive findings from Agent, graph, dependency or runtime semantics.
 The required-result and required-location assertions remain subsets. Complete
 validated reports are then compared, retaining input/unit/phase and all rules.
@@ -194,4 +194,37 @@ These tests use fixed synthetic reports and subprocess stubs. Their success
 verifies the harness, not AgSDL implementation support or interoperability.
 The three schemas also passed the optional metaschema check with
 `jsonschema 4.23.0` in the orchestrator's temporary environment; that package is
-not a project dependency. A real comparison awaits integrated readers.
+not a project dependency. The first reader comparison produced saved reports;
+the boundary corrections below replay those reports without executing readers
+or claiming that the full comparison succeeds.
+
+
+### Missing prerequisites and State sets
+
+The proposal's [location rules](../../proposals/0012-minimal-0.1.0-contract.md#exact-results-locations-and-experimental-diagnostics)
+place a missing-field P-SHAPE finding at its observable parent. Its
+[Check rules](../../proposals/0012-minimal-0.1.0-contract.md#rule-execution-and-exact-exclusion-records)
+separately describe blocked prerequisites. The harness therefore accepts a
+blocked Check pointing to an unavailable immediate child of an observable
+object or array, such as `/relations` when the primary object lacks that member.
+It does not infer whether an AgSDL rule should need that child. A missing
+ancestor, scalar parent, malformed pointer escape or noncanonical array index
+still fails the pointer check. This does not relocate P-SHAPE findings or relax
+the exact documentary exclusion records. Absent-container exclusions retain
+their contract-specific rule and location combinations.
+
+The same report section explicitly compares States as sets of
+input/pointer/state, with Requirement identity retained for missing claims.
+Repeated equivalent State tuples are therefore accepted and normalized for
+validation and comparison, including repetitions with different permitted prose.
+The original stdout remains unchanged in the evidence directory. Different
+states at the same pointer and different missing-claim Requirement ids remain
+distinct. This exception does not remove the explicit uniqueness checks for
+Check rule/state pairs or their locations, nor the checks on other records.
+
+Regression tests distinguish blocked locations from missing-field findings and
+State repetition from a change in state or Requirement identity. Saved
+`missing-relations`, `g-prerequisite-failure` and `external-local-phase`
+JavaScript reports from the first comparison were also replayed unchanged through
+the corrected harness. That replay tests these report boundaries only; it neither
+executes a reader nor supplies new semantic validation evidence.
