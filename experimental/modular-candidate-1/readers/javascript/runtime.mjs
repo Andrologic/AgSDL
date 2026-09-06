@@ -332,9 +332,8 @@ export function validateR(ctx, inventory) {
         for (const relation of relationRows) {
           if (usableRelation(relation)) continue;
           if (S.valid(S.Key, relation.v?.source) && !equal(relation.v.source, agent.v.key)) continue;
-          if (relation.v?.relation === 'actsAs' || relation.v?.relation === 'exposes') continue;
           if (relation.v?.relation === 'uses') toolRelationsBlocked = true;
-          else {
+          else if (relation.v?.relation === 'directedBy' || !['actsAs', 'exposes', 'contains'].includes(relation.v?.relation)) {
             contentRelationsBlocked = true;
             toolRelationsBlocked = true;
           }

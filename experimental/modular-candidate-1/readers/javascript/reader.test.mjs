@@ -279,7 +279,9 @@ test('a later unreadable Application does not hide a known order violation',()=>
   assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer==='/runtime/configurations/0/agents/0/applications/0'&&f.details.includes('appear earlier')));
 });
 
-test('a partial actsAs relation does not affect readable content closure',()=>{
-  const d=source(),binding=d.runtime.configurations[0].agents[0],content=structuredClone(d.definitions.find(x=>x.kind==='Instructions'));content.key.id+='-extra';d.definitions.push(content);binding.applications.push({...structuredClone(binding.applications[0]),content:content.key});d.relations.push({source:binding.agent,relation:'actsAs',expectedKind:'Principal',target:null});const r=result(execute('validateR',d),'R');
-  assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer==='/runtime/configurations/0/agents/0/applications/2'&&f.details.includes('not reachable')));
+test('partial relations outside R closure do not affect reachable content',()=>{
+  for(const [relation,expectedKind] of [['actsAs','Principal'],['exposes','Interface'],['contains','Instructions']]){
+    const d=source(),binding=d.runtime.configurations[0].agents[0],content=structuredClone(d.definitions.find(x=>x.kind==='Instructions'));content.key.id+='-extra';d.definitions.push(content);binding.applications.push({...structuredClone(binding.applications[0]),content:content.key});d.relations.push({source:binding.agent,relation,expectedKind,target:null});const r=result(execute('validateR',d),'R');
+    assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer==='/runtime/configurations/0/agents/0/applications/2'&&f.details.includes('not reachable')));
+  }
 });
