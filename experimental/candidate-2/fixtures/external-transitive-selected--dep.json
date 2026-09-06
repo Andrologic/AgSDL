@@ -1,0 +1,84 @@
+{
+  "contract": "proposal-0012-candidate-2",
+  "root": {
+    "key": {
+      "scope": "annex",
+      "id": "root",
+      "version": "1"
+    },
+    "kind": "PackageVersion"
+  },
+  "definitions": [
+    {
+      "key": {
+        "scope": "annex",
+        "id": "interface",
+        "version": "1"
+      },
+      "kind": "Interface",
+      "owner": {
+        "scope": "annex",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {
+        "inputs": {
+          "x": "string"
+        },
+        "outputs": {
+          "y": "string"
+        },
+        "action": {
+          "dependency": "next",
+          "key": {
+            "scope": "next",
+            "id": "action",
+            "version": "1"
+          }
+        }
+      }
+    },
+    {
+      "key": {
+        "scope": "annex",
+        "id": "action",
+        "version": "1"
+      },
+      "kind": "Action",
+      "owner": {
+        "scope": "annex",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {}
+    }
+  ],
+  "relations": [],
+  "exports": [
+    {
+      "scope": "annex",
+      "id": "interface",
+      "version": "1"
+    },
+    {
+      "scope": "annex",
+      "id": "action",
+      "version": "1"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "next",
+      "rootKey": {
+        "scope": "next",
+        "id": "root",
+        "version": "1"
+      },
+      "status": "external",
+      "requiredFor": [],
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "unresolved": [],
+  "extensions": []
+}

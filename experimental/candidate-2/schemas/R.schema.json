@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Experimental candidate-2 R shape",
+  "$comment": "Derived from proposal 0012 candidate-2. Shape only; no normative adoption or unit verdict.",
+  "$ref": "#/$defs/RuntimeDeclaration",
+  "$defs": {
+    "Text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Key": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/Text"
+        },
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "version": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "scope",
+        "id",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "Edition": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*(?![\\s\\S])"
+        },
+        "version": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "identity",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+    },
+    "Ref": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Key"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "dependency": {
+              "$ref": "#/$defs/Text"
+            },
+            "key": {
+              "$ref": "#/$defs/Key"
+            }
+          },
+          "required": [
+            "dependency",
+            "key"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Requirement": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "capability": {
+          "$ref": "#/$defs/Edition"
+        },
+        "subject": {
+          "$ref": "#/$defs/Key"
+        }
+      },
+      "required": [
+        "id",
+        "capability",
+        "subject"
+      ],
+      "additionalProperties": false
+    },
+    "EvidenceClaim": {
+      "type": "object",
+      "properties": {
+        "requirement": {
+          "$ref": "#/$defs/Text"
+        },
+        "claim": {
+          "enum": [
+            "satisfied",
+            "unsatisfied",
+            "indeterminate"
+          ]
+        },
+        "artifact": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "location": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "requirement",
+        "claim",
+        "artifact"
+      ],
+      "additionalProperties": false
+    },
+    "Selection": {
+      "type": "object",
+      "properties": {
+        "engine": {
+          "$ref": "#/$defs/Edition"
+        },
+        "interface": {
+          "$ref": "#/$defs/Edition"
+        },
+        "model": {
+          "$ref": "#/$defs/Edition"
+        },
+        "provider": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*(?![\\s\\S])"
+        },
+        "hosting": {
+          "$ref": "#/$defs/Ref"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EvidenceClaim"
+          }
+        }
+      },
+      "required": [
+        "engine",
+        "interface",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "RuntimeDeclaration": {
+      "type": "object",
+      "properties": {
+        "requirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Requirement"
+          }
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        }
+      },
+      "required": [
+        "requirements"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

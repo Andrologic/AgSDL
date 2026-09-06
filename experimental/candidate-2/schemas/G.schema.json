@@ -1,0 +1,391 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Experimental candidate-2 G shape",
+  "$comment": "Derived from proposal 0012 candidate-2. Shape only; no normative adoption or unit verdict.",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/Graph"
+  },
+  "$defs": {
+    "Text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Key": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/Text"
+        },
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "version": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "scope",
+        "id",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "Ref": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Key"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "dependency": {
+              "$ref": "#/$defs/Text"
+            },
+            "key": {
+              "$ref": "#/$defs/Key"
+            }
+          },
+          "required": [
+            "dependency",
+            "key"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Positive": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "Ports": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/Text"
+      },
+      "additionalProperties": {
+        "enum": [
+          "string",
+          "boolean",
+          "json"
+        ]
+      }
+    },
+    "Binding": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "input": {
+              "$ref": "#/$defs/Text"
+            }
+          },
+          "required": [
+            "input"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "step": {
+              "$ref": "#/$defs/Text"
+            },
+            "port": {
+              "$ref": "#/$defs/Text"
+            }
+          },
+          "required": [
+            "step",
+            "port"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Bindings": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/Text"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Binding"
+      }
+    },
+    "InvokeStep": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "kind": {
+          "const": "invoke"
+        },
+        "agent": {
+          "$ref": "#/$defs/Ref"
+        },
+        "interface": {
+          "$ref": "#/$defs/Ref"
+        },
+        "action": {
+          "$ref": "#/$defs/Ref"
+        },
+        "principal": {
+          "$ref": "#/$defs/Ref"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ref"
+          },
+          "minItems": 1
+        },
+        "context": {
+          "$ref": "#/$defs/Binding"
+        },
+        "inputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "outputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "bindings": {
+          "$ref": "#/$defs/Bindings"
+        },
+        "success": {
+          "$ref": "#/$defs/Text"
+        },
+        "failure": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "agent",
+        "interface",
+        "action",
+        "principal",
+        "resources",
+        "context",
+        "inputs",
+        "outputs",
+        "bindings",
+        "success",
+        "failure"
+      ],
+      "additionalProperties": false
+    },
+    "ConditionStep": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "kind": {
+          "const": "condition"
+        },
+        "test": {
+          "$ref": "#/$defs/Binding"
+        },
+        "true": {
+          "$ref": "#/$defs/Text"
+        },
+        "false": {
+          "$ref": "#/$defs/Text"
+        },
+        "failure": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "test",
+        "true",
+        "false",
+        "failure"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalStep": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "kind": {
+          "const": "approval"
+        },
+        "requirement": {
+          "$ref": "#/$defs/Ref"
+        },
+        "timeoutMs": {
+          "$ref": "#/$defs/Positive"
+        },
+        "approved": {
+          "$ref": "#/$defs/Text"
+        },
+        "denied": {
+          "$ref": "#/$defs/Text"
+        },
+        "failure": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "requirement",
+        "timeoutMs",
+        "approved",
+        "denied",
+        "failure"
+      ],
+      "additionalProperties": false
+    },
+    "SuccessEndStep": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "kind": {
+          "const": "end"
+        },
+        "outcome": {
+          "const": "success"
+        },
+        "bindings": {
+          "$ref": "#/$defs/Bindings"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "outcome",
+        "bindings"
+      ],
+      "additionalProperties": false
+    },
+    "OtherEndStep": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "kind": {
+          "const": "end"
+        },
+        "outcome": {
+          "enum": [
+            "failure",
+            "denied"
+          ]
+        },
+        "reason": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "outcome",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "Step": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/InvokeStep"
+        },
+        {
+          "$ref": "#/$defs/ConditionStep"
+        },
+        {
+          "$ref": "#/$defs/ApprovalStep"
+        },
+        {
+          "$ref": "#/$defs/SuccessEndStep"
+        },
+        {
+          "$ref": "#/$defs/OtherEndStep"
+        }
+      ]
+    },
+    "Graph": {
+      "type": "object",
+      "properties": {
+        "definition": {
+          "$ref": "#/$defs/Key"
+        },
+        "entry": {
+          "$ref": "#/$defs/Text"
+        },
+        "inputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "outputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "definition",
+        "entry",
+        "inputs",
+        "outputs",
+        "steps"
+      ],
+      "additionalProperties": false
+    },
+    "InterfacePayload": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "outputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "action": {
+          "$ref": "#/$defs/Ref"
+        }
+      },
+      "required": [
+        "inputs",
+        "outputs",
+        "action"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalRequirementPayload": {
+      "type": "object",
+      "properties": {
+        "approvers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ref"
+          },
+          "minItems": 1
+        },
+        "validForMs": {
+          "$ref": "#/$defs/Positive"
+        }
+      },
+      "required": [
+        "approvers",
+        "validForMs"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
