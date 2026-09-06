@@ -11,6 +11,12 @@ compatibility, conformance, execution, or interoperability. The eleven proposals
 included in that release remain proposed and non-normative, including the first
 exchange-contract candidate.
 
+The working tree also contains experimental candidate-2 readers, shape schemas
+and fixtures. [Try the experimental candidate](experimental/README.md) for local
+commands and evidence limits. Candidate-2 is not adopted, the full reader
+comparison is still undergoing correction, and version `0.1.0` has not been
+delivered.
+
 See the [0.0.2 release](https://github.com/Andrologic/AgSDL/releases/tag/v0.0.2),
 [release notes](docs/releases/0.0.2.md), and
 [publication decision](docs/decisions/0006-publish-version-0.0.2.md).
@@ -51,6 +57,7 @@ boundary.
 - `schemas/` will contain machine-readable validation artifacts.
 - `examples/` contains non-normative conceptual examples during the pre-draft
   stage.
+- `experimental/` contains the candidate-2 guide, readers, shape schemas and corpus.
 - `scripts/` contains repository and source-verification checks.
 - `proposals/` records proposed normative changes before they enter the spec.
 - `docs/` contains scope, rationale, and architecture decisions.
@@ -63,7 +70,8 @@ The repository now contains twelve proposals, all proposed and non-normative. Pr
 a bounded reading, inspection, structural-validation, and exchange contract
 for maintainer review. Proposal 0012 presents a minimal 0.1.0 contract candidate
 and delivery choices. None has been accepted into the normative specification.
-Syntax comes only after the system model and conformance boundaries are clear.
+Candidate-2 explores a concrete experimental contract. Its syntax and bounded
+checks remain proposed pending normative adoption.
 
 - [`Roadmap`](ROADMAP.md)
 - [`Minimal 0.1.0 contract candidate`](proposals/0012-minimal-0.1.0-contract.md)
