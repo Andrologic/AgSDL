@@ -79,7 +79,20 @@ test('resolveG requires explicit dependencies even with absent graphs',()=>{
 });
 test('resolveG selected payloads report annex shape, integrity unknown and transitive refs',()=>{
   const {p,a}=external();a.definitions[0].payload.extra=1;let b=bytes(a);p.dependencies[0].sha256=hash(b);const x=execute('resolveG',p,{dep:b});assert.equal(last(x).verdict,'fail');assert.ok(x.report.results.some(r=>r.input==='annex/dep'&&r.unit==='G'&&r.findings.some(f=>f.rule==='P-SHAPE')));
-  delete a.definitions[0].payload.extra;a.dependencies=[{id:'next',rootKey:K('r','next'),status:'external',requiredFor:[],sha256:null}];a.definitions[0].payload.action={dependency:'next',key:K('act','next')};b=bytes(a);p.dependencies[0].sha256=hash(b);assert.equal(last(execute('resolveG',p,{dep:b})).verdict,'unsupported');
+  delete a.definitions[0].payload.extra;a.dependencies=[{id:'next',rootKey:K('r','next'),status:'external',requiredFor:[],sha256:null}];a.definitions[0].payload.action={dependency:'next',key:K('act','next')};b=bytes(a);p.dependencies[0].sha256=hash(b);
+  const y=execute('resolveG',p,{dep:b}),annex=y.report.results.find(r=>r.input==='annex/dep'&&r.unit==='G');
+  assert.equal(last(y).verdict,'unsupported');assert.equal(annex.verdict,'pass');
+  assert.deepEqual(annex.checks.filter(c=>c.rule==='G-TARGET'),[
+    {rule:'G-TARGET',state:'completed',locations:[]},
+    {rule:'G-TARGET',state:'excluded',locations:[{pointer:'/definitions/0/payload'}]}
+  ]);
+  assert.deepEqual(last(y).checks.filter(c=>c.rule==='G-TARGET'),[
+    {rule:'G-TARGET',state:'completed',locations:[]},
+    {rule:'G-TARGET',state:'excluded',locations:[{pointer:'/graphs/0/steps/0'}]}
+  ]);
+  assert.ok(!y.report.inventory.states.some(s=>s.input==='annex/dep'&&s.pointer.startsWith('/definitions/0/payload')));
+  assert.ok(!y.report.inventory.opaque.some(s=>s.input==='annex/dep'&&s.pointer==='/definitions/0/payload'));
+  assert.deepEqual(last(y).checks.filter(c=>c.rule==='G-DATA'),[{rule:'G-DATA',state:'completed',locations:[]}]);
 });
 test('R no defaults, unknown evidence and external hosting are inventoried without readiness',()=>{
   const d=doc();add(d,'a','Action');d.runtime={requirements:[{id:'need',capability:{identity:'vendor/cap',version:'1'},subject:K('a')} ]};let x=execute('validateR',d);assert.equal(last(x).verdict,'pass');assert.ok(x.report.inventory.states.some(s=>s.pointer==='/runtime/selection'&&s.state==='absent'));

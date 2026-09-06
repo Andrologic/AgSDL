@@ -43,7 +43,7 @@ export function validateG(primary,operation,inventory) {
     let dst=ctx,k=ref;
     if(ext(ref)) {
       if(!resolve){state(ctx,p);r.mark(rule,'excluded',consumer);return {external:true};}
-      if(ctx!==primary){state(ctx,p);r.find('G-RESOLVE',consumer,'Selected transitive external reference','unsupported');owner.mark(rule,'excluded',p);return {external:true};}
+      if(ctx!==primary){r.find('G-RESOLVE',consumer,'Selected transitive external reference','unsupported');owner.mark(rule,'excluded',subject);r.mark(rule,'excluded',consumer);return {external:true};}
       r.mark('G-RESOLVE');dst=loadAnnex(ref.dependency);k=ref.key;
       if(!dst){r.mark('G-RESOLVE','blocked',consumer);r.mark('G-TARGET','blocked',consumer);return null;}
       if(dst.error||!S.valid(S.Root,dst.tree?.root)){r.mark('G-TARGET','blocked',consumer);return null;}
