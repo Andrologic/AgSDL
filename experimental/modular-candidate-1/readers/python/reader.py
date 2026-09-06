@@ -1686,8 +1686,14 @@ class GraphValidation:
                     elif approved_predecessors and incoming[sid] != approved_predecessors:
                         result.find('G-APPROVAL', sp,
                                     'later gate has another incoming edge')
-                    if (call_id in reachable(step['denied'], edges)
-                            or call_id in reachable(step['failure'], edges)):
+                    known_later = set()
+                    cursor = step.get('approved')
+                    while cursor in gate_ids and cursor not in known_later:
+                        known_later.add(cursor)
+                        cursor = steps[cursor].get('approved')
+                    forbidden = known_later | {call_id}
+                    if (reachable(step['denied'], edges) & forbidden
+                            or reachable(step['failure'], edges) & forbidden):
                         result.find('G-APPROVAL', sp,
                                     'denied or failure path bypasses approval')
             if not call_catalog_complete:

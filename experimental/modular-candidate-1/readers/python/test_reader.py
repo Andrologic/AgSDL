@@ -554,6 +554,38 @@ class GraphTests(unittest.TestCase):
                             and 'gate has multiple approved predecessors' in item['details']
                             for item in findings(actual, 'G-APPROVAL', 'fail')))
 
+    def test_unreadable_call_keeps_refusal_paths_to_known_later_gate(self):
+        for route in ('denied', 'failure', 'indirect'):
+            with self.subTest(route=route):
+                value = fixture('approval-two-gates.json')
+                graph = value['graphs'][0]
+                second = copy.deepcopy(graph['steps'][:3])
+                renamed = {'legal': 'legal2', 'finance': 'finance2', 'call': 'call2'}
+                for step in second:
+                    for field in ('id', 'call', 'approved', 'success', 'failure', 'denied'):
+                        if step.get(field) in renamed:
+                            step[field] = renamed[step[field]]
+                graph['steps'][2]['success'] = 'legal2'
+                graph['steps'][2]['failure'] = 'call2'
+                graph['steps'].extend(second)
+                graph['steps'][0]['call'] = None
+                graph['steps'][8]['approved'] = 'ok'
+                if route == 'indirect':
+                    graph['inputs']['flag'] = 'boolean'
+                    graph['steps'][7]['denied'] = 'detour'
+                    graph['steps'].append({
+                        'id': 'detour', 'kind': 'condition',
+                        'test': {'input': 'flag'}, 'true': 'finance2',
+                        'false': 'denied', 'failure': 'failed',
+                    })
+                else:
+                    graph['steps'][7][route] = 'finance2'
+                actual = report(value, 'validateG')
+                self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/7'
+                                    and 'denied or failure path bypasses approval'
+                                    in item['details']
+                                    for item in findings(actual, 'G-APPROVAL', 'fail')))
+
 
 if __name__ == '__main__':
     unittest.main()
