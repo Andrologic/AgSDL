@@ -342,6 +342,13 @@ test('an unreadable Step id blocks dependent lookups',()=>{
   assert.ok(!r.findings.some(f=>['Approval call is not an invocation','Step output binding missing or wrong type','Invalid graph path'].includes(f.details)));
 });
 
+test('approval target checks survive an invalid graph path',()=>{
+  for(const emptyEntry of[false,true])for(const operation of['validateG','resolveG']){
+    const d=JSON.parse(fixture('approval-two-gates.json')),g=d.graphs[0];g.steps[0].approved=g.steps.find(s=>s.kind==='end').id;if(emptyEntry)g.entry='';
+    assert.ok(finding(execute(operation,d),'G','G-APPROVAL','/graphs/0/steps/0'));
+  }
+});
+
 test('an empty graph entry blocks path lookup',()=>{
   const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));
