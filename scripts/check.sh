@@ -45,4 +45,6 @@ bash -n scripts/test-verify-a2a-1.0.1-sources.sh
 ./scripts/test-verify-a2a-1.0.1-sources.sh
 python3 scripts/test-check-markdown-links.py
 python3 scripts/check-markdown-links.py
+python3 experimental/candidate-2/check-fixtures.py
+python3 experimental/candidate-2/test-compare-readers.py
 echo "AgSDL repository checks passed."
