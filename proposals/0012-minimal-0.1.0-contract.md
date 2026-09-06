@@ -97,11 +97,13 @@ in quotes is the only permitted string value. Absence is permitted only at `?`;
 null is permitted only where explicitly listed or inside JSON. There are no
 implicit values, conversions, merge rules or fetching operations.
 
-Input is one UTF-8 JSON object without BOM, duplicate member names, invalid
+Parsing accepts one UTF-8 JSON value without BOM, duplicate member names, invalid
 Unicode scalar values or trailing non-whitespace content. JSON numbers use the
 JSON number grammar; interpreted uint/positive values are checked mathematically
 without binary floating-point rounding. Opaque numbers retain their original
-lexeme without a magnitude limit. Object order has no semantic meaning. Arrays
+lexeme without a magnitude limit. D shape requires the parsed root to be a
+Document object; inspect/exchange can inventory or copy other JSON roots.
+Object order has no semantic meaning. Arrays
 retain order for locations; only steps connected by edges determine scheduling.
 Equality of strings compares decoded Unicode scalar sequences exactly, without
 case folding, Unicode normalization, URI normalization or version ordering.
@@ -378,8 +380,8 @@ but that operation is outside this edition. No automatic fallback is encoded.
 ## Exact results, locations and experimental diagnostics
 
 The following report records use the same closed notation. These are candidate
-identifiers scoped to candidate-2, not stable official diagnostics. Checks are
-run in the table order below. A prerequisite shape failure suppresses only rules
+identifiers scoped to candidate-2, not stable official diagnostics. Checks follow syntax, shape, D declarations, then the selected unit;
+within each stage they follow the rule table below. A prerequisite shape failure suppresses only rules
 that need that malformed value. Unrelated well-formed records are still checked.
 For duplicate keys or ambiguous identities, dependent lookup is not attempted.
 Each rule emits one finding per failing or unknown subject location, not one
@@ -426,7 +428,8 @@ Inventory tree is the primary parsed JSON value; opaque numeric values can be
 exposed as lossless host representations, with slices as the comparison source.
 Inventory states are operation-scoped, never discovered inside opaque values.
 Use the following exhaustive state inventory, only for well-shaped parent
-records. A malformed parent produces findings, not invented child absences.
+records. Validation emits shape findings for malformed parents; inspect/exchange do not.
+No operation invents child absences beneath a malformed parent.
 
 | Scope | States recorded |
 | --- | --- |
@@ -434,6 +437,7 @@ records. A malformed parent produces findings, not invented child absences.
 | D boundaries, also used by inspect and exchange | Unknown at each null dependency sha256 in a well-shaped Dependency. No selection, model, provider, hosting or evidence states inside runtime. |
 | G only | Unchecked at each external Ref whose target-dependent checks are excluded in validateG; no internal R states. Resolved target evidence is represented by checks/results, not a synthesized state tree. |
 | R only | Selection absent when missing, otherwise declared. Within a present well-shaped Selection, model/provider/hosting are absent or declared according to presence. Unknown at each null EvidenceClaim artifact. A missing claim records absent at /runtime/selection/evidence with detail naming its Requirement id, one state per missing claim. No missing-claim states if selection is absent. Present selection also records unchecked at /runtime/selection/engine for support and at each EvidenceClaim for evidence assessment. |
+| inspect/exchange/lossyExchange dependency inventory | At /dependencies record absent if the primary parsed object lacks that member, declared if the full Dependency[] grammar is satisfied, unchecked if present but malformed, primary parsing failed, or the parsed root is not an object. When malformed, retain the entire /dependencies value as one opaque slice; when parsing failed, no JSON slice exists. These states are inventory observations, not validation findings. |
 | Required resolveG annexes | Apply D states to each annex with its own input id; additionally G external-target states only for selected G payloads/relations. No graph or runtime internals of annexes are inventoried. |
 
 In particular validateD or inspect of runtime:{} records unchecked at /runtime
@@ -448,6 +452,7 @@ normalized graph. Opaque slices are the maximal unexamined JSON values for the
 requested unit: D opaque fields listed above, G/R unselected payloads/containers,
 annotations/evidence/provenance and extension payloads. Inspect and exchange use
 D boundaries. Compare slices by their source bytes, not a host JSON serializer.
+For a parsed nonobject root, inspect/exchange retain one opaque slice at "".
 No normalized JSON codec is required.
 
 | Rule | Deterministic check and finding location |
@@ -485,6 +490,71 @@ prerequisites list blocked locations; valid unaffected records still run.
 G-PATH failure blocks availability and approval reachability checks in that
 Graph, but not local type/target checks. All candidate validators implement
 these same rules; no user-selected arbitrary subset produces a unit pass.
+
+### Rule execution and exact exclusion records
+
+Only the following rule sets execute. An operation's incidental parsing or
+shape probing for inventory does not add findings outside this matrix.
+
+| Result unit and operation | Rules executed |
+| --- | --- |
+| D for validateD or a validation prerequisite | P-SYNTAX, P-SHAPE for D, every D-* rule, X-MODE for validateD. |
+| G for validateG | P-SHAPE for interpreted G fields, X-MODE for validateG, G-TARGET, G-PATH, G-DATA, G-APPROVAL. D prerequisite owns syntax and D findings. |
+| G for resolveG | Same G rules plus G-RESOLVE; required annex D results own their D rules. Annex G results run P-SHAPE for selected payloads and G-TARGET only. |
+| R for validateR | P-SHAPE for R, X-MODE for validateR, R-REQUIREMENT, R-SELECTION. |
+| inspect | P-SYNTAX only. A parseable input gives pass for inventory production regardless of D shape or semantics; parse failure gives fail. No P-SHAPE finding is emitted. |
+| exchange | E-PRESERVE only. Parsing and a full Dependency[] shape predicate inform inventory/accounting, never P-SYNTAX or P-SHAPE findings. Copying bytes with absent/unreadable dependencies gives pass with the exact inventory state above, not a declared package-completeness claim. Accounting or known hash failures on a readable Dependency[] refuse output. |
+| lossyExchange | E-LOSS only; verdict fail and no output. Parsing/shape probing may produce inventory, never validation findings. |
+
+The result checks array contains one Check per rule/state pair. Completed rules
+use locations:[] even when several subjects were examined. A rule partially
+completed and partially blocked/excluded has a completed entry and separate
+blocked/excluded entries listing unique relevant locations. Blocked means a
+malformed or ambiguous prerequisite prevented an applicable check; excluded
+means the contract does not attempt that check in this operation. Sort rules
+lexicographically, states lexicographically, and locations by pointer text or
+byte value; no duplicate locations. Other findings/state-array order is not
+significant for comparison. A rule with no subjects completes with [] except
+for the explicit container exclusions below. Rule ids outside this inventory
+are not allowed in a candidate-2 report.
+
+All validation Result units D/G/R contain these documentary boundary Check
+records, always excluded, even if a prerequisite failed:
+
+- X-EXECUTION at pointer "" in every validation Result.
+- X-FULL-MODEL at pointer "" in every validation Result.
+- X-READINESS at pointer /runtime and X-EVIDENCE-ASSESSMENT at pointer /runtime
+  in primary R Result only. They remain excluded if runtime is absent.
+
+These four ids have no finding and never execute. Inspect/exchange/annex G
+results do not invent R exclusions. They are limits of the named unit, not
+checks that could otherwise have been passed. A reader must not treat them as
+blocked and thereby turn a bounded pass into inconclusive.
+
+In the primary G Result, absent graphs excludes P-SHAPE, G-TARGET, G-PATH, G-DATA, G-APPROVAL and,
+for resolveG, G-RESOLVE at /graphs. Absent runtime excludes P-SHAPE,
+R-REQUIREMENT and R-SELECTION at /runtime. X-MODE still runs. An empty graphs
+array has no subjects and completes these rules with []; resolveG still checks
+any explicit requiredFor resolveG dependencies. To preserve that requirement,
+G-RESOLVE also completes or fails its dependency portion when graphs is absent,
+while its graph portion is excluded. Present well-shaped runtime without
+selection excludes R-SELECTION at /runtime/selection. No model/provider/hosting
+absence excludes R-SELECTION as a whole; their optionality is ordinary shape.
+
+External target-dependent local G checks excluded in validateG use the consuming
+Step location in G-TARGET or G-DATA, as applicable. Their declaration/type checks
+still complete where observable. D external relation targets need no lookup
+Check: D-REFERENCE completes its declaration scope and inventory records each
+relation's target pointer unchecked. R external hosting similarly completes its
+declaration scope and records /runtime/selection/hosting unchecked. These do
+not imply resolved content. An opaque value produces a slice, not extra rule ids.
+
+For unavailable prerequisites, blocked locations are the affected record needing
+the value, with "" for a whole-unit prerequisite P-PREREQUISITE. This special
+rule appears only as blocked in dependent primary G/R Results and uses pointer
+""; it has no finding and is omitted when D passes. Validation rules unaffected
+by that prerequisite still run when their input shape is available. The rule
+matrix and prerequisite verdict precedence determine the final result.
 
 Aggregation is fail before unsupported before inconclusive before pass. Deferred
 findings do not prevent D pass, but remain outstanding. Excluded checks do not
