@@ -777,7 +777,7 @@ def inventory(doc, operation, extra_states=(), primary=True):
     copy_mode = operation in ('inspect', 'exchange', 'lossyExchange')
 
     def state(path, value, detail=''):
-        states.append({'input': doc.id, 'pointer': path, 'state': value, 'detail': detail})
+        states.append({'input': doc.id, 'pointer': path, 'state': value, 'detail': detail or value})
 
     def opaque(path):
         if path in doc.parser.spans:
