@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import Mock, call, patch
 
 sys.dont_write_bytecode = True
 HERE = Path(__file__).resolve().parent
@@ -414,12 +415,30 @@ class CliTests(unittest.TestCase):
         self.assertEqual((directory / 'empty-object-inspect.first.stderr').read_text(), 'diagnostic\n')
 
     def test_timeout_retains_partial_output(self):
-        program = 'import time; print("started", flush=True); time.sleep(5)'
+        request = b'input bytes'
+        stdout, stderr = b'started\nlast bytes\n', b'partial diagnostic\n'
+        process = Mock(pid=4242, returncode=-harness.signal.SIGKILL)
+        process.communicate.side_effect = [
+            subprocess.TimeoutExpired(['reader'], 0.15, output=b'started\n', stderr=b'partial'),
+            (stdout, stderr),
+        ]
+        with patch.object(harness.subprocess, 'Popen', return_value=process), \
+                patch.object(harness.os, 'killpg') as kill_group:
+            result = harness.run_reader(['reader'], request, 0.15)
+        self.assertEqual(result, (-harness.signal.SIGKILL, stdout, stderr, 'reader timeout'))
+        kill_group.assert_called_once_with(process.pid, harness.signal.SIGKILL)
+        self.assertEqual(process.communicate.call_args_list, [call(request, timeout=0.15), call()])
+
+    def test_real_timeout_records_failure_and_output_files(self):
+        program = 'import time\nwhile True: time.sleep(60)'
         process, directory = self.invoke(program, program, timeout='0.15')
-        self.assertNotEqual(process.returncode, 0)
+        self.assertEqual(process.returncode, 1)
         self.assert_saved(directory)
-        self.assertIn('started', (directory / 'empty-object-inspect.first.stdout').read_text())
-        self.assertIn('timeout', (directory / 'summary.json').read_text().lower())
+        summary = json.loads((directory / 'summary.json').read_text())
+        self.assertEqual(summary['failures'], [
+            {'case': 'empty-object-inspect', 'reader': label, 'issue': 'reader timeout'}
+            for label in ('first', 'second')
+        ])
 
     def test_two_fixed_reports_are_compared(self):
         program = self.report_program()
