@@ -414,6 +414,16 @@ test('an unreadable earlier Application blocks the dependent order check',()=>{
   assert.ok(!r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer===pointer&&f.details.includes('earlier')));
 });
 
+test('an unreadable Skill dependency blocks its Application order',()=>{
+  for(const dependency of[null,{scope:'mvp'}]){
+    const d=source(),skill=d.definitions.find(v=>v.kind==='Skill');skill.payload.dependencies.push(dependency);
+    const a=d.runtime.configurations[0].agents[0];a.applications.reverse();
+    const r=result(execute('validateR',d),'R'),pointer='/runtime/configurations/0/agents/0/applications/0';
+    assert.ok(r.checks.some(c=>c.rule==='R-CONTENT'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===pointer)));
+    assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer===pointer&&f.details.includes('earlier')));
+  }
+});
+
 test('an empty graph entry blocks path lookup',()=>{
   const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));

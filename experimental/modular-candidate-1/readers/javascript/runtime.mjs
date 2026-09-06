@@ -575,7 +575,7 @@ export function validateR(ctx, inventory) {
         for (const position of positions) result.mark('R-CONTENT', contentClosureBlocked ? 'blocked' : 'excluded', `${ap}/applications/${position}`);
       }
     }
-    for (const [identity, entry] of content) if (entry.kind === 'Skill' && !Array.isArray(entry.info?.value?.dependencies)) {
+    for (const [identity, entry] of content) if (entry.kind === 'Skill' && (!Array.isArray(entry.info?.value?.dependencies) || entry.info.value.dependencies.some(dependency => !S.valid(S.Ref, dependency)))) {
       for (const position of applicationPositions.get(identity) || []) result.mark('R-CONTENT', 'blocked', `${ap}/applications/${position}`);
     }
 
