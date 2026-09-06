@@ -57,3 +57,29 @@ This is a repository check, not a CommonMark parser. It recognizes destinations
 on the same line as `](`, including paths enclosed in angle brackets. It does
 not check reference-style or HTML links, heading anchors, remote URLs, indented
 code blocks, multiline code spans, or destinations with nested parentheses.
+
+
+### Experimental reader commands
+
+`./scripts/check.sh` also runs the Python reader tests. Node.js is not required
+for that command. From the repository root, run both reader test suites with:
+
+```sh
+./scripts/check-readers.sh
+```
+
+This separate command requires Python 3 and Node.js with `node --test` support.
+It uses their standard libraries and installs no packages. For the full corpus
+comparison, which additionally requires Python 3.9 or newer, run:
+
+```sh
+./scripts/check-readers.sh --compare
+```
+
+The comparison mode runs the comparator instead of the reader test suites.
+It prints the comparison summary, propagates the comparator's exit code and
+removes its temporary report directory on exit. A nonzero comparison result
+remains a failure, including while reader discrepancies are being corrected;
+it is separate from the repository check required before committing. To retain
+raw reports for diagnosis, use the [comparison commands](experimental/candidate-2/README.md#comparing-reader-commands)
+with an explicit report directory.
