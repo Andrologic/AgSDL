@@ -80,6 +80,45 @@ class CorpusCheckerTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "proposal 0013 changed"):
                 builder.main()
 
+    def test_annex_fixture_digest_is_pinned(self):
+        changed = deepcopy(self.manifest)
+        target = next(case for case in changed["cases"] if case["name"] == "annex-interface-operation")
+        target["annexes"]["dep"]["sha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "fixture hash"):
+            checker.check_manifest(changed)
+
+    def test_resolve_annex_result_stages_are_ordered(self):
+        changed = deepcopy(self.manifest)
+        target = next(case for case in changed["cases"] if case["name"] == "annex-interface-operation")
+        target["expected"]["results"][1:3] = reversed(target["expected"]["results"][1:3])
+        with self.assertRaisesRegex(ValueError, "annex Result ordering"):
+            checker.check_manifest(changed)
+
+    def test_resolve_oracle_keeps_required_annex_d_result(self):
+        changed = deepcopy(self.manifest)
+        target = next(case for case in changed["cases"] if case["name"] == "annex-interface-unexported")
+        target["expected"]["results"] = [
+            result for result in target["expected"]["results"]
+            if (result["input"], result["unit"]) != ("annex/dep", "D")
+        ]
+        with self.assertRaisesRegex(ValueError, "G-RESOLVE annex D coverage"):
+            checker.check_manifest(changed)
+
+    def test_completed_check_cannot_have_locations(self):
+        changed = deepcopy(self.manifest)
+        target = next(case for case in changed["cases"] if case["name"] == "annex-interface-operation")
+        check = next(item for item in target["expected"]["checks"] if item["rule"] == "G-RESOLVE")
+        check["locations"] = [{"pointer": "/graphs/0/steps/0"}]
+        with self.assertRaisesRegex(ValueError, "check locations/state mismatch"):
+            checker.check_manifest(changed)
+
+    def test_resolve_oracle_keeps_inherited_source(self):
+        changed = deepcopy(self.manifest)
+        target = next(case for case in changed["cases"] if case["name"] == "annex-interface-operation")
+        del target["source"]["inherited"]
+        with self.assertRaisesRegex(ValueError, "requires inherited source"):
+            checker.check_manifest(changed)
+
 
 if __name__ == "__main__":
     unittest.main()

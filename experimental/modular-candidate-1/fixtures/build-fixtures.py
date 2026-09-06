@@ -18,12 +18,28 @@ ZERO_HASH = "0" * 64
 ONE_HASH = "1" * 64
 
 
+def document_bytes(document):
+    return (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+
+
+def document_hash(document):
+    return hashlib.sha256(document_bytes(document)).hexdigest()
+
+
 def key(name):
     return {"scope": "mvp", "id": name, "version": "1"}
 
 
 def ref(name):
     return key(name)
+
+
+def scoped_key(scope, name):
+    return {"scope": scope, "id": name, "version": "1"}
+
+
+def external_ref(dependency, scope, name):
+    return {"dependency": dependency, "key": scoped_key(scope, name)}
 
 
 def edition(name, version="1"):
@@ -154,26 +170,73 @@ def approval_document():
     return doc
 
 
-def expected(operation, verdict, findings=(), checks=(), states=(), opaque=(), absent_states=(), absent_opaque=(), preservation="no-output"):
+def interface_annex(scope="annex", export_interface=True, transitive=False):
+    root = scoped_key(scope, "annex-root")
+    ask_action = external_ref("next", "next", "ask-action") if transitive else scoped_key(scope, "ask-action")
+    operations = [
+        {"id": "notify", "direction": "outbound", "mode": "request-response", "action": scoped_key(scope, "notify-action"), "inputs": {"x": "string"}, "outputs": {"y": "string"}},
+        {"id": "ask", "direction": "inbound", "mode": "request-response", "action": ask_action, "inputs": {"x": "string"}, "outputs": {"y": "string"}},
+    ]
+    definitions = [
+        {"key": scoped_key(scope, "work-interface"), "kind": "Interface", "owner": root, "payload": {"operations": operations}},
+        {"key": scoped_key(scope, "ask-action"), "kind": "Action", "owner": root, "payload": {}},
+        {"key": scoped_key(scope, "notify-action"), "kind": "Action", "owner": root, "payload": {}},
+    ]
+    exports = [scoped_key(scope, "ask-action"), scoped_key(scope, "notify-action")]
+    if export_interface:
+        exports.insert(0, scoped_key(scope, "work-interface"))
+    dependencies = []
+    if transitive:
+        dependencies.append({
+            "id": "next", "rootKey": scoped_key("next", "root"), "status": "external",
+            "requiredFor": [], "sha256": ZERO_HASH,
+        })
+    return {
+        "contract": CONTRACT,
+        "root": {"key": root, "kind": "PackageVersion"},
+        "definitions": definitions,
+        "relations": [], "exports": exports, "dependencies": dependencies,
+        "unresolved": [], "extensions": [],
+    }
+
+
+def primary_with_interface_annex(annex, scope="annex"):
+    document = base_document()
+    interface = external_ref("dep", scope, "work-interface")
+    action = external_ref("dep", scope, "ask-action")
+    exposure = next(item for item in document["relations"]
+                    if item["source"] == ref("agent-a") and item["relation"] == "exposes")
+    exposure["target"] = interface
+    call = document["graphs"][0]["steps"][0]
+    call["interface"] = interface
+    call["action"] = action
+    document["dependencies"] = [{
+        "id": "dep", "rootKey": scoped_key(scope, "annex-root"), "status": "included",
+        "requiredFor": [], "sha256": document_hash(annex),
+    }]
+    return document
+
+
+def expected(operation, verdict, findings=(), checks=(), states=(), opaque=(), absent_states=(), absent_opaque=(), preservation="no-output", prerequisite_results=(), finding_mode="contains"):
     unit_phase = {"validateG": ("G", "unresolved-document"), "resolveG": ("G", "resolved-graph"), "validateR": ("R", "unresolved-document"), "exchange": ("exchange", None), "inspect": ("inspect", None)}
     unit, phase = unit_phase[operation]
     results = [{"input": "primary", "unit": unit, "phase": phase, "verdict": verdict}]
     if unit in {"G", "R"}:
-        results.insert(0, {"input": "primary", "unit": "D", "phase": "unresolved-document", "verdict": "pass"})
+        results = [{"input": "primary", "unit": "D", "phase": "unresolved-document", "verdict": "pass"}, *prerequisite_results, *results]
     return {
         "results": results,
-        "findings": {"mode": "contains", "items": list(findings)},
+        "findings": {"mode": finding_mode, "items": list(findings)},
         "checks": list(checks), "states": list(states), "absentStates": list(absent_states),
         "opaque": list(opaque), "absentOpaque": list(absent_opaque), "preservation": preservation,
     }
 
 
-def finding(unit, rule, pointer, outcome):
-    return {"input": "primary", "unit": unit, "rule": rule, "location": {"pointer": pointer}, "outcome": outcome}
+def finding(unit, rule, pointer, outcome, input_id="primary"):
+    return {"input": input_id, "unit": unit, "rule": rule, "location": {"pointer": pointer}, "outcome": outcome}
 
 
-def check(unit, rule, state, *pointers):
-    return {"input": "primary", "unit": unit, "rule": rule, "state": state, "locations": [{"pointer": p} for p in pointers]}
+def check(unit, rule, state, *pointers, input_id="primary"):
+    return {"input": input_id, "unit": unit, "rule": rule, "state": state, "locations": [{"pointer": p} for p in pointers]}
 
 
 def state(pointer, state_name, detail=None):
@@ -198,12 +261,13 @@ def exchange_inventory(doc):
     return states, opaque
 
 
-def case(name, operation, doc, expected_value, coverage, scenarios, schema_assertions=(), fixture="modular-system.json"):
+def case(name, operation, doc, expected_value, coverage, scenarios, schema_assertions=(), fixture="modular-system.json", annexes=None, inherited_sections=()):
     headings = {
         "P-SHAPE": "Closed record inventory",
         "G-TARGET": "G operation and approval records",
         "G-DATA": "Sequential approvals for one call",
         "G-APPROVAL": "Sequential approvals for one call",
+        "G-RESOLVE": "Scope, authority and continuity",
         "R-SELECTION": "Configuration selection and assignments",
         "R-BINDING": "Configuration selection and assignments",
         "R-TOOL": "Configuration selection and assignments",
@@ -216,9 +280,18 @@ def case(name, operation, doc, expected_value, coverage, scenarios, schema_asser
     if scope != ("Document", ""):
         assertions.append({"entry": scope[0], "pointer": scope[1], "valid": True})
     assertions.extend(schema_assertions)
-    return {"name": name, "status": "ready", "primary": fixture, "annexes": {}, "operation": operation,
-            "source": {"document": "../../../proposals/0013-modular-mvp-contract.md", "sections": sorted({headings[x.split(":")[0]] for x in coverage})},
-            "coverage": coverage, "scenarios": scenarios, "schemaAssertions": assertions, "expected": expected_value, "_doc": doc}
+    annexes = annexes or {}
+    source = {"document": "../../../proposals/0013-modular-mvp-contract.md", "sections": sorted({headings[x.split(":")[0]] for x in coverage})}
+    if inherited_sections:
+        source["inherited"] = {
+            "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+            "sections": list(inherited_sections),
+        }
+    return {"name": name, "status": "ready", "primary": fixture,
+            "annexes": {name: path for name, (path, _) in annexes.items()}, "operation": operation,
+            "source": source, "coverage": coverage, "scenarios": scenarios,
+            "schemaAssertions": assertions, "expected": expected_value, "_doc": doc,
+            "_annex_docs": {path: annex for path, annex in annexes.values()}}
 
 
 def build_cases():
@@ -308,6 +381,117 @@ def build_cases():
         expected("validateR", "inconclusive", findings=[finding("R", "R-COMPATIBILITY", "/runtime/configurations/0/agents/0", "inconclusive")], checks=[check("R", "R-CONTENT", "excluded", "/runtime/configurations/0/agents/0/applications/0"), check("R", "R-COMPATIBILITY", "completed")], states=[state("/runtime/configurations/0/agents/0/applications/0/content", "unchecked"), state("/runtime/configurations/0/agents/0", "unknown", "unknown")]),
         ["R-CONTENT:excluded", "R-COMPATIBILITY:unknown"], ["external-runtime-reference-excluded"], fixture="external-runtime-content.json"))
 
+    inherited_resolution = (
+        "Dependencies, unknowns and extension handling",
+        "Exact results, locations and experimental diagnostics",
+        "Rule execution and exact exclusion records",
+    )
+    annex_results = [
+        {"input": "annex/dep", "unit": "D", "phase": "unresolved-document", "verdict": "pass"},
+        {"input": "annex/dep", "unit": "G", "phase": "resolved-graph", "verdict": "pass"},
+    ]
+    annex = interface_annex()
+    doc = primary_with_interface_annex(annex)
+    cases.append(case("annex-interface-operation", "resolveG", doc,
+        expected("resolveG", "pass", checks=[
+            check("G", "P-SHAPE", "completed", input_id="annex/dep"),
+            check("G", "G-TARGET", "completed", input_id="annex/dep"),
+            check("G", "G-RESOLVE", "completed"), check("G", "G-TARGET", "completed"),
+            check("G", "G-DATA", "completed"),
+        ], opaque=[
+            {"input": "annex/dep", "pointer": "/definitions/1/payload"},
+            {"input": "annex/dep", "pointer": "/definitions/2/payload"},
+        ], absent_opaque=[
+            {"input": "annex/dep", "pointer": "/definitions/0/payload"},
+        ], prerequisite_results=annex_results, finding_mode="exact"),
+        ["G-RESOLVE:positive", "G-TARGET:positive"], ["direct-annex-interface-operation"],
+        schema_assertions=[
+            {"input": "annex/dep", "entry": "Document", "pointer": "", "valid": True},
+            {"input": "annex/dep", "entry": "InterfacePayload", "pointer": "/definitions/0/payload", "valid": True},
+        ],
+        fixture="annex-interface-operation.json",
+        annexes={"dep": ("annex-interface-operation--dep.json", annex)},
+        inherited_sections=inherited_resolution))
+
+    annex = interface_annex(export_interface=False)
+    doc = primary_with_interface_annex(annex)
+    cases.append(case("annex-interface-unexported", "resolveG", doc,
+        expected("resolveG", "fail", findings=[
+            finding("G", "G-RESOLVE", "/graphs/0/steps/0", "fail"),
+        ], checks=[check("G", "G-RESOLVE", "completed")], opaque=[
+            {"input": "annex/dep", "pointer": "/definitions/0/payload"},
+            {"input": "annex/dep", "pointer": "/definitions/1/payload"},
+            {"input": "annex/dep", "pointer": "/definitions/2/payload"},
+        ], prerequisite_results=[annex_results[0]], finding_mode="exact"),
+        ["G-RESOLVE:negative"], ["annex-target-unexported"],
+        schema_assertions=[
+            {"input": "annex/dep", "entry": "Document", "pointer": "", "valid": True},
+            {"input": "annex/dep", "entry": "InterfacePayload", "pointer": "/definitions/0/payload", "valid": True},
+        ],
+        fixture="annex-interface-unexported.json",
+        annexes={"dep": ("annex-interface-unexported--dep.json", annex)},
+        inherited_sections=inherited_resolution))
+
+    annex = interface_annex(transitive=True)
+    doc = primary_with_interface_annex(annex)
+    cases.append(case("annex-interface-transitive", "resolveG", doc,
+        expected("resolveG", "unsupported", findings=[
+            finding("G", "G-RESOLVE", "/graphs/0/steps/0", "unsupported"),
+        ], checks=[
+            check("G", "P-SHAPE", "completed", input_id="annex/dep"),
+            check("G", "G-TARGET", "completed", input_id="annex/dep"),
+            check("G", "G-TARGET", "excluded", "/definitions/0/payload/operations/1", input_id="annex/dep"),
+            check("G", "G-RESOLVE", "completed"), check("G", "G-TARGET", "completed"),
+            check("G", "G-TARGET", "excluded", "/graphs/0/steps/0"), check("G", "G-DATA", "completed"),
+        ], absent_states=[
+            {"input": "annex/dep", "pointerPrefix": "/definitions/0/payload"},
+        ], opaque=[
+            {"input": "annex/dep", "pointer": "/definitions/1/payload"},
+            {"input": "annex/dep", "pointer": "/definitions/2/payload"},
+        ], absent_opaque=[
+            {"input": "annex/dep", "pointer": "/definitions/0/payload"},
+        ], prerequisite_results=annex_results, finding_mode="exact"),
+        ["G-RESOLVE:unsupported", "G-TARGET:excluded"], ["transitive-annex-reference-unsupported"],
+        schema_assertions=[
+            {"input": "annex/dep", "entry": "Document", "pointer": "", "valid": True},
+            {"input": "annex/dep", "entry": "InterfacePayload", "pointer": "/definitions/0/payload", "valid": True},
+        ],
+        fixture="annex-interface-transitive.json",
+        annexes={"dep": ("annex-interface-transitive--dep.json", annex)},
+        inherited_sections=inherited_resolution))
+
+    annex = interface_annex(scope="mvp")
+    doc = primary_with_interface_annex(annex, scope="mvp")
+    graph = doc["graphs"][0]
+    call, _, success, failure = graph["steps"]
+    call["success"] = "ok"
+    success["bindings"]["y"]["step"] = "call-a"
+    graph["steps"] = [call, success, failure]
+    cases.append(case("annex-interface-key-collision", "resolveG", doc,
+        expected("resolveG", "fail", findings=[
+            finding("G", "G-RESOLVE", "/graphs/0/steps/0", "fail"),
+        ], checks=[
+            check("G", "P-SHAPE", "completed", input_id="annex/dep"),
+            check("G", "G-TARGET", "completed", input_id="annex/dep"),
+            check("G", "G-RESOLVE", "completed"), check("G", "G-TARGET", "completed"),
+            check("G", "G-TARGET", "blocked", "/graphs/0/steps/0"), check("G", "G-DATA", "completed"),
+        ], absent_states=[
+            {"input": "annex/dep", "pointerPrefix": "/definitions/0/payload"},
+        ], opaque=[
+            {"input": "annex/dep", "pointer": "/definitions/1/payload"},
+            {"input": "annex/dep", "pointer": "/definitions/2/payload"},
+        ], absent_opaque=[
+            {"input": "annex/dep", "pointer": "/definitions/0/payload"},
+        ], prerequisite_results=annex_results, finding_mode="exact"),
+        ["G-RESOLVE:negative", "G-TARGET:blocked"], ["cross-boundary-selected-key-collision"],
+        schema_assertions=[
+            {"input": "annex/dep", "entry": "Document", "pointer": "", "valid": True},
+            {"input": "annex/dep", "entry": "InterfacePayload", "pointer": "/definitions/0/payload", "valid": True},
+        ],
+        fixture="annex-interface-key-collision.json",
+        annexes={"dep": ("annex-interface-key-collision--dep.json", annex)},
+        inherited_sections=inherited_resolution))
+
     cases.append(case("interface-two-operations", "validateG", base,
         expected("validateG", "pass", checks=[check("G", "P-SHAPE", "completed"), check("G", "G-TARGET", "completed")], absent_opaque=[{"input": "primary", "pointer": "/definitions/4/payload"}]),
         ["G-TARGET:positive", "P-SHAPE:positive"], ["interface-two-operations-selected-individually"], [{"entry": "InterfacePayload", "pointer": "/definitions/4/payload", "valid": True}], "modular-system.json"))
@@ -366,14 +550,22 @@ def main():
         if path in documents and documents[path] != document:
             raise RuntimeError(f"fixture collision: {path}")
         documents[path] = document
+        for annex_path, annex_document in item.pop("_annex_docs").items():
+            if annex_path in documents and documents[annex_path] != annex_document:
+                raise RuntimeError(f"fixture collision: {annex_path}")
+            documents[annex_path] = annex_document
     artifacts = {}
     for name, document in sorted(documents.items()):
-        data = (json.dumps(document, indent=2, ensure_ascii=False) + "\n").encode()
+        data = document_bytes(document)
         (HERE / name).write_bytes(data)
         artifacts[name] = hashlib.sha256(data).hexdigest()
     for item in cases:
         path = item["primary"]
         item["primary"] = {"path": path, "sha256": artifacts[path]}
+        item["annexes"] = {
+            name: {"path": annex_path, "sha256": artifacts[annex_path]}
+            for name, annex_path in item["annexes"].items()
+        }
     manifest = {
         "format": "agsdl-modular-corpus-1", "contract": CONTRACT,
         "contractBase": CONTRACT_BASE, "contractSha256": CONTRACT_SHA256,

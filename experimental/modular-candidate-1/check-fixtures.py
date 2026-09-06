@@ -40,12 +40,13 @@ ASSESSMENT_STATES = {
 }
 RULES = {
     "P-SHAPE", "G-TARGET", "G-DATA", "G-APPROVAL",
+    "G-RESOLVE",
     "R-SELECTION", "R-BINDING", "R-TOOL", "R-CONTENT",
     "R-COMPATIBILITY", "E-PRESERVE",
 }
 UNIT_RULES = {
     "D": set(),
-    "G": {"P-SHAPE", "G-TARGET", "G-DATA", "G-APPROVAL"},
+    "G": {"P-SHAPE", "G-TARGET", "G-DATA", "G-APPROVAL", "G-RESOLVE"},
     "R": {"P-SHAPE", "R-SELECTION", "R-BINDING", "R-TOOL", "R-CONTENT", "R-COMPATIBILITY"},
     "inspect": set(),
     "exchange": {"E-PRESERVE"},
@@ -71,6 +72,8 @@ REQUIRED_SCENARIOS = {
     "external-runtime-reference-excluded", "exact-exchange-new-payload-slices",
     "exact-exchange-accounting-refusal",
     "partial-prerequisite-keeps-independent-failure",
+    "direct-annex-interface-operation", "annex-target-unexported",
+    "transitive-annex-reference-unsupported", "cross-boundary-selected-key-collision",
 }
 POINTER = re.compile(r"(?:/(?:[^~/]|~[01])*)*\Z")
 HASH = re.compile(r"[0-9a-f]{64}\Z")
@@ -134,6 +137,8 @@ def coverage_evidence(case, rule, variant):
         return any(x["rule"] == rule and x["outcome"] == "fail" for x in findings)
     if variant == "inconclusive":
         return any(x["rule"] == rule and x["outcome"] == "inconclusive" for x in findings)
+    if variant == "unsupported":
+        return any(x["rule"] == rule and x["outcome"] == "unsupported" for x in findings)
     if variant == "unknown":
         return (any(x["rule"] == rule and x["outcome"] == "inconclusive" for x in findings)
                 and any(x.get("state") == "unknown" or x.get("detail") == "unknown" for x in states))
@@ -162,6 +167,8 @@ def check_manifest(manifest):
         check=True, stdout=subprocess.PIPE,
     ).stdout
     require(hashlib.sha256(inherited_bytes).hexdigest() == inherited["sha256"], "inherited 0012 bytes changed")
+    current_inherited = (FIXTURES / "../../../proposals/0012-minimal-0.1.0-contract.md").resolve()
+    require(sha256(current_inherited) == inherited["sha256"], "current inherited 0012 bytes changed")
     schema = manifest["schema"]
     exact_fields(schema, {"path", "sha256"})
     schema_path = (FIXTURES / schema["path"]).resolve()
@@ -186,17 +193,29 @@ def check_manifest(manifest):
         require(case["operation"] in OPERATIONS, "operation")
         require(isinstance(case["schemaAssertions"], list) and case["schemaAssertions"], "schemaAssertions")
         for assertion in case["schemaAssertions"]:
-            exact_fields(assertion, {"entry", "pointer", "valid"})
+            exact_fields(assertion, {"entry", "pointer", "valid"}, {"input"})
             require(isinstance(assertion["entry"], str) and assertion["entry"], "schema entry")
             require(isinstance(assertion["pointer"], str) and POINTER.fullmatch(assertion["pointer"]), "schema pointer")
             require(isinstance(assertion["valid"], bool), "schema validity")
+            require("input" not in assertion or isinstance(assertion["input"], str) and assertion["input"], "schema input")
         require(isinstance(case["annexes"], dict), "annexes")
+        require(all(isinstance(name, str) and name and "/" not in name for name in case["annexes"]), "annex ids")
         source = case["source"]
-        exact_fields(source, {"document", "sections"})
+        exact_fields(source, {"document", "sections"}, {"inherited"})
         require((FIXTURES / source["document"]).resolve() == contract, "oracle source document")
         text = contract.read_text()
         require(isinstance(source["sections"], list) and source["sections"], "oracle source sections")
         require(all(("## " + heading) in text or ("### " + heading) in text for heading in source["sections"]), "oracle source heading")
+        if "inherited" in source:
+            inherited_source = source["inherited"]
+            exact_fields(inherited_source, {"document", "sections"})
+            inherited_path = (FIXTURES / inherited_source["document"]).resolve()
+            require(inherited_path == (FIXTURES / "../../../proposals/0012-minimal-0.1.0-contract.md").resolve(), "inherited oracle source document")
+            inherited_text = inherited_path.read_text()
+            require(isinstance(inherited_source["sections"], list) and inherited_source["sections"], "inherited oracle source sections")
+            require(all(("## " + heading) in inherited_text or ("### " + heading) in inherited_text for heading in inherited_source["sections"]), "inherited oracle source heading")
+        if any(entry.startswith("G-RESOLVE:") for entry in case["coverage"]):
+            require("inherited" in source, "G-RESOLVE oracle requires inherited source")
         require(isinstance(case["scenarios"], list) and case["scenarios"], "case scenarios")
         scenarios.update(case["scenarios"])
         exact_fields(case["primary"], {"path", "sha256"})
@@ -208,6 +227,10 @@ def check_manifest(manifest):
             require(HASH.fullmatch(artifact["sha256"]) and sha256(path) == artifact["sha256"], "fixture hash")
         source_values = {"primary": json.loads((FIXTURES / case["primary"]["path"]).read_text())}
         source_values.update({"annex/" + name: json.loads((FIXTURES / metadata["path"]).read_text()) for name, metadata in case["annexes"].items()})
+        for assertion in case["schemaAssertions"]:
+            assertion_input = assertion.get("input", "primary")
+            require(assertion_input in source_values, "schema assertion input")
+            require(pointer_value(source_values[assertion_input], assertion["pointer"])[0], "schema assertion pointer")
         if case["status"] == "blocked":
             require(case.get("blocker") and case["expected"] is None, "blocked case oracle")
             continue
@@ -225,6 +248,17 @@ def check_manifest(manifest):
             result_identities.append((item["input"], item["unit"], item["phase"]))
         require(len(result_identities) == len(set(result_identities)), "duplicate Result oracle")
         require(result_identities.count(("primary", unit, phase)) == 1, "requested Result oracle")
+        require(result_identities[-1] == ("primary", unit, phase), "requested Result must be last")
+        if unit in {"G", "R"}:
+            require(result_identities[0] == ("primary", "D", "unresolved-document"), "primary D prerequisite oracle")
+        if case["operation"] == "resolveG":
+            middle = result_identities[1:-1]
+            annex_d = [name for name, result_unit, result_phase in middle if result_unit == "D" and result_phase == "unresolved-document"]
+            annex_g = [name for name, result_unit, result_phase in middle if result_unit == "G" and result_phase == "resolved-graph"]
+            require(middle == [(name, "D", "unresolved-document") for name in sorted(annex_d)] + [(name, "G", "resolved-graph") for name in annex_g], "annex Result ordering")
+            require(set(annex_g) <= set(annex_d), "annex G missing D prerequisite oracle")
+            if any(entry.startswith("G-RESOLVE:") for entry in case["coverage"]):
+                require(set(annex_d) == {"annex/" + name for name in case["annexes"]}, "G-RESOLVE annex D coverage")
         exact_fields(expected["findings"], {"mode", "items"})
         require(expected["findings"]["mode"] in {"contains", "exact"}, "finding mode")
         for item in expected["findings"]["items"]:
@@ -241,6 +275,7 @@ def check_manifest(manifest):
             require(item["state"] in {"completed", "blocked", "excluded"}, "check state")
             require(item["unit"] in RESULT_PHASES and any(identity[:2] == (item["input"], item["unit"]) for identity in result_identities), "check Result identity")
             require(isinstance(item["locations"], list), "check locations")
+            require((item["state"] == "completed") == (item["locations"] == []), "check locations/state mismatch")
             for location in item["locations"]:
                 check_location(location)
                 if "pointer" in location:
@@ -263,7 +298,7 @@ def check_manifest(manifest):
                 require(item["input"] in source_values and pointer_value(source_values[item["input"]], item["pointer"])[0], "opaque pointer is not a source value")
         require(expected["preservation"] in {"no-output", "exact-input-boundary"}, "preservation")
         associations = set(case["coverage"])
-        require(all(re.fullmatch(r"[A-Z-]+:(?:positive|negative|unknown|inconclusive|blocked|excluded)", x) for x in associations), "coverage association")
+        require(all(re.fullmatch(r"[A-Z-]+:(?:positive|negative|unknown|inconclusive|unsupported|blocked|excluded)", x) for x in associations), "coverage association")
         for association in associations:
             rule, variant = association.split(":")
             require(rule in RULES, "unknown covered rule")
@@ -294,9 +329,11 @@ def validate_shapes(manifest):
     for case in manifest["cases"]:
         if case["status"] != "ready":
             continue
-        document = json.loads((FIXTURES / case["primary"]["path"]).read_text())
+        documents = {"primary": json.loads((FIXTURES / case["primary"]["path"]).read_text())}
+        documents.update({"annex/" + name: json.loads((FIXTURES / metadata["path"]).read_text())
+                          for name, metadata in case["annexes"].items()})
         for assertion in case["schemaAssertions"]:
-            instance = document
+            instance = documents[assertion.get("input", "primary")]
             for token in assertion["pointer"].split("/")[1:]:
                 token = token.replace("~1", "/").replace("~0", "~")
                 instance = instance[int(token)] if isinstance(instance, list) else instance[token]

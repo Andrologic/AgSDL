@@ -7,17 +7,23 @@ proposal, inherited contract, schema and fixture bytes used by its oracles.
 Candidate-2 keeps its own marker, 121 cases and evidence. No case is silently
 upgraded between the two editions.
 
-The modular corpus has 22 cases over 20 unique byte inputs. The same
+The modular corpus has 26 cases over 28 unique byte inputs. The same
 [readable system](fixtures/modular-system.json) describes two Agents, two
 configurations for one graph, different engine assignments, engine-specific
 tool parameters, shared Instructions and a Skill dependency. Its Interface has
 two addressable operations. Separate inputs cover sequential approval gates and
 the negative or partial cases.
 
+Four focused `resolveG` cases add direct annex coverage. They select the second
+operation of an exported Interface, reject an unexported target, retain the
+explicit transitive-resolution limit and preserve observable annex payload
+checks during a cross-boundary key collision.
+
 ## What the corpus covers
 
-The manifest indexes every rule added or changed by proposal 0013, plus exact
-exchange for the new payloads:
+The manifest indexes every rule added or changed by proposal 0013, the inherited
+G-RESOLVE boundary exercised by its Interface payload, and exact exchange for
+the new payloads:
 
 | Rule | Witnesses |
 | --- | --- |
@@ -25,6 +31,7 @@ exchange for the new payloads:
 | G-TARGET | An Interface with two operations and a missing selected operation. |
 | G-DATA | Inputs available before two gates and inputs unavailable at both gates. |
 | G-APPROVAL | A valid two-gate chain, refusal bypass and an invalid call link. |
+| G-RESOLVE | A direct exported Interface operation, an unexported target, a transitive Ref and a selected-key collision. |
 | R-SELECTION | Explicit selection, absent selection and an unknown id. |
 | R-BINDING | Exact two-Agent coverage and a missing binding. |
 | R-TOOL | A selected implementation with opaque parameters and a missing ToolBinding. |
@@ -76,8 +83,10 @@ review.
 
 ## Reader interface for phases C and D
 
-No modular reader is implemented in this delivery. Phase C and D implementers
-should keep separate code paths and must not relabel candidate-2 reports.
+This corpus extension does not add or modify a reader. The Python modular reader
+is integrated separately; cross-reader comparison still awaits the JavaScript
+path. Reader implementations must keep separate code paths and must not relabel
+candidate-2 reports.
 For each ready case, invoke a reader once with this JSON object on stdin:
 
 ```json
