@@ -253,8 +253,10 @@ without making a selected configuration fail for unfilled alternative choices.
 Malformed records still fail P-SHAPE in every configuration.
 
 For each selected AgentBinding, engine requirements are the set union of its
-requires, the requires of every observed applied Instructions/Skill, and the
-format Editions of applied Instructions and adapter Editions of Applications.
+requires, the requires of every observed Instructions/Skill in the required
+directedBy/dependencies closure, the format Editions of those Instructions,
+and adapter Editions of declared Applications. Required content contributes
+these intrinsic requirements even when its Application is missing.
 Tool requirements are the requires in its Tool payload and are compared to the
 selected Implementation claims. All claims identify exact Editions; duplicates
 per claim array fail even if their status agrees. Unknown claim Editions are
@@ -271,12 +273,22 @@ For each required capability at each affected AgentBinding or ToolBinding:
    `declared-supported`. An observed empty requirement set also reaches this
    state if the engine/implementation is supplied.
 
+Each missing required Application additionally contributes `not-provided` at
+its AgentBinding, independently of the capability assessments. A missing local
+required content target contributes not-provided there; an external target
+contributes unknown. Neither omission erases requirements from other observed
+content. For example, a supplied engine declaring an observed required capability
+unsupported remains incompatible when that content's Application is missing:
+R-CONTENT fails and R-COMPATIBILITY emits both fail and inconclusive.
+
 Record one aggregate assessment State per binding with precedence incompatible,
 not-provided, unknown, declared-supported. For findings, collect the contributing
-capability assessments: emit fail if any is incompatible and inconclusive if any
-is not-provided or unknown, coalescing each location/outcome separately. Assessment is blocked, not fabricated, when its
-structural prerequisites are malformed or ambiguous. A known incompatible
-capability is still reported when an independent requirement is unknown.
+capability and omission assessments: emit fail if any is incompatible and
+inconclusive if any is not-provided or unknown, coalescing each location/outcome
+separately. Malformed or ambiguous structural prerequisites block dependent
+assessment checks and the aggregate State. Independent requirements still
+produce their findings, including a known incompatibility when another portion
+is blocked or unknown.
 The declaration is not factual compatibility verification. Evidence hashes are
 identities of assertions, not authentication or test results; no evidence content
 is retrieved. Tools with effects unknown additionally make their assessment
