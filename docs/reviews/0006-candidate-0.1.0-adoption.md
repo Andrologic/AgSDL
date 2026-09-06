@@ -1,18 +1,131 @@
 # Candidate 0.1.0 adoption review dossier
 
 - Date: 2026-09-06.
-- Status: preparation for maintainer review; no adoption decision.
-- Evidence source revision: `4a43c5ee645b271b5640bd780b109c16ea380b08`.
-- Experimental edition: `proposal-0012-candidate-2`.
+- Status: documentary preparation, points 47/49; no adoption decision.
+- Preparation base: `b5c97f692d3f9446988f0a79c07412c0b558e585`.
+- Current experimental edition: `proposal-0013-candidate-1`.
 
-This dossier separates observed facts, deductions, open recommendations and
-pending decisions. It does not amend a proposal, establish a redesign, or make
-product integration a prerequisite. [Decision 0001](../decisions/0001-specification-before-syntax.md),
-[Decision 0004](../decisions/0004-approved-design-directions.md) and the
-[repository boundary](../scope.md) remain in force. The maintainer can select D
-alone or a scope including G and/or R, subject to their D prerequisites.
+This dossier separates recorded facts, deductions, recommendations and pending
+choices. [Decision 0001](../decisions/0001-specification-before-syntax.md),
+[Decision 0004](../decisions/0004-approved-design-directions.md),
+[CONTRIBUTING](../../CONTRIBUTING.md) and the [repository boundary](../scope.md)
+govern any later adoption. Proposal 0013 remains experimental. Preparing this
+dossier does not change normative text or authorize publication.
 
-## Evidence and status
+## Current facts and evidence, 2026-09-06
+
+The maintainer's directions recorded in [proposal 0013](../../proposals/0013-modular-mvp-contract.md)
+establish reusable Agent and graph definitions, several configurations for one
+graph, per-Agent engine choices, explicit Tool implementations and reusable
+Instructions/Skills where compatible. Multiple addressable Interface operations
+and sequential approvals for one call are required for the modular MVP.
+These needs are settled for this work. Their exact record shapes and rules
+still require adoption.
+
+A configuration stays fixed for an execution. Changes require stopping, editing
+and starting a new execution. Required capabilities cannot be silently removed
+or replaced; unknown support is not readiness. No required product integration,
+hot reload, state migration or real-engine demonstration is a delivery gate.
+
+| Evidence at the preparation snapshot | Status and limit |
+| --- | --- |
+| Lot A, `280347eec4e2e051d296f9271bfccc86c98d4d40` | Modular proposal and derived experimental schemas integrated; proposed semantics only. |
+| Lot B corpus and comparator, including `1c796de9c457a4166064c7f5555a052b09f893ff` | Integrated at the preparation base. The manifest has 26 cases, including four direct-annex resolveG cases. |
+| Python, `512056a8e5e324651ab40d5f4e29541098ea5129` | Integrated and independently audited. The orchestration handoff reports that the original 22 observations and four added resolveG cases pass with Python. This dossier does not rerun or extend that reader audit. |
+| Modular JavaScript | Still active at this dated handoff; no completion claimed here. |
+| Modular cross-reader comparison | Not yet performed at this snapshot. No agreement, zero-mismatch result or completed evidence gate is claimed. |
+
+The [modular corpus and comparison contract](../../experimental/modular-candidate-1/README.md)
+and [manifest](../../experimental/modular-candidate-1/fixtures/manifest.json)
+identify the current inputs, oracles and pinned source bytes. A later evidence
+lot will record both reader SHAs, the exact corpus revision, commands, retained
+raw reports, failures and exclusions after comparison. It must update this dated
+status rather than anticipate success. Repository checks verify documentation
+and corpus bookkeeping; they do not replace that comparison.
+
+## What supersedes candidate-2
+
+The 121-case comparison retained below remains evidence for its own edition.
+The following limits no longer describe the requested MVP scope.
+
+| Historical candidate-2 limit | Established need and proposed 0013 response |
+| --- | --- |
+| One action and port pair per selected Interface | One messaging Interface can expose `draft` and `send`. Invoke explicitly selects an operation id within that Interface; Action and Ports follow that operation. Splitting the Interface is no longer the recommended workaround. |
+| At most one immediate approval gate | Legal then financial approval can protect the same send call. Each gate names that call; refusal cannot reach it or a later gate. Batch approval, reuse, parallel approval and quorum remain outside this candidate. |
+| One subjectless Selection | One configuration can bind writer to engine A and researcher to engine B. Another configuration can change those assignments while retaining Agent and graph definitions. Repeated calls of one Agent share one binding within a configuration. |
+
+These examples explain the delta; they are not new normative rules. A G pass
+checks declared paths and data availability, not human authentication or timely
+approval. An R assessment records declarations, including unknown and
+not-provided states. Even declared-supported proves no actual compatibility,
+evidence authenticity or permission to launch.
+
+## Remaining Principal decision
+
+Facts: [proposal 0002](../../proposals/0002-core-conceptual-model.md), open
+question 15, and Decision 0004 reserve the precise Agent-to-Identity meaning.
+Proposal 0013 retains the candidate-2 constraint: an Agent has exactly one
+`actsAs` Principal reference, and `invoke.principal` equals that target.
+An Agent Key identifies a definition. The Principal definition declares an
+accountable actor or actor class. Configuration selects an engine, tools and
+content; it has no Principal selection field. Authenticated occurrence identity
+remains external evidence.
+
+For example, Agent `reviewer` actsAs Principal `review-service`. Configuration
+`local` chooses engine A and configuration `remote` chooses engine B. Both
+invocations still name `review-service`. Neither engine choice authenticates a
+person or grants authority. Two different Agent definitions may also share that
+Principal without becoming the same Agent definition.
+
+Deduction: configuration `customer-a` cannot change this same Agent's Principal
+to `customer-a-actor`, nor can `customer-b` change it to `customer-b-actor`.
+Changing only invoke.principal breaks the retained agreement. Separate Agent
+definitions with their own actsAs relations can describe separate roles, but
+that changes the described Agent identities; it is not configuration-only
+rebinding or an established lossless conversion.
+
+| Actual pending choice | Consequence |
+| --- | --- |
+| Retain the proposed Principal constraint for adoption | Record the definition-key meaning and reconcile 0002. Engine portability leaves the declared Principal unchanged. Runtime authentication remains external. |
+| Amend the candidate to permit configuration-level Principal rebinding | First specify the actor relation, cardinality, invoke agreement and approval scope, then update contract and evidence. No binding field or runtime identity model is assumed by this dossier. |
+| Defer this adoption choice | Preserve experimental status for the affected scope and record its consequence for the release decision. |
+
+Recommendation: retain the current constraint unless the maintainer requires
+configuration-only actor changes. It is implementable and keeps engine selection
+separate from actor declaration. This recommendation neither decides the open
+choice nor requires a redesign. It does not reopen per-Agent engine selection.
+
+## Adoption record and application sequence
+
+The remaining decision is whether to accept, amend or defer the precise modular
+contract and release units, with their prerequisites and limits. A reduced
+release scope would need an explicit disposition of the established MVP needs;
+the historical single-operation, single-gate and subjectless-selection options
+are not equivalent ways to meet them. Implementation agreement alone adopts
+neither C1-C10 nor official feature identities.
+
+Recommendation: prepare the decision text now, then attach the separate modular
+comparison evidence before closing adoption review. Record the Principal choice,
+selected units, exact proposal edition and any amendments. Reconcile proposals
+0002, 0003 and 0011 with the inherited 0012 rules and 0013 replacements.
+Direct supplied dependency resolution and unsupported transitive resolution,
+required extension interpretation and unknown classification retain their
+explicit limits. Approval expiry declarations do not establish timing feasibility.
+
+The [delivery plan](../plans/2026-09-05-0.1.0-delivery.md) defines completion gates
+for application and release review. After an adoption decision, place only the
+adopted semantics in spec, derive schemas and official report/feature identities,
+then update fixtures and both readers for that exact edition. Replay both
+implementations and retain new evidence. Experimental reports cannot be relabelled
+as normative results. Close independent delivery review against the adopted scope
+before seeking separate publication authorization.
+
+## Historical candidate-2 evidence
+
+This section preserves the completed experiment at
+`4a43c5ee645b271b5640bd780b109c16ea380b08`, edition
+`proposal-0012-candidate-2`. Its results and reproduction commands apply to that
+checkout only. They do not close the modular comparison or adoption gates.
 
 The source revision integrates the candidate contract, three experimental
 schemas, a 121-case corpus and separately implemented Python and JavaScript
@@ -106,128 +219,3 @@ The original reports remain in
 `/private/tmp/agsdl-010-orchestration/comparison-2/`. They describe that earlier
 contract and implementations, not the final snapshot. The clarification and
 reader corrections listed above supersede its unresolved report differences.
-
-The experimental evidence step can now close for the pinned candidate. The
-three conceptual choices below remain open. Agreement does not select release
-scope or turn experimental identifiers into official feature identities.
-
-## Choice 1: Agent definition identity and Principal identity
-
-**Facts.** Decision 0004, “Consequences and limits”, reserves the exact meaning
-of the Agent-to-Identity relation. [Proposal 0002](../../proposals/0002-core-conceptual-model.md),
-open question 15, still leaves it open. Proposal 0012, “Concepts and invariants before
-representation”, recommends that the Agent's key is its unique definition identity,
-with exactly one `actsAs` reference to a Principal definition. It infers no
-acting identity, authentication, authority or runtime instance.
-
-**Example.** Distinct Agent definitions `writer` and `reviewer` can both act as
-Principal `editorial-team`. That Principal can describe two scoped identities.
-This does not create four Agent definitions, identify an authenticated account
-for a call, or establish that either identity has permission. D leaves the
-Principal payload opaque; it does not validate a general identity registry.
-
-| Pending option | Effect for an integrator |
-| --- | --- |
-| Accept the proposed definition-key interpretation and reconcile 0002 | Deduplicate descriptions by Agent key; follow `actsAs` separately to the actor. Authentication and runtime instance identity need separate evidence. |
-| Amend the interpretation/cardinality before adoption | Specify what the additional identity relation identifies and how it differs from Principal identity; revise text, fixtures and readers before claiming agreement on it. |
-| Defer the identity choice | Keep the candidate experimental; do not present its interpretation as the adopted Agent identity model. |
-
-**Open recommendation.** The definition-key interpretation is reasonable and
-keeps distinct concepts separate. No supplied need establishes a separate
-Identity registry as necessary. This is a recommendation, not an acceptance
-of C1 or a closure of question 15.
-
-## Choice 2: bounded G, Interface operations and approval
-
-**Facts.** Proposal 0002, “Interface” and its relationship table, allows one
-Interface to contain multiple Interface operations; each operation makes an
-Action available. Proposal 0012, “G: closed simple-graph grammar”, gives a selected
-Interface payload exactly one `action` and one pair of input/output maps.
-An invocation must match that Action and those maps. G checks selected payloads,
-not full Interface validity under 0002.
-
-**Deduction and example.** A messaging Interface with `draft` and `send`
-operations cannot retain both operations as a single selected G Interface.
-The two operations have different Actions and inputs. Splitting it into two
-Interface definitions changes the described boundary identities; it is not an
-identity-preserving conversion already authorized by this candidate.
-
-| Pending option | Effect for an integrator |
-| --- | --- |
-| Adopt G only for Interfaces with one operation, with an explicit conceptual correspondence | A selected Interface's action/maps describe its sole operation. Multioperation Interfaces remain outside G coverage; the correspondence itself must be adopted in reviewed text. |
-| Require multioperation Interface coverage in 0.1.0 | Amend operation selection and identity/mapping rules before adoption, then update schemas, fixtures and both readers. |
-| Defer G | Keep D inspection/exchange of opaque payloads without a claim of graph validation for those Interfaces. |
-
-**Open recommendation.** A bounded G is viable if the single-operation
-correspondence and exclusions are explicit. The evidence does not establish a
-need to redesign the complete Interface model, nor does it establish that
-multioperation coverage can be omitted from the maintainer's chosen scope.
-
-**Facts about approval.** The same G section permits at most one approval gate
-for an immediate invocation. Its approved edge is that invocation's only
-incoming edge. A decision is by one declared human Principal; validation does
-not authenticate that human. The interval starts on entering the gate and is
-`min(timeoutMs, validForMs)`. There is no graph-level timeout, approval reuse,
-or executable decision intake API. Cycles and parallelism are also outside G.
-Decision 0004's general accounting for several Authorization decisions on one
-Action occurrence does not automatically adopt this narrower gate contract.
-
-**Example and pending decision.** Sequential legal and financial approvals for
-one call, or one approval covering a batch of calls, are outside this G
-contract. If G is retained, either accept that limit explicitly as simple graph
-coverage, or amend the candidate and rerun evidence if those scenarios are
-required. Integrators must not interpret a G pass as general authorization,
-permission enforcement or a successful human approval run.
-
-## Choice 3: scope of R selection
-
-**Facts.** Proposal 0012, “R: closed runtime-declaration grammar”, gives each
-Requirement a local definition `subject`. The document has at most one
-Selection with one engine and one interface, optional model/provider/hosting,
-and evidence claims. Selection has no subject or Deployment reference. D knows
-Runtime and Deployment kinds, but their existence creates no R assignment.
-Open engine identifiers, no inferred default, and unassessed evidence do not
-settle the selection's scope or cardinality.
-
-**Deduction and example.** Requirements can name Agent `writer` and Agent
-`researcher`, but R cannot assign a local engine to the first and a remote
-engine to the second. Naming both engines elsewhere in opaque definitions
-would not make those assignments R-validated. A common document-wide choice
-is one possible interpretation, not an established meaning of the current
-subjectless Selection.
-
-| Pending option | Coverage, cost and integrator consequence |
-| --- | --- |
-| Define R as one common selection for the document | Requires an explicit scope rule and corresponding evidence. Keeps one selection and the smaller grammar, but cannot express heterogeneous per-Agent assignments. Splitting documents is not an established lossless substitute for one System. |
-| Support heterogeneous assignments in R | Requires a reviewed subject/assignment model and cardinality, including applicability, conflicts, requirement evidence and any relationship to Deployment. Costs text, schema, fixture and reader changes; enables explicit assignments without implying execution support. |
-| Defer R | Preserve runtime metadata as opaque where allowed, without claiming validated engine assignments. |
-
-**Open recommendation.** Decide from the configurations 0.1.0 must describe.
-Both common selection and heterogeneous assignment are coherent directions;
-this dossier gives neither priority. Neither can be inferred from the demand
-for open engine identities. An R pass would still cover declarations, not
-compatibility, readiness, evidence authenticity or runtime behavior.
-
-## Adoption record still required
-
-**Pending decisions.** Record the selected units; the Agent identity meaning;
-the Interface correspondence and approval limits if G is retained; and the
-selection scope if R is retained. Accept, amend or defer each explicitly.
-Then reconcile proposals 0002, 0003 and 0011 with 0012 and Decisions 0001/0004.
-C3-C7 and C10 remain candidate choices for that review, not individually
-approved decisions merely because two readers implement them.
-
-Two other limits belong in any adopted scope statement. Resolution uses only
-direct supplied dependencies: a selected imported Agent needing a third-party
-Interface can yield unsupported. Semantic extension interpretation is not
-implemented in this edition; required interpretation is unsupported and
-unknown classification is inconclusive. A third-party implementation's added
-support cannot be silently reported as this candidate's positive semantics.
-Vendor independence does not establish arbitrary composition or extension
-support.
-
-**Recommended sequence.** Obtain the separate scope decision; apply adopted text and official identities;
-replay against that edition; complete release review. The
-[delivery plan](../plans/2026-09-05-0.1.0-delivery.md) keeps adoption, normative
-application and publication pending. No product dependency or external runtime
-run is required to prepare this dossier.
