@@ -1,8 +1,8 @@
 {
   "format": "agsdl-candidate-corpus-1",
   "contract": "proposal-0012-candidate-2",
-  "contractBase": "b02c7933f33e439bc45c94e01e96dfb7b77c6eb4",
-  "contractSha256": "872e5fa38f3e52828e64678c8a212ff5591f8bb21d5f34a24a3ebc768cdfce8e",
+  "contractBase": "40f9a8b28a957c6dad7fdd065fd10e29fa611eae",
+  "contractSha256": "c2247e8b821544a34eeb93c9c2d75f42777f5a5ac2c9cb62bd6eebcfd4748c9a",
   "coverage": {
     "P-SYNTAX": {
       "cases": {
@@ -17,7 +17,24 @@
           "invalid-utf8",
           "trailing-content",
           "unexpected-eof",
-          "number-leading-zero"
+          "number-leading-zero",
+          "surrogate-high-unpaired",
+          "surrogate-high-nonlow",
+          "surrogate-low-unpaired",
+          "surrogate-high-eof",
+          "surrogate-high-before-unrelated-escape",
+          "unicode-escape-invalid-digit",
+          "unicode-escape-truncated",
+          "surrogate-second-invalid-digit",
+          "surrogate-second-truncated",
+          "utf8-invalid-continuation",
+          "utf8-truncated-sequence",
+          "surrogate-high-multibyte-prefix",
+          "surrogate-nonlow-multibyte-prefix",
+          "surrogate-low-multibyte-prefix",
+          "surrogate-second-invalid-multibyte-prefix",
+          "utf8-continuation-multibyte-prefix",
+          "utf8-truncated-multibyte-prefix"
         ]
       },
       "limits": "Rule-level witnesses, not exhaustive combinatorial coverage of every prose subclause."
@@ -9484,6 +9501,975 @@
           }
         ],
         "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-high-unpaired",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-high-unpaired.json",
+        "sha256": "8c0c59dd0d275aadcd462a5fe12eb352cbdfeaf961eae4f85a4660521df7d2f5"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 1
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-high-nonlow",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-high-nonlow.json",
+        "sha256": "a064ded5d950e5e7062f06533a7c93c6f169c4b5f88bb970bf72cc56809d588b"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 1
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-low-unpaired",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-low-unpaired.json",
+        "sha256": "353c7370beca95e64c258c908edac60c2ab30d355ca1b5b7fc31c5bce4a4c65a"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 1
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-high-eof",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-high-eof.json",
+        "sha256": "b7b5d4359a9020c5b64f0b516bf225a91e90b11245ff963fb700efb4f0e4af71"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 1
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-high-before-unrelated-escape",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-high-before-unrelated-escape.json",
+        "sha256": "24f3fae62b713a9a15e44c8e471f054e93f2ee66810c06437feee36bc7d04d92"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 1
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "unicode-escape-invalid-digit",
+      "status": "ready",
+      "primary": {
+        "path": "unicode-escape-invalid-digit.json",
+        "sha256": "3e4656efbb1cd4b46b1facac99c82035a3e62574b8e24fd0d5e88424a4d45bbd"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 5
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "unicode-escape-truncated",
+      "status": "ready",
+      "primary": {
+        "path": "unicode-escape-truncated.json",
+        "sha256": "a5565e9bd7e8ddbc0a6e9f8619e07b49bfe956b372f1f0d996617796daa49c5c"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 6
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-second-invalid-digit",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-second-invalid-digit.json",
+        "sha256": "f296924ca70a2955dfca6290325124ec3b1c1e9775835b059d153d99c9d98e28"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 11
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-second-truncated",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-second-truncated.json",
+        "sha256": "d3e073af5881231df6bc59a06045035a797ed9aca178f4a79d7bd12edf738a69"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 11
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "utf8-invalid-continuation",
+      "status": "ready",
+      "primary": {
+        "path": "utf8-invalid-continuation.json",
+        "sha256": "ea912b7a5ff21fe5fc9f726af6d282125f84320d0a4482ccf3e4bdb4df58058a"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 2
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "utf8-truncated-sequence",
+      "status": "ready",
+      "primary": {
+        "path": "utf8-truncated-sequence.json",
+        "sha256": "04d07d17077b551814f8a654d0efa8d53015f6c6a95548d7945e0c2179a3dbcb"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 3
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-high-multibyte-prefix",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-high-multibyte-prefix.json",
+        "sha256": "4cac6ab2e24b4a1053ec5ea61af375641a38742b620a7501736e0213b1b5d053"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 3
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-nonlow-multibyte-prefix",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-nonlow-multibyte-prefix.json",
+        "sha256": "306f8dcd4d66a19c78dfa998f47d70a643ad1706dab93e5d6a1580d5c1857cf5"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 3
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-low-multibyte-prefix",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-low-multibyte-prefix.json",
+        "sha256": "8e4f8f49968bd9d058ff614afcdc6e4b2c6839c835ebf0a8ff91a5adb10a6c6e"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 3
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "surrogate-second-invalid-multibyte-prefix",
+      "status": "ready",
+      "primary": {
+        "path": "surrogate-second-invalid-multibyte-prefix.json",
+        "sha256": "1e0030198a5af3ad55e9ff688f5bc85b30b679062c0f9eb986ffb3de787ff48b"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 13
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "utf8-continuation-multibyte-prefix",
+      "status": "ready",
+      "primary": {
+        "path": "utf8-continuation-multibyte-prefix.json",
+        "sha256": "d24b2c6f1a44dd81f7e7ddbb582cb49b15e2ff0e28121d6b13312280190350eb"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 4
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "utf8-truncated-multibyte-prefix",
+      "status": "ready",
+      "primary": {
+        "path": "utf8-truncated-multibyte-prefix.json",
+        "sha256": "d8822f1685db71594c37b4fa93f0e7459586f4f7ed0b8e833a8623fe02cc84ff"
+      },
+      "annexes": {},
+      "operation": "inspect",
+      "source": {
+        "document": "../../../proposals/0012-minimal-0.1.0-contract.md",
+        "section": "Exact results, locations and experimental diagnostics: P-SYNTAX Unicode byte witnesses, clarification commit 40f9a8b28a957c6dad7fdd065fd10e29fa611eae."
+      },
+      "coverage": [
+        {
+          "rule": "P-SYNTAX",
+          "variant": "negative"
+        }
+      ],
+      "reviewWitnesses": [],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "inspect",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "inspect",
+              "rule": "P-SYNTAX",
+              "location": {
+                "byte": 5
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "unchecked"
+          }
+        ],
         "absentStates": [],
         "opaque": [],
         "absentOpaque": [],

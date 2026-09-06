@@ -3,11 +3,13 @@
 Experimental implementation of [proposal 0012, candidate-2](../../../proposals/0012-minimal-0.1.0-contract.md).
 This is not an adopted AgSDL implementation or a conformance claim.
 
-Semantic source: repository revision
-`b02c7933f33e439bc45c94e01e96dfb7b77c6eb4`, proposal file SHA-256
-`872e5fa38f3e52828e64678c8a212ff5591f8bb21d5f34a24a3ebc768cdfce8e`.
-The Python implementation and its tests were written from that text without
-reading or importing another reader, a shared validator engine or SDK.
+Initial semantic source: repository revision
+`b02c7933f33e439bc45c94e01e96dfb7b77c6eb4`. The Python implementation and its tests
+were written from that text without reading or importing another reader, a
+shared validator engine or SDK. Unicode diagnostic locations are clarified by
+proposal commit `40f9a8b28a957c6dad7fdd065fd10e29fa611eae`; the current proposal
+file SHA-256 is `c2247e8b821544a34eeb93c9c2d75f42777f5a5ac2c9cb62bd6eebcfd4748c9a`.
+The existing parser passes the added byte witnesses without a code change.
 
 ## Local CLI
 
@@ -91,15 +93,12 @@ recursion limit and memory availability. Such a host error is not a pass or a
 new AgSDL language restriction. No source-network or runtime evidence is claimed.
 
 
-Pending candidate clarification: unpaired surrogate locations
------------------------------------------------------------
+## Unicode diagnostic clarification
 
-The JSON byte sequences `"\ud800"` (hex `225c756438303022`) and
-`"\ud800\u0041"` (hex `225c75643830305c753030343122`) are rejected with
-P-SYNTAX at byte 1, the initial escape. Candidate-2 does not explicitly settle
-whether this location should instead identify the byte revealing that a valid
-pair cannot follow. For the first witness that would be the closing quote at
-byte 7; for the second, the first incompatible low-surrogate hexadecimal digit
-at byte 9. Recommendation: specify these witnesses, together with truncation at
-EOF, before comparison or adoption. This reader retains its existing escape-start
-convention pending that decision; it does not amend the proposal.
+The candidate now fixes the backslash location for lexically complete unpaired
+surrogate escapes. Malformed or truncated candidate second Unicode escapes keep
+their lexical error location; invalid UTF-8 continuations and truncated sequences
+keep their offending-byte or EOF locations. The proposal's exact byte witnesses
+and the corpus manifest record this clarification and its source revision.
+This closes the previously recorded diagnostic ambiguity for candidate-2 only.
+It does not establish normative adoption or full report agreement between readers.
