@@ -444,6 +444,14 @@ test('additional content keeps semantic checks without extending engine requirem
   }
 });
 
+test('an unreadable Agent Ref preserves independent binding child checks',()=>{
+  const d=source(),a=d.runtime.configurations[0].agents[0];a.agent=null;
+  a.tools[0].choices.push(structuredClone(a.tools[0].choices[0]));a.tools[0].selected='missing';a.applications[0].content={scope:'mvp',id:'missing-content',version:'1'};
+  const r=result(execute('validateR',d),'R');
+  for(const detail of['Duplicate Implementation id','Selected Implementation missing','Local target does not exist'])assert.ok(r.findings.some(f=>f.details.includes(detail)));
+  assert.ok(r.checks.some(c=>c.rule==='R-COMPATIBILITY'&&c.state==='blocked'));
+});
+
 test('an empty graph entry blocks path lookup',()=>{
   const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));

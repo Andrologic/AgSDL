@@ -239,6 +239,7 @@ export function validateR(ctx, inventory) {
     if (!Array.isArray(configuration.agents)) for (const rule of ['R-BINDING', 'R-TOOL', 'R-CONTENT']) result.mark(rule, 'blocked', cp);
 
     const groups = new Map();
+    const unindexed = [];
     for (const [ai, binding] of bindings.entries()) {
       const ap = `${cp}/agents/${ai}`;
       if (!S.object(binding)) {
@@ -272,6 +273,7 @@ export function validateR(ctx, inventory) {
       } else {
         structuralBlocked = true;
         bindingIndexComplete = false;
+        unindexed.push(item);
       }
     }
 
@@ -282,7 +284,7 @@ export function validateR(ctx, inventory) {
         result.find('R-BINDING', cp, 'AgentBinding coverage differs from graph Agents');
       }
     }
-    analyses.set(configuration, { cp, groups, used, structuralBlocked });
+    analyses.set(configuration, { cp, groups, unindexed, used, structuralBlocked });
   }
 
   function analyzeBinding(item, assess, forceAssessmentBlocked) {
@@ -799,6 +801,7 @@ export function validateR(ctx, inventory) {
     for (const [identity, matches] of analysis.groups) {
       for (const item of matches) analyzeBinding(item, isSelected, analysis.structuralBlocked || matches.length !== 1 || !needed.has(identity));
     }
+    for (const item of analysis.unindexed || []) analyzeBinding(item, isSelected, true);
     if (isSelected && analysis.structuralBlocked) result.mark('R-COMPATIBILITY', 'blocked', analysis.cp);
   }
 
