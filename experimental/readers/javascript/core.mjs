@@ -31,6 +31,12 @@ export class Result {
 export function context(id,bytes,annexes={}) { const parsed=parse(bytes); return {id,...parsed,annexes,defs:new Map(),deps:new Map(),selected:new Set()}; }
 export function rows(ctx,name,type) { return Array.isArray(ctx.tree?.[name]) ? ctx.tree[name].map((v,i)=>({v,p:`/${name}/${i}`,ok:S.valid(type,v)})) : []; }
 export function lookup(ctx,k) { const found=ctx.defs.get(key(k));return found?.length===1?found[0]:null; }
+export function localIndexComplete(ctx) {
+  return S.valid(S.Key,ctx.tree?.root?.key)&&Array.isArray(ctx.tree?.definitions)&&ctx.tree.definitions.every(definition=>S.object(definition)&&S.valid(S.Key,definition.key));
+}
+export function dependencyIndexComplete(ctx) {
+  return Array.isArray(ctx.tree?.dependencies)&&ctx.tree.dependencies.every(dependency=>S.object(dependency)&&typeof dependency.id==='string'&&dependency.id.length);
+}
 export function build(ctx) {
   const d=ctx.tree;
   if(S.valid(S.Key,d?.root?.key))ctx.defs.set(key(d.root.key),[{v:d.root,p:'/root',root:true,ctx}]);
@@ -45,12 +51,13 @@ export function declaration(ctx,ref,kind,result,rule,p) {
   if(ext(ref)) {
     const ds=ctx.deps.get(ref.dependency);
     if(ds?.length===1&&!S.valid(S.Key,ds[0].v.rootKey)){result.mark(rule,'blocked',p);return false;}
+    if(!ds?.length&&!dependencyIndexComplete(ctx)){result.mark(rule,'blocked',p);return false;}
     if(!ds?.length || (ds.length===1&&ref.key.scope!==ds[0].v.rootKey.scope)) {result.find(rule,p,'External dependency or scope does not match');return false;}
     if(ds.length!==1){result.mark(rule,'blocked',p);return false;}
     return true;
   }
   const found=ctx.defs.get(key(ref));
-  if(!found?.length&&!Array.isArray(ctx.tree?.definitions)){result.mark(rule,'blocked',p);return false;}
+  if(!found?.length&&!localIndexComplete(ctx)){result.mark(rule,'blocked',p);return false;}
   if(!found?.length){result.find(rule,p,'Local target does not exist');return false;}
   if(found.length!==1){result.mark(rule,'blocked',p);return false;}
   if(kind&&!S.valid(found[0].root?S.Root.fields.kind:S.Kind,found[0].v.kind)){result.mark(rule,'blocked',p);return false;}
@@ -75,10 +82,10 @@ export function modes(ctx,r,op) {
     else if(m===undefined||m==='unknown')r.find('X-MODE',row.p,'Extension interpretation unknown','inconclusive');
   }
 }
-export function validateD(ctx) {
+export function validateD(ctx, expectedContract=contract) {
   const r=new Result(ctx.id,'D','unresolved-document',D_RULES);r.boundary();
   if(ctx.error){r.find('P-SYNTAX',ctx.error.byte,'Invalid UTF-8 JSON','fail',true);for(const rule of D_RULES.filter(x=>x!=='P-SYNTAX'))r.mark(rule,'blocked','');ctx.d=r.finish();return ctx.d;}
-  r.mark('P-SYNTAX');r.shape(S.Document,ctx.tree);build(ctx);const d=ctx.tree;
+  r.mark('P-SYNTAX');r.shape(S.DocumentFor(expectedContract),ctx.tree);build(ctx);const d=ctx.tree;
   if(!S.object(d)){for(const rule of D_RULES.filter(x=>!x.startsWith('P-')))r.mark(rule,'blocked','');ctx.d=r.finish();return ctx.d;}
   const rootOK=S.valid(S.Key,d.root?.key)&&S.valid(S.Root.fields.kind,d.root?.kind), defs=rows(ctx,'definitions',S.Definition), rels=rows(ctx,'relations',S.Relation), deps=rows(ctx,'dependencies',S.Dependency), defers=rows(ctx,'unresolved',S.Deferral);
   const blockArray=(name,rules)=>{if(!Array.isArray(d[name]))for(const rule of rules){
@@ -131,7 +138,7 @@ export function validateD(ctx) {
   const exported=new Set();if(Array.isArray(d.exports)){
     if(S.valid(S.Root.fields.kind,d.root?.kind)&&((d.root.kind==='Fragment'&&!d.exports.length)||(d.root.kind==='System'&&d.exports.length)))r.find('D-EXPORT','/exports','Root export requirement');
     if(!S.valid(S.Root.fields.kind,d.root?.kind))r.mark('D-EXPORT','blocked','/exports');
-    for(const [i,k]of d.exports.entries()){const p=`/exports/${i}`;if(!S.valid(S.Key,k)){r.mark('D-EXPORT','blocked',p);continue;}r.mark('D-EXPORT');const found=ctx.defs.get(key(k));if(found?.length>1)r.mark('D-EXPORT','blocked',p);else if(!found||found[0].root||exported.has(key(k)))r.find('D-EXPORT',p,'Export is not a unique local definition');exported.add(key(k));}
+    for(const [i,k]of d.exports.entries()){const p=`/exports/${i}`;if(!S.valid(S.Key,k)){r.mark('D-EXPORT','blocked',p);continue;}const found=ctx.defs.get(key(k)),duplicate=exported.has(key(k));if(found?.length>1||(!duplicate&&!found?.[0]?.root&&!localIndexComplete(ctx)))r.mark('D-EXPORT','blocked',p);else{r.mark('D-EXPORT');if(!found||found[0].root||duplicate)r.find('D-EXPORT',p,'Export is not a unique local definition');}exported.add(key(k));}
   }
   const seenDef=new Set(), validDef=new Set();
   for(const x of defers){if(!x.ok){r.mark('D-DEFERRAL','blocked',x.p);continue;}r.mark('D-DEFERRAL');const a=lookup(ctx,x.v.subject);const ar=rels.filter(y=>S.valid(S.Key,y.v?.source)&&equal(y.v.source,x.v.subject)&&S.valid(S.Relation,{source:y.v.source,relation:y.v.relation,target:y.v.target,expectedKind:y.v.expectedKind}));
