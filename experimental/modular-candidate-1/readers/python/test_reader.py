@@ -41,9 +41,9 @@ def states(value, pointer):
 
 
 class CorpusTests(unittest.TestCase):
-    def test_all_twenty_two_oracles(self):
+    def test_all_twenty_six_oracles(self):
         manifest = json.loads((FIXTURES / 'manifest.json').read_bytes())
-        self.assertEqual(len(manifest['cases']), 22)
+        self.assertEqual(len(manifest['cases']), 26)
         for case in manifest['cases']:
             with self.subTest(case=case['name']):
                 primary = (FIXTURES / case['primary']['path']).read_bytes()

@@ -1,8 +1,9 @@
 # Candidate 0.1.0 adoption review dossier
 
 - Date: 2026-09-06.
-- Status: documentary preparation, points 47/49; no adoption decision.
+- Status: documentary preparation, points 46/48; no adoption decision.
 - Preparation base: `b5c97f692d3f9446988f0a79c07412c0b558e585`.
+- Integrated evidence base: `90997464428ce7c3072179e1053cf2934fb80fef`.
 - Current experimental edition: `proposal-0013-candidate-1`.
 
 This dossier separates recorded facts, deductions, recommendations and pending
@@ -27,6 +28,11 @@ and starting a new execution. Required capabilities cannot be silently removed
 or replaced; unknown support is not readiness. No required product integration,
 hot reload, state migration or real-engine demonstration is a delivery gate.
 
+### Historical pre-comparison handoff
+
+The following table preserves the handoff before the JavaScript reader and
+cross-reader run completed. It is historical evidence, not the current status.
+
 | Evidence at the preparation snapshot | Status and limit |
 | --- | --- |
 | Lot A, `280347eec4e2e051d296f9271bfccc86c98d4d40` | Modular proposal and derived experimental schemas integrated; proposed semantics only. |
@@ -42,6 +48,40 @@ lot will record both reader SHAs, the exact corpus revision, commands, retained
 raw reports, failures and exclusions after comparison. It must update this dated
 status rather than anticipate success. Repository checks verify documentation
 and corpus bookkeeping; they do not replace that comparison.
+
+### Current integrated modular evidence
+
+The later evidence lot completed both independent reader paths and ran them on
+the same 26-case corpus. The pinned inputs are:
+
+| Source | Revision or SHA-256 |
+| --- | --- |
+| Integrated checkout and comparison base | `90997464428ce7c3072179e1053cf2934fb80fef` |
+| Python modular reader | `512056a8e5e324651ab40d5f4e29541098ea5129` |
+| JavaScript modular reader | `ef4ac52ef6efcf9af50f49e488fa008dc0932d80` |
+| Corpus with 26 cases, including direct annexes | `1c796de9c457a4166064c7f5555a052b09f893ff` |
+| Proposal 0013 source revision | `280347eec4e2e051d296f9271bfccc86c98d4d40` |
+| Proposal 0013 file SHA-256 | `7c9e2aa8e5c6d7c8c0b419aaf3afb666f9ad3510057c98dc7f0f3ac3e904773b` |
+
+The retained integrated summary at
+`/private/tmp/agsdl-010-mvp-orchestration/comparison-root-integrated-9099746/summary.json`
+records 26 cases, no blocked case and no failure. The independent audit at
+`/private/tmp/agsdl-010-mvp-orchestration/audit-D-comparison-corrected.md`
+records the same modular result, a successful 121-case candidate-2 comparison
+and 96 passing JavaScript tests across both editions.
+
+The initial modular comparison remains at
+`/private/tmp/agsdl-010-mvp-orchestration/comparison-1/`. It failed with 21
+component differences across 14 cases: 14 opaque Slice sets, three State sets,
+two Check sets and two Finding sets. `comparison-2/` is a separate retained
+result. Neither directory was replaced by the integrated evidence. This history
+matters because the final zero-difference summary followed reader corrections;
+it was not the first observed result.
+
+The comparison checks the report contract, corpus assertions, exact Slice
+boundaries and exchange bytes. It does not supply a second semantic oracle.
+Shared mistakes and untested combinations remain possible. No reader executed
+an Agent, engine, Tool, content adapter or approval service.
 
 ## What supersedes candidate-2
 
@@ -104,9 +144,9 @@ the historical single-operation, single-gate and subjectless-selection options
 are not equivalent ways to meet them. Implementation agreement alone adopts
 neither C1-C10 nor official feature identities.
 
-Recommendation: prepare the decision text now, then attach the separate modular
-comparison evidence before closing adoption review. Record the Principal choice,
-selected units, exact proposal edition and any amendments. Reconcile proposals
+Recommendation: use the attached modular comparison when preparing the decision
+text, then record the Principal choice, selected units, exact proposal edition
+and any amendments. Reconcile proposals
 0002, 0003 and 0011 with the inherited 0012 rules and 0013 replacements.
 Direct supplied dependency resolution and unsupported transitive resolution,
 required extension interpretation and unknown classification retain their

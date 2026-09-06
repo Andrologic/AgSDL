@@ -30,7 +30,13 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
   -s experimental/modular-candidate-1/readers/python -v
 ```
 
-The tests exercise all 22 modular corpus oracles with this reader alone and add
+Run the cross-language modular comparison from the repository root with:
+
+```sh
+./scripts/check-readers.sh --compare modular
+```
+
+The tests exercise all 26 modular corpus oracles with this reader alone and add
 cases for structural validation outside the selected configuration, duplicate
 claims, content closure, operation selection and approval chains. That result
 does not compare independent readers.
