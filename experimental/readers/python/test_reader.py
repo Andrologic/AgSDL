@@ -581,5 +581,63 @@ class ComparisonRegressionTests(unittest.TestCase):
         self.assertFalse(any(s['pointer'].startswith('/runtime/selection') for s in report['inventory']['states']))
 
 
+class FinalBoundaryTests(unittest.TestCase):
+    def collision_fixture(self):
+        fixtures = Path(__file__).resolve().parents[2] / 'candidate-2' / 'fixtures'
+        d = json.loads((fixtures / 'selected-key-collision.json').read_bytes())
+        annex = json.loads((fixtures / 'selected-key-collision--dep.json').read_bytes())
+        return d, annex
+
+    def resolve(self, d, annex):
+        data = raw(annex)
+        d['dependencies'][0]['sha256'] = digest(data)
+        return run(d, 'resolveG', {'dep': data})
+
+    def test_collision_keeps_payload_and_blocks_identity_agreements(self):
+        d, annex = self.collision_fixture()
+        report = self.resolve(d, annex)
+        self.assertTrue(findings(report, 'G-RESOLVE'))
+        self.assertFalse(findings(report, 'G-TARGET'))
+        primary = report['results'][-1]
+        self.assertIn({'rule': 'G-TARGET', 'state': 'blocked', 'locations': [{'pointer': '/graphs/0/steps/0'}]}, primary['checks'])
+        self.assertIn({'rule': 'G-DATA', 'state': 'completed', 'locations': []}, primary['checks'])
+        self.assertTrue(any(r['input'] == 'annex/dep' and r['unit'] == 'G' and r['verdict'] == 'pass' for r in report['results']))
+        self.assertFalse(any(s['input'] == 'annex/dep' and s['pointer'] == '/definitions/0/payload' for s in report['inventory']['opaque']))
+
+    def test_ambiguous_agreement_does_not_hide_observable_port_failure(self):
+        d, annex = self.collision_fixture()
+        extra = copy.deepcopy(annex['definitions'][1])
+        extra['key']['id'] = 'different-action'
+        annex['definitions'].append(extra)
+        payload = annex['definitions'][0]['payload']
+        payload['action'] = extra['key']
+        payload['outputs']['y'] = 'boolean'
+        report = self.resolve(d, annex)
+        self.assertTrue(findings(report, 'G-DATA'))
+        self.assertFalse(findings(report, 'G-TARGET'))
+        self.assertTrue(any(r['input'] == 'annex/dep' and r['unit'] == 'G' for r in report['results']))
+
+    def test_later_boundary_collision_blocks_earlier_agreement(self):
+        d = graph_doc(); definition(d, 'different-action', 'Action')
+        interface = next(v for v in d['definitions'] if v['kind'] == 'Interface')
+        interface['payload']['action'] = k('different-action')
+        self.assertTrue(findings(run(d, 'resolveG'), 'G-TARGET'))
+        annex = doc(); annex['root']['key'] = k('annex'); annex['root']['kind'] = 'Fragment'
+        duplicated = copy.deepcopy(interface); duplicated['owner'] = annex['root']['key']
+        annex['definitions'].append(duplicated)
+        definition(annex, 'annex-resource', 'Resource'); annex['exports'] = [k('annex-resource')]
+        data = raw(annex)
+        d['dependencies'] = [{'id': 'dep', 'rootKey': annex['root']['key'], 'status': 'included', 'requiredFor': [], 'sha256': digest(data)}]
+        later = copy.deepcopy(d['graphs'][0]['steps'][0]); later['id'] = 'later'
+        later['resources'] = [{'dependency': 'dep', 'key': k('annex-resource')}]
+        d['graphs'][0]['steps'][0]['success'] = 'later'
+        d['graphs'][0]['steps'].append(later)
+        report = run(d, 'resolveG', {'dep': data})
+        self.assertTrue(findings(report, 'G-RESOLVE'))
+        self.assertFalse(findings(report, 'G-TARGET'))
+        blocks = next(c['locations'] for c in report['results'][-1]['checks'] if c['rule'] == 'G-TARGET' and c['state'] == 'blocked')
+        self.assertIn({'pointer': '/graphs/0/steps/0'}, blocks)
+
+
 if __name__ == '__main__':
     unittest.main()

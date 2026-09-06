@@ -502,6 +502,7 @@ class GraphValidation:
         self.loaded, self.annex_results, self.selections = {}, {}, {}
         self.selection_uses = defaultdict(set)
         self.extra_states = []
+        self.agreements = []
 
     def dependency(self, name):
         if name in self.loaded:
@@ -593,14 +594,25 @@ class GraphValidation:
             self.selection_uses[key(identity)].add(consumer)
         return doc, target[0], target[1]
 
-    def check_collisions(self):
-        if not self.resolve:
-            return
+    def finish(self):
+        # All required boundaries are known before identity-dependent agreements.
         boundaries = [self.primary] + [doc for doc in self.loaded.values() if doc is not None]
-        for identity, consumers in self.selection_uses.items():
-            if sum(identity in doc.index for doc in boundaries) > 1:
-                for consumer in consumers:
-                    self.result.find('G-RESOLVE', consumer, 'selected key appears in multiple document boundaries')
+        collisions = {identity for identity in self.selection_uses
+                      if sum(identity in doc.index for doc in boundaries) > 1}
+        for identity in collisions:
+            for consumer in self.selection_uses[identity]:
+                self.result.find('G-RESOLVE', consumer, 'selected key appears in multiple document boundaries')
+                self.result.block('G-TARGET', consumer)
+        for available, expected, context, consumer, detail, readable in self.agreements:
+            if any(key(selected[1]['key']) in collisions for selected in [*available, expected, context]):
+                self.result.block('G-TARGET', consumer)
+            else:
+                self.result.complete('G-TARGET')
+                if not any(self.same(selected, expected) for selected in available):
+                    if readable:
+                        self.result.find('G-TARGET', consumer, detail)
+                    else:
+                        self.result.block('G-TARGET', consumer)
 
     def payload(self, selected, schema):
         if selected is None:
@@ -792,12 +804,9 @@ class GraphValidation:
                     comparisons = ((exposure, targets['interface']), (principals, targets['principal']))
                     for available, expected in comparisons:
                         if expected is not None and all(v is not None for v in available):
-                            result.complete('G-TARGET')
-                            if not any(self.same(v, expected) for v in available):
-                                if good(array('Relation'), owner.obj.get('relations')):
-                                    result.find('G-TARGET', sp, 'Agent exposure or Principal mismatch')
-                                else:
-                                    result.block('G-TARGET', sp)
+                            self.agreements.append((available, expected, agent, sp,
+                                                    'Agent exposure or Principal mismatch',
+                                                    good(array('Relation'), owner.obj.get('relations'))))
                         elif not self.resolve and any(good('Ref', step.get(f)) and 'dependency' in step[f] for f in ('agent', 'interface', 'principal')):
                             result.exclude('G-TARGET', sp)
                         else:
@@ -809,9 +818,8 @@ class GraphValidation:
                     owner, _, dp = targets['interface']
                     action = self.ref(payload.get('action'), 'Action', owner, sp, dp + '/payload/action', self.annex_result(owner), dp + '/payload')
                     if action is not None and targets['action'] is not None:
-                        result.complete('G-TARGET')
-                        if not self.same(action, targets['action']):
-                            result.find('G-TARGET', sp, 'Interface action mismatch')
+                        self.agreements.append(([action], targets['action'], targets['interface'], sp,
+                                                'Interface action mismatch', True))
                     elif self.resolve and owner is not doc and good('Ref', payload.get('action')) and 'dependency' in payload['action']:
                         result.exclude('G-TARGET', sp)
                     elif not self.resolve and good('Ref', payload.get('action')) and 'dependency' in payload['action']:
@@ -1018,7 +1026,7 @@ def read(operation, primary, annexes=None, losses=None):
         elif operation in ('validateG', 'resolveG'):
             g = GraphValidation(doc, annexes, operation == 'resolveG')
             g.check()
-            g.check_collisions()
+            g.finish()
             r = g.result
             r.parents.append(d)
             if d.verdict() != 'pass':
