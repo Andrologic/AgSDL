@@ -285,3 +285,8 @@ test('partial relations outside R closure do not affect reachable content',()=>{
     assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer==='/runtime/configurations/0/agents/0/applications/2'&&f.details.includes('not reachable')));
   }
 });
+
+test('a partial contains relation does not hide missing Interface exposure',()=>{
+  const d=source(),step='/graphs/0/steps/0',agent=d.graphs[0].steps[0].agent;d.relations=d.relations.filter(relation=>!(relation.relation==='exposes'&&JSON.stringify(relation.source)===JSON.stringify(agent)));d.relations.push({source:agent,relation:'contains',expectedKind:'Resource',target:null});const r=result(execute('validateG',d),'G');
+  assert.ok(r.findings.some(f=>f.rule==='G-TARGET'&&f.location.pointer===step&&f.details.includes('does not expose')));
+});
