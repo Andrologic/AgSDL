@@ -424,14 +424,31 @@ failed prerequisite, even for an absent G/R container.
 
 Inventory tree is the primary parsed JSON value; opaque numeric values can be
 exposed as lossless host representations, with slices as the comparison source.
-Inventory states enumerate absent graphs/runtime/selection/model/provider/hosting,
-null dependency/evidence hashes, missing evidence per requirement, and external
-target checks excluded in the selected operation. Declared definitions/relations
-are the source tree itself, not a synthesized normalized graph. Opaque slices
-are the maximal unexamined JSON values for the requested unit: D opaque fields
-listed above, G/R unselected payloads/containers, annotations/evidence/provenance
-and extension payloads. Inspect uses D boundaries. Compare slices by their source
-bytes, not a host JSON serializer. No normalized JSON codec is required.
+Inventory states are operation-scoped, never discovered inside opaque values.
+Use the following exhaustive state inventory, only for well-shaped parent
+records. A malformed parent produces findings, not invented child absences.
+
+| Scope | States recorded |
+| --- | --- |
+| Every operation with a parsed primary object | graphs and runtime: absent when missing; unchecked when present but opaque to this operation; declared when present and interpreted by G or R. No child states under an absent container. |
+| D boundaries, also used by inspect and exchange | Unknown at each null dependency sha256 in a well-shaped Dependency. No selection, model, provider, hosting or evidence states inside runtime. |
+| G only | Unchecked at each external Ref whose target-dependent checks are excluded in validateG; no internal R states. Resolved target evidence is represented by checks/results, not a synthesized state tree. |
+| R only | Selection absent when missing, otherwise declared. Within a present well-shaped Selection, model/provider/hosting are absent or declared according to presence. Unknown at each null EvidenceClaim artifact. A missing claim records absent at /runtime/selection/evidence with detail naming its Requirement id, one state per missing claim. No missing-claim states if selection is absent. Present selection also records unchecked at /runtime/selection/engine for support and at each EvidenceClaim for evidence assessment. |
+| Required resolveG annexes | Apply D states to each annex with its own input id; additionally G external-target states only for selected G payloads/relations. No graph or runtime internals of annexes are inventoried. |
+
+In particular validateD or inspect of runtime:{} records unchecked at /runtime
+and its opaque slice, with no /runtime/selection state. ValidateR of that value
+fails its missing requirements field shape and does not invent selection state
+under the malformed RuntimeDeclaration. States are compared as sets including
+input/pointer/state; only missing-claim details require exact Requirement ids.
+Other detail prose and array order are not comparison keys.
+
+Declared definitions/relations are the source tree itself, not a synthesized
+normalized graph. Opaque slices are the maximal unexamined JSON values for the
+requested unit: D opaque fields listed above, G/R unselected payloads/containers,
+annotations/evidence/provenance and extension payloads. Inspect and exchange use
+D boundaries. Compare slices by their source bytes, not a host JSON serializer.
+No normalized JSON codec is required.
 
 | Rule | Deterministic check and finding location |
 | --- | --- |
