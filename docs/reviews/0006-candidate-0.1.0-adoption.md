@@ -1,7 +1,7 @@
 # Candidate 0.1.0 adoption review dossier
 
 - Date: 2026-09-06.
-- Status: documentary preparation, points 46/48; no adoption decision.
+- Status: B46/B48 evidence for E47/E49 documentary preparation; no adoption decision.
 - Preparation base: `b5c97f692d3f9446988f0a79c07412c0b558e585`.
 - Integrated evidence base: `90997464428ce7c3072179e1053cf2934fb80fef`.
 - Current experimental edition: `proposal-0013-candidate-1`.
@@ -49,7 +49,7 @@ raw reports, failures and exclusions after comparison. It must update this dated
 status rather than anticipate success. Repository checks verify documentation
 and corpus bookkeeping; they do not replace that comparison.
 
-### Current integrated modular evidence
+### Current integrated modular evidence from B46/B48
 
 The later evidence lot completed both independent reader paths and ran them on
 the same 26-case corpus. The pinned inputs are:
