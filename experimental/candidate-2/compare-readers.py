@@ -210,6 +210,20 @@ def location(loc, input_id, source, parsed, existing=True):
         demand(uint(loc['byte']) <= len(source[input_id]), 'byte location outside input')
 
 
+def missing_child(path, parsed):
+    """Locate an unavailable immediate child without deciding what AgSDL requires."""
+    if parsed is None or not path or path in parsed.spans:
+        return False
+    parent, _, last = path.rpartition('/')
+    if parent not in parsed.spans:
+        return False
+    value = at_pointer(parsed.tree, parent)
+    if isinstance(value, dict):
+        return True
+    # JSON Pointer array indices are canonical decimal indices, not append syntax.
+    return isinstance(value, list) and re.fullmatch(r'0|[1-9][0-9]*', last) is not None
+
+
 def missing_id(state, tree):
     """Recover only an unambiguous named Requirement id, not its meaning."""
     runtime = tree.get('runtime') if isinstance(tree, dict) else None
@@ -297,8 +311,15 @@ def validate_report(response, case, source):
             seen.append((check['rule'],check['state']))
             for loc in check['locations']:
                 location(loc,input_id,source,parsed,existing=False)
-                if 'pointer' in loc and loc['pointer'] not in {'','/graphs','/runtime','/runtime/selection'}:
-                    demand(parsed[input_id] is not None and loc['pointer'] in parsed[input_id].spans, 'Check location is not an observed record')
+                if 'pointer' in loc and loc['pointer'] != '' and check['rule'] not in boundaries:
+                    path = loc['pointer']
+                    observed = parsed[input_id] is not None and path in parsed[input_id].spans
+                    # These absent-container exclusions have explicit contract locations.
+                    container_exclusion = check['state'] == 'excluded' and missing_child(path, parsed[input_id]) and (
+                        input_id == 'primary' and result['unit'] == 'G' and path == '/graphs' and check['rule'] in (G_RULES | {'G-RESOLVE'}) - {'X-MODE'}
+                        or input_id == 'primary' and result['unit'] == 'R' and path == '/runtime' and check['rule'] in {'P-SHAPE','R-REQUIREMENT','R-SELECTION'}
+                        or input_id == 'primary' and result['unit'] == 'R' and path == '/runtime/selection' and check['rule'] == 'R-SELECTION')
+                    demand(observed or container_exclusion, 'Check location has no affected record or declared exclusion')
             unique(check['locations'], 'Check location')
             demand(check['locations'] == sorted(check['locations'],key=loc_key), 'Check locations not sorted')
             demand(check['locations'] == [] if check['state'] == 'completed' else bool(check['locations']), 'Check locations/state mismatch')
@@ -332,22 +353,25 @@ def validate_report(response, case, source):
     inventory = r['inventory']; record(inventory, 'tree states opaque'); array(inventory['states']); array(inventory['opaque'])
     demand(canonical(inventory['tree']) == canonical(parsed['primary'].tree if parsed['primary'] else None), 'inventory tree differs from exact source JSON')
     observed_inputs={'primary'} | {x['input'] for x in results if x['unit']=='D' and op=='resolveG'}
-    state_keys = []
+    states = []
+    state_keys = set()
     for state in inventory['states']:
         record(state, 'input pointer state detail'); text(state['detail']); pointer(state['pointer'])
         demand(state['input'] in observed_inputs and state['state'] in {'absent','unknown','declared','unchecked'}, 'State scope/domain')
-        state_keys.append(state_key(state, inventory['tree']))
-    unique(state_keys, 'State tuple')
+        key = canonical(state_key(state, inventory['tree']))
+        if key not in state_keys:
+            state_keys.add(key)
+            states.append(state)
     for input_id in observed_inputs:
         src=parsed[input_id]
         if src and isinstance(src.tree,dict):
             for field in ('graphs','runtime'):
                 selected=input_id=='primary' and (field=='graphs' and unit=='G' or field=='runtime' and unit=='R')
                 expected_state='absent' if field not in src.tree else 'declared' if selected else 'unchecked'
-                entries=[s for s in inventory['states'] if s['input']==input_id and s['pointer']=='/'+field]
+                entries=[s for s in states if s['input']==input_id and s['pointer']=='/'+field]
                 demand(len(entries)==1 and entries[0]['state']==expected_state, 'container State missing or inconsistent')
     if op in {'inspect','exchange','lossyExchange'}:
-        entries=[s for s in inventory['states'] if s['input']=='primary' and s['pointer']=='/dependencies']
+        entries=[s for s in states if s['input']=='primary' and s['pointer']=='/dependencies']
         demand(len(entries)==1, 'dependency inventory State missing')
         src=parsed['primary']
         if src and isinstance(src.tree,dict) and 'dependencies' not in src.tree:
@@ -356,11 +380,11 @@ def validate_report(response, case, source):
             demand(entries[0]['state']=='unchecked', 'unreadable dependency inventory mismatch')
     demand(all(x['input'] in observed_inputs for x in inventory['opaque']), 'Slice outside observed unit inputs')
     validate_slices(inventory['opaque'], source, parsed, op, observed_inputs)
-    for state in inventory['states']:
+    for state in states:
         for part in inventory['opaque']:
             if part['pointer'] and state['input']==part['input']:
                 demand(not state['pointer'].startswith(part['pointer']+'/'), 'State discovered inside opaque Slice')
-        for parent in inventory['states']:
+        for parent in states:
             if parent['input']==state['input'] and parent['state']=='absent' and parent['pointer']!='/runtime/selection/evidence':
                 demand(not state['pointer'].startswith(parent['pointer']+'/'), 'State below absent parent')
     for loss in r['losses']:

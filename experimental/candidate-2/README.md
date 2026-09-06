@@ -153,7 +153,7 @@ resolved by the harness.
 
 The harness validates closed Report records, domains, input and output hashes,
 Result stages, permitted rule sets, Check ordering/completeness, duplicate
-records and verdict aggregation from the supplied findings and prerequisites.
+records where uniqueness is required, and verdict aggregation from the supplied findings and prerequisites.
 It does not derive findings from Agent, graph, dependency or runtime semantics.
 The required-result and required-location assertions remain subsets. Complete
 validated reports are then compared, retaining input/unit/phase and all rules.
@@ -194,4 +194,40 @@ These tests use fixed synthetic reports and subprocess stubs. Their success
 verifies the harness, not AgSDL implementation support or interoperability.
 The three schemas also passed the optional metaschema check with
 `jsonschema 4.23.0` in the orchestrator's temporary environment; that package is
-not a project dependency. A real comparison awaits integrated readers.
+not a project dependency. The first reader comparison produced saved reports;
+the boundary corrections below replay those reports without executing readers
+or claiming that the full comparison succeeds.
+
+
+### Missing prerequisites and State sets
+
+The proposal's [location rules](../../proposals/0012-minimal-0.1.0-contract.md#exact-results-locations-and-experimental-diagnostics)
+place a missing-field P-SHAPE finding at its observable parent. Its
+[Check rules](../../proposals/0012-minimal-0.1.0-contract.md#rule-execution-and-exact-exclusion-records)
+say that blocked locations name the affected record needing the value. These
+are distinct from the missing prerequisite's own location. The harness keeps
+requiring an observable affected record for a blocked pointer, while preserving
+the whole-unit root location and exact documentary exclusions. It does not
+infer which AgSDL record or rule needs the missing value. Absent-container
+exclusions are limited to the contract-specific rule/location combinations.
+Accepting any unavailable child of an observable parent would need a further
+contract clarification; this lot does not adopt that interpretation.
+
+The same report section explicitly compares States as sets of
+input/pointer/state, with Requirement identity retained for missing claims.
+Repeated equivalent State tuples are therefore accepted and normalized for
+validation and comparison, including repetitions with different permitted prose.
+The original stdout remains unchanged in the evidence directory. Different
+states at the same pointer and different missing-claim Requirement ids remain
+distinct. This exception does not remove the explicit uniqueness checks for
+Check rule/state pairs or their locations, nor the checks on other records.
+
+Regression tests distinguish affected-record locations from missing values and
+State repetition from a change in state or Requirement identity. The saved
+`external-local-phase` JavaScript report from the first comparison is accepted
+unchanged after State normalization. Saved `missing-relations` and
+`g-prerequisite-failure` reports still identify absent collections as blocked
+locations, and remain rejected. Those witnesses require reader-report correction
+or an explicit contract clarification outside this lot. Replaying these reports
+tests report boundaries only; it does not execute a reader or provide new
+semantic validation evidence.
