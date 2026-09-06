@@ -314,6 +314,12 @@ export function validateR(ctx, inventory) {
     }
 
     const relationRows = rows(ctx, 'relations', S.Relation);
+    const usableRelation = row => S.valid(S.Relation, {
+      source: row.v?.source,
+      relation: row.v?.relation,
+      target: row.v?.target,
+      expectedKind: row.v?.expectedKind,
+    });
     if (agent.status === 'local') {
       if (!Array.isArray(ctx.tree.relations)) {
         result.mark('R-CONTENT', 'blocked', ap);
@@ -458,7 +464,7 @@ export function validateR(ctx, inventory) {
     }
 
     if (agent.status === 'local') {
-      for (const relation of relationRows.filter(row => equal(row.v.source, agent.v.key))) {
+      for (const relation of relationRows.filter(row => usableRelation(row) && equal(row.v.source, agent.v.key))) {
         if (relation.v.relation === 'directedBy' && ['Instructions', 'Skill'].includes(relation.v.expectedKind)) rememberContent(relation.v.target, relation.p, `${relation.p}/target`);
         if (relation.v.relation === 'uses' && relation.v.expectedKind === 'Tool') rememberTool(relation.v.target, relation.p, 'R-TOOL', `${relation.p}/target`);
       }
@@ -483,6 +489,7 @@ export function validateR(ctx, inventory) {
 
     const applications = Array.isArray(binding.applications) ? binding.applications : [];
     let applicationIndexComplete = Array.isArray(binding.applications);
+    const unreadableApplicationPositions = [];
     const applicationPositions = new Map();
     for (const [index, application] of applications.entries()) {
       const pointer = `${ap}/applications/${index}`;
@@ -490,6 +497,7 @@ export function validateR(ctx, inventory) {
         result.mark('R-CONTENT', 'blocked', pointer);
         assessmentBlocked = true;
         applicationIndexComplete = false;
+        unreadableApplicationPositions.push(index);
         continue;
       }
       if (S.valid(S.Edition, application.adapter)) engineRequirements.set(edition(application.adapter), application.adapter);
@@ -505,6 +513,7 @@ export function validateR(ctx, inventory) {
       }
       if (!S.valid(S.Ref, application.content)) {
         applicationIndexComplete = false;
+        unreadableApplicationPositions.push(index);
         continue;
       }
       const identity = canonical(application.content);
@@ -518,17 +527,16 @@ export function validateR(ctx, inventory) {
           missingContent = true;
         }
       }
-      for (const [identity, entry] of content) {
-        if (entry.kind !== 'Skill' || !Array.isArray(entry.info?.value?.dependencies)) continue;
-        const dependents = applicationPositions.get(identity) || [];
-        for (const dependency of entry.info.value.dependencies) {
-          if (!S.valid(S.Ref, dependency)) continue;
-          const prerequisites = applicationPositions.get(canonical(dependency));
-          if (!prerequisites) continue;
-          for (const dependent of dependents) if (!prerequisites.some(prerequisite => prerequisite < dependent)) {
-            result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
-            missingContent = true;
-          }
+    }
+    for (const [identity, entry] of content) {
+      if (entry.kind !== 'Skill' || !Array.isArray(entry.info?.value?.dependencies)) continue;
+      const dependents = applicationPositions.get(identity) || [];
+      for (const dependency of entry.info.value.dependencies) {
+        if (!S.valid(S.Ref, dependency)) continue;
+        const prerequisites = applicationPositions.get(canonical(dependency)) || [];
+        for (const dependent of dependents) if (prerequisites.length && !prerequisites.some(prerequisite => prerequisite < dependent) && !unreadableApplicationPositions.some(position => position < dependent)) {
+          result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
+          missingContent = true;
         }
       }
     }

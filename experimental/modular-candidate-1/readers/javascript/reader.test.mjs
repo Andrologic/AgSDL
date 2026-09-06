@@ -261,3 +261,20 @@ test('partial runtime indexes do not invent missing selected records',()=>{
   assert.ok(r.checks.some(c=>c.rule==='R-TOOL'&&c.state==='blocked'));
   assert.ok(!r.findings.some(f=>f.rule==='R-TOOL'&&f.details.includes('Selected Implementation missing')));
 });
+
+test('null relations block closure without crashing readable checks',()=>{
+  const d=source();d.relations.push(null);const r=result(execute('validateR',d),'R');
+  assert.ok(r.checks.some(c=>c.rule==='R-CONTENT'&&c.state==='blocked'));
+  assert.ok(r.checks.some(c=>c.rule==='R-TOOL'&&c.state==='blocked'));
+});
+
+test('a malformed uses relation does not hide a readable Principal mismatch',()=>{
+  const d=source(),step='/graphs/0/steps/0';d.graphs[0].steps[0].principal=d.definitions[3].key;d.relations.push({source:d.definitions[0].key,relation:'uses',expectedKind:'Tool',target:null});const x=execute('validateG',d),r=result(x,'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+  assert.ok(r.findings.some(f=>f.rule==='G-TARGET'&&f.location.pointer===step&&f.details.includes('principal differs')));
+});
+
+test('a later unreadable Application does not hide a known order violation',()=>{
+  const d=source(),binding=d.runtime.configurations[0].agents[0];binding.applications.reverse();binding.applications.push(null);const r=result(execute('validateR',d),'R');
+  assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer==='/runtime/configurations/0/agents/0/applications/0'&&f.details.includes('appear earlier')));
+});
