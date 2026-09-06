@@ -34,6 +34,9 @@ export function lookup(ctx,k) { const found=ctx.defs.get(key(k));return found?.l
 export function localIndexComplete(ctx) {
   return S.valid(S.Key,ctx.tree?.root?.key)&&Array.isArray(ctx.tree?.definitions)&&ctx.tree.definitions.every(definition=>S.object(definition)&&S.valid(S.Key,definition.key));
 }
+export function dependencyIndexComplete(ctx) {
+  return Array.isArray(ctx.tree?.dependencies)&&ctx.tree.dependencies.every(dependency=>S.object(dependency)&&typeof dependency.id==='string'&&dependency.id.length);
+}
 export function build(ctx) {
   const d=ctx.tree;
   if(S.valid(S.Key,d?.root?.key))ctx.defs.set(key(d.root.key),[{v:d.root,p:'/root',root:true,ctx}]);
@@ -48,6 +51,7 @@ export function declaration(ctx,ref,kind,result,rule,p) {
   if(ext(ref)) {
     const ds=ctx.deps.get(ref.dependency);
     if(ds?.length===1&&!S.valid(S.Key,ds[0].v.rootKey)){result.mark(rule,'blocked',p);return false;}
+    if(!ds?.length&&!dependencyIndexComplete(ctx)){result.mark(rule,'blocked',p);return false;}
     if(!ds?.length || (ds.length===1&&ref.key.scope!==ds[0].v.rootKey.scope)) {result.find(rule,p,'External dependency or scope does not match');return false;}
     if(ds.length!==1){result.mark(rule,'blocked',p);return false;}
     return true;

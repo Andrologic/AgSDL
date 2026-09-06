@@ -315,6 +315,16 @@ test('an unreadable local identity blocks absence findings',()=>{
   }
 });
 
+test('an unreadable dependency identity blocks external absence findings',()=>{
+  for(const id of[null,'',17]){
+    const d=JSON.parse(fixture('external-runtime-content.json'));d.dependencies[0].id=id;const x=execute('validateR',d),dr=result(x,'D'),rr=result(x,'R');
+    assert.ok(dr.checks.some(c=>c.rule==='D-REFERENCE'&&c.state==='blocked'));
+    assert.ok(!dr.findings.some(f=>f.rule==='D-REFERENCE'&&f.details.includes('External dependency or scope does not match')));
+    assert.ok(rr.checks.some(c=>c.rule==='R-CONTENT'&&c.state==='blocked'));
+    assert.ok(!rr.findings.some(f=>f.rule==='R-CONTENT'&&f.details.includes('External dependency or scope does not match')));
+  }
+});
+
 test('an unreadable Step id blocks dependent lookups',()=>{
   const d=JSON.parse(fixture('approval-two-gates.json')),call=d.graphs[0].steps.find(step=>step.kind==='invoke');call.id=null;const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-APPROVAL'&&c.state==='blocked'));
