@@ -50,6 +50,7 @@ export function declaration(ctx,ref,kind,result,rule,p) {
     return true;
   }
   const found=ctx.defs.get(key(ref));
+  if(!found?.length&&!Array.isArray(ctx.tree?.definitions)){result.mark(rule,'blocked',p);return false;}
   if(!found?.length){result.find(rule,p,'Local target does not exist');return false;}
   if(found.length!==1){result.mark(rule,'blocked',p);return false;}
   if(kind&&!S.valid(found[0].root?S.Root.fields.kind:S.Kind,found[0].v.kind)){result.mark(rule,'blocked',p);return false;}
