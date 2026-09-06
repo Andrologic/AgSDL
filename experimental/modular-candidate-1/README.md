@@ -81,27 +81,106 @@ inputs. It refuses to run after a proposal or schema digest change. Updating a
 pin requires renewed review of the oracles; running the helper alone is not that
 review.
 
-## Reader interface for phases C and D
+## Use the modular experiment
 
-This corpus extension does not add or modify a reader. The Python modular reader
-is integrated separately; cross-reader comparison still awaits the JavaScript
-path. Reader implementations must keep separate code paths and must not relabel
-candidate-2 reports.
-For each ready case, invoke a reader once with this JSON object on stdin:
+Run commands from the repository root. Python 3 and Node.js are sufficient; the
+readers use their standard libraries and do not install packages. The
+[Python reader](readers/python/README.md) and
+[JavaScript reader](readers/javascript/README.md) keep separate implementation
+paths for the modular marker.
 
-```json
-{
-  "operation": "validateR",
-  "primary": "<base64 fixture bytes>",
-  "annexes": {}
+Start with the readable [modular system](fixtures/modular-system.json). Encode
+its exact bytes in a request, then send that JSON object on stdin:
+
+```sh
+agsdl_modular_demo=$(mktemp -d)
+python3 - "$agsdl_modular_demo/request.json" <<'PY'
+import base64
+import json
+import sys
+from pathlib import Path
+
+source = Path('experimental/modular-candidate-1/fixtures/modular-system.json')
+request = {
+    'operation': 'validateR',
+    'primary': base64.b64encode(source.read_bytes()).decode(),
+    'annexes': {},
 }
+Path(sys.argv[1]).write_text(json.dumps(request))
+PY
+python3 experimental/modular-candidate-1/readers/python/cli.py \
+  < "$agsdl_modular_demo/request.json" \
+  > "$agsdl_modular_demo/python.response.json"
+node experimental/modular-candidate-1/readers/javascript/cli.mjs \
+  < "$agsdl_modular_demo/request.json" \
+  > "$agsdl_modular_demo/javascript.response.json"
 ```
 
-The reader writes one JSON object to stdout containing `report` and `artifacts`.
-It must preserve the proposal 0013 marker and inherited Report grammar. Inputs
-are exact caller-supplied bytes. A fixture path grants no network lookup.
+Each request contains `operation`, base64 `primary` bytes and an `annexes` map
+from dependency id to base64 bytes. `lossyExchange` alone may also carry
+`losses`. Each successful host invocation returns one object with `report` and
+`artifacts`. Request-envelope failures use stderr and exit status 2. A status 0
+means that the reader produced a report; read the requested Result to distinguish
+`pass`, `fail`, `unsupported` and `inconclusive`.
 
-The comparison command will be runnable after both reader paths exist:
+The Report keeps D prerequisites and requested G or R results separate. Its
+findings identify rule, location and outcome. Checks record completed, blocked
+or excluded work. Inventory States and opaque Slices retain observations without
+turning unknown or excluded material into success. Exchange artifacts remain
+base64 so callers can compare their decoded bytes with the original input.
+
+## Read configurations and graphs
+
+The readable system contains two configurations, `portable` and `alternate`,
+for the same graph. `runtime.selected` chooses `portable`. Each AgentBinding
+names its engine Edition, parameters, required capabilities, claims, Tool
+choices and ordered content Applications. The alternate configuration changes
+engine assignments and selected Tool implementations without changing the
+Agent or graph definitions. The reader checks this declaration; it does not
+start the selected engine, apply content or decide an unrecorded fallback.
+
+The same fixture exposes Interface operations `ask` and `notify`. Each invoke
+step names its operation, Action and ports. See
+[operation-not-found](fixtures/operation-not-found.json) for a rejected id and
+[annex-interface-operation](fixtures/annex-interface-operation.json) for direct
+selection from caller-supplied annex bytes.
+
+The [two-gate approval example](fixtures/approval-two-gates.json) links `legal`
+approval to `finance` approval and then to one call. Its refusal and failure
+paths terminate without reaching the call. The declared timeouts and expiry
+requirements are static data. The readers do not request approval, authenticate
+an approver or prove that a deadline can be met.
+
+These examples help inspect configuration, graph and report behavior. They do
+not prescribe an engine, model provider, Tool product, content adapter or
+runtime. No command here executes a described Agent, Tool, approval flow or
+deployment.
+
+## Check both implementations
+
+Run all historical and modular reader tests:
+
+```sh
+./scripts/check-readers.sh
+```
+
+`./scripts/check.sh` runs both Python suites, including the 40 modular Python
+tests, and does not require Node.js. The reader-specific command also runs the
+two JavaScript suites.
+
+## Compare the readers
+
+Compare both complete corpora, or select one:
+
+```sh
+./scripts/check-readers.sh --compare
+./scripts/check-readers.sh --compare modular
+./scripts/check-readers.sh --compare candidate-2
+```
+
+Comparison mode uses separate temporary report directories, prints each summary
+and preserves any nonzero comparator exit. It removes the temporary directories
+on exit. To retain modular reports, provide a new or empty destination directly:
 
 ```sh
 agsdl_modular_reports=$(mktemp -d)
@@ -111,15 +190,39 @@ python3 experimental/modular-candidate-1/compare-readers.py \
   --reports "$agsdl_modular_reports"
 ```
 
-The destination must be new or empty. The comparator retains each reader's raw
-stdout and stderr plus `summary.json`. It validates the Report envelope, closed
-rule scope, prerequisite aggregation, verdict bookkeeping, targeted oracles,
-exact and exhaustive exchange Slice boundaries, and exchange artifacts, then
-compares complete normalized reports. It imports the
-candidate-2 lossless JSON parser, canonicalizer, digest and process runner as
-neutral utilities. It has its own proposal 0013 rule inventory and never derives
-an Agent, graph, compatibility or approval verdict.
+The comparator retains raw stdout and stderr plus `summary.json`. It validates
+the Report envelope, rule scope, prerequisite aggregation, verdict bookkeeping,
+targeted oracles, Slice boundaries and exchange bytes before comparing complete
+normalized reports. It does not derive semantic verdicts.
 
-Phase C and D should first run one reader against the corpus and inspect every
-oracle error. A complete two-reader success belongs to the later evidence phase.
-Until then, this corpus proves neither reader support nor cross-reader agreement.
+## Integrated evidence, 2026-09-06
+
+The integrated comparison is pinned to these sources:
+
+| Source | Revision or SHA-256 |
+| --- | --- |
+| Integrated checkout | `90997464428ce7c3072179e1053cf2934fb80fef` |
+| Python modular reader | `512056a8e5e324651ab40d5f4e29541098ea5129` |
+| JavaScript modular reader | `ef4ac52ef6efcf9af50f49e488fa008dc0932d80` |
+| Corpus with 26 cases | `1c796de9c457a4166064c7f5555a052b09f893ff` |
+| Proposal 0013 source revision | `280347eec4e2e051d296f9271bfccc86c98d4d40` |
+| Proposal 0013 file SHA-256 | `7c9e2aa8e5c6d7c8c0b419aaf3afb666f9ad3510057c98dc7f0f3ac3e904773b` |
+
+The retained integrated report is
+`/private/tmp/agsdl-010-mvp-orchestration/comparison-root-integrated-9099746/summary.json`.
+It records 26 cases, `blocked:[]` and `failures:[]`. The independent JavaScript
+audit at
+`/private/tmp/agsdl-010-mvp-orchestration/audit-D-comparison-corrected.md`
+also records successful 26-case modular and 121-case candidate-2 comparisons,
+plus 96 passing JavaScript tests across the two editions.
+
+The first modular cross-reader run remains at
+`/private/tmp/agsdl-010-mvp-orchestration/comparison-1/`. It records 21 component
+differences across 14 cases: 14 opaque Slice sets, three State sets, two Check
+sets and two Finding sets. The separate `comparison-2/` result is also retained;
+neither directory is overwritten by the integrated run.
+
+This evidence shows agreement for the bounded experimental corpus. It does not
+adopt proposal 0013, establish principal identity semantics, prove exhaustive
+correctness, execute a runtime or demonstrate interoperability. Normative
+application, adoption, release, publication and push remain separate work.

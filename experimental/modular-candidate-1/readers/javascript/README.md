@@ -42,17 +42,11 @@ trigger fallback. Exact exchange copies supplied bytes or refuses output.
 ```sh
 node --test experimental/readers/javascript/reader.test.mjs
 node --test experimental/modular-candidate-1/readers/javascript/reader.test.mjs
-python3 experimental/modular-candidate-1/compare-readers.py \
-  --reader '["javascript-a","node","experimental/modular-candidate-1/readers/javascript/cli.mjs"]' \
-  --reader '["javascript-b","node","experimental/modular-candidate-1/readers/javascript/cli.mjs"]' \
-  --reports /tmp/agsdl-modular-javascript
+./scripts/check-readers.sh --compare modular
 ./scripts/check.sh
 git diff --check
 ```
 
-Using two labels for one command validates this reader twice against every
-targeted corpus assertion. It does not establish independence or agreement
-between languages. The 26-case corpus is a bounded witness set, so the local
-tests also cover marker separation, partial prerequisites, duplicate operation
-selection, outbound operations, additional content, multi-node Skill cycles and
-host-request errors.
+The 26-case corpus is a bounded witness set, so the local tests also cover marker
+separation, partial prerequisites, duplicate operation selection, outbound
+operations, additional content, multi-node Skill cycles and host-request errors.

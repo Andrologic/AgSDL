@@ -61,25 +61,25 @@ code blocks, multiline code spans, or destinations with nested parentheses.
 
 ### Experimental reader commands
 
-`./scripts/check.sh` also runs the Python reader tests. Node.js is not required
-for that command. From the repository root, run both reader test suites with:
+`./scripts/check.sh` also runs the Python reader tests for candidate-2 and the
+modular candidate. Node.js is not required for that command. From the repository
+root, run all four Python and JavaScript reader suites with:
 
 ```sh
 ./scripts/check-readers.sh
 ```
 
 This separate command requires Python 3 and Node.js with `node --test` support.
-It uses their standard libraries and installs no packages. For the full corpus
-comparison, which additionally requires Python 3.9 or newer, run:
+It uses their standard libraries and installs no packages. For both full corpus
+comparisons, which additionally require Python 3.9 or newer, run:
 
 ```sh
 ./scripts/check-readers.sh --compare
 ```
 
-The comparison mode runs the comparator instead of the reader test suites.
-It prints the comparison summary, propagates the comparator's exit code and
-removes its temporary report directory on exit. A nonzero comparison result
-remains a failure, including while reader discrepancies are being corrected;
-it is separate from the repository check required before committing. To retain
-raw reports for diagnosis, use the [comparison commands](experimental/candidate-2/README.md#comparing-reader-commands)
-with an explicit report directory.
+The comparison mode runs candidate-2 and modular candidate-1 in separate
+temporary report directories. Use `--compare candidate-2` or `--compare modular`
+to select one corpus. The command prints each summary, preserves a nonzero
+comparator exit and removes its temporary reports on exit. It does not run the
+reader test suites. To retain raw reports, use the explicit commands in the
+[experimental guide](experimental/README.md#retain-comparison-reports).

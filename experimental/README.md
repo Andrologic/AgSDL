@@ -1,14 +1,15 @@
 # Experimental candidates
 
-The [modular candidate-1 corpus](modular-candidate-1/README.md) prepares
-proposal 0013 examples, text-derived oracles and comparison support for modular
-configurations, reusable content, addressable Interface operations and approval
-chains. Its 22 cases are ready for independent reader implementation. No modular
-reader exists yet, so there is no modular comparison result or implementation
-support claim.
+This directory keeps two separate experimental editions. The
+[modular candidate-1 guide](modular-candidate-1/README.md) covers proposal 0013,
+its 26-case corpus and its independent Python and JavaScript readers. Their
+integrated comparison at `90997464428ce7c3072179e1053cf2934fb80fef` has no
+blocked case or mismatch. The candidate-2 experiment below retains its own
+proposal 0012 marker, readers, 121-case corpus and comparison history.
 
-The guide below remains specific to proposal 0012 candidate-2. Its readers and
-121-case comparison do not accept or prove the modular edition.
+Neither edition is adopted AgSDL. A passing comparison shows agreement on its
+bounded corpus and report assertions. It does not prove runtime behavior,
+engine support, evidence authenticity or interoperability.
 
 ## Try candidate-2
 
@@ -101,36 +102,41 @@ of semantic validity; lossy exchange is refused by this edition.
 
 ## Automated reader checks
 
-Run `./scripts/check-readers.sh` for both existing reader test suites, using
-Python 3 and Node.js with `node --test` support. The general
-`./scripts/check.sh` includes the Python suite and keeps its Python-only runtime
-requirement.
+Run `./scripts/check-readers.sh` for the Python and JavaScript suites of both
+experimental editions, using Python 3 and Node.js with `node --test` support.
+The general `./scripts/check.sh` includes both Python suites and keeps its
+Python-only runtime requirement.
 
-Run `./scripts/check-readers.sh --compare` for the complete corpus comparison,
-using Python 3.9 or newer and Node.js. This mode prints the summary, preserves
-the comparator's exit code and cleans its temporary reports on exit. It does
-not run the test suites. Discrepancies produce a nonzero exit; the command does
-not convert known differences into success. Use the explicit commands below
-when you need to retain raw reports.
+Run `./scripts/check-readers.sh --compare` to compare both full corpora, using
+Python 3.9 or newer and Node.js. Add `candidate-2` or `modular` after `--compare`
+to select one. This mode prints each summary, preserves a nonzero comparator
+exit and cleans its separate temporary report directories on exit. It does not
+run the test suites.
 
-## Compare reports, then inspect discrepancies
+## Retain comparison reports
 
-Reuse the temporary directory to compare just the two examples:
+Give each comparator a new or empty directory when you need to retain
+`summary.json` and raw stdout/stderr:
 
 ```sh
+agsdl_candidate2_reports=$(mktemp -d)
 python3 experimental/candidate-2/compare-readers.py \
   --reader '["python", "python3", "experimental/readers/python/cli.py"]' \
   --reader '["javascript", "node", "experimental/readers/javascript/cli.mjs"]' \
-  --case local-invocation-resolve --case runtime-custom-evidence-unknown \
-  --reports "$agsdl_demo_dir/comparison"
+  --reports "$agsdl_candidate2_reports"
+
+agsdl_modular_reports=$(mktemp -d)
+python3 experimental/modular-candidate-1/compare-readers.py \
+  --reader '["python", "python3", "experimental/modular-candidate-1/readers/python/cli.py"]' \
+  --reader '["javascript", "node", "experimental/modular-candidate-1/readers/javascript/cli.mjs"]' \
+  --reports "$agsdl_modular_reports"
 ```
 
 A nonzero exit reports a failed assertion, invalid response or reader mismatch.
-Read `summary.json` and the unchanged stdout/stderr files in that directory.
-A rerun needs a new or empty reports directory. Passing these selected cases
-does not reproduce the recorded full-corpus evidence. The
-[comparison guide](candidate-2/README.md#comparing-reader-commands) explains full
-corpus runs, timeouts, report assertions and evidence limits.
+Read each `summary.json` and the unchanged stdout/stderr files. The
+[candidate-2 comparison contract](candidate-2/README.md#comparing-reader-commands)
+and [modular comparison contract](modular-candidate-1/README.md#compare-the-readers)
+describe report assertions and evidence limits.
 
 For embedding rather than CLI use, see the [Python API](readers/python/README.md)
 and [JavaScript API](readers/javascript/README.md), including their lossless
