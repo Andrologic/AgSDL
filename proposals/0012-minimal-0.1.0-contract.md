@@ -445,7 +445,14 @@ exposed as lossless host representations, with slices as the comparison source.
 Inventory states are operation-scoped, never discovered inside opaque values.
 Use the following exhaustive state inventory, only for well-shaped parent
 records. Validation emits shape findings for malformed parents; inspect/exchange do not.
-No operation invents child absences beneath a malformed parent.
+No operation invents child absences beneath a malformed parent. For inspect,
+exchange and lossyExchange, dependency child states are emitted only when the
+entire dependencies value satisfies Dependency[]. Otherwise the whole value is
+opaque and only its unchecked parent state is emitted, even if some elements
+are individually well-shaped. This condition takes precedence over the shared
+D-boundary row below. Validation operations retain per-record dependency checks
+and states for individually well-shaped records; they do not make the entire
+dependencies array opaque merely because another element is malformed.
 
 | Scope | States recorded |
 | --- | --- |
