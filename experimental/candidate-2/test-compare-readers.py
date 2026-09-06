@@ -290,7 +290,7 @@ class ObservationTests(unittest.TestCase):
         self.assertTrue(harness.observe(case,response,source))
         self.assertNotEqual(harness.comparison(response),harness.comparison(clean))
 
-    def test_blocked_pointer_can_name_missing_immediate_child(self):
+    def test_blocked_pointer_names_affected_record_not_missing_value(self):
         case,response,source=fixture(raw=b'{"record":{},"items":[],"scalar":1}')
         case['operation']=response['report']['operation']='validateD'
         result=response['report']['results'][0]
@@ -301,10 +301,10 @@ class ObservationTests(unittest.TestCase):
         result['checks'].append(blocked);result['checks'].sort(key=lambda c:(c['rule'],c['state']))
         response['report']['inventory']['states']=response['report']['inventory']['states'][:2]
         case['expected']['results']=[];case['expected']['states']=[]
-        for path in ['/relations','/record/missing','/record/~0~1','/items/0']:
+        for path in ['', '/record', '/items', '/scalar']:
             blocked['locations']=[{'pointer':path}]
             with self.subTest(path=path): self.assertEqual(harness.observe(case,response,source),[])
-        for path in ['/missing/child','/scalar/child','/items/01','/items/-','/record/~2bad']:
+        for path in ['/relations','/record/missing','/record/~0~1','/items/0','/missing/child','/scalar/child','/items/01','/items/-','/record/~2bad']:
             blocked['locations']=[{'pointer':path}]
             with self.subTest(path=path): self.assertTrue(harness.observe(case,response,source))
         blocked.update(state='excluded',locations=[{'pointer':'/relations'}])

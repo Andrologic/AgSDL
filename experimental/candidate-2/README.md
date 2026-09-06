@@ -204,14 +204,14 @@ or claiming that the full comparison succeeds.
 The proposal's [location rules](../../proposals/0012-minimal-0.1.0-contract.md#exact-results-locations-and-experimental-diagnostics)
 place a missing-field P-SHAPE finding at its observable parent. Its
 [Check rules](../../proposals/0012-minimal-0.1.0-contract.md#rule-execution-and-exact-exclusion-records)
-separately describe blocked prerequisites. The harness therefore accepts a
-blocked Check pointing to an unavailable immediate child of an observable
-object or array, such as `/relations` when the primary object lacks that member.
-It does not infer whether an AgSDL rule should need that child. A missing
-ancestor, scalar parent, malformed pointer escape or noncanonical array index
-still fails the pointer check. This does not relocate P-SHAPE findings or relax
-the exact documentary exclusion records. Absent-container exclusions retain
-their contract-specific rule and location combinations.
+say that blocked locations name the affected record needing the value. These
+are distinct from the missing prerequisite's own location. The harness keeps
+requiring an observable affected record for a blocked pointer, while preserving
+the whole-unit root location and exact documentary exclusions. It does not
+infer which AgSDL record or rule needs the missing value. Absent-container
+exclusions are limited to the contract-specific rule/location combinations.
+Accepting any unavailable child of an observable parent would need a further
+contract clarification; this lot does not adopt that interpretation.
 
 The same report section explicitly compares States as sets of
 input/pointer/state, with Requirement identity retained for missing claims.
@@ -222,9 +222,12 @@ states at the same pointer and different missing-claim Requirement ids remain
 distinct. This exception does not remove the explicit uniqueness checks for
 Check rule/state pairs or their locations, nor the checks on other records.
 
-Regression tests distinguish blocked locations from missing-field findings and
-State repetition from a change in state or Requirement identity. Saved
-`missing-relations`, `g-prerequisite-failure` and `external-local-phase`
-JavaScript reports from the first comparison were also replayed unchanged through
-the corrected harness. That replay tests these report boundaries only; it neither
-executes a reader nor supplies new semantic validation evidence.
+Regression tests distinguish affected-record locations from missing values and
+State repetition from a change in state or Requirement identity. The saved
+`external-local-phase` JavaScript report from the first comparison is accepted
+unchanged after State normalization. Saved `missing-relations` and
+`g-prerequisite-failure` reports still identify absent collections as blocked
+locations, and remain rejected. Those witnesses require reader-report correction
+or an explicit contract clarification outside this lot. Replaying these reports
+tests report boundaries only; it does not execute a reader or provide new
+semantic validation evidence.

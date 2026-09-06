@@ -314,13 +314,12 @@ def validate_report(response, case, source):
                 if 'pointer' in loc and loc['pointer'] != '' and check['rule'] not in boundaries:
                     path = loc['pointer']
                     observed = parsed[input_id] is not None and path in parsed[input_id].spans
-                    unavailable = check['state'] == 'blocked' and missing_child(path, parsed[input_id])
                     # These absent-container exclusions have explicit contract locations.
                     container_exclusion = check['state'] == 'excluded' and missing_child(path, parsed[input_id]) and (
                         input_id == 'primary' and result['unit'] == 'G' and path == '/graphs' and check['rule'] in (G_RULES | {'G-RESOLVE'}) - {'X-MODE'}
                         or input_id == 'primary' and result['unit'] == 'R' and path == '/runtime' and check['rule'] in {'P-SHAPE','R-REQUIREMENT','R-SELECTION'}
                         or input_id == 'primary' and result['unit'] == 'R' and path == '/runtime/selection' and check['rule'] == 'R-SELECTION')
-                    demand(observed or unavailable or container_exclusion, 'Check location has no observed record or parent')
+                    demand(observed or container_exclusion, 'Check location has no affected record or declared exclusion')
             unique(check['locations'], 'Check location')
             demand(check['locations'] == sorted(check['locations'],key=loc_key), 'Check locations not sorted')
             demand(check['locations'] == [] if check['state'] == 'completed' else bool(check['locations']), 'Check locations/state mismatch')
