@@ -1,57 +1,638 @@
 import * as S from './shape.mjs';
-import {Result,rows,key,refkey,edition,canonical,equal,ext,declaration,modes,lookup,cyclic} from './core.mjs';
+import { Result, canonical, declaration, edition, equal, ext, key, modes, rows } from './core.mjs';
 
-const RULES=['P-SHAPE','X-MODE','R-SELECTION','R-BINDING','R-TOOL','R-CONTENT','R-COMPATIBILITY'];
-const kinds={Tool:S.Tool,Instructions:S.Instructions,Skill:S.Skill};
-const assessState={incompatible:'declared','not-provided':'absent',unknown:'unknown','declared-supported':'unchecked',blocked:'unchecked'};
-export function validateR(ctx,inventory){
-  const r=new Result(ctx.id,'R','unresolved-document',RULES);r.boundary(true);r.prerequisites=[ctx.d];if(ctx.d.verdict!=='pass')r.mark('P-PREREQUISITE','blocked','');modes(ctx,r,'validateR');const interpreted=new Set();
-  const state=(p,s,detail=s)=>inventory.states.push({input:ctx.id,pointer:p,state:s,detail});
-  if(ctx.error||!S.object(ctx.tree)){for(const q of RULES.filter(x=>x!=='X-MODE'))r.mark(q,'blocked','');return{result:r.finish(),interpreted};}
-  if(!S.has(ctx.tree,'runtime')){for(const q of RULES.filter(x=>x!=='X-MODE'))r.mark(q,'excluded','/runtime');return{result:r.finish(),interpreted};}
-  const rt=ctx.tree.runtime;r.shape(S.Runtime,rt,'/runtime');if(!S.object(rt)){for(const q of RULES.filter(x=>!['P-SHAPE','X-MODE'].includes(x)))r.mark(q,'blocked','/runtime');return{result:r.finish(),interpreted};}
-  const configs=Array.isArray(rt.configurations)?rt.configurations:[],configIds=new Map();if(!Array.isArray(rt.configurations))for(const q of['R-SELECTION','R-BINDING','R-TOOL','R-CONTENT','R-COMPATIBILITY'])r.mark(q,'blocked','/runtime');
-  for(const[i,c]of configs.entries())if(typeof c?.id==='string'&&c.id){const p=`/runtime/configurations/${i}`;if(configIds.has(c.id))r.find('R-SELECTION',p,'Duplicate configuration id');configIds.set(c.id,[...(configIds.get(c.id)||[]),{c,p,i}]);}
-  if(S.valid(S.Runtime,rt)){state('/runtime/selected',S.has(rt,'selected')?'declared':'absent');for(const[i,c]of configs.entries())if(S.valid(S.Configuration,c)){state(`/runtime/configurations/${i}`,'declared');for(const[j,a]of c.agents.entries())if(S.valid(S.AgentBinding,a)){state(`/runtime/configurations/${i}/agents/${j}/engine`,a.engine===null?'absent':'declared');for(const[k,t]of a.tools.entries())if(S.valid(S.ToolBinding,t))state(`/runtime/configurations/${i}/agents/${j}/tools/${k}/selected`,S.has(t,'selected')?'declared':'absent');}}}
-  let selected=null;if(!S.has(rt,'selected'))r.mark('R-COMPATIBILITY','excluded','/runtime');else if(typeof rt.selected!=='string'||!rt.selected){r.mark('R-SELECTION','blocked','/runtime');r.mark('R-COMPATIBILITY','blocked','/runtime');}else{r.mark('R-SELECTION');const found=configIds.get(rt.selected);if(!found){r.find('R-SELECTION','/runtime','Selected configuration does not exist');r.mark('R-COMPATIBILITY','blocked','/runtime');}else if(found.length!==1){r.mark('R-COMPATIBILITY','blocked','/runtime');}else selected=found[0];}
+const RULES = ['P-SHAPE', 'X-MODE', 'R-SELECTION', 'R-BINDING', 'R-TOOL', 'R-CONTENT', 'R-COMPATIBILITY'];
+const payloadShapes = { Tool: S.Tool, Instructions: S.Instructions, Skill: S.Skill };
+const assessmentStates = { incompatible: 'declared', 'not-provided': 'absent', unknown: 'unknown', 'declared-supported': 'unchecked' };
 
-  const graphRows=Array.isArray(ctx.tree.graphs)?ctx.tree.graphs.map((v,i)=>({v,p:`/graphs/${i}`})):null;
-  function graphFor(c,p){if(!S.valid(S.Key,c?.graph)){r.mark('R-SELECTION','blocked',p);return null;}if(!graphRows){r.mark('R-SELECTION','blocked',p);return null;}const found=graphRows.filter(g=>S.valid(S.Key,g.v?.definition)&&equal(g.v.definition,c.graph));if(!found.length){r.mark('R-SELECTION');r.find('R-SELECTION',p,'Configuration graph does not exist');return null;}if(found.length!==1){r.mark('R-SELECTION','blocked',p);return null;}if(!declaration(ctx,c.graph,'ControlFlow',r,'R-SELECTION',p))return null;r.mark('R-SELECTION');return found[0];}
-  function ref(ctxRef,kind,rule,p,statePointer=p){if(!S.valid(S.Ref,ctxRef)){r.mark(rule,'blocked',p);return null;}r.mark(rule);if(!declaration(ctx,ctxRef,kind,r,rule,p))return null;if(ext(ctxRef)){r.mark(rule,'excluded',p);state(statePointer,'unchecked');return{external:true,ref:ctxRef};}const found=lookup(ctx,ctxRef);return found?{...found,ref:ctxRef}:null;}
-  function uniqueEditions(values,rule,p){if(!Array.isArray(values)){r.mark(rule,'blocked',p);return;}const seen=new Set();for(const v of values)if(S.valid(S.Edition,v)){r.mark(rule);const k=edition(v);if(seen.has(k))r.find(rule,p,'Duplicate Edition');seen.add(k);}else r.mark(rule,'blocked',p);}
-  function payload(found,kind,rule,requesting){if(!found||found.external)return null;const p=`${found.p}/payload`,type=kinds[kind];interpreted.add(p);r.shape(type,found.v.payload,p);if(!S.object(found.v.payload)){r.mark(rule,'blocked',requesting||p);return null;}return{value:found.v.payload,p,found};}
-  function claimMap(claims,rule,p){if(!Array.isArray(claims)){r.mark(rule,'blocked',p);return{map:new Map(),blocked:true};}const map=new Map(),seen=new Set();for(const[i,c]of claims.entries()){const cp=`${p}/claims/${i}`;if(S.valid(S.CapabilityClaim,c)){r.mark(rule);const k=edition(c.capability);if(seen.has(k))r.find(rule,cp,'Duplicate capability claim');seen.add(k);map.set(k,c);if(c.evidence===null)state(`${cp}/evidence`,'unknown');}else r.mark(rule,'blocked',cp);}return{map,blocked:false};}
-  function projection(g,cp){if(!g)return null;if(!Array.isArray(g.v.steps)){r.mark('R-BINDING','blocked',cp);return null;}const refs=[];for(const s of g.v.steps){if(!S.object(s)||!['invoke','condition','approval','end'].includes(s.kind)||(s.kind==='invoke'&&!S.valid(S.Ref,s.agent))){r.mark('R-BINDING','blocked',cp);return null;}if(s.kind==='invoke'&&!refs.some(x=>canonical(x)===canonical(s.agent)))refs.push(s.agent);}return refs;}
-  const analyses=new Map();
-  for(const[ci,c]of configs.entries()){
-    const cp=`/runtime/configurations/${ci}`;if(!S.object(c)){for(const q of['R-SELECTION','R-BINDING','R-TOOL','R-CONTENT'])r.mark(q,'blocked',cp);continue;}r.mark('R-SELECTION');const g=graphFor(c,cp),used=projection(g,cp),bindings=Array.isArray(c.agents)?c.agents:[];if(!Array.isArray(c.agents))for(const q of['R-BINDING','R-TOOL','R-CONTENT'])r.mark(q,'blocked',cp);
-    const seenAgents=new Set(),bindingBy=new Map();for(const[ai,a]of bindings.entries()){
-      const ap=`${cp}/agents/${ai}`;if(!S.object(a)){for(const q of['R-BINDING','R-TOOL','R-CONTENT'])r.mark(q,'blocked',ap);continue;}const agent=ref(a.agent,'Agent','R-BINDING',ap,`${ap}/agent`);if(S.valid(S.Ref,a.agent)){const k=canonical(a.agent);if(seenAgents.has(k))r.find('R-BINDING',ap,'Duplicate AgentBinding');seenAgents.add(k);bindingBy.set(k,{a,ap,agent,ai});}uniqueEditions(a.requires,'R-BINDING',ap);claimMap(a.claims,'R-BINDING',ap);if(a.engine!==null&&!S.valid(S.Edition,a.engine))r.mark('R-BINDING','blocked',ap);else r.mark('R-BINDING');
-      if(!Array.isArray(a.tools))r.mark('R-TOOL','blocked',ap);if(!Array.isArray(a.applications))r.mark('R-CONTENT','blocked',ap);
+export function validateR(ctx, inventory) {
+  const result = new Result(ctx.id, 'R', 'unresolved-document', RULES);
+  result.boundary(true);
+  result.prerequisites = [ctx.d];
+  if (ctx.d.verdict !== 'pass') result.mark('P-PREREQUISITE', 'blocked', '');
+  modes(ctx, result, 'validateR');
+  const interpreted = new Set();
+  const state = (pointer, value, detail = value) => inventory.states.push({ input: ctx.id, pointer, state: value, detail });
+
+  if (ctx.error || !S.object(ctx.tree)) {
+    for (const rule of RULES.filter(rule => rule !== 'X-MODE')) result.mark(rule, 'blocked', '');
+    return { result: result.finish(), interpreted };
+  }
+  if (!S.has(ctx.tree, 'runtime')) {
+    for (const rule of RULES.filter(rule => rule !== 'X-MODE')) result.mark(rule, 'excluded', '/runtime');
+    return { result: result.finish(), interpreted };
+  }
+
+  const runtime = ctx.tree.runtime;
+  result.shape(S.Runtime, runtime, '/runtime');
+  if (!S.object(runtime)) {
+    for (const rule of RULES.filter(rule => !['P-SHAPE', 'X-MODE'].includes(rule))) result.mark(rule, 'blocked', '/runtime');
+    return { result: result.finish(), interpreted };
+  }
+
+  const configurations = Array.isArray(runtime.configurations) ? runtime.configurations : [];
+  if (!Array.isArray(runtime.configurations)) {
+    for (const rule of ['R-SELECTION', 'R-BINDING', 'R-TOOL', 'R-CONTENT', 'R-COMPATIBILITY']) result.mark(rule, 'blocked', '/runtime');
+  }
+
+  const configurationIds = new Map();
+  for (const [index, configuration] of configurations.entries()) {
+    if (typeof configuration?.id !== 'string' || !configuration.id) continue;
+    const pointer = `/runtime/configurations/${index}`;
+    const matches = configurationIds.get(configuration.id) || [];
+    if (matches.length) result.find('R-SELECTION', pointer, 'Duplicate configuration id');
+    matches.push({ configuration, pointer, index });
+    configurationIds.set(configuration.id, matches);
+  }
+
+  if (S.valid(S.Runtime, runtime)) {
+    state('/runtime/selected', S.has(runtime, 'selected') ? 'declared' : 'absent');
+    for (const [ci, configuration] of configurations.entries()) {
+      const cp = `/runtime/configurations/${ci}`;
+      state(cp, 'declared');
+      for (const [ai, binding] of configuration.agents.entries()) {
+        const ap = `${cp}/agents/${ai}`;
+        state(`${ap}/engine`, binding.engine === null ? 'absent' : 'declared');
+        for (const [claimIndex, claim] of binding.claims.entries()) if (claim.evidence === null) state(`${ap}/claims/${claimIndex}/evidence`, 'unknown');
+        for (const [ti, tool] of binding.tools.entries()) {
+          const tp = `${ap}/tools/${ti}`;
+          state(`${tp}/selected`, S.has(tool, 'selected') ? 'declared' : 'absent');
+          for (const [choiceIndex, choice] of tool.choices.entries()) {
+            for (const [claimIndex, claim] of choice.claims.entries()) {
+              if (claim.evidence === null) state(`${tp}/choices/${choiceIndex}/claims/${claimIndex}/evidence`, 'unknown');
+            }
+          }
+        }
+      }
     }
-    if(used){r.mark('R-BINDING');const need=new Set(used.map(canonical));if(need.size!==seenAgents.size||[...need].some(k=>!seenAgents.has(k)))r.find('R-BINDING',cp,'AgentBinding coverage differs from graph Agents');}
-    analyses.set(c,{cp,g,used,bindingBy});
   }
 
-  function analyzeBinding(item,doAssess){
-    const {a,ap,agent}=item;let blocked=false,unknownExternal=false,missingContent=false;const engineReq=new Map(),toolReq=new Map(),content=new Map(),roots=[];
-    uniqueEditions(a.requires,'R-BINDING',ap);for(const e of Array.isArray(a.requires)?a.requires:[])if(S.valid(S.Edition,e))engineReq.set(edition(e),e);
-    const rels=rows(ctx,'relations',S.Relation).filter(x=>agent&&!agent.external&&S.valid(S.Key,x.v?.source)&&equal(x.v.source,agent.v.key));for(const x of rels){if(x.v.relation==='directedBy'&&['Instructions','Skill'].includes(x.v.expectedKind))roots.push({ref:x.v.target,request:`${x.p}/target`});if(x.v.relation==='uses'&&x.v.expectedKind==='Tool')toolReq.set(canonical(x.v.target),x.v.target);}
-    const visiting=new Set(),done=new Set(),edges=[];
-    function visit(refValue,request,statePointer=request){const k=canonical(refValue);if(done.has(k))return content.get(k);if(visiting.has(k))return content.get(k);visiting.add(k);const found=ref(refValue,null,'R-CONTENT',request,statePointer);if(found?.external){unknownExternal=true;visiting.delete(k);done.add(k);content.set(k,found);return found;}if(!found){missingContent=true;visiting.delete(k);done.add(k);return null;}const kind=found.v.kind;if(!['Instructions','Skill'].includes(kind)){r.find('R-CONTENT',request,'Content target has wrong kind');missingContent=true;visiting.delete(k);done.add(k);return null;}const pl=payload(found,kind,'R-CONTENT',request);content.set(k,{found,pl,kind,ref:refValue});if(pl){for(const e of Array.isArray(pl.value.requires)?pl.value.requires:[])if(S.valid(S.Edition,e))engineReq.set(edition(e),e);uniqueEditions(pl.value.requires,'R-CONTENT',pl.p);if(kind==='Instructions'&&S.valid(S.Edition,pl.value.format))engineReq.set(edition(pl.value.format),pl.value.format);if(kind==='Skill'){if(!Array.isArray(pl.value.dependencies)){r.mark('R-CONTENT','blocked',pl.p);blocked=true;}else{const seen=new Set();for(const[i,dep]of pl.value.dependencies.entries()){const dk=canonical(dep);if(seen.has(dk))r.find('R-CONTENT',pl.p,'Duplicate Skill dependency');seen.add(dk);edges.push([k,dk]);visit(dep,pl.p,`${pl.p}/dependencies/${i}`);}}if(Array.isArray(pl.value.tools)){const seen=new Set();for(const[i,t]of pl.value.tools.entries()){const tk=canonical(t);if(seen.has(tk))r.find('R-CONTENT',pl.p,'Duplicate Skill Tool');seen.add(tk);ref(t,'Tool','R-CONTENT',pl.p,`${pl.p}/tools/${i}`);toolReq.set(tk,t);}}else{r.mark('R-CONTENT','blocked',pl.p);blocked=true;}}}visiting.delete(k);done.add(k);return content.get(k);}
-    for(const root of roots)visit(root.ref,root.request);const adjacency=new Map();for(const[a,b]of edges)adjacency.set(a,[...(adjacency.get(a)||[]),b]);for(const[k,x]of content)if(x?.kind==='Skill'){const seen=new Set(),todo=[...(adjacency.get(k)||[])];let cycle=false;while(todo.length){const n=todo.pop();if(n===k){cycle=true;break;}if(seen.has(n))continue;seen.add(n);todo.push(...(adjacency.get(n)||[]));}if(cycle&&x.pl)r.find('R-CONTENT',x.pl.p,'Skill dependency cycle');}
-    const apps=Array.isArray(a.applications)?a.applications:[],appPositions=new Map();for(const[i,x]of apps.entries()){const p=`${ap}/applications/${i}`;if(!S.object(x)){r.mark('R-CONTENT','blocked',p);blocked=true;continue;}if(S.valid(S.Edition,x.adapter))engineReq.set(edition(x.adapter),x.adapter);const f=ref(x.content,null,'R-CONTENT',p,`${p}/content`);if(f?.external)unknownExternal=true;const k=canonical(x.content);appPositions.set(k,[...(appPositions.get(k)||[]),i]);}
-    for(const root of roots)if(!appPositions.has(canonical(root.ref))){r.find('R-CONTENT',ap,'Required Application missing');missingContent=true;}for(const[k,x]of content)if(x?.kind==='Skill'&&x.pl&&Array.isArray(x.pl.value.dependencies)&&appPositions.has(k))for(const dep of x.pl.value.dependencies){const dependent=Math.min(...appPositions.get(k)),prior=(appPositions.get(canonical(dep))||[]).some(i=>i<dependent);if(!prior){r.find('R-CONTENT',`${ap}/applications/${dependent}`,'Skill dependency must appear earlier');missingContent=true;}}const reachable=new Set(content.keys());for(const root of roots)reachable.add(canonical(root.ref));for(const[k,positions]of appPositions)if(!reachable.has(k))for(const i of positions)r.find('R-CONTENT',`${ap}/applications/${i}`,'Application is not reachable from Agent direction');
-    const tools=Array.isArray(a.tools)?a.tools:[],toolBy=new Map();for(const[i,t]of tools.entries()){const tp=`${ap}/tools/${i}`;if(!S.object(t)){r.mark('R-TOOL','blocked',tp);continue;}const found=ref(t.tool,'Tool','R-TOOL',tp,`${tp}/tool`),k=canonical(t.tool);if(toolBy.has(k))r.find('R-TOOL',tp,'Duplicate ToolBinding');toolBy.set(k,{t,tp,found});const ids=new Set();for(const[j,ch]of(Array.isArray(t.choices)?t.choices:[]).entries()){const ip=`${tp}/choices/${j}`;if(typeof ch?.id==='string'){if(ids.has(ch.id))r.find('R-TOOL',ip,'Duplicate Implementation id');ids.add(ch.id);}claimMap(ch?.claims,'R-TOOL',ip);}if(S.has(t,'selected')&&!ids.has(t.selected))r.find('R-TOOL',tp,'Selected Implementation missing');}
-    if(toolReq.size!==toolBy.size||[...toolReq].some(([k])=>!toolBy.has(k)))r.find('R-TOOL',ap,'ToolBinding coverage differs from required Tools');
-    for(const[k,refValue]of toolReq){const tb=toolBy.get(k);if(!tb)continue;const pl=payload(tb.found,'Tool','R-TOOL',tb.tp);if(pl){uniqueEditions(pl.value.requires,'R-TOOL',pl.p);if(S.valid(S.Ref,pl.value.action))ref(pl.value.action,'Action','R-TOOL',pl.p,`${pl.p}/action`);if(new Set(pl.value.failures||[]).size!==(pl.value.failures||[]).length)r.find('R-TOOL',pl.p,'Duplicate Tool failure');}if(doAssess)assessTool(tb,pl);}
-    if(doAssess)assessAgent();
-    function evaluate(requirements,claims,supplied,extraUnknown=false){if(!supplied)return'not-provided';let rank='declared-supported';for(const e of requirements.values()){const c=claims.get(edition(e));if(c?.status==='unsupported')return'incompatible';if(!c||c.status==='unknown'||c.evidence===null)rank='unknown';}return extraUnknown?'unknown':rank;}
-    function recordAssessment(p,values,isBlocked=false){r.mark('R-COMPATIBILITY');if(values.includes('incompatible'))r.find('R-COMPATIBILITY',p,'Declared capability incompatible');if(isBlocked){r.mark('R-COMPATIBILITY','blocked',p);state(p,'unchecked','blocked');return;}if(values.some(x=>['not-provided','unknown'].includes(x)))r.find('R-COMPATIBILITY',p,'Compatibility not established','inconclusive');const aggregate=values.includes('incompatible')?'incompatible':values.includes('not-provided')?'not-provided':values.includes('unknown')?'unknown':'declared-supported';state(p,assessState[aggregate],aggregate);}
-    function assessAgent(){const claims=claimMap(a.claims,'R-COMPATIBILITY',ap);const values=[evaluate(engineReq,claims.map,a.engine!==null,unknownExternal),...(missingContent?['not-provided']:[])];recordAssessment(ap,values,blocked||claims.blocked);}
-    function assessTool(tb,pl){const {t,tp}=tb,choices=Array.isArray(t.choices)?t.choices:[],choice=S.has(t,'selected')?choices.filter(x=>x?.id===t.selected):[];if(choice.length!==1){recordAssessment(tp,['not-provided']);return;}const claims=claimMap(choice[0].claims,'R-COMPATIBILITY',tp),reqs=new Map();for(const e of pl?.value?.requires||[])if(S.valid(S.Edition,e))reqs.set(edition(e),e);recordAssessment(tp,[evaluate(reqs,claims.map,true,tb.found?.external||pl?.value?.effects==='unknown')],claims.blocked);}
+  let selected = null;
+  if (!S.has(runtime, 'selected')) {
+    result.mark('R-COMPATIBILITY', 'excluded', '/runtime');
+  } else if (typeof runtime.selected !== 'string' || !runtime.selected) {
+    result.mark('R-SELECTION', 'blocked', '/runtime');
+    result.mark('R-COMPATIBILITY', 'blocked', '/runtime');
+  } else {
+    result.mark('R-SELECTION');
+    const matches = configurationIds.get(runtime.selected);
+    if (!matches) {
+      result.find('R-SELECTION', '/runtime', 'Selected configuration does not exist');
+      result.mark('R-COMPATIBILITY', 'blocked', '/runtime');
+    } else if (matches.length !== 1) {
+      result.mark('R-COMPATIBILITY', 'blocked', '/runtime');
+    } else selected = matches[0];
   }
-  for(const[c,a]of analyses)for(const item of a.bindingBy.values())analyzeBinding(item,selected?.c===c);
-  if(selected&&!analyses.get(selected.c)?.bindingBy.size)r.mark('R-COMPATIBILITY');
-  return{result:r.finish(),interpreted};
+
+  const graphRows = Array.isArray(ctx.tree.graphs) ? ctx.tree.graphs.map((value, index) => ({ value, pointer: `/graphs/${index}` })) : null;
+  const graphIndexReadable = graphRows !== null && graphRows.every(row => S.object(row.value) && S.valid(S.Key, row.value.definition));
+
+  function graphFor(configuration, pointer) {
+    if (!S.valid(S.Key, configuration?.graph) || !graphRows || !graphIndexReadable) {
+      result.mark('R-SELECTION', 'blocked', pointer);
+      return null;
+    }
+    const matches = graphRows.filter(row => equal(row.value.definition, configuration.graph));
+    if (!matches.length) {
+      result.mark('R-SELECTION');
+      result.find('R-SELECTION', pointer, 'Configuration graph does not exist');
+      return null;
+    }
+    if (matches.length !== 1) {
+      result.mark('R-SELECTION', 'blocked', pointer);
+      return null;
+    }
+    if (!declaration(ctx, configuration.graph, 'ControlFlow', result, 'R-SELECTION', pointer)) return null;
+    result.mark('R-SELECTION');
+    return matches[0];
+  }
+
+  function resolveRef(value, kind, rule, pointer, statePointer = pointer) {
+    if (!S.valid(S.Ref, value)) {
+      result.mark(rule, 'blocked', pointer);
+      return { status: 'blocked', ref: value };
+    }
+    result.mark(rule);
+    if (!declaration(ctx, value, kind, result, rule, pointer)) {
+      if (ext(value)) return { status: 'blocked', ref: value };
+      const found = ctx.defs.get(key(value));
+      if (!Array.isArray(ctx.tree.definitions) || found?.length > 1) return { status: 'blocked', ref: value };
+      if (found?.length === 1 && kind && !S.valid(S.Kind, found[0].v.kind)) return { status: 'blocked', ref: value };
+      return { status: 'missing', ref: value };
+    }
+    if (ext(value)) {
+      result.mark(rule, 'excluded', pointer);
+      state(statePointer, 'unchecked');
+      return { status: 'external', ref: value };
+    }
+    const found = ctx.defs.get(key(value))?.[0];
+    return found ? { status: 'local', ref: value, ...found } : { status: 'blocked', ref: value };
+  }
+
+  function editionMap(values, rule, pointer) {
+    const map = new Map();
+    let blocked = false;
+    if (!Array.isArray(values)) {
+      result.mark(rule, 'blocked', pointer);
+      return { map, blocked: true };
+    }
+    for (const value of values) {
+      if (!S.valid(S.Edition, value)) {
+        result.mark(rule, 'blocked', pointer);
+        blocked = true;
+        continue;
+      }
+      result.mark(rule);
+      const identity = edition(value);
+      if (map.has(identity)) {
+        result.find(rule, pointer, 'Duplicate Edition');
+        blocked = true;
+      } else map.set(identity, value);
+    }
+    return { map, blocked };
+  }
+
+  function claimMap(claims, rule, pointer, reportDuplicates = true) {
+    const map = new Map();
+    const ambiguous = new Set();
+    let blocked = false;
+    if (!Array.isArray(claims)) {
+      result.mark(rule, 'blocked', pointer);
+      return { map, ambiguous, blocked: true };
+    }
+    for (const claim of claims) {
+      if (!S.valid(S.CapabilityClaim, claim)) {
+        result.mark(rule, 'blocked', pointer);
+        blocked = true;
+        continue;
+      }
+      result.mark(rule);
+      const identity = edition(claim.capability);
+      if (ambiguous.has(identity) || map.has(identity)) {
+        if (reportDuplicates) result.find(rule, pointer, 'Duplicate capability claim');
+        map.delete(identity);
+        ambiguous.add(identity);
+        blocked = true;
+      } else map.set(identity, claim);
+    }
+    return { map, ambiguous, blocked };
+  }
+
+  function payload(found, kind, rule, requestingPointer) {
+    if (found?.status !== 'local') return null;
+    const pointer = `${found.p}/payload`;
+    interpreted.add(pointer);
+    const value = found.v.payload;
+    const valid = result.shape(payloadShapes[kind], value, pointer);
+    if (!S.object(value)) {
+      result.mark(rule, 'blocked', requestingPointer || pointer);
+      return { value: null, pointer, valid: false, found };
+    }
+    return { value, pointer, valid, found };
+  }
+
+  function projection(graph, configurationPointer) {
+    if (!graph) return null;
+    if (!Array.isArray(graph.value.steps)) {
+      result.mark('R-BINDING', 'blocked', configurationPointer);
+      return null;
+    }
+    const agents = [];
+    for (const step of graph.value.steps) {
+      if (!S.object(step) || !['invoke', 'condition', 'approval', 'end'].includes(step.kind) || (step.kind === 'invoke' && !S.valid(S.Ref, step.agent))) {
+        result.mark('R-BINDING', 'blocked', configurationPointer);
+        return null;
+      }
+      if (step.kind === 'invoke' && !agents.some(agent => canonical(agent) === canonical(step.agent))) agents.push(step.agent);
+    }
+    return agents;
+  }
+
+  const analyses = new Map();
+  for (const [ci, configuration] of configurations.entries()) {
+    const cp = `/runtime/configurations/${ci}`;
+    if (!S.object(configuration)) {
+      for (const rule of ['R-SELECTION', 'R-BINDING', 'R-TOOL', 'R-CONTENT']) result.mark(rule, 'blocked', cp);
+      analyses.set(configuration, { cp, groups: new Map(), used: null, structuralBlocked: true });
+      continue;
+    }
+    result.mark('R-SELECTION');
+    const graph = graphFor(configuration, cp);
+    const used = projection(graph, cp);
+    const bindings = Array.isArray(configuration.agents) ? configuration.agents : [];
+    let structuralBlocked = !graph || !used || !Array.isArray(configuration.agents);
+    if (!Array.isArray(configuration.agents)) for (const rule of ['R-BINDING', 'R-TOOL', 'R-CONTENT']) result.mark(rule, 'blocked', cp);
+
+    const groups = new Map();
+    for (const [ai, binding] of bindings.entries()) {
+      const ap = `${cp}/agents/${ai}`;
+      if (!S.object(binding)) {
+        for (const rule of ['R-BINDING', 'R-TOOL', 'R-CONTENT']) result.mark(rule, 'blocked', ap);
+        structuralBlocked = true;
+        continue;
+      }
+      const agent = resolveRef(binding.agent, 'Agent', 'R-BINDING', ap, `${ap}/agent`);
+      const requirements = editionMap(binding.requires, 'R-BINDING', ap);
+      const claims = claimMap(binding.claims, 'R-BINDING', ap);
+      let bindingBlocked = requirements.blocked || claims.blocked;
+      if (binding.engine !== null && !S.valid(S.Edition, binding.engine)) {
+        result.mark('R-BINDING', 'blocked', ap);
+        bindingBlocked = true;
+      } else result.mark('R-BINDING');
+      if (!Array.isArray(binding.tools)) {
+        result.mark('R-TOOL', 'blocked', ap);
+        bindingBlocked = true;
+      }
+      if (!Array.isArray(binding.applications)) {
+        result.mark('R-CONTENT', 'blocked', ap);
+        bindingBlocked = true;
+      }
+      const item = { binding, ap, agent, requirements, claims, bindingBlocked };
+      if (S.valid(S.Ref, binding.agent)) {
+        const identity = canonical(binding.agent);
+        const matches = groups.get(identity) || [];
+        if (matches.length) result.find('R-BINDING', ap, 'Duplicate AgentBinding');
+        matches.push(item);
+        groups.set(identity, matches);
+      } else structuralBlocked = true;
+    }
+
+    if (used) {
+      result.mark('R-BINDING');
+      const needed = new Set(used.map(canonical));
+      if (needed.size !== groups.size || [...needed].some(identity => !groups.has(identity))) {
+        result.find('R-BINDING', cp, 'AgentBinding coverage differs from graph Agents');
+        structuralBlocked = true;
+      }
+    }
+    analyses.set(configuration, { cp, groups, used, structuralBlocked });
+  }
+
+  function analyzeBinding(item, assess, forceAssessmentBlocked) {
+    const { binding, ap, agent, requirements, claims } = item;
+    let assessmentBlocked = item.bindingBlocked || forceAssessmentBlocked;
+    let unknownExternal = agent.status === 'external';
+    let missingContent = false;
+    let closureKnown = agent.status === 'local';
+    const engineRequirements = new Map(requirements.map);
+    const requiredTools = new Map();
+    const requiredContent = new Map();
+    const content = new Map();
+    const edges = [];
+
+    if (agent.status === 'external') {
+      result.mark('R-CONTENT', 'excluded', ap);
+      result.mark('R-TOOL', 'excluded', ap);
+    } else if (agent.status !== 'local') {
+      result.mark('R-CONTENT', 'blocked', ap);
+      result.mark('R-TOOL', 'blocked', ap);
+      assessmentBlocked = true;
+    }
+
+    const relationRows = rows(ctx, 'relations', S.Relation);
+    if (agent.status === 'local') {
+      if (!Array.isArray(ctx.tree.relations)) {
+        result.mark('R-CONTENT', 'blocked', ap);
+        result.mark('R-TOOL', 'blocked', ap);
+        assessmentBlocked = true;
+        closureKnown = false;
+      } else {
+        const unreadable = ctx.tree.relations.some(relation => !S.object(relation) || !S.valid(S.Key, relation.source) || (equal(relation.source, agent.v.key) && !S.valid(S.Relation, relation)));
+        if (unreadable) {
+          result.mark('R-CONTENT', 'blocked', ap);
+          result.mark('R-TOOL', 'blocked', ap);
+          assessmentBlocked = true;
+          closureKnown = false;
+        }
+      }
+    }
+
+    function rememberContent(ref, request, statePointer) {
+      if (S.valid(S.Ref, ref)) requiredContent.set(canonical(ref), ref);
+      return visitContent(ref, request, statePointer);
+    }
+
+    function rememberTool(ref, request, rule, statePointer) {
+      if (!S.valid(S.Ref, ref)) {
+        result.mark(rule, 'blocked', request);
+        assessmentBlocked = true;
+        return { status: 'blocked', ref };
+      }
+      const identity = canonical(ref);
+      const found = resolveRef(ref, 'Tool', rule, request, statePointer);
+      if (!requiredTools.has(identity)) requiredTools.set(identity, { ref, found, request });
+      if (found.status === 'blocked') assessmentBlocked = true;
+      return found;
+    }
+
+    const visiting = new Set();
+    const complete = new Set();
+    function visitContent(ref, request, statePointer = request) {
+      const found = resolveRef(ref, null, 'R-CONTENT', request, statePointer);
+      if (found.status === 'external') {
+        unknownExternal = true;
+        return found;
+      }
+      if (found.status === 'missing') {
+        missingContent = true;
+        return found;
+      }
+      if (found.status === 'blocked') {
+        assessmentBlocked = true;
+        return found;
+      }
+
+      const identity = canonical(ref);
+      if (complete.has(identity) || visiting.has(identity)) return content.get(identity)?.found || found;
+      visiting.add(identity);
+      if (!S.valid(S.Kind, found.v.kind)) {
+        result.mark('R-CONTENT', 'blocked', request);
+        assessmentBlocked = true;
+        visiting.delete(identity);
+        return found;
+      }
+      if (!['Instructions', 'Skill'].includes(found.v.kind)) {
+        result.find('R-CONTENT', request, 'Content target has wrong kind');
+        missingContent = true;
+        visiting.delete(identity);
+        return found;
+      }
+
+      const info = payload(found, found.v.kind, 'R-CONTENT', request);
+      content.set(identity, { found, info, kind: found.v.kind, ref });
+      if (!info?.value) assessmentBlocked = true;
+      else {
+        const ownRequirements = editionMap(info.value.requires, 'R-CONTENT', info.pointer);
+        for (const [capability, value] of ownRequirements.map) engineRequirements.set(capability, value);
+        if (ownRequirements.blocked) assessmentBlocked = true;
+        if (found.v.kind === 'Instructions') {
+          if (S.valid(S.Edition, info.value.format)) engineRequirements.set(edition(info.value.format), info.value.format);
+          else assessmentBlocked = true;
+        } else {
+          if (!Array.isArray(info.value.dependencies)) {
+            result.mark('R-CONTENT', 'blocked', info.pointer);
+            assessmentBlocked = true;
+          } else {
+            const seenDependencies = new Set();
+            for (const [index, dependency] of info.value.dependencies.entries()) {
+              if (!S.valid(S.Ref, dependency)) {
+                result.mark('R-CONTENT', 'blocked', info.pointer);
+                assessmentBlocked = true;
+                continue;
+              }
+              const dependencyIdentity = canonical(dependency);
+              if (seenDependencies.has(dependencyIdentity)) {
+                result.find('R-CONTENT', info.pointer, 'Duplicate Skill dependency');
+                assessmentBlocked = true;
+              }
+              seenDependencies.add(dependencyIdentity);
+              edges.push([identity, dependencyIdentity]);
+              requiredContent.set(dependencyIdentity, dependency);
+              visitContent(dependency, info.pointer, `${info.pointer}/dependencies/${index}`);
+            }
+          }
+          if (!Array.isArray(info.value.tools)) {
+            result.mark('R-CONTENT', 'blocked', info.pointer);
+            assessmentBlocked = true;
+          } else {
+            const seenTools = new Set();
+            for (const [index, tool] of info.value.tools.entries()) {
+              if (!S.valid(S.Ref, tool)) {
+                result.mark('R-CONTENT', 'blocked', info.pointer);
+                assessmentBlocked = true;
+                continue;
+              }
+              const toolIdentity = canonical(tool);
+              if (seenTools.has(toolIdentity)) {
+                result.find('R-CONTENT', info.pointer, 'Duplicate Skill Tool');
+                assessmentBlocked = true;
+              }
+              seenTools.add(toolIdentity);
+              rememberTool(tool, info.pointer, 'R-CONTENT', `${info.pointer}/tools/${index}`);
+            }
+          }
+        }
+      }
+      visiting.delete(identity);
+      complete.add(identity);
+      return found;
+    }
+
+    if (agent.status === 'local' && closureKnown) {
+      for (const relation of relationRows.filter(row => equal(row.v.source, agent.v.key))) {
+        if (relation.v.relation === 'directedBy' && ['Instructions', 'Skill'].includes(relation.v.expectedKind)) rememberContent(relation.v.target, relation.p, `${relation.p}/target`);
+        if (relation.v.relation === 'uses' && relation.v.expectedKind === 'Tool') rememberTool(relation.v.target, relation.p, 'R-TOOL', `${relation.p}/target`);
+      }
+    }
+
+    const adjacency = new Map();
+    for (const [from, to] of edges) adjacency.set(from, [...(adjacency.get(from) || []), to]);
+    for (const [identity, entry] of content) {
+      if (entry.kind !== 'Skill') continue;
+      const seen = new Set();
+      const pending = [...(adjacency.get(identity) || [])];
+      let cycle = false;
+      while (pending.length) {
+        const next = pending.pop();
+        if (next === identity) { cycle = true; break; }
+        if (seen.has(next)) continue;
+        seen.add(next);
+        pending.push(...(adjacency.get(next) || []));
+      }
+      if (cycle && entry.info) result.find('R-CONTENT', entry.info.pointer, 'Skill dependency cycle');
+    }
+
+    const applications = Array.isArray(binding.applications) ? binding.applications : [];
+    const applicationPositions = new Map();
+    for (const [index, application] of applications.entries()) {
+      const pointer = `${ap}/applications/${index}`;
+      if (!S.object(application)) {
+        result.mark('R-CONTENT', 'blocked', pointer);
+        assessmentBlocked = true;
+        continue;
+      }
+      if (S.valid(S.Edition, application.adapter)) engineRequirements.set(edition(application.adapter), application.adapter);
+      else assessmentBlocked = true;
+      const found = resolveRef(application.content, null, 'R-CONTENT', pointer, `${pointer}/content`);
+      if (found.status === 'external') unknownExternal = true;
+      if (found.status === 'blocked') assessmentBlocked = true;
+      if (!S.valid(S.Ref, application.content)) continue;
+      const identity = canonical(application.content);
+      applicationPositions.set(identity, [...(applicationPositions.get(identity) || []), index]);
+    }
+
+    if (closureKnown) {
+      for (const identity of requiredContent.keys()) {
+        if (!applicationPositions.has(identity)) {
+          result.find('R-CONTENT', ap, 'Required Application missing');
+          missingContent = true;
+        }
+      }
+      for (const [identity, entry] of content) {
+        if (entry.kind !== 'Skill' || !Array.isArray(entry.info?.value?.dependencies)) continue;
+        const dependents = applicationPositions.get(identity) || [];
+        for (const dependency of entry.info.value.dependencies) {
+          if (!S.valid(S.Ref, dependency)) continue;
+          const prerequisites = applicationPositions.get(canonical(dependency));
+          if (!prerequisites) continue;
+          for (const dependent of dependents) if (!prerequisites.some(prerequisite => prerequisite < dependent)) {
+            result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
+            missingContent = true;
+          }
+        }
+      }
+      for (const [identity, positions] of applicationPositions) if (!requiredContent.has(identity)) {
+        for (const position of positions) result.find('R-CONTENT', `${ap}/applications/${position}`, 'Application is not reachable from Agent direction');
+      }
+    }
+
+    const tools = Array.isArray(binding.tools) ? binding.tools : [];
+    const toolGroups = new Map();
+    for (const [index, toolBinding] of tools.entries()) {
+      const tp = `${ap}/tools/${index}`;
+      if (!S.object(toolBinding)) {
+        result.mark('R-TOOL', 'blocked', tp);
+        assessmentBlocked = true;
+        continue;
+      }
+      const found = resolveRef(toolBinding.tool, 'Tool', 'R-TOOL', tp, `${tp}/tool`);
+      const choiceIds = new Map();
+      const choices = Array.isArray(toolBinding.choices) ? toolBinding.choices : [];
+      let choiceBlocked = !Array.isArray(toolBinding.choices);
+      if (!Array.isArray(toolBinding.choices)) result.mark('R-TOOL', 'blocked', tp);
+      for (const [choiceIndex, choice] of choices.entries()) {
+        const choicePointer = `${tp}/choices/${choiceIndex}`;
+        if (!S.object(choice)) {
+          result.mark('R-TOOL', 'blocked', choicePointer);
+          choiceBlocked = true;
+          continue;
+        }
+        const choiceClaims = claimMap(choice.claims, 'R-TOOL', tp);
+        let selectedChoiceBlocked = choiceClaims.blocked || !S.valid(S.Implementation, choice);
+        if (typeof choice.id !== 'string' || !choice.id) {
+          result.mark('R-TOOL', 'blocked', choicePointer);
+          choiceBlocked = true;
+          continue;
+        }
+        const matches = choiceIds.get(choice.id) || [];
+        if (matches.length) {
+          result.find('R-TOOL', choicePointer, 'Duplicate Implementation id');
+        }
+        matches.push({ choice, choicePointer, claims: choiceClaims, blocked: selectedChoiceBlocked });
+        choiceIds.set(choice.id, matches);
+      }
+      let selection = { status: 'absent' };
+      if (S.has(toolBinding, 'selected')) {
+        if (typeof toolBinding.selected !== 'string' || !toolBinding.selected) {
+          result.mark('R-TOOL', 'blocked', tp);
+          selection = { status: 'blocked' };
+        } else {
+          const matches = choiceIds.get(toolBinding.selected);
+          if (!matches) {
+            result.find('R-TOOL', tp, 'Selected Implementation missing');
+            selection = { status: 'blocked' };
+          } else if (matches.length !== 1) {
+            result.mark('R-TOOL', 'blocked', tp);
+            selection = { status: 'blocked' };
+          } else selection = { status: 'selected', ...matches[0] };
+        }
+      }
+      const itemForTool = { toolBinding, tp, found, selection, choiceBlocked };
+      if (S.valid(S.Ref, toolBinding.tool)) {
+        const identity = canonical(toolBinding.tool);
+        const matches = toolGroups.get(identity) || [];
+        if (matches.length) result.find('R-TOOL', tp, 'Duplicate ToolBinding');
+        matches.push(itemForTool);
+        toolGroups.set(identity, matches);
+      }
+    }
+
+    if (closureKnown && (requiredTools.size !== toolGroups.size || [...requiredTools.keys()].some(identity => !toolGroups.has(identity)))) result.find('R-TOOL', ap, 'ToolBinding coverage differs from required Tools');
+
+    const toolPayloads = new Map();
+    for (const [identity, requirement] of requiredTools) {
+      const info = payload(requirement.found, 'Tool', 'R-TOOL', requirement.request);
+      let blocked = requirement.found.status === 'blocked';
+      if (info?.value) {
+        const requirementsForTool = editionMap(info.value.requires, 'R-TOOL', info.pointer);
+        if (requirementsForTool.blocked) blocked = true;
+        if (Array.isArray(info.value.failures)) {
+          if (new Set(info.value.failures).size !== info.value.failures.length) result.find('R-TOOL', info.pointer, 'Duplicate Tool failure');
+        } else {
+          result.mark('R-TOOL', 'blocked', info.pointer);
+          blocked = true;
+        }
+        const action = resolveRef(info.value.action, 'Action', 'R-TOOL', info.pointer, `${info.pointer}/action`);
+        if (action.status === 'blocked') blocked = true;
+        toolPayloads.set(identity, { info, requirements: requirementsForTool.map, blocked });
+      } else toolPayloads.set(identity, { info, requirements: new Map(), blocked: requirement.found.status !== 'external' });
+    }
+
+    if (!assess) return;
+    for (const [identity, matches] of toolGroups) {
+      const required = requiredTools.has(identity);
+      const payloadInfo = toolPayloads.get(identity);
+      for (const toolBinding of matches) assessTool(toolBinding, payloadInfo, forceAssessmentBlocked || !closureKnown || !required || matches.length !== 1);
+    }
+    assessAgent();
+
+    function evaluate(requirementMap, claimLookup, supplied, extraUnknown = false) {
+      if (!supplied) return ['not-provided'];
+      const values = [];
+      for (const capability of requirementMap.values()) {
+        const identity = edition(capability);
+        if (claimLookup.ambiguous.has(identity)) continue;
+        const claim = claimLookup.map.get(identity);
+        if (claim?.status === 'unsupported') values.push('incompatible');
+        else if (!claim || claim.status === 'unknown' || claim.evidence === null) values.push('unknown');
+        else values.push('declared-supported');
+      }
+      if (extraUnknown) values.push('unknown');
+      if (!values.length) values.push('declared-supported');
+      return [...new Set(values)];
+    }
+
+    function recordAssessment(pointer, values, blocked = false) {
+      result.mark('R-COMPATIBILITY');
+      if (values.includes('incompatible')) result.find('R-COMPATIBILITY', pointer, 'Declared capability incompatible');
+      if (values.some(value => ['not-provided', 'unknown'].includes(value))) result.find('R-COMPATIBILITY', pointer, 'Compatibility not established', 'inconclusive');
+      if (blocked) {
+        result.mark('R-COMPATIBILITY', 'blocked', pointer);
+        state(pointer, 'unchecked', 'blocked');
+        return;
+      }
+      const aggregate = values.includes('incompatible') ? 'incompatible' : values.includes('not-provided') ? 'not-provided' : values.includes('unknown') ? 'unknown' : 'declared-supported';
+      state(pointer, assessmentStates[aggregate], aggregate);
+    }
+
+    function assessAgent() {
+      const values = [...evaluate(engineRequirements, claims, binding.engine !== null, unknownExternal), ...(missingContent ? ['not-provided'] : [])];
+      recordAssessment(ap, [...new Set(values)], assessmentBlocked || claims.blocked);
+    }
+
+    function assessTool(toolBinding, payloadInfo, forcedBlocked) {
+      const { tp, selection } = toolBinding;
+      if (selection.status === 'absent') {
+        recordAssessment(tp, ['not-provided'], forcedBlocked || toolBinding.choiceBlocked);
+        return;
+      }
+      if (selection.status !== 'selected') {
+        recordAssessment(tp, [], true);
+        return;
+      }
+      const values = evaluate(payloadInfo?.requirements || new Map(), selection.claims, true, toolBinding.found.status === 'external' || payloadInfo?.info?.value?.effects === 'unknown');
+      recordAssessment(tp, values, forcedBlocked || toolBinding.choiceBlocked || selection.blocked || selection.claims.blocked || payloadInfo?.blocked);
+    }
+  }
+
+  for (const [configuration, analysis] of analyses) {
+    const isSelected = selected?.configuration === configuration;
+    const needed = new Set((analysis.used || []).map(canonical));
+    for (const [identity, matches] of analysis.groups) {
+      for (const item of matches) analyzeBinding(item, isSelected, analysis.structuralBlocked || matches.length !== 1 || !needed.has(identity));
+    }
+    if (isSelected && analysis.structuralBlocked) result.mark('R-COMPATIBILITY', 'blocked', analysis.cp);
+  }
+
+  return { result: result.finish(), interpreted };
 }

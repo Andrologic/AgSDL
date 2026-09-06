@@ -82,3 +82,81 @@ test('approval chains reject bypasses and validate call data at every gate',()=>
 test('host request validation rejects malformed prospective loss records',()=>{
   assert.throws(()=>run({operation:'lossyExchange',primary:bytes(source()),annexes:{},losses:[{input:'primary',location:{byte:-1},information:'x',reason:'x',permission:null}]}),/Invalid prospective Loss/);
 });
+
+test('malformed Tool collections return blocked reports instead of throwing',()=>{
+  for(const field of['failures','requires']){
+    const d=source();d.definitions[9].payload[field]={};const x=execute('validateR',d),r=result(x,'R');
+    assert.ok(finding(x,'R','P-SHAPE',`/definitions/9/payload/${field}`));
+    assert.ok(r.checks.some(c=>c.rule==='R-TOOL'&&c.state==='blocked'));
+    assert.ok(x.report.inventory.states.some(s=>s.pointer==='/runtime/configurations/0/agents/0/tools/0'&&s.detail==='blocked'));
+  }
+});
+
+test('external Agents exclude unknown closure and never become declared-supported',()=>{
+  const d=source(),external={dependency:'dep',key:{scope:'remote',id:'agent',version:'1'}};
+  d.dependencies.push({id:'dep',rootKey:{scope:'remote',id:'root',version:'1'},status:'external',requiredFor:[],sha256:null});d.graphs[0].steps[0].agent=external;
+  for(const c of d.runtime.configurations){c.agents[0].agent=external;c.agents[0].tools=[];c.agents[0].applications=[];}
+  const x=execute('validateR',d),r=result(x,'R'),ap='/runtime/configurations/0/agents/0';
+  assert.ok(r.checks.some(c=>c.rule==='R-CONTENT'&&c.state==='excluded'&&c.locations.some(l=>l.pointer===ap)));
+  assert.ok(r.checks.some(c=>c.rule==='R-TOOL'&&c.state==='excluded'&&c.locations.some(l=>l.pointer===ap)));
+  assert.ok(x.report.inventory.states.some(s=>s.pointer===ap&&s.detail==='unknown'));
+  assert.ok(!x.report.inventory.states.some(s=>s.pointer===ap&&s.detail==='declared-supported'));
+});
+
+test('malformed capability prerequisites block selected assessments',()=>{
+  const d=source();d.definitions[12].payload.requires=null;const x=execute('validateR',d),r=result(x,'R');
+  assert.ok(r.checks.some(c=>c.rule==='R-COMPATIBILITY'&&c.state==='blocked'));
+  assert.ok(x.report.inventory.states.some(s=>s.pointer==='/runtime/configurations/0/agents/0'&&s.detail==='blocked'));
+  assert.ok(!x.report.inventory.states.some(s=>s.pointer==='/runtime/configurations/0/agents/0'&&s.detail==='declared-supported'));
+});
+
+test('compatibility retains incompatible and unknown capability contributions',()=>{
+  const d=source(),a=d.runtime.configurations[0].agents[0];a.claims[0].status='unsupported';a.claims.splice(1,1);const x=execute('validateR',d),p='/runtime/configurations/0/agents/0',findings=result(x,'R').findings.filter(f=>f.rule==='R-COMPATIBILITY'&&f.location.pointer===p);
+  assert.deepEqual(new Set(findings.map(f=>f.outcome)),new Set(['fail','inconclusive']));
+  assert.ok(x.report.inventory.states.some(s=>s.pointer===p&&s.detail==='incompatible'));
+});
+
+test('ambiguous bindings, choices and claims never choose a last record',()=>{
+  let d=source(),a=d.runtime.configurations[0].agents[0];a.claims.unshift({...a.claims[0],status:'unsupported'});let x=execute('validateR',d),p='/runtime/configurations/0/agents/0';
+  assert.ok(finding(x,'R','R-BINDING',p));assert.ok(x.report.inventory.states.some(s=>s.pointer===p&&s.detail==='blocked'));
+
+  d=source();let tool=d.runtime.configurations[0].agents[0].tools[0];tool.choices.push(structuredClone(tool.choices[0]));x=execute('validateR',d);p='/runtime/configurations/0/agents/0/tools/0';
+  assert.ok(result(x,'R').checks.some(c=>c.rule==='R-COMPATIBILITY'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===p)));assert.ok(x.report.inventory.states.some(s=>s.pointer===p&&s.detail==='blocked'));
+
+  d=source();let config=d.runtime.configurations[0];config.agents[0].tools[0].selected='missing';config.agents.push(structuredClone(config.agents[0]));config.agents.at(-1).tools[0].selected='search-a';x=execute('validateR',d);
+  assert.ok(result(x,'R').findings.some(f=>f.rule==='R-TOOL'&&f.details.includes('Selected Implementation missing')));
+  assert.ok(x.report.inventory.states.some(s=>s.pointer==='/runtime/configurations/0/agents/0'&&s.detail==='blocked'));
+
+  d=source();a=d.runtime.configurations[0].agents[0];a.tools.push(structuredClone(a.tools[0]));x=execute('validateR',d);
+  assert.ok(result(x,'R').findings.some(f=>f.rule==='R-TOOL'&&f.details.includes('Duplicate ToolBinding')));
+  assert.ok(x.report.inventory.states.filter(s=>s.pointer.startsWith('/runtime/configurations/0/agents/0/tools/')&&s.detail==='blocked').length>=2);
+});
+
+test('an unreadable graph index blocks lookup and assessment',()=>{
+  const d=source();d.graphs=[{}];const x=execute('validateR',d),r=result(x,'R');
+  assert.ok(r.checks.some(c=>c.rule==='R-SELECTION'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>f.rule==='R-SELECTION'&&f.details.includes('does not exist')));
+  assert.ok(r.checks.some(c=>c.rule==='R-COMPATIBILITY'&&c.state==='blocked'));
+});
+
+test('G rejects duplicate graph definitions and approvers',()=>{
+  let d=source();d.graphs.push(structuredClone(d.graphs[0]));let x=execute('validateG',d);assert.ok(result(x,'G').findings.some(f=>f.rule==='G-TARGET'&&f.details.includes('Duplicate Graph definition')));
+  d=JSON.parse(fixture('approval-two-gates.json'));d.definitions[13].payload.approvers.push(structuredClone(d.definitions[13].payload.approvers[0]));x=execute('validateG',d);assert.ok(result(x,'G').findings.some(f=>f.rule==='G-TARGET'&&f.details.includes('Duplicate approver Ref')));
+});
+
+test('Tool evidence states use only exact Implementation claim pointers',()=>{
+  const d=source();d.runtime.configurations[0].agents[0].tools[0].choices[0].claims[0].evidence=null;const states=execute('validateR',d).report.inventory.states;
+  assert.ok(states.some(s=>s.pointer==='/runtime/configurations/0/agents/0/tools/0/choices/0/claims/0/evidence'));
+  assert.ok(!states.some(s=>s.pointer==='/runtime/configurations/0/agents/0/tools/0/claims/0/evidence'));
+});
+
+test('missing transitive Applications fail at the AgentBinding',()=>{
+  const d=source();d.runtime.configurations[0].agents[0].applications.shift();const x=execute('validateR',d),ap='/runtime/configurations/0/agents/0';
+  assert.ok(finding(x,'R','R-CONTENT',ap));
+  assert.ok(!result(x,'R').findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer===`${ap}/applications/0`&&f.details.includes('earlier')));
+});
+
+test('selected Operation target defects point to the Operation record',()=>{
+  const d=source();d.definitions[4].payload.operations[0].action.id='missing';const x=execute('validateG',d);
+  assert.ok(finding(x,'G','G-TARGET','/definitions/4/payload/operations/0'));
+});
