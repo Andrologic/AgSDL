@@ -323,6 +323,10 @@ def validate_report(response, case, source):
             demand((f['rule'],'completed') in seen, 'Finding has no completed rule Check')
             keys.append((f['rule'],canonical(f['location'])))
         demand(len(keys) == len(set(keys)), 'duplicate Finding tuple')
+        own_syntax_failure=any(x['input']==input_id and x['unit'] in {'D','inspect'} and any(f['rule']=='P-SYNTAX' and f['outcome']=='fail' for f in x['findings']) for x in results)
+        if own_syntax_failure:
+            for rule in executed - {'P-SYNTAX'}:
+                demand([state for candidate,state in seen if candidate==rule]==['blocked'], 'shape/semantic Check not blocked after syntax failure')
         rank = max([0] + [RANK[f['outcome']] for f in findings if f['outcome'] != 'deferred'] + [RANK[x['verdict']] for x in prior] + [1 for rule,state in seen if state == 'blocked'])
         demand(RANK[result['verdict']] == rank, 'Result verdict disagrees with findings/checks/prerequisites')
     inventory = r['inventory']; record(inventory, 'tree states opaque'); array(inventory['states']); array(inventory['opaque'])
@@ -351,7 +355,7 @@ def validate_report(response, case, source):
         elif not src or not isinstance(src.tree,dict) or not isinstance(src.tree.get('dependencies'),list):
             demand(entries[0]['state']=='unchecked', 'unreadable dependency inventory mismatch')
     demand(all(x['input'] in observed_inputs for x in inventory['opaque']), 'Slice outside observed unit inputs')
-    validate_slices(inventory['opaque'], source, parsed, op)
+    validate_slices(inventory['opaque'], source, parsed, op, observed_inputs)
     for state in inventory['states']:
         for part in inventory['opaque']:
             if part['pointer'] and state['input']==part['input']:
@@ -415,7 +419,7 @@ def at_pointer(tree, path):
     return value
 
 
-def validate_slices(slices, source, parsed, operation):
+def validate_slices(slices, source, parsed, operation, observed_inputs):
     keys=[]; by_input={i:[] for i in source}
     for part in slices:
         record(part, 'input pointer start end')
@@ -430,7 +434,7 @@ def validate_slices(slices, source, parsed, operation):
         ordered=sorted(parts)
         demand(all(a[1] <= b[0] for a,b in zip(ordered,ordered[1:])), 'overlapping opaque slices')
         # Annex inventory is limited to observed/selected annexes, not every supplied file.
-        if parsed[i] and (i=='primary' or parts):
+        if parsed[i] and i in observed_inputs:
             _,required=opaque_boundaries(parsed[i],operation,i)
             demand(required <= {p for _,_,p in parts}, 'missing maximal opaque boundary')
 

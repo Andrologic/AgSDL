@@ -61,7 +61,7 @@ class JsonTests(unittest.TestCase):
         self.assertEqual(values[3], Decimal('9007199254740993'))
         self.assertEqual(values[5], Decimal('1e400'))
         self.assertEqual(values[6], Decimal('1e-400'))
-        huge = harness.load('[1e999999999999999999999,10e999999999999999999998,0e999999999999999999999]')
+        huge = harness.load('[1e999999999999999999999999999999999999,10e999999999999999999999999999999999998,0e999999999999999999999999999999999999]')
         self.assertEqual(harness.canonical(huge[0]), harness.canonical(huge[1]))
         self.assertEqual(harness.canonical(huge[2]), harness.canonical(0))
 
@@ -237,6 +237,46 @@ class ObservationTests(unittest.TestCase):
         self.assertEqual(harness.observe(case,response,source), [])
         case['expected']['states'][0]['detailRequirement'] = 'another'
         self.assertTrue(harness.observe(case,response,source))
+
+    def test_observed_annex_cannot_omit_all_slices(self):
+        case, response, source = fixture()
+        case['operation'] = response['report']['operation'] = 'resolveG'
+        annex = b'{"annotations":{"important":true}}'
+        source['annex/a'] = annex
+        response['report']['inputs'].append(dict(id='annex/a',sha256=hashlib.sha256(annex).hexdigest()))
+        def result(input_id, unit, phase, rules):
+            checks=[dict(rule=r,state='completed',locations=[]) for r in rules]
+            checks += [dict(rule=r,state='excluded',locations=[{'pointer':p}]) for r,p in harness.BOUNDARY.items()]
+            return dict(input=input_id,unit=unit,phase=phase,verdict='pass',findings=[],checks=sorted(checks,key=lambda c:(c['rule'],c['state'])))
+        response['report']['results']=[result('primary','D','unresolved-document',harness.D_RULES),
+            result('annex/a','D','unresolved-document',harness.D_RULES),
+            result('primary','G','resolved-graph',harness.G_RULES|{'G-RESOLVE'})]
+        response['report']['inventory']['states']=[dict(input=i,pointer='/'+field,state='absent',detail='Absent') for i in source for field in ('graphs','runtime')]
+        case['expected']['results']=[];case['expected']['states']=[]
+        # Synthetic reports test transport coherence only, not the D validity of {}.
+        self.assertTrue(harness.observe(case,response,source))
+        index=harness.JsonSource(annex)
+        response['report']['inventory']['opaque']=[dict(input='annex/a',pointer='/annotations',start=index.spans['/annotations'][0],end=index.spans['/annotations'][1])]
+        self.assertEqual(harness.observe(case,response,source),[])
+
+    def test_syntax_failure_blocks_downstream_checks(self):
+        case,response,source=fixture()
+        source['primary']=b'{';response['report']['inputs'][0]['sha256']=hashlib.sha256(b'{').hexdigest()
+        case['operation']=response['report']['operation']='validateD'
+        result=response['report']['results'][0]
+        result.update(unit='D',phase='unresolved-document',verdict='fail',findings=[dict(rule='P-SYNTAX',location={'byte':1},outcome='fail',details='Unexpected EOF')])
+        result['checks']=[dict(rule=r,state='completed',locations=[]) for r in harness.D_RULES]
+        result['checks'] += [dict(rule=r,state='excluded',locations=[{'pointer':p}]) for r,p in harness.BOUNDARY.items()]
+        result['checks'].sort(key=lambda c:(c['rule'],c['state']))
+        response['report']['inventory']=dict(tree=None,states=[],opaque=[])
+        case['expected']['results']=[];case['expected']['states']=[]
+        case['expected']['findings']=dict(mode='contains',items=[])
+        self.assertTrue(harness.observe(case,response,source))
+        for check in result['checks']:
+            if check['rule'] in harness.D_RULES-{'P-SYNTAX'}:
+                check.update(state='blocked',locations=[{'pointer':''}])
+        result['checks'].sort(key=lambda c:(c['rule'],c['state']))
+        self.assertEqual(harness.observe(case,response,source),[])
 
 
 class ComparisonTests(unittest.TestCase):
