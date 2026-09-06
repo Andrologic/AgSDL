@@ -328,3 +328,14 @@ test('an empty graph entry blocks path lookup',()=>{
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));
   assert.ok(!r.findings.some(f=>f.rule==='G-PATH'));
 });
+
+test('duplicate checks ignore malformed Resource Refs and Tool failures',()=>{
+  let d=JSON.parse(fixture('approval-two-gates.json')),call=d.graphs[0].steps.find(step=>step.kind==='invoke');call.resources=[null,null];let r=result(execute('validateG',d),'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>f.details==='Duplicate Resource Ref'));
+  d=source();d.definitions[9].payload.failures=[null,null];r=result(execute('validateR',d),'R');
+  assert.ok(r.checks.some(c=>c.rule==='R-TOOL'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>f.details==='Duplicate Tool failure'));
+  d.definitions[9].payload.failures=['known','known'];r=result(execute('validateR',d),'R');
+  assert.ok(r.findings.some(f=>f.details==='Duplicate Tool failure'));
+});

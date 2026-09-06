@@ -642,7 +642,12 @@ export function validateR(ctx, inventory) {
         if (requirementsForTool.blocked) blocked = true;
         if (!S.valid(S.Tool.fields.effects, info.value.effects)) blocked = true;
         if (Array.isArray(info.value.failures)) {
-          if (new Set(info.value.failures).size !== info.value.failures.length) result.find('R-TOOL', info.pointer, 'Duplicate Tool failure');
+          const readableFailures = info.value.failures.filter(failure => typeof failure === 'string' && failure.length);
+          if (readableFailures.length !== info.value.failures.length) {
+            result.mark('R-TOOL', 'blocked', info.pointer);
+            blocked = true;
+          }
+          if (new Set(readableFailures).size !== readableFailures.length) result.find('R-TOOL', info.pointer, 'Duplicate Tool failure');
         } else {
           result.mark('R-TOOL', 'blocked', info.pointer);
           blocked = true;

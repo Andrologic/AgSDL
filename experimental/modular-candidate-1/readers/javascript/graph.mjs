@@ -48,7 +48,7 @@ export function validateG(primary,operation,inventory){
   }
   function invoke(s,p,g,stepMap,idCounts,idIndexComplete,pathOK,reachable){
     const agent=target(primary,s.agent,'Agent',p,`${p}/agent`),face=target(primary,s.interface,'Interface',p,`${p}/interface`),action=target(primary,s.action,'Action',p,`${p}/action`),principal=target(primary,s.principal,'Principal',p,`${p}/principal`);
-    const resources=new Set();for(const[i,v]of(Array.isArray(s.resources)?s.resources:[]).entries()){target(primary,v,'Resource',p,`${p}/resources/${i}`);const k=canonical(v);if(resources.has(k))r.find('G-TARGET',p,'Duplicate Resource Ref');resources.add(k);}if(!Array.isArray(s.resources))r.mark('G-TARGET','blocked',p);if(!agent||!face||!action||!principal)r.mark('G-TARGET','blocked',p);if(!face)r.mark('G-DATA','blocked',p);
+    const resources=new Set();for(const[i,v]of(Array.isArray(s.resources)?s.resources:[]).entries()){target(primary,v,'Resource',p,`${p}/resources/${i}`);if(S.valid(S.Ref,v)){const k=canonical(v);if(resources.has(k))r.find('G-TARGET',p,'Duplicate Resource Ref');resources.add(k);}}if(!Array.isArray(s.resources))r.mark('G-TARGET','blocked',p);if(!agent||!face||!action||!principal)r.mark('G-TARGET','blocked',p);if(!face)r.mark('G-DATA','blocked',p);
     const ip=payload(face,S.Interface,p);if(face?.external)r.mark('G-DATA','excluded',p);
     if(ip&&Array.isArray(ip.operations)){
       const ids=new Map();let unreadableId=false;for(const[i,o]of ip.operations.entries()){if(typeof o?.id!=='string'||!o.id){unreadableId=true;continue;}if(ids.has(o.id))annexResult(face.ctx).find('G-TARGET',`${face.p}/payload/operations/${i}`,'Duplicate operation id');ids.set(o.id,[...(ids.get(o.id)||[]),o]);}
