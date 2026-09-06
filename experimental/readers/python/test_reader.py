@@ -482,6 +482,20 @@ class ComparisonRegressionTests(unittest.TestCase):
         for rule in ('D-AGENT', 'D-RELATION', 'D-CYCLE'):
             self.assertEqual(self.states(report, 'D', rule), {'blocked'})
 
+    def test_unreadable_deferrals_do_not_hide_nondeferrable_minima(self):
+        for root_kind in ('System', 'Fragment'):
+            d = graph_doc(); d['root']['kind'] = root_kind
+            d['relations'] = []; d['unresolved'] = None
+            report = run(d)
+            self.assertTrue(findings(report, 'D-AGENT'))
+            expected = {'completed'} if root_kind == 'System' else {'completed', 'blocked'}
+            self.assertEqual(self.states(report, 'D', 'D-AGENT'), expected)
+        d = graph_doc(); d['root']['kind'] = 'Fragment'; d['unresolved'] = None
+        d['relations'] = [r for r in d['relations'] if r['relation'] != 'exposes']
+        report = run(d)
+        self.assertFalse(findings(report, 'D-AGENT'))
+        self.assertEqual(self.states(report, 'D', 'D-AGENT'), {'completed', 'blocked'})
+
     def test_absent_collection_blocks_existing_affected_records(self):
         for absent in (True, False):
             d = graph_doc()

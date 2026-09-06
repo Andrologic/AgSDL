@@ -335,12 +335,17 @@ def validate_d(doc, annexes):
             c = counts[identity]
             if identity in doc.ambiguous or incomplete_relations:
                 result.block('D-AGENT', path)
-            elif not c['exposes'] and not good(array('Deferral'), doc.obj.get('unresolved')):
-                result.block('D-AGENT', path)
             else:
                 result.complete('D-AGENT')
-                if len(c['actsAs']) != 1 or not c['directedBy'] or (not c['exposes'] and identity not in deferred):
+                if len(c['actsAs']) != 1 or not c['directedBy']:
                     result.find('D-AGENT', path, 'Agent relation minimum not met')
+                if not c['exposes'] and identity not in deferred:
+                    if root_ok and root['kind'] != 'Fragment':
+                        result.find('D-AGENT', path, 'Agent Interface minimum not met')
+                    elif not root_ok or not good(array('Deferral'), doc.obj.get('unresolved')):
+                        result.block('D-AGENT', path)
+                    else:
+                        result.find('D-AGENT', path, 'Agent Interface minimum not met')
     dependency_checks(doc, annexes, result)
     extension_checks(doc, result, 'validateD')
     return result
