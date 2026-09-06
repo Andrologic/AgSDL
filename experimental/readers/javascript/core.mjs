@@ -75,10 +75,10 @@ export function modes(ctx,r,op) {
     else if(m===undefined||m==='unknown')r.find('X-MODE',row.p,'Extension interpretation unknown','inconclusive');
   }
 }
-export function validateD(ctx) {
+export function validateD(ctx, expectedContract=contract) {
   const r=new Result(ctx.id,'D','unresolved-document',D_RULES);r.boundary();
   if(ctx.error){r.find('P-SYNTAX',ctx.error.byte,'Invalid UTF-8 JSON','fail',true);for(const rule of D_RULES.filter(x=>x!=='P-SYNTAX'))r.mark(rule,'blocked','');ctx.d=r.finish();return ctx.d;}
-  r.mark('P-SYNTAX');r.shape(S.Document,ctx.tree);build(ctx);const d=ctx.tree;
+  r.mark('P-SYNTAX');r.shape(S.DocumentFor(expectedContract),ctx.tree);build(ctx);const d=ctx.tree;
   if(!S.object(d)){for(const rule of D_RULES.filter(x=>!x.startsWith('P-')))r.mark(rule,'blocked','');ctx.d=r.finish();return ctx.d;}
   const rootOK=S.valid(S.Key,d.root?.key)&&S.valid(S.Root.fields.kind,d.root?.kind), defs=rows(ctx,'definitions',S.Definition), rels=rows(ctx,'relations',S.Relation), deps=rows(ctx,'dependencies',S.Dependency), defers=rows(ctx,'unresolved',S.Deferral);
   const blockArray=(name,rules)=>{if(!Array.isArray(d[name]))for(const rule of rules){

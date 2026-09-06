@@ -23,7 +23,8 @@ export const Deferral = record({ subject: Key, obligation: literal('agent-interf
 const mode = { select: v => object(v) ? record({ ignoreRule: literal('annotation-only') }) : literal('required','unknown') };
 export const Extension = record({ identity, version: text, operations: record({ validateD: optional(mode), validateG: optional(mode), validateR: optional(mode) }), payload: any });
 export const Root = record({ key: Key, kind: literal('System','Fragment','PackageVersion'), payload: optional(any), annotations: optional(any) });
-export const Document = record({ contract: literal('proposal-0012-candidate-2'), root: Root, definitions: array(Definition), relations: array(Relation), exports: array(Key), dependencies: array(Dependency), unresolved: array(Deferral), extensions: array(Extension), annotations: optional(any), evidence: optional(any), graphs: optional(any), runtime: optional(any) });
+export const DocumentFor = contract => record({ contract: literal(contract), root: Root, definitions: array(Definition), relations: array(Relation), exports: array(Key), dependencies: array(Dependency), unresolved: array(Deferral), extensions: array(Extension), annotations: optional(any), evidence: optional(any), graphs: optional(any), runtime: optional(any) });
+export const Document = DocumentFor('proposal-0012-candidate-2');
 export const Ports = map(literal('string','boolean','json'));
 export const Binding = { select: v => has(v, 'input') ? record({ input: text }) : record({ step: text, port: text }) };
 export const Step = { select: v => {
