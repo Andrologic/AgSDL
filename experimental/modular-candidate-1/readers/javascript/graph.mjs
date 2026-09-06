@@ -1,5 +1,5 @@
 import * as S from './shape.mjs';
-import {Result,context,validateD,rows,key,equal,ext,declaration,modes,lookup,cyclic,canonical,hash,contract} from './core.mjs';
+import {Result,context,validateD,rows,key,equal,ext,declaration,modes,lookup,localIndexComplete,cyclic,canonical,hash,contract} from './core.mjs';
 
 const RULES=['P-SHAPE','X-MODE','G-TARGET','G-PATH','G-DATA','G-APPROVAL'];
 export function validateG(primary,operation,inventory){
@@ -31,8 +31,8 @@ export function validateG(primary,operation,inventory){
       if(!resolve){state(ctx,p);r.mark(rule,'excluded',consumer);return{external:true};}
       if(ctx!==primary){r.find('G-RESOLVE',consumer,'Selected transitive external reference','unsupported');owner.mark(rule,'excluded',subject);r.mark(rule,'excluded',consumer);return{external:true};}
       dst=load(ref.dependency);k=ref.key;if(!dst){r.mark('G-RESOLVE','blocked',consumer);r.mark('G-TARGET','blocked',consumer);return null;}
-      const exported=Array.isArray(dst.tree?.exports)&&dst.tree.exports.some(x=>S.valid(S.Key,x)&&equal(x,k)),found=lookup(dst,k);
-      if(!Array.isArray(dst.tree?.exports)||dst.defs.get(key(k))?.length>1){r.mark('G-RESOLVE','blocked',consumer);return null;}
+      const exportsReadable=Array.isArray(dst.tree?.exports),exported=exportsReadable&&dst.tree.exports.some(x=>S.valid(S.Key,x)&&equal(x,k)),exportsComplete=exportsReadable&&dst.tree.exports.every(x=>S.valid(S.Key,x)),found=lookup(dst,k);
+      if(!localIndexComplete(dst)||!exportsReadable||(!exported&&!exportsComplete)||dst.defs.get(key(k))?.length>1){r.mark('G-RESOLVE','blocked',consumer);return null;}
       if(!exported||!found||found.root){r.find('G-RESOLVE',consumer,'External target missing or unexported');return null;}
       if(!S.valid(S.Kind,found.v.kind)){r.mark('G-RESOLVE','blocked',consumer);r.mark('G-TARGET','blocked',consumer);return null;}if(found.v.kind!==kind){r.find('G-RESOLVE',consumer,'External target has wrong kind');return null;}
     }
