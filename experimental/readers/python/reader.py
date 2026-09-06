@@ -64,7 +64,7 @@ class Result:
     def __init__(self, input_id, unit, phase, rules):
         self.input, self.unit, self.phase = input_id, unit, phase
         self.findings = {}
-        self.checks = {(rule, 'completed'): set() for rule in rules}
+        self.checks = {}
         self.parents = []
         if unit in ('D', 'G', 'R'):
             for rule in ('X-EXECUTION', 'X-FULL-MODEL'):
@@ -78,6 +78,9 @@ class Result:
             self.checks.pop((rule, 'completed'), None)
         self.checks.setdefault((rule, state), set()).add(path)
 
+    def complete(self, rule):
+        self.checks.setdefault((rule, 'completed'), set())
+
     def block(self, rule, path='', whole=False):
         self.mark(rule, 'blocked', path, whole)
 
@@ -85,11 +88,13 @@ class Result:
         self.mark(rule, 'excluded', path, whole)
 
     def find(self, rule, path='', detail='candidate rule violation', outcome='fail', byte=None):
+        self.complete(rule)
         loc = ('byte', byte) if byte is not None else ('pointer', path)
         identifier = rule, loc, outcome
         self.findings.setdefault(identifier, set()).add(detail)
 
     def shape(self, schema, value, path=''):
+        self.complete('P-SHAPE')
         found = errors(schema, value, path)
         for location, reason in found:
             self.find('P-SHAPE', location, reason)
@@ -165,6 +170,7 @@ class Document:
         if found is None or (kind is not None and found[0]['kind'] != kind):
             result.find(rule, path, 'missing or wrong-kind local target')
             return None
+        result.complete(rule)
         return found
 
     def external_declaration(self, ref, result, rule, path):
@@ -179,6 +185,7 @@ class Document:
         if dep is None or dep[0]['rootKey']['scope'] != ref['key']['scope']:
             result.find(rule, path, 'undeclared dependency or target scope mismatch')
             return None
+        result.complete(rule)
         return dep
 
 
@@ -190,6 +197,7 @@ def validate_d(doc, annexes):
         for rule in D_RULES[1:]:
             result.block(rule, whole=True)
         return result
+    result.complete('P-SYNTAX')
     result.shape('Document', doc.tree)
     if not isinstance(doc.tree, dict):
         for rule in D_RULES[2:]:
@@ -207,11 +215,13 @@ def validate_d(doc, annexes):
             for rule in ('D-IDENTITY', 'D-OWNER', 'D-REFERENCE', 'D-AGENT'):
                 result.block(rule, path)
             continue
+        result.complete('D-IDENTITY')
         identity = key(definition['key'])
         if identity[:2] in seen:
             result.find('D-IDENTITY', path, 'duplicate scope/id')
         seen.add(identity[:2])
         if root_ok:
+            result.complete('D-OWNER')
             if identity[0] != root['key']['scope']:
                 result.find('D-IDENTITY', path, 'definition scope differs from root')
             if definition['owner'] != root['key']:
@@ -219,30 +229,37 @@ def validate_d(doc, annexes):
         else:
             result.block('D-IDENTITY', path)
             result.block('D-OWNER', path)
-    for name, rules in {'definitions': ('D-IDENTITY', 'D-OWNER', 'D-AGENT'),
-                        'relations': ('D-REFERENCE', 'D-RELATION', 'D-CYCLE', 'D-AGENT'),
+    for name, rules in {'definitions': ('D-IDENTITY', 'D-OWNER', 'D-REFERENCE', 'D-AGENT'),
+                        'relations': ('D-REFERENCE', 'D-RELATION', 'D-CYCLE'),
                         'exports': ('D-EXPORT',), 'unresolved': ('D-DEFERRAL',),
                         'dependencies': ('D-DEPENDENCY', 'D-INTEGRITY'), 'extensions': ('X-MODE',)}.items():
         if not isinstance(doc.obj.get(name), list):
             for rule in rules:
-                result.block(rule, '/' + name)
+                result.block(rule, '/' + name if name in doc.obj else '')
+        elif not doc.obj[name]:
+            for rule in rules:
+                result.complete(rule)
     extension_ids = { (x['identity'], x['version']) for x in items(doc.obj, 'extensions') if good('Extension', x)}
     def custom(kind, path):
+        result.complete('D-REFERENCE')
         if isinstance(kind, dict) and (kind['extension']['identity'], kind['extension']['version']) not in extension_ids:
             result.find('D-REFERENCE', path, 'custom Kind extension not declared')
     for i, definition in enumerate(definitions):
         if good('Definition', definition):
             custom(definition['kind'], '/definitions/' + str(i))
     seen_rel, edges, counts = set(), defaultdict(list), defaultdict(lambda: defaultdict(list))
-    incomplete_relations = False
+    incomplete_relations = not isinstance(doc.obj.get('relations'), list)
+    incomplete_cycles = incomplete_relations
     for i, relation in enumerate(items(doc.obj, 'relations')):
         path = '/relations/' + str(i)
         if not good('Relation', relation):
             incomplete_relations = True
+            incomplete_cycles = True
             for rule in ('D-REFERENCE', 'D-RELATION', 'D-CYCLE'):
                 result.block(rule, path)
             continue
         custom(relation['expectedKind'], path)
+        result.complete('D-RELATION')
         token = frozen(relation)
         if token in seen_rel:
             result.find('D-RELATION', path, 'duplicate relation')
@@ -256,21 +273,29 @@ def validate_d(doc, annexes):
         relation_type = relation['relation']
         if relation_type in ('actsAs', 'exposes', 'directedBy'):
             target_kinds = {'actsAs': ['Principal'], 'exposes': ['Interface'], 'directedBy': ['Instructions', 'Role', 'Skill', 'ControlFlow']}[relation_type]
+            if source is None:
+                result.block('D-RELATION', path)
             if source and (source[0]['kind'] != 'Agent' or relation['expectedKind'] not in target_kinds):
                 result.find('D-RELATION', path, 'relation kinds not permitted')
         if source:
             counts[key(relation['source'])][relation_type].append(relation)
         if relation_type == 'contains' and 'dependency' not in target:
-            if key(relation['source']) not in doc.ambiguous and key(target) not in doc.ambiguous:
+            if any(k in doc.ambiguous or k in doc.invalid for k in (key(relation['source']), key(target))):
+                incomplete_cycles = True
+                result.block('D-CYCLE', '/relations')
+            else:
                 edges[key(relation['source'])].append(('contains', key(target)))
+    if not incomplete_cycles:
+        result.complete('D-CYCLE')
     if cyclic(edges):
         result.find('D-CYCLE', '/relations', 'containment cycle')
     exports = items(doc.obj, 'exports')
     if root_ok and isinstance(doc.obj.get('exports'), list):
+        result.complete('D-EXPORT')
         if (root['kind'] == 'Fragment' and not exports) or (root['kind'] == 'System' and exports):
             result.find('D-EXPORT', '/exports', 'root export constraint')
     elif not root_ok:
-        result.block('D-EXPORT', '/exports')
+        result.block('D-EXPORT', '/exports' if 'exports' in doc.obj else '')
     seen_exports = set()
     for i, export in enumerate(exports):
         path = '/exports/' + str(i)
@@ -295,21 +320,27 @@ def validate_d(doc, annexes):
         subject = doc.lookup(entry['subject'], 'Agent', result, 'D-DEFERRAL', path)
         c = counts[key(entry['subject'])]
         valid = root_ok and root['kind'] == 'Fragment' and subject and not c['exposes'] and len(c['actsAs']) == 1 and c['directedBy'] and deferral_counts[key(entry['subject'])] == 1
-        if incomplete_relations:
+        if incomplete_relations or subject is None or not root_ok:
             result.block('D-DEFERRAL', path)
         elif valid:
             deferred.add(key(entry['subject']))
             result.find('D-DEFERRAL', path, 'Interface relation remains outstanding', 'deferred')
         else:
             result.find('D-DEFERRAL', path, 'invalid or stale deferral')
+    if good(array('Definition'), doc.obj.get('definitions')) and not any(d['kind'] == 'Agent' for d in definitions):
+        result.complete('D-AGENT')
     for i, definition in enumerate(definitions):
         if good('Definition', definition) and definition['kind'] == 'Agent':
             path, identity = '/definitions/' + str(i), key(definition['key'])
             c = counts[identity]
             if identity in doc.ambiguous or incomplete_relations:
                 result.block('D-AGENT', path)
-            elif len(c['actsAs']) != 1 or not c['directedBy'] or (not c['exposes'] and identity not in deferred):
-                result.find('D-AGENT', path, 'Agent relation minimum not met')
+            elif not c['exposes'] and not good(array('Deferral'), doc.obj.get('unresolved')):
+                result.block('D-AGENT', path)
+            else:
+                result.complete('D-AGENT')
+                if len(c['actsAs']) != 1 or not c['directedBy'] or (not c['exposes'] and identity not in deferred):
+                    result.find('D-AGENT', path, 'Agent relation minimum not met')
     dependency_checks(doc, annexes, result)
     extension_checks(doc, result, 'validateD')
     return result
@@ -319,12 +350,17 @@ def dependency_checks(doc, annexes, result, exchange=False):
     seen_ids, roots = set(), set()
     rule = 'E-PRESERVE' if exchange else 'D-DEPENDENCY'
     integrity = 'E-PRESERVE' if exchange else 'D-INTEGRITY'
+    if isinstance(doc.obj.get('dependencies'), list) and not doc.obj['dependencies']:
+        result.complete(rule)
+        result.complete(integrity)
     for i, dep in enumerate(items(doc.obj, 'dependencies')):
         path = '/dependencies/' + str(i)
         if not good('Dependency', dep):
             result.block(rule, path)
             result.block(integrity, path)
             continue
+        result.complete(rule)
+        result.complete(integrity)
         if dep['id'] in seen_ids or key(dep['rootKey']) in roots or len(dep['requiredFor']) != len(set(dep['requiredFor'])):
             result.find(rule, path if not exchange else '', 'duplicate dependency declaration')
         seen_ids.add(dep['id'])
@@ -354,12 +390,15 @@ def extension_checks(doc, result, operation):
             used.add(frozen(relation['expectedKind']['extension']))
     seen = set()
     if not isinstance(doc.obj.get('extensions'), list):
-        result.block('X-MODE', '/extensions')
+        result.block('X-MODE', '/extensions' if 'extensions' in doc.obj else '')
+    elif not doc.obj['extensions']:
+        result.complete('X-MODE')
     for i, ext in enumerate(items(doc.obj, 'extensions')):
         path = '/extensions/' + str(i)
         if not good('Extension', ext):
             result.block('X-MODE', path)
             continue
+        result.complete('X-MODE')
         identity = frozen({x: ext[x] for x in ('identity', 'version')})
         if identity in seen:
             result.find('X-MODE', path, 'duplicate extension Edition')
@@ -395,11 +434,14 @@ def validate_r(doc):
     requirements_readable = good(array('Requirement'), runtime.get('requirements'))
     if not isinstance(runtime.get('requirements'), list):
         result.block('R-REQUIREMENT', '/runtime')
+    elif not runtime['requirements']:
+        result.complete('R-REQUIREMENT')
     for i, requirement in enumerate(items(runtime, 'requirements')):
         path = '/runtime/requirements/' + str(i)
         if not good('Requirement', requirement):
             result.block('R-REQUIREMENT', path)
             continue
+        result.complete('R-REQUIREMENT')
         pair = frozen(requirement['capability']), key(requirement['subject'])
         if requirement['id'] in seen or pair in pairs:
             result.find('R-REQUIREMENT', path, 'duplicate requirement')
@@ -426,6 +468,8 @@ def validate_r(doc):
             doc.external_declaration(hosting, result, 'R-SELECTION', '/runtime/selection')
         else:
             doc.lookup(hosting, 'Environment', result, 'R-SELECTION', '/runtime/selection')
+    if 'hosting' not in selection and isinstance(selection.get('evidence'), list) and not selection['evidence']:
+        result.complete('R-SELECTION')
     seen_claims = set()
     if not isinstance(selection.get('evidence'), list):
         result.block('R-SELECTION', '/runtime/selection')
@@ -434,6 +478,7 @@ def validate_r(doc):
         if not good('EvidenceClaim', claim):
             result.block('R-SELECTION', path)
             continue
+        result.complete('R-SELECTION')
         if claim['requirement'] in seen_claims:
             result.find('R-SELECTION', path, 'duplicate requirement claim')
         if claim['requirement'] not in seen:
@@ -462,6 +507,7 @@ class GraphValidation:
             self.result.block('G-RESOLVE', '')
             return None
         dep, path = record
+        self.result.complete('G-RESOLVE')
         raw = self.annexes.get(name)
         if raw is None or dep['status'] != 'included':
             self.result.find('G-RESOLVE', path, 'required annex unavailable')
@@ -500,7 +546,7 @@ class GraphValidation:
                 return None
             if owner is not self.primary:
                 self.result.find('G-RESOLVE', consumer, 'transitive selected reference unsupported', 'unsupported')
-                report.block('G-TARGET', affected)
+                report.exclude('G-TARGET', affected)
                 return None
             if not self.resolve:
                 report.exclude('G-TARGET', consumer)
@@ -508,13 +554,17 @@ class GraphValidation:
                 return None
             doc = self.dependency(ref['dependency'])
             if doc is None or doc.syntax:
+                report.block('G-TARGET', affected)
+                self.result.block('G-RESOLVE', consumer)
                 return None
             identity = ref['key']
             if not good(array('Key'), doc.obj.get('exports')):
                 self.result.block('G-RESOLVE', consumer)
+                report.block('G-TARGET', affected)
                 return None
             if identity not in items(doc.obj, 'exports'):
                 self.result.find('G-RESOLVE', consumer, 'target not exported')
+                report.block('G-TARGET', affected)
                 return None
         else:
             doc, identity = owner, ref
@@ -528,7 +578,9 @@ class GraphValidation:
         if target is None or target[0]['kind'] != expected:
             report.find('G-TARGET' if not external else 'G-RESOLVE', affected if not external else consumer, 'missing or wrong-kind target')
             return None
+        report.complete('G-TARGET')
         if self.resolve:
+            self.result.complete('G-RESOLVE')
             previous = self.selections.get(key(identity))
             if previous is not None and previous != doc.id:
                 self.result.find('G-RESOLVE', consumer, 'selected key in multiple document boundaries')
@@ -551,8 +603,10 @@ class GraphValidation:
         doc, definition, path = selected
         doc.selected_payloads.add(path + '/payload')
         result = self.annex_result(doc)
-        if result.shape(schema, definition['payload'], path + '/payload'):
-            return definition['payload']
+        payload = definition['payload']
+        result.shape(schema, payload, path + '/payload')
+        if isinstance(payload, dict):
+            return payload
         result.block('G-TARGET', path + '/payload')
         return None
 
@@ -568,6 +622,10 @@ class GraphValidation:
             return
         extension_checks(doc, result, 'validateG')
         if self.resolve:
+            if good(array('Dependency'), doc.obj.get('dependencies')):
+                result.complete('G-RESOLVE')
+            else:
+                result.block('G-RESOLVE', '/dependencies' if 'dependencies' in doc.obj else '')
             for dep, _ in doc.dependencies.values():
                 if 'resolveG' in dep['requiredFor']:
                     self.dependency(dep['id'])
@@ -586,6 +644,9 @@ class GraphValidation:
             if self.resolve:
                 result.block('G-RESOLVE', '/graphs')
             return
+        if not graphs:
+            for rule in G_RULES[2:]:
+                result.complete(rule)
         graph_keys = set()
         for i, graph in enumerate(graphs):
             path = '/graphs/' + str(i)
@@ -614,6 +675,11 @@ class GraphValidation:
             sp = path + '/steps/' + str(i)
             if isinstance(step, dict):
                 records.append((step.get('id'), step, sp))
+            if not isinstance(step, dict) or step.get('kind') not in ('invoke', 'condition', 'approval', 'end'):
+                for rule in ('G-TARGET', 'G-DATA', 'G-APPROVAL'):
+                    result.block(rule, sp)
+            if isinstance(step, dict) and step.get('kind') == 'end' and step.get('outcome') not in ('success', 'failure', 'denied'):
+                result.block('G-DATA', sp)
             if not isinstance(step, dict) or not good('text', step.get('id')):
                 index_readable = False
                 path_shape = False
@@ -631,6 +697,7 @@ class GraphValidation:
             else:
                 edges[sid] = [(label, step[label]) for label in labels]
         if path_shape:
+            result.complete('G-PATH')
             path_bad = path_bad or graph['entry'] not in steps or any(t not in steps for links in edges.values() for _, t in links)
             path_bad = path_bad or cyclic(edges) or reachable(graph['entry'], edges) != set(steps)
             path_bad = path_bad or any(not edges[sid] and steps[sid].get('kind') != 'end' for sid in steps)
@@ -647,8 +714,10 @@ class GraphValidation:
             if 'input' in binding_value:
                 if not good('Ports', graph.get('inputs')):
                     result.block('G-DATA', consumer_path)
-                elif graph['inputs'].get(binding_value['input']) != expected:
-                    result.find('G-DATA', consumer_path, 'graph input missing or wrong type')
+                else:
+                    result.complete('G-DATA')
+                    if graph['inputs'].get(binding_value['input']) != expected:
+                        result.find('G-DATA', consumer_path, 'graph input missing or wrong type')
             else:
                 producer = steps.get(binding_value['step'])
                 if binding_value['step'] in ambiguous or (producer is None and not index_readable):
@@ -661,8 +730,10 @@ class GraphValidation:
                     result.find('G-DATA', consumer_path, 'binding producer is not invoke')
                 elif not good('Ports', producer.get('outputs')):
                     result.block('G-DATA', consumer_path)
-                elif producer['outputs'].get(binding_value['port']) != expected:
-                    result.find('G-DATA', consumer_path, 'producer output missing or wrong type')
+                else:
+                    result.complete('G-DATA')
+                    if producer['outputs'].get(binding_value['port']) != expected:
+                        result.find('G-DATA', consumer_path, 'producer output missing or wrong type')
                 if not paths_ok:
                     result.block('G-DATA', consumer_path)
                 elif consumer_id in reachable(graph['entry'], edges, (binding_value['step'], 'success')):
@@ -670,6 +741,7 @@ class GraphValidation:
 
         def input_bindings(step, consumer_id, consumer_path):
             if good('Ports', step.get('inputs')) and good(('map', 'Binding'), step.get('bindings')):
+                result.complete('G-DATA')
                 if set(step['inputs']) != set(step['bindings']):
                     result.find('G-DATA', consumer_path, 'invoke bindings differ from input names')
                 for port, b in step['bindings'].items():
@@ -679,6 +751,14 @@ class GraphValidation:
                 result.block('G-DATA', consumer_path)
             binding(step.get('context'), 'json', consumer_id, consumer_path)
 
+        if isinstance(graph.get('steps'), list) and all(isinstance(v, dict) and v.get('kind') in ('invoke', 'condition', 'approval', 'end') for v in steps_list):
+            if not any(v['kind'] == 'approval' for v in steps_list):
+                result.complete('G-APPROVAL')
+            if not any(v['kind'] in ('invoke', 'condition', 'approval') or (v['kind'] == 'end' and v.get('outcome') == 'success') for v in steps_list):
+                result.complete('G-DATA')
+        elif not isinstance(graph.get('steps'), list):
+            for rule in ('G-TARGET', 'G-DATA', 'G-APPROVAL'):
+                result.block(rule, path)
         for sid, step, sp in records:
             kind = step.get('kind')
             if kind == 'invoke':
@@ -702,26 +782,44 @@ class GraphValidation:
                             continue
                         relpath = '/relations/' + str(j)
                         if relation['relation'] in ('exposes', 'actsAs'):
-                            target = self.ref(relation['target'], 'Interface' if relation['relation'] == 'exposes' else 'Principal', owner, sp, relpath + '/target', self.annex_result(owner), relpath)
+                            target = self.ref(relation['target'], 'Interface' if relation['relation'] == 'exposes' else 'Principal', owner, sp, relpath + '/target', self.annex_result(owner), sp if owner is doc else relpath)
                             (exposure if relation['relation'] == 'exposes' else principals).append(target)
                     comparisons = ((exposure, targets['interface']), (principals, targets['principal']))
                     for available, expected in comparisons:
                         if expected is not None and all(v is not None for v in available):
+                            result.complete('G-TARGET')
                             if not any(self.same(v, expected) for v in available):
-                                result.find('G-TARGET', sp, 'Agent exposure or Principal mismatch')
-                        elif not self.resolve:
+                                if good(array('Relation'), owner.obj.get('relations')):
+                                    result.find('G-TARGET', sp, 'Agent exposure or Principal mismatch')
+                                else:
+                                    result.block('G-TARGET', sp)
+                        elif not self.resolve and any(good('Ref', step.get(f)) and 'dependency' in step[f] for f in ('agent', 'interface', 'principal')):
                             result.exclude('G-TARGET', sp)
+                        else:
+                            result.block('G-TARGET', sp)
+                elif not (not self.resolve and good('Ref', step.get('agent')) and 'dependency' in step['agent']):
+                    result.block('G-TARGET', sp)
                 payload = self.payload(targets['interface'], 'Interface')
                 if payload is not None:
                     owner, _, dp = targets['interface']
-                    action = self.ref(payload['action'], 'Action', owner, sp, dp + '/payload/action', self.annex_result(owner), dp + '/payload')
-                    if action is not None and targets['action'] is not None and not self.same(action, targets['action']):
-                        result.find('G-TARGET', sp, 'Interface action mismatch')
-                    if good('Ports', step.get('inputs')) and good('Ports', step.get('outputs')):
-                        if payload['inputs'] != step['inputs'] or payload['outputs'] != step['outputs']:
-                            result.find('G-DATA', sp, 'Interface port maps differ')
+                    action = self.ref(payload.get('action'), 'Action', owner, sp, dp + '/payload/action', self.annex_result(owner), dp + '/payload')
+                    if action is not None and targets['action'] is not None:
+                        result.complete('G-TARGET')
+                        if not self.same(action, targets['action']):
+                            result.find('G-TARGET', sp, 'Interface action mismatch')
+                    elif self.resolve and owner is not doc and good('Ref', payload.get('action')) and 'dependency' in payload['action']:
+                        result.exclude('G-TARGET', sp)
+                    elif not self.resolve and good('Ref', payload.get('action')) and 'dependency' in payload['action']:
+                        result.exclude('G-TARGET', sp)
                     else:
-                        result.block('G-DATA', sp)
+                        result.block('G-TARGET', sp)
+                    for field in ('inputs', 'outputs'):
+                        if all(good('Ports', v.get(field)) for v in (step, payload)):
+                            result.complete('G-DATA')
+                            if payload[field] != step[field]:
+                                result.find('G-DATA', sp, 'Interface port maps differ')
+                        else:
+                            result.block('G-DATA', sp)
                 elif targets['interface'] is None and not self.resolve and good('Ref', step.get('interface')) and 'dependency' in step['interface']:
                     result.exclude('G-DATA', sp)
                 else:
@@ -730,6 +828,7 @@ class GraphValidation:
                 binding(step.get('test'), 'boolean', sid, sp)
             elif kind == 'end' and step.get('outcome') == 'success':
                 if good('Ports', graph.get('outputs')) and good(('map', 'Binding'), step.get('bindings')):
+                    result.complete('G-DATA')
                     if set(graph['outputs']) != set(step['bindings']):
                         result.find('G-DATA', sp, 'terminal bindings differ from graph outputs')
                     for port, b in step['bindings'].items():
@@ -743,7 +842,11 @@ class GraphValidation:
                 if payload is not None:
                     owner, _, dp = target
                     seen = set()
-                    for j, ref in enumerate(payload['approvers']):
+                    if not good(array('Ref'), payload.get('approvers')):
+                        self.annex_result(owner).block('G-TARGET', dp + '/payload')
+                    elif not payload['approvers']:
+                        self.annex_result(owner).complete('G-TARGET')
+                    for j, ref in enumerate(items(payload, 'approvers')):
                         ar = self.annex_result(owner)
                         if frozen(ref) in seen:
                             ar.find('G-TARGET', dp + '/payload', 'duplicate approver')
@@ -758,8 +861,10 @@ class GraphValidation:
                 elif protected is None or protected.get('kind') != 'invoke':
                     result.find('G-APPROVAL', sp, 'approved successor is not invoke')
                 else:
+                    result.complete('G-APPROVAL')
                     input_bindings(protected, sid, sp)
                 if paths_ok:
+                    result.complete('G-APPROVAL')
                     incoming = [(s, label) for s, links in edges.items() for label, t in links if t == approved]
                     if incoming != [(sid, 'approved')] or approved in reachable(step['denied'], edges) or approved in reachable(step['failure'], edges):
                         result.find('G-APPROVAL', sp, 'protected invoke reachable without approval')
@@ -880,6 +985,7 @@ def read(operation, primary, annexes=None, losses=None):
     results, artifacts, loss_records, annex_docs, extra_states = [], {}, [], [], []
     if operation == 'inspect':
         r = Result('primary', 'inspect', None, ['P-SYNTAX'])
+        r.complete('P-SYNTAX')
         if doc.syntax:
             r.find('P-SYNTAX', detail=str(doc.syntax), byte=doc.syntax.offset)
         results.append(r)
@@ -889,6 +995,7 @@ def read(operation, primary, annexes=None, losses=None):
             r.find('E-LOSS', '', 'candidate edition permits no lossy exchange')
             loss_records = losses or [{'input': 'primary', 'location': {'pointer': ''}, 'information': 'unspecified requested loss', 'reason': 'no omission permission in candidate-2', 'permission': None}]
         else:
+            r.complete('E-PRESERVE')
             if good(array('Dependency'), doc.obj.get('dependencies')):
                 dependency_checks(doc, annexes, r, exchange=True)
             if r.verdict() == 'pass':
