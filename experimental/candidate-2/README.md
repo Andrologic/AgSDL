@@ -23,8 +23,8 @@ The checker verifies manifest references, file digests, the pinned proposal,
 rule-level positive/negative coverage, the six-review witness index and local
 schema structure/references. It does not parse fixture inputs as AgSDL, derive
 verdicts, invoke readers or validate described behavior. Invalid JSON bytes are
-intentional fixtures. The repository's `scripts/check.sh` is a separate
-maintenance check and does not run this corpus checker.
+intentional fixtures. The repository's `scripts/check.sh` runs this corpus checker and the synthetic
+harness tests as maintenance checks. It does not run either AgSDL reader.
 
 An optional `--jsonschema` flag additionally checks the three schemas against
 the Draft 2020-12 metaschema using an already installed `jsonschema` package.
@@ -79,7 +79,8 @@ against source slices rather than rounded or reserialized JSON. The harness
 also verifies input hashes, output hashes and the closed Report shape. It
 compares complete normalized result/check/state/finding sets between readers,
 not just the targeted oracle assertions. Diagnostic prose and execution time
-are not comparison keys. No comparison harness or reader is included in this lot.
+are not comparison keys. The comparison harness below implements these assertions. Reader implementations
+are supplied separately.
 
 ## Coverage and limits
 
@@ -122,3 +123,75 @@ preparation. The table records the witnesses, not new audit endorsements.
 
 These historical reviews examined proposal text. The new corpus needs its own
 independent review and subsequent execution against independently written readers.
+
+
+## Comparing reader commands
+
+Run [compare-readers.py](compare-readers.py) with at least two distinct labels
+and explicit executable/argument arrays. The optional positional manifest defaults
+to this corpus. This example shows placeholders, not available implementations:
+
+```sh
+python3 experimental/candidate-2/compare-readers.py \
+  --reader '["first", "/absolute/path/to/first-reader", "--json"]' \
+  --reader '["second", "/absolute/path/to/second-reader"]' \
+  --reports /private/tmp/agsdl-candidate-comparison
+```
+
+Commands run without a shell. Each invocation has a 30-second timeout; override
+with `--timeout SECONDS`, up to 300. Repeat `--case NAME` to select cases.
+Reader labels and case names use letters, digits, underscores and hyphens,
+starting with a letter or digit. Duplicate labels are rejected. The reports
+directory must be new or empty, preserving prior evidence from accidental reuse.
+
+The directory receives exact `CASE.LABEL.stdout` and `.stderr` bytes, including
+partial output on timeout, plus `summary.json` with failures and visible blocked
+cases. A nonzero reader exit, timeout, malformed response, failed assertion,
+reader disagreement or blocked case makes the command fail. A timeout terminates
+only the process group launched for that invocation. No AgSDL reference is
+resolved by the harness.
+
+The harness validates closed Report records, domains, input and output hashes,
+Result stages, permitted rule sets, Check ordering/completeness, duplicate
+records and verdict aggregation from the supplied findings and prerequisites.
+It does not derive findings from Agent, graph, dependency or runtime semantics.
+The required-result and required-location assertions remain subsets. Complete
+validated reports are then compared, retaining input/unit/phase and all rules.
+Findings, State and Slice array order are insignificant; mandatory Result stages
+and sorted Checks are validated before order-independent comparison. Processor
+identity can differ; finding details and ordinary State prose are ignored.
+Only the default Loss reason is free prose; supplied loss records must match
+their oracle. Missing-claim detail must unambiguously name the Requirement id;
+plain ids and unambiguous prose containing the id are supported, while ambiguous
+wording is rejected instead of silently conflating claims.
+
+The local JSON response adapter carries numbers as exact JSON numbers. The
+harness parses them with Decimal and an exact lexeme fallback for exponents
+beyond Decimal’s host limit, preserves Boolean/number distinctions and
+compares the entire primary tree with the original JSON value, without binary
+floating-point conversion. Alternative tagged host-number representations need
+an explicit adapter before this CLI comparison; they are not inferred from an
+arbitrary object or string. Original source lexemes remain authoritative for
+opaque slices. This adapter restriction is not a new AgSDL semantic rule.
+
+A syntax-only source index verifies each reported Slice's pointer and exact
+UTF-8 byte span. It rejects duplicate, overlapping and nonmaximal slices, enforces
+unconditionally opaque documentary boundaries, and rejects states inside them.
+It does not resolve G references to decide whether a particular Interface or
+ApprovalRequirement payload was selected: such a payload is either wholly
+opaque or interpreted. That selection remains covered by corpus assertions and
+full reader comparison. Likewise unreadable dependency inventory is asserted by
+the corpus, without duplicating a dependency validator in the harness. These
+boundaries prevent the harness from becoming a third semantic implementation.
+
+Run the machinery tests alone with:
+
+```sh
+python3 experimental/candidate-2/test-compare-readers.py
+```
+
+These tests use fixed synthetic reports and subprocess stubs. Their success
+verifies the harness, not AgSDL implementation support or interoperability.
+The three schemas also passed the optional metaschema check with
+`jsonschema 4.23.0` in the orchestrator's temporary environment; that package is
+not a project dependency. A real comparison awaits integrated readers.
