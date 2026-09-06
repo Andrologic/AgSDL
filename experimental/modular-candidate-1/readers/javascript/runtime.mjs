@@ -162,6 +162,7 @@ export function validateR(ctx, inventory) {
 
   function claimMap(claims, rule, pointer, reportDuplicates = true) {
     const map = new Map();
+    const seen = new Set();
     const ambiguous = new Set();
     let blocked = false;
     if (!Array.isArray(claims)) {
@@ -169,19 +170,21 @@ export function validateR(ctx, inventory) {
       return { map, ambiguous, blocked: true };
     }
     for (const claim of claims) {
-      if (!S.valid(S.CapabilityClaim, claim)) {
+      const validClaim = S.valid(S.CapabilityClaim, claim);
+      if (!validClaim) {
         result.mark(rule, 'blocked', pointer);
         blocked = true;
-        continue;
       }
+      if (!S.valid(S.Edition, claim?.capability)) continue;
       result.mark(rule);
       const identity = edition(claim.capability);
-      if (ambiguous.has(identity) || map.has(identity)) {
+      if (seen.has(identity)) {
         if (reportDuplicates) result.find(rule, pointer, 'Duplicate capability claim');
         map.delete(identity);
         ambiguous.add(identity);
         blocked = true;
-      } else map.set(identity, claim);
+      } else if (validClaim) map.set(identity, claim);
+      seen.add(identity);
     }
     return { map, ambiguous, blocked };
   }

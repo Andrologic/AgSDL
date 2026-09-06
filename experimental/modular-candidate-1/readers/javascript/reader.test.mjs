@@ -349,6 +349,15 @@ test('approval target checks survive an invalid graph path',()=>{
   }
 });
 
+test('claim duplicates survive malformed nonidentity fields',()=>{
+  for(const tool of[false,true])for(const malformedFirst of[false,true]){
+    const d=source(),binding=d.runtime.configurations[0].agents[0],claims=tool?binding.tools[0].choices[0].claims:binding.claims,duplicate=structuredClone(claims[0]);claims.push(duplicate);(malformedFirst?claims[0]:duplicate).evidence=17;
+    const r=result(execute('validateR',d),'R'),rule=tool?'R-TOOL':'R-BINDING';
+    assert.ok(r.findings.some(f=>f.rule===rule&&f.details.includes('Duplicate capability claim')));
+    assert.ok(r.checks.some(c=>c.rule===rule&&c.state==='blocked'));
+  }
+});
+
 test('an empty graph entry blocks path lookup',()=>{
   const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));
