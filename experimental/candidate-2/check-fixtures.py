@@ -17,6 +17,25 @@ def require(value, message):
         raise ValueError(message)
 
 
+def fields(value, required, optional=()):
+    require(isinstance(value, dict), 'metadata record must be an object')
+    require(set(required) <= set(value) <= set(required) | set(optional), 'unknown/missing metadata fields')
+
+
+def text(value):
+    require(isinstance(value, str) and value, 'metadata text must be nonempty')
+
+
+def loss(record, input_ids, default=False):
+    fields(record, {'input', 'location', 'information', 'permission'} | (set() if default else {'reason'}), {'reason'} if default else ())
+    # Supplied losses always include a reason; default expected prose is unspecified.
+    require(record['input'] in input_ids and record['permission'] is None, 'loss scope/permission')
+    location(record['location'])
+    text(record['information'])
+    if 'reason' in record:
+        text(record['reason'])
+
+
 def pairs(items):
     out = {}
     for key, value in items:
@@ -84,6 +103,8 @@ def main():
     parser.add_argument('--jsonschema', action='store_true', help='also require installed jsonschema and validate Draft 2020-12 metaschemas; no installation or retrieval')
     args = parser.parse_args()
     manifest = read_json(FIXTURES / 'manifest.json')
+    fields(manifest, {'format','contract','contractBase','contractSha256','coverage','cases'})
+    require(isinstance(manifest['cases'], list), 'cases must be an array')
     require(manifest['format'] == 'agsdl-candidate-corpus-1', 'manifest format')
     require(manifest['contract'] == 'proposal-0012-candidate-2', 'contract edition')
     contract = ROOT.parents[1] / 'proposals/0012-minimal-0.1.0-contract.md'
@@ -95,7 +116,11 @@ def main():
     known = set(names)
     referenced = set()
     witnesses = set()
+    by_name = {c['name']: c for c in cases}
     for case in cases:
+        fields(case, {'name','status','primary','annexes','operation','source','coverage','reviewWitnesses','expected'}, {'losses','blocker'})
+        require(isinstance(case['annexes'], dict), 'annexes must be a map')
+        require(isinstance(case['coverage'], list) and isinstance(case['reviewWitnesses'], list), 'case indexes must be arrays')
         name = case['name']
         require(re.fullmatch('[A-Za-z0-9-]+', name), f'invalid case name {name}')
         require(case['operation'] in OPERATIONS, f'operation {name}')
@@ -105,10 +130,17 @@ def main():
             require(isinstance(dep_id, str) and dep_id, f'annex id {name}')
             input_ids.add('annex/' + dep_id)
             referenced.add(artifact(record))
+        fields(case['source'], {'document','section'})
         source = (FIXTURES / case['source']['document']).resolve()
         require(source == contract.resolve() and case['source']['section'], f'source {name}')
+        require(all(type(n) is int and 1 <= n <= 6 for n in case['reviewWitnesses']), 'review witness domain')
         witnesses.update(case['reviewWitnesses'])
+        if 'losses' in case:
+            require(case['operation'] == 'lossyExchange' and isinstance(case['losses'], list), 'losses only allowed as an array for lossyExchange')
+            for item in case['losses']:
+                loss(item, input_ids)
         for item in case['coverage']:
+            fields(item, {'rule','variant'})
             require(item['rule'] in RULES, f'unknown coverage rule {name}')
             require(name in manifest['coverage'][item['rule']]['cases'].get(item['variant'], []), f'coverage index missing {name}')
         if case['status'] == 'blocked':
@@ -116,17 +148,45 @@ def main():
             continue
         require(case['status'] == 'ready', f'status {name}')
         expected = case['expected']
+        fields(expected, {'results','findings','checks','states','absentStates','opaque','absentOpaque','preservation'}, {'losses'})
+        for key in ['results','checks','states','absentStates','opaque','absentOpaque']:
+            require(isinstance(expected[key], list), f'{key} must be an array')
+        if case['operation'] == 'lossyExchange':
+            require(isinstance(expected.get('losses'), list) and expected['losses'], 'expected prospective losses required')
+            for item in expected['losses']:
+                loss(item, input_ids, default=True)
+        else:
+            require('losses' not in expected, 'unexpected loss oracle')
         unit, phase = OPERATIONS[case['operation']]
         require(any(r['input'] == 'primary' and (r['unit'], r['phase']) == (unit, phase) for r in expected['results']), f'missing requested result {name}')
+        result_keys = []
         for result in expected['results']:
+            fields(result, {'input','unit','phase','verdict'})
+            allowed = {(unit, phase)}
+            if unit in {'G','R'}:
+                allowed.add(('D','unresolved-document'))
+            if result['input'] != 'primary':
+                require(case['operation'] == 'resolveG', f'annex result operation {name}')
+                allowed = {('D','unresolved-document'), ('G','resolved-graph')}
+            require((result['unit'], result['phase']) in allowed, f'result unit/phase {name}')
+            result_keys.append((result['input'],result['unit'],result['phase']))
             require(result['input'] in input_ids, f'result input {name}')
             require(result['verdict'] in {'pass', 'fail', 'unsupported', 'inconclusive'}, f'verdict {name}')
+        require(len(result_keys) == len(set(result_keys)), f'duplicate result oracle {name}')
+        fields(expected['findings'], {'mode','items'})
+        require(isinstance(expected['findings']['items'], list), 'finding items must be an array')
+        scopes = {(i,u) for i,u,p in result_keys}
         require(expected['findings']['mode'] in {'contains', 'exact'}, f'finding mode {name}')
         for finding in expected['findings']['items']:
+            fields(finding, {'input','unit','rule','location','outcome'})
+            require((finding['input'],finding['unit']) in scopes, f'finding unit {name}')
             require(finding['input'] in input_ids and finding['rule'] in RULES, f'finding scope {name}')
             require(finding['outcome'] in {'fail', 'unsupported', 'inconclusive', 'deferred'}, f'outcome {name}')
             location(finding['location'])
         for check in expected['checks']:
+            fields(check, {'input','unit','rule','state','locations'})
+            require((check['input'],check['unit']) in scopes, f'check unit {name}')
+            require(isinstance(check['locations'], list), 'check locations must be an array')
             require(check['input'] in input_ids and check['rule'] in RULES, f'check scope {name}')
             require(check['state'] in {'completed', 'excluded', 'blocked'}, f'check state {name}')
             for loc in check['locations']:
@@ -134,18 +194,35 @@ def main():
         for item in expected['states'] + expected['opaque'] + expected['absentOpaque']:
             require(item['input'] in input_ids, f'inventory input {name}')
             pointer(item['pointer'])
+        for item in expected['opaque'] + expected['absentOpaque']:
+            fields(item, {'input','pointer'})
         for item in expected['states']:
+            fields(item, {'input','pointer','state'}, {'detailRequirement'})
+            if 'detailRequirement' in item:
+                text(item['detailRequirement'])
             require(item['state'] in {'declared','absent','unknown','unchecked'}, f'inventory state {name}')
         for item in expected['absentStates']:
+            fields(item, {'input','pointerPrefix'})
             require(item['input'] in input_ids, f'forbidden state input {name}')
             pointer(item['pointerPrefix'])
         require(expected['preservation'] in {'exact-input-boundary', 'no-output'}, f'preservation {name}')
         if expected['preservation'] == 'exact-input-boundary':
             require(case['operation'] == 'exchange', f'preservation operation {name}')
     for rule, coverage in manifest['coverage'].items():
+        fields(coverage, {'cases','limits'}, {'notApplicable'})
+        text(coverage['limits'])
         require(coverage['cases'], f'no witnesses for {rule}')
         for variant, listed in coverage['cases'].items():
+            require(variant in {'positive','negative','unknown','unsupported','inconclusive','deferred','excluded','blocked'}, 'coverage variant')
+            require(isinstance(listed, list) and listed, f'empty coverage {rule}/{variant}')
             require(set(listed) <= known and len(listed) == len(set(listed)), f'coverage references {rule}/{variant}')
+            for case_name in listed:
+                selected = by_name[case_name]
+                require(selected['status'] == 'ready', 'blocked case cannot establish coverage')
+                if rule in {'P-PREREQUISITE','X-EXECUTION','X-FULL-MODEL','X-READINESS','X-EVIDENCE-ASSESSMENT'}:
+                    require(any(c['rule'] == rule and c['state'] == variant for c in selected['expected']['checks']), 'documentary coverage has no matching Check')
+                else:
+                    require({'rule':rule,'variant':variant} in selected['coverage'], f'reverse coverage association {rule}/{case_name}')
         if rule not in {'E-LOSS','P-PREREQUISITE','X-EXECUTION','X-FULL-MODEL','X-READINESS','X-EVIDENCE-ASSESSMENT'}:
             require({'positive', 'negative'} <= set(coverage['cases']), f'positive/negative coverage absent for {rule}')
     require(witnesses == set(range(1, 7)), 'six review witnesses not indexed')
