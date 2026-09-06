@@ -377,6 +377,8 @@ def validate_r(doc):
             result.block(rule, '/runtime')
         return result
     seen, pairs = set(), set()
+    if not isinstance(runtime.get('requirements'), list):
+        result.block('R-REQUIREMENT', '/runtime')
     for i, requirement in enumerate(items(runtime, 'requirements')):
         path = '/runtime/requirements/' + str(i)
         if not good('Requirement', requirement):
@@ -409,6 +411,8 @@ def validate_r(doc):
         else:
             doc.lookup(hosting, 'Environment', result, 'R-SELECTION', '/runtime/selection')
     seen_claims = set()
+    if not isinstance(selection.get('evidence'), list):
+        result.block('R-SELECTION', '/runtime/selection')
     for i, claim in enumerate(items(selection, 'evidence')):
         path = '/runtime/selection/evidence/' + str(i)
         if not good('EvidenceClaim', claim):
@@ -425,6 +429,7 @@ class GraphValidation:
         self.primary, self.annexes, self.resolve = primary, annexes, resolve
         self.result = Result(primary.id, 'G', 'resolved-graph' if resolve else 'unresolved-document', G_RULES + (['G-RESOLVE'] if resolve else []))
         self.loaded, self.annex_results, self.selections = {}, {}, {}
+        self.selection_uses = defaultdict(set)
         self.extra_states = []
 
     def dependency(self, name):
@@ -501,7 +506,17 @@ class GraphValidation:
             if previous is not None and previous != doc.id:
                 self.result.find('G-RESOLVE', consumer, 'selected key in multiple document boundaries')
             self.selections[key(identity)] = doc.id
+            self.selection_uses[key(identity)].add(consumer)
         return doc, target[0], target[1]
+
+    def check_collisions(self):
+        if not self.resolve:
+            return
+        boundaries = [self.primary] + [doc for doc in self.loaded.values() if doc is not None]
+        for identity, consumers in self.selection_uses.items():
+            if sum(identity in doc.index for doc in boundaries) > 1:
+                for consumer in consumers:
+                    self.result.find('G-RESOLVE', consumer, 'selected key appears in multiple document boundaries')
 
     def payload(self, selected, schema):
         if selected is None:
@@ -696,8 +711,10 @@ class GraphValidation:
                         seen.add(frozen(ref))
                         self.ref(ref, 'Principal', owner, sp, dp + '/payload/approvers/' + str(j), ar, dp + '/payload')
                 approved = step.get('approved')
-                protected = steps.get(approved)
-                if protected is None or protected.get('kind') != 'invoke':
+                protected = steps.get(approved) if isinstance(approved, str) else None
+                if not good('text', approved):
+                    result.block('G-APPROVAL', sp)
+                elif protected is None or protected.get('kind') != 'invoke':
                     result.find('G-APPROVAL', sp, 'approved successor is not invoke')
                 else:
                     input_bindings(protected, sid, sp)
@@ -848,6 +865,7 @@ def read(operation, primary, annexes=None, losses=None):
         elif operation in ('validateG', 'resolveG'):
             g = GraphValidation(doc, annexes, operation == 'resolveG')
             g.check()
+            g.check_collisions()
             r = g.result
             r.parents.append(d)
             if d.verdict() != 'pass':

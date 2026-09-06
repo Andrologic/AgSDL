@@ -240,6 +240,15 @@ class OperationTests(unittest.TestCase):
                 self.assertFalse(findings(report, 'P-SHAPE'))
                 self.assertIsNone(report['results'][0]['phase'])
 
+    def test_malformed_runtime_collections_block_semantic_checks(self):
+        d = doc(); d['runtime'] = {'requirements': 17}
+        r = run(d, 'validateR')['results'][-1]
+        self.assertTrue(any(c['rule'] == 'R-REQUIREMENT' and c['state'] == 'blocked' for c in r['checks']))
+        d['runtime'] = {'requirements': [], 'selection': {'engine': {'identity': 'a/b', 'version': '1'},
+                         'interface': {'identity': 'a/c', 'version': '1'}, 'evidence': 17}}
+        r = run(d, 'validateR')['results'][-1]
+        self.assertTrue(any(c['rule'] == 'R-SELECTION' and c['state'] == 'blocked' for c in r['checks']))
+
     def test_cli_lossless_tree_and_artifacts(self):
         primary = b'{"annotations":1e999999999999999999}'
         request = {'operation': 'exchange', 'primary': base64.b64encode(primary).decode(), 'annexes': {}}
@@ -279,6 +288,7 @@ class GraphTests(unittest.TestCase):
 
     def test_external_graph_resolution(self):
         annex = graph_doc(); annex.pop('graphs'); annex['root']['kind'] = 'Fragment'
+        annex['definitions'] = [v for v in annex['definitions'] if v['kind'] != 'ControlFlow']
         annex['exports'] = [v['key'] for v in annex['definitions']]
         data = raw(annex)
         d = graph_doc()
@@ -337,6 +347,31 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(report['results'][-1]['verdict'], 'unsupported', findings(report))
         self.assertEqual(len(report['inputs']), 2)
         self.assertTrue(any(f['outcome'] == 'unsupported' for f in findings(report, 'G-RESOLVE')))
+
+    def test_selected_key_collision_with_unconsumed_local_definition(self):
+        d = graph_doc(); annex = doc(); annex['root']['kind'] = 'Fragment'; annex['root']['key'] = k('fragment')
+        definition(annex, 'resource', 'Resource'); annex['exports'] = [k('resource')]
+        data = raw(annex)
+        d['dependencies'] = [{'id': 'a', 'rootKey': annex['root']['key'], 'status': 'included', 'requiredFor': [], 'sha256': digest(data)}]
+        d['graphs'][0]['steps'][0]['resources'] = [{'dependency': 'a', 'key': k('resource')}]
+        report = run(d, 'resolveG', {'a': data})
+        self.assertEqual(report['results'][-1]['verdict'], 'fail')
+        self.assertTrue(findings(report, 'G-RESOLVE'))
+
+    def test_malformed_approval_and_condition_fields_keep_report(self):
+        d = approval_doc()
+        d['graphs'][0]['inputs']['flag'] = 'boolean'
+        d['graphs'][0]['entry'] = 'condition'
+        d['graphs'][0]['steps'].append({'id': 'condition', 'kind': 'condition', 'test': {'input': 'flag'},
+                                       'true': 'gate', 'false': 'failed', 'failure': 'failed'})
+        for index in (3, 5):
+            for field in d['graphs'][0]['steps'][index]:
+                for bad in (None, {}, [], True, -1):
+                    changed = copy.deepcopy(d)
+                    changed['graphs'][0]['steps'][index][field] = bad
+                    report = run(changed, 'validateG')
+                    self.assertEqual(report['results'][-1]['verdict'], 'fail')
+                    self.assertTrue(findings(report, 'P-SHAPE'))
 
     def test_malformed_step_shapes_do_not_crash(self):
         for field in graph_doc()['graphs'][0]['steps'][0]:
