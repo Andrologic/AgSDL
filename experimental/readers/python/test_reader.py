@@ -412,6 +412,10 @@ class GraphTests(unittest.TestCase):
         self.assertEqual(report['results'][-1]['verdict'], 'unsupported', findings(report))
         self.assertEqual(len(report['inputs']), 2)
         self.assertTrue(any(f['outcome'] == 'unsupported' for f in findings(report, 'G-RESOLVE')))
+        annex_g = next(r for r in report['results'] if r['unit'] == 'G' and r['input'] != 'primary')
+        self.assertEqual(annex_g['verdict'], 'pass')
+        self.assertTrue(any(c['rule'] == 'G-TARGET' and c['state'] == 'excluded' for c in annex_g['checks']))
+        self.assertFalse(any(c['state'] == 'blocked' for c in annex_g['checks']))
 
     def test_selected_key_collision_with_unconsumed_local_definition(self):
         d = graph_doc(); annex = doc(); annex['root']['kind'] = 'Fragment'; annex['root']['key'] = k('fragment')
@@ -464,6 +468,117 @@ class GraphTests(unittest.TestCase):
                 d = graph_doc(); d['graphs'][0]['steps'][0][field] = bad
                 report = run(d, 'validateG')
                 self.assertNotEqual(report['results'][-1]['verdict'], 'pass', (field, bad))
+
+
+class ComparisonRegressionTests(unittest.TestCase):
+    def states(self, report, unit, rule):
+        result = next(r for r in report['results'] if r['input'] == 'primary' and r['unit'] == unit)
+        return {c['state'] for c in result['checks'] if c['rule'] == rule}
+
+    def test_unreadable_relations_do_not_prove_agent_minima_missing(self):
+        d = graph_doc(); del d['relations']
+        report = run(d)
+        self.assertFalse(findings(report, 'D-AGENT'))
+        for rule in ('D-AGENT', 'D-RELATION', 'D-CYCLE'):
+            self.assertEqual(self.states(report, 'D', rule), {'blocked'})
+
+    def test_unreadable_deferrals_do_not_hide_nondeferrable_minima(self):
+        for root_kind in ('System', 'Fragment'):
+            d = graph_doc(); d['root']['kind'] = root_kind
+            d['relations'] = []; d['unresolved'] = None
+            report = run(d)
+            self.assertTrue(findings(report, 'D-AGENT'))
+            expected = {'completed'} if root_kind == 'System' else {'completed', 'blocked'}
+            self.assertEqual(self.states(report, 'D', 'D-AGENT'), expected)
+        d = graph_doc(); d['root']['kind'] = 'Fragment'; d['unresolved'] = None
+        d['relations'] = [r for r in d['relations'] if r['relation'] != 'exposes']
+        report = run(d)
+        self.assertFalse(findings(report, 'D-AGENT'))
+        self.assertEqual(self.states(report, 'D', 'D-AGENT'), {'completed', 'blocked'})
+
+    def test_absent_collection_blocks_existing_affected_records(self):
+        for absent in (True, False):
+            d = graph_doc()
+            if absent:
+                del d['relations']
+            else:
+                d['relations'] = 17
+            report = run(d)
+            checks = report['results'][0]['checks']
+            locations = next(c['locations'] for c in checks if c['rule'] == 'D-RELATION' and c['state'] == 'blocked')
+            self.assertEqual(locations, [{'pointer': '' if absent else '/relations'}])
+            agent_locations = next(c['locations'] for c in checks if c['rule'] == 'D-AGENT' and c['state'] == 'blocked')
+            self.assertEqual(agent_locations, [{'pointer': '/definitions/0'}])
+
+    def test_ambiguous_source_blocks_kind_check_but_checks_duplicate_tuples(self):
+        d = graph_doc(); d['definitions'].append(copy.deepcopy(d['definitions'][0]))
+        d['relations'].append(copy.deepcopy(d['relations'][0]))
+        report = run(d)
+        self.assertTrue(findings(report, 'D-RELATION'))
+        self.assertEqual(self.states(report, 'D', 'D-RELATION'), {'completed', 'blocked'})
+        self.assertEqual(self.states(report, 'D', 'D-AGENT'), {'blocked'})
+
+    def test_unreadable_definitions_do_not_prove_missing_reference(self):
+        d = graph_doc(); d['definitions'] = None
+        report = run(d)
+        self.assertFalse(findings(report, 'D-REFERENCE'))
+        self.assertIn('blocked', self.states(report, 'D', 'D-RELATION'))
+        self.assertEqual(self.states(report, 'D', 'D-OWNER'), {'blocked'})
+
+    def test_malformed_and_empty_domains_have_distinct_coverage(self):
+        for field, operation, unit, rules in (
+                ('graphs', 'validateG', 'G', ('G-TARGET', 'G-PATH', 'G-DATA', 'G-APPROVAL')),
+                ('runtime', 'validateR', 'R', ('R-REQUIREMENT', 'R-SELECTION'))):
+            d = doc(); d[field] = 17
+            report = run(d, operation)
+            for rule in rules:
+                self.assertEqual(self.states(report, unit, rule), {'blocked'})
+        d = doc(); d['graphs'] = []
+        report = run(d, 'validateG')
+        for rule in ('G-TARGET', 'G-PATH', 'G-DATA', 'G-APPROVAL'):
+            self.assertEqual(self.states(report, 'G', rule), {'completed'})
+        d['runtime'] = {'requirements': [], 'selection': {'engine': {'identity': 'a/b', 'version': '1'},
+                                                       'interface': {'identity': 'a/c', 'version': '1'}, 'evidence': []}}
+        report = run(d, 'validateR')
+        for rule in ('R-REQUIREMENT', 'R-SELECTION'):
+            self.assertEqual(self.states(report, 'R', rule), {'completed'})
+
+    def test_payload_extra_field_does_not_hide_typed_checks(self):
+        d = graph_doc()
+        payload = next(v['payload'] for v in d['definitions'] if v['kind'] == 'Interface')
+        payload['extra'] = True
+        report = run(d, 'validateG')
+        self.assertTrue(findings(report, 'P-SHAPE'))
+        self.assertEqual(self.states(report, 'G', 'G-TARGET'), {'completed'})
+        self.assertEqual(self.states(report, 'G', 'G-DATA'), {'completed'})
+        payload['inputs'] = None
+        payload['outputs'] = {'answer': 'boolean'}
+        payload['action'] = k('missing')
+        report = run(d, 'validateG')
+        self.assertTrue(findings(report, 'G-TARGET'))
+        self.assertTrue(findings(report, 'G-DATA'))
+        self.assertEqual(self.states(report, 'G', 'G-DATA'), {'completed', 'blocked'})
+
+    def test_missing_annex_blocks_consuming_checks(self):
+        d = graph_doc()
+        d['dependencies'] = [{'id': 'a', 'rootKey': k('annex'), 'status': 'external', 'requiredFor': [], 'sha256': None}]
+        d['graphs'][0]['steps'][0]['resources'] = [{'dependency': 'a', 'key': k('resource')}]
+        report = run(d, 'resolveG')
+        self.assertTrue(findings(report, 'G-RESOLVE'))
+        for rule in ('G-TARGET', 'G-RESOLVE'):
+            self.assertEqual(self.states(report, 'G', rule), {'completed', 'blocked'})
+
+    def test_absent_graph_still_checks_dependency_portion(self):
+        d = doc()
+        self.assertEqual(self.states(run(d, 'resolveG'), 'G', 'G-RESOLVE'), {'completed', 'excluded'})
+        d['dependencies'] = [{'id': 'a', 'rootKey': k('annex'), 'status': 'external', 'requiredFor': ['resolveG'], 'sha256': None}]
+        self.assertTrue(findings(run(d, 'resolveG'), 'G-RESOLVE'))
+
+    def test_malformed_runtime_parent_has_no_selection_inventory(self):
+        d = doc(); d['runtime'] = {'requirements': [], 'selection': {'engine': {'identity': 'a/b', 'version': '1'},
+                                  'interface': {'identity': 'a/c', 'version': '1'}, 'provider': {'identity': 'bad', 'version': '1'}, 'evidence': []}}
+        report = run(d, 'validateR')
+        self.assertFalse(any(s['pointer'].startswith('/runtime/selection') for s in report['inventory']['states']))
 
 
 if __name__ == '__main__':
