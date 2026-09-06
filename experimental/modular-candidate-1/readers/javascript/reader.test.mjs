@@ -33,6 +33,8 @@ test('resolveG accepts only direct annex bytes from the modular edition',()=>{
   const d=source(),face=d.definitions[4],actions=d.definitions.slice(5,7),ann={contract:'proposal-0013-candidate-1',root:{key:{scope:'mvp',id:'package',version:'1'},kind:'PackageVersion'},definitions:[structuredClone(face),...structuredClone(actions)],relations:[],exports:[face.key,...actions.map(x=>x.key)],dependencies:[],unresolved:[],extensions:[]};
   d.definitions.splice(4,3);for(const x of ann.definitions)x.owner=ann.root.key;const ref=k=>({dependency:'ui',key:k});d.graphs[0].steps[0].interface=ref(face.key);d.graphs[0].steps[0].action=ref(actions[0].key);d.graphs[0].steps[1].interface=ref(face.key);d.graphs[0].steps[1].action=ref(actions[1].key);for(const rel of d.relations.filter(x=>x.relation==='exposes'))rel.target=ref(face.key);
   let annex=bytes(ann);d.dependencies=[{id:'ui',rootKey:ann.root.key,status:'included',requiredFor:[],sha256:hash(annex)}];let x=execute('resolveG',d,{ui:annex});assert.equal(result(x,'G').verdict,'pass',JSON.stringify(x.report.results.map(r=>[r.input,r.unit,r.verdict,r.findings])));assert.ok(x.report.results.some(r=>r.input==='annex/ui'&&r.unit==='G'));
+  ann.definitions[0].kind=17;annex=bytes(ann);d.dependencies[0].sha256=hash(annex);x=execute('resolveG',d,{ui:annex});assert.ok(result(x,'G').checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'));
+  ann.definitions[0].kind='Interface';
   ann.contract='proposal-0012-candidate-2';annex=bytes(ann);d.dependencies[0].sha256=hash(annex);x=execute('resolveG',d,{ui:annex});assert.equal(result(x,'G').verdict,'fail');
 });
 
@@ -159,4 +161,57 @@ test('missing transitive Applications fail at the AgentBinding',()=>{
 test('selected Operation target defects point to the Operation record',()=>{
   const d=source();d.definitions[4].payload.operations[0].action.id='missing';const x=execute('validateG',d);
   assert.ok(finding(x,'G','G-TARGET','/definitions/4/payload/operations/0'));
+});
+
+test('an unreadable Skill closure cannot prove that Applications are extra',()=>{
+  const d=source();d.definitions[12].payload.dependencies=null;const x=execute('validateR',d),r=result(x,'R');
+  assert.ok(r.checks.some(c=>c.rule==='R-CONTENT'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>f.rule==='R-CONTENT'&&f.details.includes('not reachable')));
+});
+
+test('an unreadable Tool effect blocks its selected assessment',()=>{
+  const d=source();d.definitions[9].payload.effects=17;const x=execute('validateR',d),p='/runtime/configurations/0/agents/0/tools/0';
+  assert.ok(finding(x,'R','P-SHAPE','/definitions/9/payload/effects'));
+  assert.ok(result(x,'R').checks.some(c=>c.rule==='R-COMPATIBILITY'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===p)));
+  assert.ok(x.report.inventory.states.some(s=>s.pointer===p&&s.detail==='blocked'));
+});
+
+test('partial G prerequisites block dependent checks without invented failures',()=>{
+  let d=source();d.relations[1].target=null;let x=execute('validateG',d),r=result(x,'G'),step='/graphs/0/steps/0';
+  assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+  assert.ok(!r.findings.some(f=>f.rule==='G-TARGET'&&f.details.includes('does not expose')));
+
+  d=source();d.graphs[0].steps[0].resources=null;x=execute('validateG',d);r=result(x,'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+
+  d=source();d.graphs[0].steps[0].interface.id='missing';x=execute('validateG',d);r=result(x,'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+
+  d=source();d.graphs[0].steps[1].context={step:'call-a',port:'anything'};d.graphs[0].steps[0].kind=17;x=execute('validateG',d);r=result(x,'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'&&c.locations.some(l=>l.pointer==='/graphs/0/steps/1')));
+  assert.ok(!r.findings.some(f=>f.rule==='G-DATA'&&f.location.pointer==='/graphs/0/steps/1'&&f.details.includes('wrong type')));
+});
+
+test('an ambiguous approval call blocks lookup',()=>{
+  const d=JSON.parse(fixture('approval-two-gates.json')),invoke=d.graphs[0].steps.find(s=>s.kind==='invoke');d.graphs[0].steps.push(structuredClone(invoke));const x=execute('validateG',d),r=result(x,'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-APPROVAL'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>f.rule==='G-APPROVAL'&&f.details.includes('call is not')));
+});
+
+test('Graph definition uniqueness survives an unreadable steps collection',()=>{
+  const d=source();d.graphs.push(structuredClone(d.graphs[0]));d.graphs[0].steps=null;const x=execute('validateG',d);
+  assert.ok(finding(x,'G','G-TARGET','/graphs/1'));
+});
+
+test('selected Operation lookup blocks unreadable ids and semantics',()=>{
+  let d=source();delete d.definitions[4].payload.operations[0].id;let x=execute('validateG',d),r=result(x,'G'),step='/graphs/0/steps/0';
+  assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+  assert.ok(!r.findings.some(f=>f.rule==='G-TARGET'&&f.details.includes('does not exist')));
+  d=source();d.definitions[4].payload.operations[0].direction=17;x=execute('validateG',d);r=result(x,'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+});
+
+test('Application content keeps its local kind check',()=>{
+  const d=source(),application=d.runtime.configurations[0].agents[0].applications[0];application.content=d.definitions[5].key;const x=execute('validateR',d);
+  assert.ok(result(x,'R').findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer==='/runtime/configurations/0/agents/0/applications/0'&&f.details.includes('wrong kind')));
 });

@@ -241,7 +241,6 @@ export function validateR(ctx, inventory) {
       } else result.mark('R-BINDING');
       if (!Array.isArray(binding.tools)) {
         result.mark('R-TOOL', 'blocked', ap);
-        bindingBlocked = true;
       }
       if (!Array.isArray(binding.applications)) {
         result.mark('R-CONTENT', 'blocked', ap);
@@ -273,12 +272,22 @@ export function validateR(ctx, inventory) {
     let assessmentBlocked = item.bindingBlocked || forceAssessmentBlocked;
     let unknownExternal = agent.status === 'external';
     let missingContent = false;
-    let closureKnown = agent.status === 'local';
+    let contentClosureComplete = agent.status === 'local';
+    let toolClosureComplete = agent.status === 'local';
+    let toolClosureBlocked = agent.status === 'blocked';
+    let toolClosureUnknown = agent.status === 'external';
     const engineRequirements = new Map(requirements.map);
     const requiredTools = new Map();
     const requiredContent = new Map();
     const content = new Map();
     const edges = [];
+
+    function incompleteContentClosure(reason) {
+      contentClosureComplete = false;
+      toolClosureComplete = false;
+      if (reason === 'blocked') toolClosureBlocked = true;
+      else toolClosureUnknown = true;
+    }
 
     if (agent.status === 'external') {
       result.mark('R-CONTENT', 'excluded', ap);
@@ -287,6 +296,7 @@ export function validateR(ctx, inventory) {
       result.mark('R-CONTENT', 'blocked', ap);
       result.mark('R-TOOL', 'blocked', ap);
       assessmentBlocked = true;
+      incompleteContentClosure('blocked');
     }
 
     const relationRows = rows(ctx, 'relations', S.Relation);
@@ -295,14 +305,14 @@ export function validateR(ctx, inventory) {
         result.mark('R-CONTENT', 'blocked', ap);
         result.mark('R-TOOL', 'blocked', ap);
         assessmentBlocked = true;
-        closureKnown = false;
+        incompleteContentClosure('blocked');
       } else {
         const unreadable = ctx.tree.relations.some(relation => !S.object(relation) || !S.valid(S.Key, relation.source) || (equal(relation.source, agent.v.key) && !S.valid(S.Relation, relation)));
         if (unreadable) {
           result.mark('R-CONTENT', 'blocked', ap);
           result.mark('R-TOOL', 'blocked', ap);
           assessmentBlocked = true;
-          closureKnown = false;
+          incompleteContentClosure('blocked');
         }
       }
     }
@@ -315,13 +325,17 @@ export function validateR(ctx, inventory) {
     function rememberTool(ref, request, rule, statePointer) {
       if (!S.valid(S.Ref, ref)) {
         result.mark(rule, 'blocked', request);
-        assessmentBlocked = true;
+        toolClosureComplete = false;
+        toolClosureBlocked = true;
         return { status: 'blocked', ref };
       }
       const identity = canonical(ref);
       const found = resolveRef(ref, 'Tool', rule, request, statePointer);
       if (!requiredTools.has(identity)) requiredTools.set(identity, { ref, found, request });
-      if (found.status === 'blocked') assessmentBlocked = true;
+      if (found.status === 'blocked') {
+        toolClosureComplete = false;
+        toolClosureBlocked = true;
+      }
       return found;
     }
 
@@ -331,14 +345,17 @@ export function validateR(ctx, inventory) {
       const found = resolveRef(ref, null, 'R-CONTENT', request, statePointer);
       if (found.status === 'external') {
         unknownExternal = true;
+        incompleteContentClosure('unknown');
         return found;
       }
       if (found.status === 'missing') {
         missingContent = true;
+        incompleteContentClosure('unknown');
         return found;
       }
       if (found.status === 'blocked') {
         assessmentBlocked = true;
+        incompleteContentClosure('blocked');
         return found;
       }
 
@@ -348,19 +365,24 @@ export function validateR(ctx, inventory) {
       if (!S.valid(S.Kind, found.v.kind)) {
         result.mark('R-CONTENT', 'blocked', request);
         assessmentBlocked = true;
+        incompleteContentClosure('blocked');
         visiting.delete(identity);
         return found;
       }
       if (!['Instructions', 'Skill'].includes(found.v.kind)) {
         result.find('R-CONTENT', request, 'Content target has wrong kind');
         missingContent = true;
+        incompleteContentClosure('unknown');
         visiting.delete(identity);
         return found;
       }
 
       const info = payload(found, found.v.kind, 'R-CONTENT', request);
       content.set(identity, { found, info, kind: found.v.kind, ref });
-      if (!info?.value) assessmentBlocked = true;
+      if (!info?.value) {
+        assessmentBlocked = true;
+        incompleteContentClosure('blocked');
+      }
       else {
         const ownRequirements = editionMap(info.value.requires, 'R-CONTENT', info.pointer);
         for (const [capability, value] of ownRequirements.map) engineRequirements.set(capability, value);
@@ -372,12 +394,14 @@ export function validateR(ctx, inventory) {
           if (!Array.isArray(info.value.dependencies)) {
             result.mark('R-CONTENT', 'blocked', info.pointer);
             assessmentBlocked = true;
+            incompleteContentClosure('blocked');
           } else {
             const seenDependencies = new Set();
             for (const [index, dependency] of info.value.dependencies.entries()) {
               if (!S.valid(S.Ref, dependency)) {
                 result.mark('R-CONTENT', 'blocked', info.pointer);
                 assessmentBlocked = true;
+                incompleteContentClosure('blocked');
                 continue;
               }
               const dependencyIdentity = canonical(dependency);
@@ -393,19 +417,20 @@ export function validateR(ctx, inventory) {
           }
           if (!Array.isArray(info.value.tools)) {
             result.mark('R-CONTENT', 'blocked', info.pointer);
-            assessmentBlocked = true;
+            toolClosureComplete = false;
+            toolClosureBlocked = true;
           } else {
             const seenTools = new Set();
             for (const [index, tool] of info.value.tools.entries()) {
               if (!S.valid(S.Ref, tool)) {
                 result.mark('R-CONTENT', 'blocked', info.pointer);
-                assessmentBlocked = true;
+                toolClosureComplete = false;
+                toolClosureBlocked = true;
                 continue;
               }
               const toolIdentity = canonical(tool);
               if (seenTools.has(toolIdentity)) {
                 result.find('R-CONTENT', info.pointer, 'Duplicate Skill Tool');
-                assessmentBlocked = true;
               }
               seenTools.add(toolIdentity);
               rememberTool(tool, info.pointer, 'R-CONTENT', `${info.pointer}/tools/${index}`);
@@ -418,7 +443,7 @@ export function validateR(ctx, inventory) {
       return found;
     }
 
-    if (agent.status === 'local' && closureKnown) {
+    if (agent.status === 'local' && contentClosureComplete) {
       for (const relation of relationRows.filter(row => equal(row.v.source, agent.v.key))) {
         if (relation.v.relation === 'directedBy' && ['Instructions', 'Skill'].includes(relation.v.expectedKind)) rememberContent(relation.v.target, relation.p, `${relation.p}/target`);
         if (relation.v.relation === 'uses' && relation.v.expectedKind === 'Tool') rememberTool(relation.v.target, relation.p, 'R-TOOL', `${relation.p}/target`);
@@ -456,31 +481,37 @@ export function validateR(ctx, inventory) {
       const found = resolveRef(application.content, null, 'R-CONTENT', pointer, `${pointer}/content`);
       if (found.status === 'external') unknownExternal = true;
       if (found.status === 'blocked') assessmentBlocked = true;
+      if (found.status === 'local' && !S.valid(S.Kind, found.v.kind)) {
+        result.mark('R-CONTENT', 'blocked', pointer);
+        assessmentBlocked = true;
+      } else if (found.status === 'local' && !['Instructions', 'Skill'].includes(found.v.kind)) {
+        result.find('R-CONTENT', pointer, 'Application content has wrong kind');
+      }
       if (!S.valid(S.Ref, application.content)) continue;
       const identity = canonical(application.content);
       applicationPositions.set(identity, [...(applicationPositions.get(identity) || []), index]);
     }
 
-    if (closureKnown) {
-      for (const identity of requiredContent.keys()) {
-        if (!applicationPositions.has(identity)) {
-          result.find('R-CONTENT', ap, 'Required Application missing');
+    for (const identity of requiredContent.keys()) {
+      if (!applicationPositions.has(identity)) {
+        result.find('R-CONTENT', ap, 'Required Application missing');
+        missingContent = true;
+      }
+    }
+    for (const [identity, entry] of content) {
+      if (entry.kind !== 'Skill' || !Array.isArray(entry.info?.value?.dependencies)) continue;
+      const dependents = applicationPositions.get(identity) || [];
+      for (const dependency of entry.info.value.dependencies) {
+        if (!S.valid(S.Ref, dependency)) continue;
+        const prerequisites = applicationPositions.get(canonical(dependency));
+        if (!prerequisites) continue;
+        for (const dependent of dependents) if (!prerequisites.some(prerequisite => prerequisite < dependent)) {
+          result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
           missingContent = true;
         }
       }
-      for (const [identity, entry] of content) {
-        if (entry.kind !== 'Skill' || !Array.isArray(entry.info?.value?.dependencies)) continue;
-        const dependents = applicationPositions.get(identity) || [];
-        for (const dependency of entry.info.value.dependencies) {
-          if (!S.valid(S.Ref, dependency)) continue;
-          const prerequisites = applicationPositions.get(canonical(dependency));
-          if (!prerequisites) continue;
-          for (const dependent of dependents) if (!prerequisites.some(prerequisite => prerequisite < dependent)) {
-            result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
-            missingContent = true;
-          }
-        }
-      }
+    }
+    if (contentClosureComplete) {
       for (const [identity, positions] of applicationPositions) if (!requiredContent.has(identity)) {
         for (const position of positions) result.find('R-CONTENT', `${ap}/applications/${position}`, 'Application is not reachable from Agent direction');
       }
@@ -547,7 +578,9 @@ export function validateR(ctx, inventory) {
       }
     }
 
-    if (closureKnown && (requiredTools.size !== toolGroups.size || [...requiredTools.keys()].some(identity => !toolGroups.has(identity)))) result.find('R-TOOL', ap, 'ToolBinding coverage differs from required Tools');
+    const missingTool = [...requiredTools.keys()].some(identity => !toolGroups.has(identity));
+    const extraTool = [...toolGroups.keys()].some(identity => !requiredTools.has(identity));
+    if (missingTool || (toolClosureComplete && extraTool)) result.find('R-TOOL', ap, 'ToolBinding coverage differs from required Tools');
 
     const toolPayloads = new Map();
     for (const [identity, requirement] of requiredTools) {
@@ -556,6 +589,7 @@ export function validateR(ctx, inventory) {
       if (info?.value) {
         const requirementsForTool = editionMap(info.value.requires, 'R-TOOL', info.pointer);
         if (requirementsForTool.blocked) blocked = true;
+        if (!S.valid(S.Tool.fields.effects, info.value.effects)) blocked = true;
         if (Array.isArray(info.value.failures)) {
           if (new Set(info.value.failures).size !== info.value.failures.length) result.find('R-TOOL', info.pointer, 'Duplicate Tool failure');
         } else {
@@ -572,7 +606,13 @@ export function validateR(ctx, inventory) {
     for (const [identity, matches] of toolGroups) {
       const required = requiredTools.has(identity);
       const payloadInfo = toolPayloads.get(identity);
-      for (const toolBinding of matches) assessTool(toolBinding, payloadInfo, forceAssessmentBlocked || !closureKnown || !required || matches.length !== 1);
+      const uncertainMembership = !required && !toolClosureComplete && !toolClosureBlocked && toolClosureUnknown;
+      for (const toolBinding of matches) assessTool(
+        toolBinding,
+        payloadInfo,
+        forceAssessmentBlocked || matches.length !== 1 || (!required && (toolClosureComplete || toolClosureBlocked)),
+        uncertainMembership,
+      );
     }
     assessAgent();
 
@@ -610,17 +650,18 @@ export function validateR(ctx, inventory) {
       recordAssessment(ap, [...new Set(values)], assessmentBlocked || claims.blocked);
     }
 
-    function assessTool(toolBinding, payloadInfo, forcedBlocked) {
+    function assessTool(toolBinding, payloadInfo, forcedBlocked, uncertainMembership) {
       const { tp, selection } = toolBinding;
       if (selection.status === 'absent') {
-        recordAssessment(tp, ['not-provided'], forcedBlocked || toolBinding.choiceBlocked);
+        const values = uncertainMembership ? ['not-provided', 'unknown'] : ['not-provided'];
+        recordAssessment(tp, values, forcedBlocked || toolBinding.choiceBlocked || payloadInfo?.blocked);
         return;
       }
       if (selection.status !== 'selected') {
         recordAssessment(tp, [], true);
         return;
       }
-      const values = evaluate(payloadInfo?.requirements || new Map(), selection.claims, true, toolBinding.found.status === 'external' || payloadInfo?.info?.value?.effects === 'unknown');
+      const values = evaluate(payloadInfo?.requirements || new Map(), selection.claims, true, uncertainMembership || toolBinding.found.status === 'external' || payloadInfo?.info?.value?.effects === 'unknown');
       recordAssessment(tp, values, forcedBlocked || toolBinding.choiceBlocked || selection.blocked || selection.claims.blocked || payloadInfo?.blocked);
     }
   }
