@@ -213,3 +213,32 @@ test('missing collections block existing affected records',()=>{
   d.relations=null;const y=execute('validateD',d);
   assert.deepEqual(last(y).checks.find(c=>c.rule==='D-RELATION'&&c.state==='blocked').locations,[{pointer:'/relations'}]);
 });
+
+function laterCollision(kind){
+  const p=graphDoc(),a=doc();a.root={key:K('annex-root'),kind:'PackageVersion'};
+  const original=p.definitions.find(d=>d.kind===kind);
+  a.definitions.push({...structuredClone(original),owner:a.root.key});
+  if(kind==='Agent'){
+    const pr=add(a,'annex-principal','Principal'),face=add(a,'annex-face','Interface'),ins=add(a,'annex-instructions','Instructions');
+    a.relations=[{source:original.key,relation:'actsAs',target:pr,expectedKind:'Principal'},{source:original.key,relation:'exposes',target:face,expectedKind:'Interface'},{source:original.key,relation:'directedBy',target:ins,expectedKind:'Instructions'}];
+  }
+  const marker=add(a,'marker','Resource');a.exports=[marker];const b=bytes(a);
+  p.dependencies=[{id:'later',rootKey:a.root.key,status:'included',requiredFor:[],sha256:hash(b)}];
+  const call=p.graphs[0].steps[0],later=structuredClone(call);later.id='later';later.resources=[{dependency:'later',key:marker}];call.success='later';p.graphs[0].steps.splice(1,0,later);
+  return {p,b,call};
+}
+for(const kind of ['Action','Interface','Agent','Resource'])test(`later dependency ${kind} collision scopes identity agreement`,()=>{
+  const {p,b,call}=laterCollision(kind);
+  if(kind==='Agent'){
+    call.principal=add(p,'other-principal','Principal');
+    call.interface=add(p,'other-face','Interface',structuredClone(p.definitions.find(d=>d.kind==='Interface').payload));
+  }else call.action=add(p,'other-action','Action');
+  const x=execute('resolveG',p,{later:b}),r=last(x),step='/graphs/0/steps/0';
+  assert.ok(x.report.results.filter(r=>r.unit==='D').every(r=>r.verdict==='pass'));
+  assert.ok(r.findings.some(f=>f.rule==='G-RESOLVE'&&f.location.pointer===step));
+  const disagreements=r.findings.filter(f=>f.rule==='G-TARGET'&&f.location.pointer===step);
+  if(kind==='Resource')assert.ok(disagreements.some(f=>f.details.includes('Interface action differs')));
+  else assert.deepEqual(disagreements,[]);
+  assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+  assert.deepEqual(r.checks.filter(c=>c.rule==='G-DATA'),[{rule:'G-DATA',state:'completed',locations:[]}]);
+});
