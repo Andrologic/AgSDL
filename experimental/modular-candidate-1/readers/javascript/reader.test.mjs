@@ -292,3 +292,11 @@ test('a partial contains relation does not hide missing Interface exposure',()=>
     assert.ok(r.findings.some(f=>f.rule==='G-TARGET'&&f.location.pointer===step&&f.details.includes('does not expose')));
   }
 });
+
+test('an unavailable relation collection blocks Agent minima',()=>{
+  for(const absent of[false,true]){
+    const d=source();if(absent)delete d.relations;else d.relations=null;const r=result(execute('validateG',d),'G');
+    assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'));
+    assert.ok(!r.findings.some(f=>f.rule==='G-TARGET'&&['Agent does not expose Interface','Agent principal relation is not unique'].includes(f.details)));
+  }
+});
