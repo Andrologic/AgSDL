@@ -327,12 +327,27 @@ export function validateR(ctx, inventory) {
         assessmentBlocked = true;
         incompleteContentClosure('blocked');
       } else {
-        const unreadable = ctx.tree.relations.some(relation => !S.object(relation) || !S.valid(S.Key, relation.source) || (equal(relation.source, agent.v.key) && !S.valid(S.Relation, relation)));
-        if (unreadable) {
+        let contentRelationsBlocked = false;
+        let toolRelationsBlocked = false;
+        for (const relation of relationRows) {
+          if (usableRelation(relation)) continue;
+          if (S.valid(S.Key, relation.v?.source) && !equal(relation.v.source, agent.v.key)) continue;
+          if (relation.v?.relation === 'actsAs' || relation.v?.relation === 'exposes') continue;
+          if (relation.v?.relation === 'uses') toolRelationsBlocked = true;
+          else {
+            contentRelationsBlocked = true;
+            toolRelationsBlocked = true;
+          }
+        }
+        if (contentRelationsBlocked) {
           result.mark('R-CONTENT', 'blocked', ap);
-          result.mark('R-TOOL', 'blocked', ap);
           assessmentBlocked = true;
-          incompleteContentClosure('blocked');
+          contentClosureComplete = false;
+        }
+        if (toolRelationsBlocked) {
+          result.mark('R-TOOL', 'blocked', ap);
+          toolClosureComplete = false;
+          toolClosureBlocked = true;
         }
       }
     }

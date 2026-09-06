@@ -219,8 +219,8 @@ test('Application content keeps its local kind check',()=>{
 test('partial Agent relations preserve readable capability requirements',()=>{
   const d=source(),binding=d.runtime.configurations[0].agents[0],ap='/runtime/configurations/0/agents/0';d.relations[1].target=null;binding.claims[2].status='unsupported';const x=execute('validateR',d),r=result(x,'R');
   assert.ok(finding(x,'R','R-COMPATIBILITY',ap));
-  assert.ok(r.checks.some(c=>c.rule==='R-CONTENT'&&c.state==='blocked'));
-  assert.ok(x.report.inventory.states.some(s=>s.pointer===ap&&s.detail==='blocked'));
+  assert.ok(r.checks.some(c=>c.rule==='R-CONTENT'&&c.state==='completed'));
+  assert.ok(x.report.inventory.states.some(s=>s.pointer===ap&&s.detail==='incompatible'));
 });
 
 test('unreadable binding collections and identities do not prove omissions',()=>{
@@ -277,4 +277,9 @@ test('a malformed uses relation does not hide a readable Principal mismatch',()=
 test('a later unreadable Application does not hide a known order violation',()=>{
   const d=source(),binding=d.runtime.configurations[0].agents[0];binding.applications.reverse();binding.applications.push(null);const r=result(execute('validateR',d),'R');
   assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer==='/runtime/configurations/0/agents/0/applications/0'&&f.details.includes('appear earlier')));
+});
+
+test('a partial actsAs relation does not affect readable content closure',()=>{
+  const d=source(),binding=d.runtime.configurations[0].agents[0],content=structuredClone(d.definitions.find(x=>x.kind==='Instructions'));content.key.id+='-extra';d.definitions.push(content);binding.applications.push({...structuredClone(binding.applications[0]),content:content.key});d.relations.push({source:binding.agent,relation:'actsAs',expectedKind:'Principal',target:null});const r=result(execute('validateR',d),'R');
+  assert.ok(r.findings.some(f=>f.rule==='R-CONTENT'&&f.location.pointer==='/runtime/configurations/0/agents/0/applications/2'&&f.details.includes('not reachable')));
 });
