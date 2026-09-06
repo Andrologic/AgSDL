@@ -260,6 +260,64 @@ class AuditRegressionTests(unittest.TestCase):
         self.assertFalse(any(check['rule'] == 'R-COMPATIBILITY'
                              and check['state'] == 'excluded' for check in checks))
 
+    def test_unreadable_tool_identity_blocks_coverage(self):
+        value = fixture()
+        binding = value['runtime']['configurations'][0]['agents'][0]
+        binding['tools'][0]['tool'] = None
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0'
+        self.assertFalse(any(item['location']['pointer'] == pointer
+                             and 'missing or duplicate required ToolBinding' in item['details']
+                             for item in findings(actual, 'R-TOOL', 'fail')))
+        self.assertTrue(any(check['rule'] == 'R-TOOL' and check['state'] == 'blocked'
+                            and {'pointer': pointer} in check['locations']
+                            for check in actual['results'][-1]['checks']))
+
+    def test_extra_application_field_keeps_order_and_parameter_slices(self):
+        value = fixture()
+        value['runtime']['configurations'][0]['agents'][0]['applications'][0]['extra'] = True
+        actual = report(value)
+        self.assertFalse(any('Skill dependency Application must be earlier' in item['details']
+                             for item in findings(actual, 'R-CONTENT', 'fail')))
+        opaque = {item['pointer'] for item in actual['inventory']['opaque']}
+        prefix = '/runtime/configurations/0/agents/0'
+        self.assertTrue({prefix + '/parameters',
+                         prefix + '/tools/0/choices/0/parameters',
+                         prefix + '/applications/0/parameters',
+                         prefix + '/applications/1/parameters'} <= opaque)
+
+    def test_custom_kind_at_typed_tool_returns_a_cli_report(self):
+        value = fixture()
+        value['definitions'][9]['kind'] = {
+            'extension': {'identity': 'example/custom', 'version': '1'},
+            'name': 'CustomTool',
+        }
+        value['extensions'].append({
+            'identity': 'example/custom', 'version': '1',
+            'operations': {'validateD': 'required', 'validateR': 'required'},
+            'payload': {},
+        })
+        request = {'operation': 'validateR', 'primary': base64.b64encode(raw(value)).decode(),
+                   'annexes': {}}
+        process = subprocess.run([sys.executable, str(Path(__file__).with_name('cli.py'))],
+                                 input=json.dumps(request).encode(), capture_output=True,
+                                 check=False)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        actual = json.loads(process.stdout)['report']
+        self.assertTrue(findings(actual, 'R-TOOL', 'fail'))
+
+    def test_duplicate_agent_bindings_block_only_affected_aggregates(self):
+        value = fixture()
+        bindings = value['runtime']['configurations'][0]['agents']
+        bindings.append(copy.deepcopy(bindings[0]))
+        actual = report(value)
+        prefix = '/runtime/configurations/0/agents/'
+        for suffix in ('0', '0/tools/0', '2', '2/tools/0'):
+            self.assertIn('blocked',
+                          {item['detail'] for item in states(actual, prefix + suffix)})
+        self.assertIn('declared-supported',
+                      {item['detail'] for item in states(actual, prefix + '1')})
+
 
 class GraphTests(unittest.TestCase):
     def test_duplicate_selected_operation_blocks_lookup(self):
@@ -320,6 +378,25 @@ class GraphTests(unittest.TestCase):
         self.assertTrue(any(item['location']['pointer'] ==
                             '/definitions/4/payload/operations/0'
                             for item in findings(actual, 'G-TARGET', 'fail')))
+
+    def test_unreadable_invoke_operation_blocks_lookup(self):
+        for replacement in ('missing', 'null'):
+            with self.subTest(replacement=replacement):
+                value = fixture()
+                if replacement == 'missing':
+                    value['graphs'][0]['steps'][0].pop('operation')
+                else:
+                    value['graphs'][0]['steps'][0]['operation'] = None
+                actual = report(value, 'validateG')
+                pointer = '/graphs/0/steps/0'
+                self.assertFalse(any(item['location']['pointer'] == pointer
+                                     and 'selected Interface operation does not exist'
+                                     in item['details']
+                                     for item in findings(actual, 'G-TARGET', 'fail')))
+                self.assertTrue(any(check['rule'] == 'G-TARGET'
+                                    and check['state'] == 'blocked'
+                                    and {'pointer': pointer} in check['locations']
+                                    for check in actual['results'][-1]['checks']))
 
     def test_approved_successor_kind_is_checked_when_paths_fail(self):
         value = fixture('approval-two-gates.json')

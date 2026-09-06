@@ -467,7 +467,8 @@ def validate_r(doc):
                 return ('external', ref, path)
             return None
         found = doc.lookup(ref, None, result, rule, path)
-        if found and found[0]['kind'] not in kinds:
+        if found and (not isinstance(found[0]['kind'], str)
+                      or found[0]['kind'] not in kinds):
             result.find(rule, path, 'wrong-kind local target')
             return None
         return (doc, found[0], found[1]) if found else None
@@ -540,10 +541,17 @@ def validate_r(doc):
             tools_complete = tools_ok and len(tool_bindings) == len(tools_value)
             applications_value = binding.get('applications')
             applications_ok = isinstance(applications_value, list)
-            applications = [(application, bp + '/applications/' + str(k))
-                            for k, application in enumerate(applications_value)
-                            if good('Application', application)] if applications_ok else []
-            applications_complete = applications_ok and len(applications) == len(applications_value)
+            application_records = [(application, bp + '/applications/' + str(k))
+                                   for k, application in enumerate(applications_value)
+                                   if isinstance(application, dict)] if applications_ok else []
+            applications = [(application, ap) for application, ap in application_records
+                            if good('Ref', application.get('content'))]
+            applications_complete = (applications_ok
+                                     and len(application_records) == len(applications_value)
+                                     and all(good('Application', application)
+                                             for application, _ in application_records))
+            application_catalog_complete = (applications_ok
+                                            and len(applications) == len(applications_value))
 
             if not all((agent_ok, engine_ok, requires_complete, claims_complete)):
                 result.block('R-BINDING', bp)
@@ -574,7 +582,11 @@ def validate_r(doc):
                 'duplicate_claims': duplicate_claims,
                 'duplicate_requirements': duplicate_requirements,
                 'tool_bindings': tool_bindings, 'tools_complete': tools_complete,
+                'tool_catalog_complete': (tools_complete
+                                          and all(good('Ref', tool.get('tool'))
+                                                  for tool, _ in tool_bindings)),
                 'applications': applications, 'applications_complete': applications_complete,
+                'application_catalog_complete': application_catalog_complete,
                 'binding_shape_ok': good('AgentBinding', binding),
             })
 
@@ -616,6 +628,7 @@ def validate_r(doc):
             graph_index[key(graph['definition'])].append(graph)
 
     configuration_blocked = {}
+    ambiguous_agent_bindings = set()
     for configuration, path in configuration_records:
         graph_key_ok = good('Key', configuration.get('graph'))
         graph_matches = graph_index.get(key(configuration['graph']), []) if graph_key_ok else []
@@ -665,12 +678,20 @@ def validate_r(doc):
                                      for i, binding in enumerate(bindings)
                                      if isinstance(binding, dict) and good('Ref', binding.get('agent'))]
                 binding_catalog_complete = len(readable_bindings) == len(bindings)
+                binding_groups = defaultdict(list)
+                for binding, bp in readable_bindings:
+                    binding_groups[frozen(binding['agent'])].append(bp)
+                for group in binding_groups.values():
+                    if len(group) > 1:
+                        ambiguous_agent_bindings.update(group)
                 for ref in required_agents:
                     matches = [(binding, bp) for binding, bp in readable_bindings
                                if binding['agent'] == ref]
-                    if len(matches) != 1 and not binding_catalog_complete:
+                    if len(matches) > 1:
+                        result.find('R-BINDING', path, 'missing or duplicate AgentBinding')
+                    elif not matches and not binding_catalog_complete:
                         result.block('R-BINDING', path)
-                    elif len(matches) != 1:
+                    elif not matches:
                         result.find('R-BINDING', path, 'missing or duplicate AgentBinding')
                 for binding, bp in readable_bindings:
                     if binding['agent'] not in required_agents:
@@ -892,7 +913,7 @@ def validate_r(doc):
         for ref in required_content:
             required_tokens.update(reachable(frozen(ref), content_graph))
         application_tokens = [frozen(application['content']) for application, _ in applications]
-        if entry['applications_complete']:
+        if entry['application_catalog_complete']:
             for token in required_tokens:
                 if token not in application_tokens:
                     result.find('R-CONTENT', bp, 'required content Application missing')
@@ -987,7 +1008,7 @@ def validate_r(doc):
                 readable_tool_bindings.append((tool, tp))
             else:
                 result.block('R-TOOL', tp)
-        if entry['tools_complete']:
+        if entry['tool_catalog_complete']:
             for ref in required_tools:
                 matches = [(tool, tp) for tool, tp in readable_tool_bindings
                            if tool['tool'] == ref]
@@ -1077,6 +1098,7 @@ def validate_r(doc):
                        unknown=tool_unknown or bool(payload and payload.get('effects') == 'unknown'),
                        blocked=(configuration_blocked.get(id(configuration), True)
                                 or agent_prerequisite_blocked
+                                or bp in ambiguous_agent_bindings
                                 or selection_blocked or tool_blocked
                                 or not tool_ref_ok or not choices_complete
                                 or (bool(chosen) and not choice_complete.get(chosen[0][1], False))
@@ -1094,8 +1116,9 @@ def validate_r(doc):
                                            if good('Edition', item))
             if definition['kind'] == 'Instructions' and good('Edition', payload.get('format')):
                 engine_requirements.append(payload['format'])
-        engine_requirements.extend(application['adapter'] for application, _ in applications)
-        missing_application = (entry['applications_complete']
+        engine_requirements.extend(application['adapter'] for application, _ in applications
+                                   if good('Edition', application.get('adapter')))
+        missing_application = (entry['application_catalog_complete']
                                and any(token not in application_tokens
                                        for token in required_tokens))
         if assess_selected:
@@ -1103,7 +1126,8 @@ def validate_r(doc):
             assess(engine_requirements, entry['claims'], engine is not None, bp,
                    unknown=external_content,
                    blocked=(configuration_blocked.get(id(configuration), True)
-                            or agent_prerequisite_blocked or content_blocked
+                            or agent_prerequisite_blocked or bp in ambiguous_agent_bindings
+                            or content_blocked
                             or not entry['engine_ok'] or not entry['requires_complete']
                             or not entry['claims_complete'] or entry['duplicate_claims']
                             or entry['duplicate_requirements']),
@@ -1457,12 +1481,14 @@ class GraphValidation:
                                 owner_result.find('G-TARGET', op_path, 'duplicate operation id')
                         else:
                             id_catalog_readable = False
-                    selected = by_id.get(step.get('operation'), []) if good('text', step.get('operation')) else []
+                    operation_selection_ok = good('text', step.get('operation'))
+                    selected = (by_id.get(step['operation'], [])
+                                if operation_selection_ok else [])
                     if not selected:
-                        if id_catalog_readable:
-                            result.find('G-TARGET', sp, 'selected Interface operation does not exist')
-                        else:
+                        if not operation_selection_ok or not id_catalog_readable:
                             result.block('G-TARGET', sp)
+                        else:
+                            result.find('G-TARGET', sp, 'selected Interface operation does not exist')
                         result.block('G-DATA', sp)
                     elif len(selected) > 1:
                         result.block('G-TARGET', sp)
@@ -1675,22 +1701,33 @@ def inventory(doc, operation, extra_states=(), primary=True):
                 state(cp, 'declared')
             for j, binding in enumerate(configuration['agents']):
                 bp = cp + '/agents/' + str(j)
-                if not good('AgentBinding', binding):
+                if not isinstance(binding, dict):
                     continue
                 opaque(bp + '/parameters')
+                for k, tool in enumerate(items(binding, 'tools')):
+                    tp = bp + '/tools/' + str(k)
+                    if not isinstance(tool, dict):
+                        continue
+                    for n, choice in enumerate(items(tool, 'choices')):
+                        ip = tp + '/choices/' + str(n)
+                        if not isinstance(choice, dict):
+                            continue
+                        opaque(ip + '/parameters')
+                for k, application in enumerate(items(binding, 'applications')):
+                    if not isinstance(application, dict):
+                        continue
+                    opaque(bp + '/applications/' + str(k) + '/parameters')
+                if not good('AgentBinding', binding):
+                    continue
                 for k, claim in enumerate(binding['claims']):
                     if claim['evidence'] is None:
                         state(bp + '/claims/' + str(k) + '/evidence', 'unknown')
                 for k, tool in enumerate(binding['tools']):
-                    tp = bp + '/tools/' + str(k)
                     for n, choice in enumerate(tool['choices']):
-                        ip = tp + '/choices/' + str(n)
-                        opaque(ip + '/parameters')
                         for m, claim in enumerate(choice['claims']):
                             if claim['evidence'] is None:
-                                state(ip + '/claims/' + str(m) + '/evidence', 'unknown')
-                for k, application in enumerate(binding['applications']):
-                    opaque(bp + '/applications/' + str(k) + '/parameters')
+                                state(bp + '/tools/' + str(k) + '/choices/' + str(n)
+                                      + '/claims/' + str(m) + '/evidence', 'unknown')
         for i, definition in enumerate(items(obj, 'definitions')):
             dp = '/definitions/' + str(i)
             if dp + '/payload' not in doc.selected_payloads or not isinstance(definition, dict):
