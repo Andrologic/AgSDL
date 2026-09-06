@@ -191,3 +191,12 @@ test('candidate-2 exact Unicode byte witnesses',()=>{
     const x=run({operation:'inspect',primary:source,annexes:{}});assert.deepEqual(last(x).findings.map(f=>({rule:f.rule,location:f.location,outcome:f.outcome})),[{rule:'P-SYNTAX',location:{byte},outcome:'fail'}],hex);
   }
 });
+
+test('missing collections block existing affected records',()=>{
+  const d=graphDoc();delete d.relations;const x=execute('validateD',d);
+  assert.deepEqual(last(x).checks.find(c=>c.rule==='D-AGENT'&&c.state==='blocked').locations,[{pointer:'/definitions/0'}]);
+  assert.deepEqual(last(x).checks.find(c=>c.rule==='D-RELATION'&&c.state==='blocked').locations,[{pointer:''}]);
+  for(const r of execute('resolveG',{}).report.results)for(const c of r.checks.filter(c=>c.state==='blocked'))assert.deepEqual(c.locations,[{pointer:''}],c.rule);
+  d.relations=null;const y=execute('validateD',d);
+  assert.deepEqual(last(y).checks.find(c=>c.rule==='D-RELATION'&&c.state==='blocked').locations,[{pointer:'/relations'}]);
+});

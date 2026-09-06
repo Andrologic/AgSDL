@@ -10,7 +10,7 @@ export function validateG(primary,operation,inventory) {
   function refs(step){if(!S.object(step))return [];if(step.kind==='invoke')return ['agent','interface','action','principal'].map(k=>[k,step[k]]).concat((Array.isArray(step.resources)?step.resources:[]).map((x,i)=>[`resources/${i}`,x]));if(step.kind==='approval')return [['requirement',step.requirement]];return [];}
   if(resolve){
     if(Array.isArray(primary.tree?.dependencies)&&primary.tree.dependencies.every(d=>S.valid(S.Dependency.fields.requiredFor,d?.requiredFor)))r.mark('G-RESOLVE');
-    else r.mark('G-RESOLVE','blocked','/dependencies');
+    else r.mark('G-RESOLVE','blocked',S.has(primary.tree,'dependencies')?'/dependencies':'');
     for(const x of rows(primary,'dependencies',S.Dependency))if(Array.isArray(x.v?.requiredFor)&&x.v.requiredFor.includes('resolveG')&&typeof x.v.id==='string')required.add(x.v.id);
     if(Array.isArray(primary.tree?.graphs))for(const g of primary.tree.graphs)if(Array.isArray(g?.steps))for(const s of g.steps)for(const [,ref]of refs(s))if(S.valid(S.Ref,ref)&&ext(ref))required.add(ref.dependency);
     for(const id of [...required].sort())loadAnnex(id);

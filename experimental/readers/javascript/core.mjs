@@ -59,7 +59,7 @@ export function declaration(ctx,ref,kind,result,rule,p) {
 }
 export function modes(ctx,r,op) {
   const es=rows(ctx,'extensions',S.Extension),seen=new Set();
-  if(!Array.isArray(ctx.tree?.extensions)){r.mark('X-MODE','blocked','/extensions');return;}
+  if(!Array.isArray(ctx.tree?.extensions)){r.mark('X-MODE','blocked',S.has(ctx.tree,'extensions')?'/extensions':'');return;}
   for(const row of es){
     const e=row.v;
     if(!S.valid(S.Edition,{identity:e?.identity,version:e?.version})){r.mark('X-MODE','blocked',row.p);continue;}
@@ -81,7 +81,11 @@ export function validateD(ctx) {
   r.mark('P-SYNTAX');r.shape(S.Document,ctx.tree);build(ctx);const d=ctx.tree;
   if(!S.object(d)){for(const rule of D_RULES.filter(x=>!x.startsWith('P-')))r.mark(rule,'blocked','');ctx.d=r.finish();return ctx.d;}
   const rootOK=S.valid(S.Key,d.root?.key)&&S.valid(S.Root.fields.kind,d.root?.kind), defs=rows(ctx,'definitions',S.Definition), rels=rows(ctx,'relations',S.Relation), deps=rows(ctx,'dependencies',S.Dependency), defers=rows(ctx,'unresolved',S.Deferral);
-  const blockArray=(name,rules)=>{if(!Array.isArray(d[name]))for(const rule of rules)r.mark(rule,'blocked',`/${name}`);};
+  const blockArray=(name,rules)=>{if(!Array.isArray(d[name]))for(const rule of rules){
+    // Missing Agent prerequisites are reported on each affected Agent below.
+    if(rule==='D-AGENT'&&name!=='definitions'&&!S.has(d,name))continue;
+    r.mark(rule,'blocked',S.has(d,name)?`/${name}`:'');
+  }};
   blockArray('definitions',['D-IDENTITY','D-OWNER','D-AGENT','D-REFERENCE']);blockArray('relations',['D-REFERENCE','D-RELATION','D-CYCLE','D-AGENT']);blockArray('exports',['D-EXPORT']);blockArray('unresolved',['D-DEFERRAL','D-AGENT']);blockArray('dependencies',['D-DEPENDENCY','D-INTEGRITY']);
   const seen=new Set(S.valid(S.Key,d.root?.key)?[pair(d.root.key)]:[]);
   function custom(kind,p){if(S.object(kind)){if(!Array.isArray(d.extensions)){r.mark('D-REFERENCE','blocked',p);return;}if(!rows(ctx,'extensions',S.Extension).some(x=>S.valid(S.Edition,{identity:x.v?.identity,version:x.v?.version})&&edition(x.v)===edition(kind.extension)))r.find('D-REFERENCE',p,'Custom kind edition is undeclared');}}
