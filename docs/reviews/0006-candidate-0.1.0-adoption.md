@@ -2,7 +2,7 @@
 
 - Date: 2026-09-06.
 - Status: preparation for maintainer review; no adoption decision.
-- Reviewed repository revision: `dbec97e64f37b6161eb69c6475e19ee7190e3618`.
+- Evidence source revision: `4a43c5ee645b271b5640bd780b109c16ea380b08`.
 - Experimental edition: `proposal-0012-candidate-2`.
 
 This dossier separates observed facts, deductions, open recommendations and
@@ -14,53 +14,102 @@ alone or a scope including G and/or R, subject to their D prerequisites.
 
 ## Evidence and status
 
-**Facts.** The reviewed revision integrates the candidate contract, three
-experimental schemas, a 121-case corpus and separately implemented Python and
-JavaScript readers. Their READMEs record independent implementation provenance;
-this documentary review does not independently audit that development history.
-The contract is [proposal 0012](../../proposals/0012-minimal-0.1.0-contract.md),
-including Unicode clarification commit
-`40f9a8b28a957c6dad7fdd065fd10e29fa611eae`. Its file SHA-256 is
-`c2247e8b821544a34eeb93c9c2d75f42777f5a5ac2c9cb62bd6eebcfd4748c9a`.
-The [manifest](../../experimental/candidate-2/fixtures/manifest.json) pins the
-source edition and individual fixture hashes. JavaScript corrections were
-integrated at `2ded77c9e26a2e4463ea63a87035798b860ae426` from candidate
-`e9a8d5d5360059d1b3e6a0b44818859827676594`; Python corrections were integrated
-at the reviewed revision. The comparator includes arbitration
-`ef9659fb221b3f6e1f0a468f54dad6810f81e058`.
+The source revision integrates the candidate contract, three experimental
+schemas, a 121-case corpus and separately implemented Python and JavaScript
+readers. Their READMEs record independent implementation provenance; this
+documentary review does not independently audit that development history.
 
-A local replay at the reviewed revision reproduces comparison-2: 121 cases,
-no blocked fixture, and three cross-reader mismatches on two cases:
+The evidence is pinned to these sources:
 
-| Case | Remaining report differences |
+| Source | Revision or SHA-256 |
 | --- | --- |
-| `external-transitive-selected` | Check set and State set |
-| `selected-key-collision` | Check set |
+| Complete checkout, including both readers and comparator | `4a43c5ee645b271b5640bd780b109c16ea380b08` |
+| Proposal 0012 file SHA-256 | `9f0ead2cbe9a5e158e3017f1ba692cbd3cba69e9240048130dc49c19c1222e07` |
+| Corpus manifest file SHA-256 | `be9af6c2bd6c90ec6e3693eb7e203f2470ffd2eb4aca201a5a4c472d6f037946` |
+| Report-boundary clarification and assertions | `62b6b2a0f1cd8667f6ec36b0ff83194078b77c01` |
+| Final Python correction | `5c1ee146347a0ab97028930688459230d386a8ff` |
+| Final JavaScript correction | `4cdca6db9ee371291029386d74858cee6d3719bb` |
 
-All individual report and targeted corpus assertions pass in this replay;
-complete cross-reader agreement does not. Exit status is 1. An accepted
-individual report is not proof that its semantic interpretation is correct.
-The [comparison contract](../../experimental/candidate-2/README.md) defines
-what is validated and compared. No described system or runtime was executed.
+The [manifest](../../experimental/candidate-2/fixtures/manifest.json) also pins
+each input's exact bytes and the proposal digest. Its `contractBase` records
+the clarification's integration base, `dbec97e64f37b6161eb69c6475e19ee7190e3618`;
+the complete checkout above identifies the implementations used in this run.
 
-For reproducibility, use a checkout of the reviewed revision, then run these
-commands from its root. The output directory must be new or empty. Its path
-is only an output destination; the pinned repository provides the inputs.
+### Final experimental comparison
+
+Comparison-3 records 121 cases, `blocked:[]` and `failures:[]`. A fresh local
+run on the clean source revision independently reproduced that result on
+2026-09-06, with exit status 0, using Python 3.14.7 and Node.js 26.8.1. The 242 reader responses satisfy the report
+contract and targeted corpus assertions, and their complete normalized
+comparison has no mismatch. Repository checks and the separate reader tests
+also pass: 54 Python tests and 37 JavaScript tests at this revision.
+
+The local evidence is retained outside the repository at
+`/private/tmp/agsdl-010-orchestration/comparison-3/` and the fresh run at
+`/private/tmp/agsdl-010-orchestration/comparison-final-evidence/`. Each directory
+contains `summary.json` and the raw stdout/stderr for each case and reader.
+The reader-test log is
+`/private/tmp/agsdl-010-orchestration/final-evidence-reader-tests.log`.
+These are local evidence locations, not distributed fixtures or stable URLs.
+
+The comparison checks separate unit/phase verdicts, rule/location/outcome
+findings, Check sets, deferrals and inventory State sets. It checks opaque
+Slice boundaries against original bytes and compares those bytes. Exchange
+cases require exact supplied-input boundaries, byte-identical output artifacts
+and matching hashes; lossy exchange remains refused. The
+[comparison contract](../../experimental/candidate-2/README.md) defines the
+assertions and normalization. Diagnostic prose is not compared, except for
+specified Requirement identity in missing-claim details.
+
+This is agreement on the experimental corpus and reports. It does not prove
+exhaustive semantic correctness, official conformance, runtime equivalence,
+engine support, evidence authenticity or interoperability. Shared mistakes and
+uncovered combinations remain possible. No described system was executed.
+
+To reproduce, use a checkout of the complete source revision above and run
+from its root with Python 3.9 or newer and Node.js. Create a fresh output
+directory to preserve the raw evidence:
 
 ```sh
 git rev-parse HEAD
-python3 -c 'import hashlib; from pathlib import Path; print(hashlib.sha256(Path("proposals/0012-minimal-0.1.0-contract.md").read_bytes()).hexdigest())'
+git status --short
+python3 - <<'PYHASH'
+import hashlib
+from pathlib import Path
+for name in ('proposals/0012-minimal-0.1.0-contract.md',
+             'experimental/candidate-2/fixtures/manifest.json'):
+    print(name, hashlib.sha256(Path(name).read_bytes()).hexdigest())
+PYHASH
+agsdl_evidence_dir=$(mktemp -d)
 python3 experimental/candidate-2/compare-readers.py \
   --reader '["python","python3","experimental/readers/python/cli.py"]' \
   --reader '["javascript","node","experimental/readers/javascript/cli.mjs"]' \
-  --reports /tmp/agsdl-adoption-review-comparison
+  --reports "$agsdl_evidence_dir"
 ./scripts/check.sh
+./scripts/check-readers.sh
 ```
 
-**Deduction.** The experiment supplies enough concrete material to prepare an
-adoption review. The remaining comparison differences prevent closure of the
-evidence step. Even complete agreement would not decide conceptual scope or
-turn an experimental identifier into an official feature identity.
+`./scripts/check-readers.sh --compare` also runs the full comparison, but removes
+its temporary reports after printing the result. Use the command above when
+retaining evidence. Reader tests and repository checks are separate from the
+full comparison.
+
+### Historical comparison-2
+
+At `dbec97e64f37b6161eb69c6475e19ee7190e3618`, comparison-2 and its documentary
+replay had 121 cases, no blocked fixture and three mismatches: Check/State sets
+for `external-transitive-selected`, and Check sets for `selected-key-collision`.
+Exit status was 1, while the then-current individual assertions passed. Its
+proposal digest was
+`c2247e8b821544a34eeb93c9c2d75f42777f5a5ac2c9cb62bd6eebcfd4748c9a`.
+The original reports remain in
+`/private/tmp/agsdl-010-orchestration/comparison-2/`. They describe that earlier
+contract and implementations, not the final snapshot. The clarification and
+reader corrections listed above supersede its unresolved report differences.
+
+The experimental evidence step can now close for the pinned candidate. The
+three conceptual choices below remain open. Agreement does not select release
+scope or turn experimental identifiers into official feature identities.
 
 ## Choice 1: Agent definition identity and Principal identity
 
@@ -177,8 +226,7 @@ support cannot be silently reported as this candidate's positive semantics.
 Vendor independence does not establish arbitrary composition or extension
 support.
 
-**Recommended sequence.** Resolve comparison differences and update evidence;
-obtain the separate scope decision; apply adopted text and official identities;
+**Recommended sequence.** Obtain the separate scope decision; apply adopted text and official identities;
 replay against that edition; complete release review. The
 [delivery plan](../plans/2026-09-05-0.1.0-delivery.md) keeps adoption, normative
 application and publication pending. No product dependency or external runtime

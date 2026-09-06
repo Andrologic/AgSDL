@@ -4,8 +4,10 @@
 [proposal 0012](../proposals/0012-minimal-0.1.0-contract.md), not an adopted
 AgSDL specification. Version 0.0.2 is the published conceptual pre-draft;
 0.1.0 has not been delivered. The Python and JavaScript readers are implemented
-and reviewed within their documented scope. Their full report comparison is
-still undergoing correction; it is not claimed to pass.
+and reviewed within their documented scope. Their full report comparison passes all 121 corpus cases at the
+[recorded source revision](../docs/reviews/0006-candidate-0.1.0-adoption.md#final-experimental-comparison),
+with no blocked cases or mismatches. That evidence does not adopt the candidate
+or prove exhaustive semantic correctness.
 
 ## Start with existing inputs
 
@@ -111,10 +113,10 @@ python3 experimental/candidate-2/compare-readers.py \
   --reports "$agsdl_demo_dir/comparison"
 ```
 
-The command can exit nonzero while comparison defects are being corrected.
+A nonzero exit reports a failed assertion, invalid response or reader mismatch.
 Read `summary.json` and the unchanged stdout/stderr files in that directory.
 A rerun needs a new or empty reports directory. Passing these selected cases
-would not establish that the complete corpus passes. The
+does not reproduce the recorded full-corpus evidence. The
 [comparison guide](candidate-2/README.md#comparing-reader-commands) explains full
 corpus runs, timeouts, report assertions and evidence limits.
 

@@ -13,9 +13,9 @@ exchange-contract candidate.
 
 The working tree also contains experimental candidate-2 readers, shape schemas
 and fixtures. [Try the experimental candidate](experimental/README.md) for local
-commands and evidence limits. Candidate-2 is not adopted, the full reader
-comparison is still undergoing correction, and version `0.1.0` has not been
-delivered.
+commands and evidence limits. Both readers agree on the full 121-case
+experimental corpus at the [recorded source revision](docs/reviews/0006-candidate-0.1.0-adoption.md#final-experimental-comparison).
+Candidate-2 is not adopted, and version `0.1.0` has not been delivered.
 
 See the [0.0.2 release](https://github.com/Andrologic/AgSDL/releases/tag/v0.0.2),
 [release notes](docs/releases/0.0.2.md), and
