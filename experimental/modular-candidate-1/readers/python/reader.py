@@ -1593,7 +1593,12 @@ class GraphValidation:
                 call = steps.get(call_id) if isinstance(call_id, str) else None
                 if not good('text', call_id) or call_id in ambiguous or (call is None and not index_readable):
                     result.block('G-APPROVAL', sp)
-                elif call is None or call.get('kind') != 'invoke':
+                elif call is None:
+                    result.find('G-APPROVAL', sp, 'approval call is not an invoke')
+                elif not good(('enum', ('invoke', 'condition', 'approval', 'end')),
+                              call.get('kind')):
+                    result.block('G-APPROVAL', sp)
+                elif call['kind'] != 'invoke':
                     result.find('G-APPROVAL', sp, 'approval call is not an invoke')
                 else:
                     result.complete('G-APPROVAL')
@@ -1648,6 +1653,34 @@ class GraphValidation:
             for source, links in edges.items():
                 for label, target in links:
                     incoming[target].append((source, label))
+            approval_paths = {sid: sp for sid, _, sp in approvals}
+            for call_id, gates in by_call.items():
+                call = steps.get(call_id)
+                if not call or call.get('kind') != 'invoke':
+                    continue
+                final = [entry for entry in gates if entry[1].get('approved') == call_id]
+                if len(final) > 1:
+                    for _, _, sp in final:
+                        result.find('G-APPROVAL', sp,
+                                    'call must have one final approved gate')
+                definitely_bad_incoming = []
+                for source, label in incoming[call_id]:
+                    source_step = steps.get(source)
+                    source_call = (source_step.get('call')
+                                   if isinstance(source_step, dict) else None)
+                    if label != 'approved':
+                        definitely_bad_incoming.append((source, label))
+                    elif source in approval_paths and good('text', source_call) and source_call != call_id:
+                        definitely_bad_incoming.append((source, label))
+                if definitely_bad_incoming:
+                    for _, _, sp in final:
+                        result.find('G-APPROVAL', sp,
+                                    'call must have one final approved gate')
+                for _, step, sp in gates:
+                    if (call_id in reachable(step['denied'], edges)
+                            or call_id in reachable(step['failure'], edges)):
+                        result.find('G-APPROVAL', sp,
+                                    'denied or failure path bypasses approval')
             if not call_catalog_complete:
                 for _, _, sp in approvals:
                     result.block('G-APPROVAL', sp)

@@ -487,6 +487,41 @@ class GraphTests(unittest.TestCase):
                             in item['details']
                             for item in findings(actual, 'G-APPROVAL', 'fail')))
 
+    def test_unreadable_call_target_kind_blocks_direct_check(self):
+        for replacement in (None, {}, [], 'invalid'):
+            with self.subTest(replacement=replacement):
+                value = fixture('approval-two-gates.json')
+                value['graphs'][0]['steps'][2]['kind'] = replacement
+                actual = report(value, 'validateG')
+                self.assertFalse(any('approval call is not an invoke' in item['details']
+                                     for item in findings(actual, 'G-APPROVAL', 'fail')))
+                self.assertTrue(any(check['rule'] == 'G-APPROVAL'
+                                    and check['state'] == 'blocked'
+                                    for check in actual['results'][-1]['checks']))
+
+    def test_unreadable_call_in_one_chain_keeps_another_bypass(self):
+        value = fixture('approval-two-gates.json')
+        graph = value['graphs'][0]
+        second = copy.deepcopy(graph['steps'][:3])
+        renamed = {'legal': 'legal2', 'finance': 'finance2', 'call': 'call2'}
+        for step in second:
+            for field in ('id', 'call', 'approved', 'success', 'failure', 'denied'):
+                if step.get(field) in renamed:
+                    step[field] = renamed[step[field]]
+        graph['steps'][2]['success'] = 'legal2'
+        graph['steps'].extend(second)
+        graph['steps'][0]['call'] = None
+        graph['steps'][-3]['denied'] = 'call2'
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/7'
+                            and 'denied or failure path bypasses approval'
+                            in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/8'
+                            and 'call must have one final approved gate'
+                            in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
 
 if __name__ == '__main__':
     unittest.main()
