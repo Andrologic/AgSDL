@@ -251,7 +251,17 @@ their owning document without an export requirement, including local references
 inside selected annex payloads and relations.
 A selected key appearing in more than one document boundary, including the
 primary, fails G-RESOLVE rather than merging definitions; repeated references
-within the same boundary are allowed. Only direct primary dependencies are supported: when a selected annex payload
+within the same boundary are allowed. A collision does not erase observations
+inside an identified annex. When its dependency id and key select one exported
+definition of the expected kind within that annex, inspect the selected payload
+and its locally resolvable references. Keep its annex G Result and interpreted
+payload boundary. Continue primary port checks that use those observable maps.
+Comparisons that require an unambiguous identity across boundaries remain
+blocked at the consuming Step, with no agreement or disagreement finding from
+the ambiguous identity. This neither merges the definitions nor gives either
+boundary priority.
+
+Only direct primary dependencies are supported: when a selected annex payload
 or relation needs an external Ref, report unsupported for that G check. No
 transitive resolver, composition, overlay, profile application or cycle-breaking
 policy exists here. An annex's D validation is required for resolveG and reported
@@ -503,7 +513,7 @@ dependencies array opaque merely because another element is malformed.
 | G only | Unchecked at each external Ref whose target-dependent checks are excluded in validateG; no internal R states. Resolved target evidence is represented by checks/results, not a synthesized state tree. |
 | R only | Selection absent when missing, otherwise declared. Within a present well-shaped Selection, model/provider/hosting are absent or declared according to presence. Unknown at each null EvidenceClaim artifact. A missing claim records absent at /runtime/selection/evidence with detail naming its Requirement id, one state per missing claim. No missing-claim states if selection is absent. Present selection also records unchecked at /runtime/selection/engine for support and at each EvidenceClaim for evidence assessment. External hosting additionally records unchecked at /runtime/selection/hosting for target content, alongside its declared-presence state. |
 | inspect/exchange/lossyExchange dependency inventory | At /dependencies record absent if the primary parsed object lacks that member, declared if the full Dependency[] grammar is satisfied, unchecked if present but malformed, primary parsing failed, or the parsed root is not an object. When malformed, retain the entire /dependencies value as one opaque slice; when parsing failed, no JSON slice exists. These states are inventory observations, not validation findings. |
-| Required resolveG annexes | Apply D states to each annex with its own input id; additionally G external-target states only for selected G payloads/relations. No graph or runtime internals of annexes are inventoried. |
+| Required resolveG annexes | Apply D states to each annex with its own input id. The G-only row retains its validateG condition; resolveG adds no unchecked State for a transitive Ref in a selected payload or relation. Report that resolution limit through checks/findings. No graph or runtime internals of annexes are inventoried. |
 
 In particular validateD or inspect of runtime:{} records unchecked at /runtime
 and its opaque slice, with no /runtime/selection state. ValidateR of that value
@@ -613,6 +623,24 @@ Check: D-REFERENCE completes its declaration scope and inventory records each
 relation's target pointer unchecked. R external hosting similarly completes its
 declaration scope and records /runtime/selection/hosting unchecked. These do
 not imply resolved content. An opaque value produces a slice, not extra rule ids.
+
+In resolveG, an external Ref inside a selected annex payload or relation is
+outside direct resolution. Its target-dependent G-TARGET portion is excluded
+at the affected payload or relation record in the annex G Result. For example,
+an Interface action Ref at /definitions/0/payload/action uses the Check location
+/definitions/0/payload. Observable declaration/type checks still complete.
+The primary G Result records G-RESOLVE unsupported at each consuming Step and
+excludes that Step's G-TARGET agreement portion when it needs the transitive
+target. Independent port checks still run. An otherwise valid annex G Result
+can pass with that exclusion; the primary G Result remains unsupported.
+The exhaustive State table adds no state for this resolveG exclusion.
+
+For a cross-document selected-key collision, the primary G Result records
+G-RESOLVE fail and G-TARGET blocked at the consuming Step for identity-dependent
+agreement. Completed portions remain recorded for independently observed
+checks, including annex payload checks and primary port-map checks. A selected
+payload observable within its identified annex is interpreted, so it has no
+opaque Slice at the payload record solely because of the collision.
 
 For unavailable prerequisites, blocked locations are the affected record needing
 the value, with "" for a whole-unit prerequisite P-PREREQUISITE. This special

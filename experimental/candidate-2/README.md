@@ -6,6 +6,16 @@ an adopted language, conformance suite, release or execution contract. The
 manifest pins the proposal bytes by SHA-256 so a changed contract cannot silently
 reuse these oracles. No reader implementation was consulted to construct them.
 
+The report-boundary clarification uses integration base
+`dbec97e64f37b6161eb69c6475e19ee7190e3618`; the manifest digest pins the clarified
+proposal bytes. The two existing cases `external-transitive-selected` and
+`selected-key-collision` now require the annex G result, independent completed
+checks, the affected-record exclusion or identity-dependent block, and the
+interpreted payload boundary. The transitive case forbids an invented payload
+State in resolveG. Their exact finding sets retain the primary unsupported or
+failed resolution result. These assertions clarify reports without adopting the
+candidate or establishing agreement between readers.
+
 [fixtures/manifest.json](fixtures/manifest.json) lists named byte inputs and
 text-derived observations for D, G, R, inspection and exchange.
 [The three shape schemas](schemas/README.md) have distinct entry points and
