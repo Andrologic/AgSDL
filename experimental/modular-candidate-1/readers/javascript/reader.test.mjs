@@ -319,5 +319,6 @@ test('an unreadable Step id blocks dependent lookups',()=>{
   const d=JSON.parse(fixture('approval-two-gates.json')),call=d.graphs[0].steps.find(step=>step.kind==='invoke');call.id=null;const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-APPROVAL'&&c.state==='blocked'));
   assert.ok(r.checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'));
-  assert.ok(!r.findings.some(f=>['Approval call is not an invocation','Step output binding missing or wrong type'].includes(f.details)));
+  assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>['Approval call is not an invocation','Step output binding missing or wrong type','Invalid graph path'].includes(f.details)));
 });
