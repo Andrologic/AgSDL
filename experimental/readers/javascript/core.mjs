@@ -31,6 +31,9 @@ export class Result {
 export function context(id,bytes,annexes={}) { const parsed=parse(bytes); return {id,...parsed,annexes,defs:new Map(),deps:new Map(),selected:new Set()}; }
 export function rows(ctx,name,type) { return Array.isArray(ctx.tree?.[name]) ? ctx.tree[name].map((v,i)=>({v,p:`/${name}/${i}`,ok:S.valid(type,v)})) : []; }
 export function lookup(ctx,k) { const found=ctx.defs.get(key(k));return found?.length===1?found[0]:null; }
+export function localIndexComplete(ctx) {
+  return S.valid(S.Key,ctx.tree?.root?.key)&&Array.isArray(ctx.tree?.definitions)&&ctx.tree.definitions.every(definition=>S.object(definition)&&S.valid(S.Key,definition.key));
+}
 export function build(ctx) {
   const d=ctx.tree;
   if(S.valid(S.Key,d?.root?.key))ctx.defs.set(key(d.root.key),[{v:d.root,p:'/root',root:true,ctx}]);
@@ -50,7 +53,7 @@ export function declaration(ctx,ref,kind,result,rule,p) {
     return true;
   }
   const found=ctx.defs.get(key(ref));
-  if(!found?.length&&!Array.isArray(ctx.tree?.definitions)){result.mark(rule,'blocked',p);return false;}
+  if(!found?.length&&!localIndexComplete(ctx)){result.mark(rule,'blocked',p);return false;}
   if(!found?.length){result.find(rule,p,'Local target does not exist');return false;}
   if(found.length!==1){result.mark(rule,'blocked',p);return false;}
   if(kind&&!S.valid(found[0].root?S.Root.fields.kind:S.Kind,found[0].v.kind)){result.mark(rule,'blocked',p);return false;}

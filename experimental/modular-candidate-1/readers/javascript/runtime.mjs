@@ -1,5 +1,5 @@
 import * as S from './shape.mjs';
-import { Result, canonical, declaration, edition, equal, ext, key, modes, rows } from './core.mjs';
+import { Result, canonical, declaration, edition, equal, ext, key, localIndexComplete, modes, rows } from './core.mjs';
 
 const RULES = ['P-SHAPE', 'X-MODE', 'R-SELECTION', 'R-BINDING', 'R-TOOL', 'R-CONTENT', 'R-COMPATIBILITY'];
 const payloadShapes = { Tool: S.Tool, Instructions: S.Instructions, Skill: S.Skill };
@@ -124,7 +124,7 @@ export function validateR(ctx, inventory) {
     if (!declaration(ctx, value, kind, result, rule, pointer)) {
       if (ext(value)) return { status: 'blocked', ref: value };
       const found = ctx.defs.get(key(value));
-      if (!Array.isArray(ctx.tree.definitions) || found?.length > 1) return { status: 'blocked', ref: value };
+      if (!localIndexComplete(ctx) || found?.length > 1) return { status: 'blocked', ref: value };
       if (found?.length === 1 && kind && !S.valid(S.Kind, found[0].v.kind)) return { status: 'blocked', ref: value };
       return { status: 'missing', ref: value };
     }

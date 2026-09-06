@@ -300,3 +300,15 @@ test('an unavailable relation collection blocks Agent minima',()=>{
     assert.ok(!r.findings.some(f=>f.rule==='G-TARGET'&&['Agent does not expose Interface','Agent principal relation is not unique'].includes(f.details)));
   }
 });
+
+test('an unreadable local identity blocks absence findings',()=>{
+  for(const absent of[false,true]){
+    let d=source(),definition=d.definitions.find(value=>value.kind==='Instructions');if(absent)delete definition.key;else definition.key=null;let x=execute('validateR',d),r=result(x,'R');
+    assert.ok(r.checks.some(c=>c.rule==='R-CONTENT'&&c.state==='blocked'));
+    assert.ok(!r.findings.some(f=>f.rule==='R-CONTENT'&&f.details.includes('Local target does not exist')));
+    assert.ok(!x.report.inventory.states.some(s=>s.detail==='not-provided'));
+    d=source();definition=d.definitions.find(value=>value.kind==='Agent');if(absent)delete definition.key;else definition.key=null;r=result(execute('validateG',d),'G');
+    assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'));
+    assert.ok(!r.findings.some(f=>f.rule==='G-TARGET'&&f.details.includes('Local target does not exist')));
+  }
+});
