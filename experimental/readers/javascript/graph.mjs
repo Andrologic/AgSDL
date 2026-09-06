@@ -78,8 +78,9 @@ export function validateG(primary,operation,inventory) {
     if(ip){const ar=annexResult(face.ctx);const a=target(face.ctx,ip.action,'Action',p,`${face.p}/payload/action`);if(a&&!a.external&&action&&!action.external&&!same(a,action))r.find('G-TARGET',p,'Interface action differs from invocation');
       for(const field of ['inputs','outputs'])if(S.valid(S.Ports,ip[field])&&S.valid(S.Ports,s[field])){r.mark('G-DATA');if(!equal(ip[field],s[field]))r.find('G-DATA',p,'Interface port maps differ from invocation');}else r.mark('G-DATA','blocked',p);ar.mark('G-TARGET');}
     if(agent&&!agent.external){
-      const rs=rows(agent.ctx,'relations',S.Relation).filter(x=>x.ok&&equal(x.v.source,agent.v.key));
-      if(!Array.isArray(agent.ctx.tree.relations)||rows(agent.ctx,'relations',S.Relation).some(x=>!x.ok)){r.mark('G-TARGET','blocked',p);return;}
+      const usable=x=>S.valid(S.Relation,{source:x.v?.source,relation:x.v?.relation,target:x.v?.target,expectedKind:x.v?.expectedKind});
+      const rs=rows(agent.ctx,'relations',S.Relation).filter(x=>usable(x)&&equal(x.v.source,agent.v.key));
+      if(!Array.isArray(agent.ctx.tree.relations)||rows(agent.ctx,'relations',S.Relation).some(x=>(!S.valid(S.Key,x.v?.source)||equal(x.v.source,agent.v.key))&&!usable(x))){r.mark('G-TARGET','blocked',p);return;}
       const exposes=rs.filter(x=>x.v.relation==='exposes');let matched=false,unknown=false;
       for(const x of exposes){const m=matchRefs(agent.ctx,x.v.target,face,'Interface',p,`${x.p}/target`);if(m===true)matched=true;if(m===undefined)unknown=true;}
       if(!matched&&!unknown&&face&&!face.external)r.find('G-TARGET',p,'Agent does not expose invocation Interface');

@@ -79,7 +79,7 @@ export function validateD(ctx) {
   if(ctx.error){r.find('P-SYNTAX',ctx.error.byte,'Invalid UTF-8 JSON','fail',true);for(const rule of D_RULES.filter(x=>x!=='P-SYNTAX'))r.mark(rule,'blocked','');ctx.d=r.finish();return ctx.d;}
   r.mark('P-SYNTAX');r.shape(S.Document,ctx.tree);build(ctx);const d=ctx.tree;
   if(!S.object(d)){for(const rule of D_RULES.filter(x=>!x.startsWith('P-')))r.mark(rule,'blocked','');ctx.d=r.finish();return ctx.d;}
-  const rootOK=S.valid(S.Root,d.root), defs=rows(ctx,'definitions',S.Definition), rels=rows(ctx,'relations',S.Relation), deps=rows(ctx,'dependencies',S.Dependency), defers=rows(ctx,'unresolved',S.Deferral);
+  const rootOK=S.valid(S.Key,d.root?.key)&&S.valid(S.Root.fields.kind,d.root?.kind), defs=rows(ctx,'definitions',S.Definition), rels=rows(ctx,'relations',S.Relation), deps=rows(ctx,'dependencies',S.Dependency), defers=rows(ctx,'unresolved',S.Deferral);
   const blockArray=(name,rules)=>{if(!Array.isArray(d[name]))for(const rule of rules)r.mark(rule,'blocked',`/${name}`);};
   blockArray('definitions',['D-IDENTITY','D-OWNER','D-AGENT','D-REFERENCE']);blockArray('relations',['D-REFERENCE','D-RELATION','D-CYCLE','D-AGENT']);blockArray('exports',['D-EXPORT']);blockArray('unresolved',['D-DEFERRAL','D-AGENT']);blockArray('dependencies',['D-DEPENDENCY','D-INTEGRITY']);
   const seen=new Set(S.valid(S.Key,d.root?.key)?[pair(d.root.key)]:[]);

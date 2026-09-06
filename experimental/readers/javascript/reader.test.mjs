@@ -130,3 +130,10 @@ test('malformed producer and external target kinds block dependent type checks',
 test('an extra relation field does not hide independently missing targets',()=>{
   const d=doc();d.relations=[{source:K('missing'),relation:'uses',target:K('also-missing'),expectedKind:'Resource',extra:true}];const x=execute('validateD',d);assert.ok(finding(x,'P-SHAPE','/relations/0/extra'));assert.ok(finding(x,'D-REFERENCE','/relations/0'));
 });
+test('runtime parent shape does not suppress observable requirement and selection checks',()=>{
+  const d=doc();d.runtime={requirements:[{id:'need',capability:{identity:'v/c',version:'1'},subject:K('missing')}],extra:true};const x=execute('validateR',d);assert.ok(finding(x,'R-REQUIREMENT','/runtime/requirements/0'));assert.ok(!x.report.inventory.states.some(s=>s.pointer==='/runtime/selection'));
+  d.runtime={selection:{engine:{identity:'v/e',version:'1'},interface:{identity:'v/i',version:'1'},hosting:K('missing'),evidence:[]}};const y=execute('validateR',d);assert.ok(finding(y,'R-SELECTION','/runtime/selection'));assert.ok(!y.report.inventory.states.some(s=>s.pointer==='/runtime/selection'));
+});
+test('extra fields on an Agent relation do not invent a missing Interface',()=>{
+  const d=graphDoc();d.relations[1].extra=true;const x=execute('validateG',d);assert.ok(finding(x,'P-SHAPE','/relations/1/extra'));assert.ok(!last(x).findings.some(f=>f.rule==='G-TARGET'));assert.ok(!x.report.results[0].findings.some(f=>f.rule==='D-AGENT'));
+});

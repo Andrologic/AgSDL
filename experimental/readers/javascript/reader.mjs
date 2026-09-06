@@ -76,20 +76,24 @@ function validateR(ctx,inv) {
   if(ctx.error||!S.object(ctx.tree)){for(const rule of ['P-SHAPE','R-REQUIREMENT','R-SELECTION'])r.mark(rule,'blocked','');return r.finish();}
   if(!S.has(ctx.tree,'runtime')){for(const rule of ['P-SHAPE','R-REQUIREMENT','R-SELECTION'])r.mark(rule,'excluded','/runtime');return r.finish();}
   const rt=ctx.tree.runtime;r.shape(S.Runtime,rt,'/runtime');
-  if(!S.shell(S.Runtime,rt)||!Array.isArray(rt.requirements)){r.mark('R-REQUIREMENT','blocked','/runtime');r.mark('R-SELECTION','blocked','/runtime');return r.finish();}
-  const ids=new Set(),pairs=new Set();
-  for(const [i,v]of rt.requirements.entries()){
+  if(!S.object(rt)){r.mark('R-REQUIREMENT','blocked','/runtime');r.mark('R-SELECTION','blocked','/runtime');return r.finish();}
+  const runtimeParentOK=S.shell(S.Runtime,rt)&&Array.isArray(rt.requirements);
+  const ids=new Set(),pairs=new Set(),stateIds=new Set();
+  const idsComplete=Array.isArray(rt.requirements)&&rt.requirements.every(v=>typeof v?.id==='string'&&v.id.length);
+  if(!Array.isArray(rt.requirements))r.mark('R-REQUIREMENT','blocked','/runtime');
+  for(const [i,v]of (Array.isArray(rt.requirements)?rt.requirements:[]).entries()){
     const p=`/runtime/requirements/${i}`,idOK=typeof v?.id==='string'&&v.id.length,subjectOK=S.valid(S.Key,v?.subject),capOK=S.valid(S.Edition,v?.capability);
+    if(S.valid(S.Requirement,v))stateIds.add(v.id);
     if(idOK){r.mark('R-REQUIREMENT');if(ids.has(v.id))r.find('R-REQUIREMENT',p,'Duplicate requirement id');ids.add(v.id);}
     if(subjectOK){r.mark('R-REQUIREMENT');const found=ctx.defs.get(key(v.subject));if(found?.length>1)r.mark('R-REQUIREMENT','blocked',p);else if(!found||found[0].root)r.find('R-REQUIREMENT',p,'Requirement subject is not a local definition');}
     if(capOK&&subjectOK){r.mark('R-REQUIREMENT');const sig=edition(v.capability)+key(v.subject);if(pairs.has(sig))r.find('R-REQUIREMENT',p,'Duplicate capability/subject pair');pairs.add(sig);}
     if(!idOK||!subjectOK||!capOK)r.mark('R-REQUIREMENT','blocked',p);
   }
-  state(inv,ctx,'/runtime/selection',S.has(rt,'selection')?'declared':'absent');
-  if(!S.has(rt,'selection')){r.mark('R-SELECTION','excluded','/runtime/selection');return r.finish();}
+  if(runtimeParentOK)state(inv,ctx,'/runtime/selection',S.has(rt,'selection')?'declared':'absent');
+  if(!S.has(rt,'selection')){r.mark('R-SELECTION',runtimeParentOK?'excluded':'blocked',runtimeParentOK?'/runtime/selection':'/runtime');return r.finish();}
   const sel=rt.selection;
   if(!S.object(sel)){r.mark('R-SELECTION','blocked','/runtime/selection');return r.finish();}
-  const selectionOK=S.valid(S.Selection,sel);
+  const selectionOK=runtimeParentOK&&S.valid(S.Selection,sel);
   if(selectionOK){
     state(inv,ctx,'/runtime/selection/engine','unchecked');
     for(const k of ['model','provider','hosting'])state(inv,ctx,`/runtime/selection/${k}`,S.has(sel,k)?'declared':'absent');
@@ -104,9 +108,10 @@ function validateR(ctx,inv) {
     const p=`/runtime/selection/evidence/${i}`;
     if(typeof v?.requirement!=='string'||!v.requirement){r.mark('R-SELECTION','blocked',p);continue;}
     r.mark('R-SELECTION');
-    if(!ids.has(v.requirement)||claims.has(v.requirement))r.find('R-SELECTION',p,'Evidence names unknown or repeated requirement');claims.add(v.requirement);
+    if(!ids.has(v.requirement)&&!idsComplete)r.mark('R-SELECTION','blocked',p);
+    if((!ids.has(v.requirement)&&idsComplete)||claims.has(v.requirement))r.find('R-SELECTION',p,'Evidence names unknown or repeated requirement');claims.add(v.requirement);
     if(selectionOK){state(inv,ctx,p,'unchecked');if(v.artifact===null)state(inv,ctx,`${p}/artifact`,'unknown');}
   }
-  if(selectionOK)for(const id of ids)if(!claims.has(id))state(inv,ctx,'/runtime/selection/evidence','absent',id);
+  if(selectionOK)for(const id of stateIds)if(!claims.has(id))state(inv,ctx,'/runtime/selection/evidence','absent',id);
   return r.finish();
 }
