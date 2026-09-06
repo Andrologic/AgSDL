@@ -164,10 +164,11 @@ export function validateR(ctx, inventory) {
     const map = new Map();
     const seen = new Set();
     const ambiguous = new Set();
+    let indexComplete = true;
     let blocked = false;
     if (!Array.isArray(claims)) {
       result.mark(rule, 'blocked', pointer);
-      return { map, ambiguous, blocked: true };
+      return { map, ambiguous, indexComplete: false, blocked: true };
     }
     for (const claim of claims) {
       const validClaim = S.valid(S.CapabilityClaim, claim);
@@ -175,7 +176,7 @@ export function validateR(ctx, inventory) {
         result.mark(rule, 'blocked', pointer);
         blocked = true;
       }
-      if (!S.valid(S.Edition, claim?.capability)) continue;
+      if (!S.valid(S.Edition, claim?.capability)) { indexComplete = false; continue; }
       result.mark(rule);
       const identity = edition(claim.capability);
       if (seen.has(identity)) {
@@ -184,9 +185,10 @@ export function validateR(ctx, inventory) {
         ambiguous.add(identity);
         blocked = true;
       } else if (validClaim) map.set(identity, claim);
+      if (!validClaim) ambiguous.add(identity);
       seen.add(identity);
     }
-    return { map, ambiguous, blocked };
+    return { map, ambiguous, indexComplete, blocked };
   }
 
   function payload(found, kind, rule, requestingPointer) {
@@ -682,6 +684,7 @@ export function validateR(ctx, inventory) {
         const identity = edition(capability);
         if (claimLookup.ambiguous.has(identity)) continue;
         const claim = claimLookup.map.get(identity);
+        if (!claim && !claimLookup.indexComplete) continue;
         if (claim?.status === 'unsupported') values.push('incompatible');
         else if (!claim || claim.status === 'unknown' || claim.evidence === null) values.push('unknown');
         else values.push('declared-supported');

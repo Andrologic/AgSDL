@@ -358,6 +358,15 @@ test('claim duplicates survive malformed nonidentity fields',()=>{
   }
 });
 
+test('malformed claims do not become absent capability evidence',()=>{
+  for(const tool of[false,true])for(const field of['status','evidence','capability']){
+    const d=source(),binding=d.runtime.configurations[0].agents[0],claims=tool?binding.tools[0].choices[0].claims:binding.claims;claims[0][field]=17;
+    const r=result(execute('validateR',d),'R'),pointer='/runtime/configurations/0/agents/0'+(tool?'/tools/0':'');
+    assert.ok(r.checks.some(c=>c.rule==='R-COMPATIBILITY'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===pointer)));
+    assert.ok(!r.findings.some(f=>f.rule==='R-COMPATIBILITY'&&f.location.pointer===pointer&&f.outcome==='inconclusive'));
+  }
+});
+
 test('an empty graph entry blocks path lookup',()=>{
   const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));
