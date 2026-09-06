@@ -454,6 +454,39 @@ class GraphTests(unittest.TestCase):
         self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/0'
                             for item in findings(actual, 'G-APPROVAL', 'fail')))
 
+    def test_unreadable_approval_fields_do_not_invent_chain_failures(self):
+        mutations = (
+            lambda graph: graph['steps'][0].update(call=None),
+            lambda graph: graph['steps'][1].update(call=None),
+            lambda graph: graph['steps'][1].update(kind='invalid'),
+        )
+        invented = ('approval chain changes call', 'approved chain does not reach call',
+                    'call must have one final approved gate',
+                    'approved invoke differs from call',
+                    'approved successor is not a gate or call')
+        for index, mutate in enumerate(mutations):
+            with self.subTest(index=index):
+                value = fixture('approval-two-gates.json')
+                mutate(value['graphs'][0])
+                actual = report(value, 'validateG')
+                details = ' '.join(item['details']
+                                   for item in findings(actual, 'G-APPROVAL', 'fail'))
+                self.assertFalse(any(detail in details for detail in invented))
+                self.assertTrue(any(check['rule'] == 'G-APPROVAL'
+                                    and check['state'] == 'blocked'
+                                    for check in actual['results'][-1]['checks']))
+
+    def test_known_bad_successor_kind_survives_unreadable_call(self):
+        value = fixture('approval-two-gates.json')
+        gate = value['graphs'][0]['steps'][0]
+        gate['call'] = None
+        gate['approved'] = 'ok'
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/0'
+                            and 'approved successor is not a gate or call'
+                            in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
 
 if __name__ == '__main__':
     unittest.main()

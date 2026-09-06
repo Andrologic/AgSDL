@@ -1604,9 +1604,13 @@ class GraphValidation:
 
         approvals = [(sid, step, sp) for sid, step, sp in records if step.get('kind') == 'approval']
         by_call = defaultdict(list)
+        call_catalog_complete = True
         for sid, step, sp in approvals:
-            if good('text', step.get('call')):
+            call_ok = good('text', step.get('call'))
+            if call_ok:
                 by_call[step['call']].append((sid, step, sp))
+            else:
+                call_catalog_complete = False
             approved_id = step.get('approved')
             if not good('text', approved_id) or approved_id in ambiguous:
                 result.block('G-APPROVAL', sp)
@@ -1617,51 +1621,74 @@ class GraphValidation:
                     result.find('G-APPROVAL', sp, 'approved successor is missing')
                 else:
                     result.block('G-APPROVAL', sp)
-            elif successor.get('kind') == 'approval' and successor.get('call') != step.get('call'):
-                result.find('G-APPROVAL', sp, 'approval chain changes call')
-            elif successor.get('kind') == 'invoke' and approved_id != step.get('call'):
-                result.find('G-APPROVAL', sp, 'approved invoke differs from call')
-            elif successor.get('kind') not in ('approval', 'invoke'):
-                result.find('G-APPROVAL', sp, 'approved successor is not a gate or call')
+            else:
+                successor_kind = successor.get('kind')
+                kind_ok = good(('enum', ('invoke', 'condition', 'approval', 'end')),
+                               successor_kind)
+                if not kind_ok:
+                    result.block('G-APPROVAL', sp)
+                elif successor_kind == 'approval':
+                    if call_ok and good('text', successor.get('call')):
+                        if successor['call'] != step['call']:
+                            result.find('G-APPROVAL', sp, 'approval chain changes call')
+                    else:
+                        result.block('G-APPROVAL', sp)
+                elif successor_kind == 'invoke':
+                    if call_ok:
+                        if approved_id != step['call']:
+                            result.find('G-APPROVAL', sp, 'approved invoke differs from call')
+                    else:
+                        result.block('G-APPROVAL', sp)
+                else:
+                    result.find('G-APPROVAL', sp,
+                                'approved successor is not a gate or call')
 
         if approvals and paths_ok:
             incoming = defaultdict(list)
             for source, links in edges.items():
                 for label, target in links:
                     incoming[target].append((source, label))
-            for call_id, gates in by_call.items():
-                call = steps.get(call_id)
-                if not call or call.get('kind') != 'invoke':
-                    continue
-                gate_ids = {sid for sid, _, _ in gates}
-                final = [entry for entry in gates if entry[1].get('approved') == call_id]
-                final_incoming_ok = (len(final) == 1
-                                     and incoming[call_id] == [(final[0][0], 'approved')])
-                if not final_incoming_ok:
-                    for _, _, sp in final or gates:
-                        result.find('G-APPROVAL', sp, 'call must have one final approved gate')
-                for sid, step, sp in gates:
-                    approved_predecessors = [(source, label) for source, label in incoming[sid]
-                                             if source in gate_ids and label == 'approved']
-                    if len(approved_predecessors) > 1:
-                        result.find('G-APPROVAL', sp, 'gate has multiple approved predecessors')
-                    elif approved_predecessors and incoming[sid] != approved_predecessors:
-                        result.find('G-APPROVAL', sp, 'later gate has another incoming edge')
-                    later = set()
-                    cursor = step.get('approved')
-                    while cursor in gate_ids and cursor not in later:
-                        later.add(cursor)
-                        cursor = steps[cursor].get('approved')
-                    if cursor != call_id:
-                        result.find('G-APPROVAL', sp, 'approved chain does not reach call')
-                    forbidden = later | {call_id}
-                    if reachable(step['denied'], edges) & forbidden or reachable(step['failure'], edges) & forbidden:
-                        result.find('G-APPROVAL', sp, 'denied or failure path bypasses approval')
-                starts = [sid for sid, _, _ in gates
-                          if not any(source in gate_ids and label == 'approved' for source, label in incoming[sid])]
-                if len(starts) != 1:
-                    for _, _, sp in gates:
-                        result.find('G-APPROVAL', sp, 'gates do not form one ordered chain')
+            if not call_catalog_complete:
+                for _, _, sp in approvals:
+                    result.block('G-APPROVAL', sp)
+            else:
+                for call_id, gates in by_call.items():
+                    call = steps.get(call_id)
+                    if not call or call.get('kind') != 'invoke':
+                        continue
+                    gate_ids = {sid for sid, _, _ in gates}
+                    final = [entry for entry in gates if entry[1].get('approved') == call_id]
+                    final_incoming_ok = (len(final) == 1
+                                         and incoming[call_id] == [(final[0][0], 'approved')])
+                    if not final_incoming_ok:
+                        for _, _, sp in final or gates:
+                            result.find('G-APPROVAL', sp, 'call must have one final approved gate')
+                    for sid, step, sp in gates:
+                        approved_predecessors = [(source, label) for source, label in incoming[sid]
+                                                 if source in gate_ids and label == 'approved']
+                        if len(approved_predecessors) > 1:
+                            result.find('G-APPROVAL', sp, 'gate has multiple approved predecessors')
+                        elif approved_predecessors and incoming[sid] != approved_predecessors:
+                            result.find('G-APPROVAL', sp, 'later gate has another incoming edge')
+                        later = set()
+                        cursor = step.get('approved')
+                        while cursor in gate_ids and cursor not in later:
+                            later.add(cursor)
+                            cursor = steps[cursor].get('approved')
+                        if cursor != call_id:
+                            result.find('G-APPROVAL', sp, 'approved chain does not reach call')
+                        forbidden = later | {call_id}
+                        if (reachable(step['denied'], edges) & forbidden
+                                or reachable(step['failure'], edges) & forbidden):
+                            result.find('G-APPROVAL', sp,
+                                        'denied or failure path bypasses approval')
+                    starts = [sid for sid, _, _ in gates
+                              if not any(source in gate_ids and label == 'approved'
+                                         for source, label in incoming[sid])]
+                    if len(starts) != 1:
+                        for _, _, sp in gates:
+                            result.find('G-APPROVAL', sp,
+                                        'gates do not form one ordered chain')
             result.complete('G-APPROVAL')
         elif approvals:
             for _, _, sp in approvals:
