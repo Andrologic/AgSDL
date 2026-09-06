@@ -77,7 +77,7 @@ function validateR(ctx,inv) {
   if(!S.has(ctx.tree,'runtime')){for(const rule of ['P-SHAPE','R-REQUIREMENT','R-SELECTION'])r.mark(rule,'excluded','/runtime');return r.finish();}
   const rt=ctx.tree.runtime;r.shape(S.Runtime,rt,'/runtime');
   if(!S.object(rt)){r.mark('R-REQUIREMENT','blocked','/runtime');r.mark('R-SELECTION','blocked','/runtime');return r.finish();}
-  const runtimeParentOK=S.shell(S.Runtime,rt)&&Array.isArray(rt.requirements);
+  const runtimeParentOK=S.valid(S.Runtime,rt);
   const ids=new Set(),pairs=new Set(),stateIds=new Set();
   const idsComplete=Array.isArray(rt.requirements)&&rt.requirements.every(v=>typeof v?.id==='string'&&v.id.length);
   if(!Array.isArray(rt.requirements))r.mark('R-REQUIREMENT','blocked','/runtime');

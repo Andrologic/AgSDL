@@ -9,6 +9,8 @@ export function validateG(primary,operation,inventory) {
   const state=(ctx,p)=>inventory.states.push({input:ctx.id,pointer:p,state:'unchecked',detail:'External target content unchecked'});
   function refs(step){if(!S.object(step))return [];if(step.kind==='invoke')return ['agent','interface','action','principal'].map(k=>[k,step[k]]).concat((Array.isArray(step.resources)?step.resources:[]).map((x,i)=>[`resources/${i}`,x]));if(step.kind==='approval')return [['requirement',step.requirement]];return [];}
   if(resolve){
+    if(Array.isArray(primary.tree?.dependencies)&&primary.tree.dependencies.every(d=>S.valid(S.Dependency.fields.requiredFor,d?.requiredFor)))r.mark('G-RESOLVE');
+    else r.mark('G-RESOLVE','blocked',S.has(primary.tree,'dependencies')?'/dependencies':'');
     for(const x of rows(primary,'dependencies',S.Dependency))if(Array.isArray(x.v?.requiredFor)&&x.v.requiredFor.includes('resolveG')&&typeof x.v.id==='string')required.add(x.v.id);
     if(Array.isArray(primary.tree?.graphs))for(const g of primary.tree.graphs)if(Array.isArray(g?.steps))for(const s of g.steps)for(const [,ref]of refs(s))if(S.valid(S.Ref,ref)&&ext(ref))required.add(ref.dependency);
     for(const id of [...required].sort())loadAnnex(id);
@@ -54,9 +56,10 @@ export function validateG(primary,operation,inventory) {
       if(found.v.kind!==kind){r.find('G-RESOLVE',consumer,'External target has wrong kind');return null;}
     }
     const found=lookup(dst,k);if(!found)return null;
-    if(resolve){const boundaries=[primary,...contexts].filter(c=>c.defs.has(key(k)));if(boundaries.length>1){r.find('G-RESOLVE',consumer,'Selected key occurs in multiple document boundaries');return null;}}
+    const colliding=resolve&&[primary,...contexts].filter(c=>c.defs.has(key(k))).length>1;
+    if(colliding){r.find('G-RESOLVE',consumer,'Selected key occurs in multiple document boundaries');r.mark('G-TARGET','blocked',consumer);}
     if(resolve)selections.push({k,consumer});
-    return {...found,ctx:dst};
+    return {...found,ctx:dst,colliding};
   }
   function payload(found,type,consumer){
     if(!found||found.external)return null;
@@ -65,7 +68,7 @@ export function validateG(primary,operation,inventory) {
     if(!S.object(found.v.payload)){r.mark('G-TARGET','blocked',consumer);if(type===S.Interface)r.mark('G-DATA','blocked',consumer);return null;}
     return found.v.payload;
   }
-  function same(a,b){return a&&b&&!a.external&&!b.external&&equal(a.v.key,b.v.key);}
+  function same(a,b){if(a?.colliding||b?.colliding)return undefined;return a&&b&&!a.external&&!b.external&&equal(a.v.key,b.v.key);}
   function matchRefs(ownerCtx,a,b,kind,consumer,p){const ta=target(ownerCtx,a,kind,consumer,p);if(!ta||!b)return null;if(ta.external||b.external)return undefined;return same(ta,b);}
   function invokeTargets(s,p){
     const agent=target(primary,s.agent,'Agent',p,`${p}/agent`), face=target(primary,s.interface,'Interface',p,`${p}/interface`),action=target(primary,s.action,'Action',p,`${p}/action`),principal=target(primary,s.principal,'Principal',p,`${p}/principal`);
@@ -75,7 +78,7 @@ export function validateG(primary,operation,inventory) {
     if(!Array.isArray(s.resources))r.mark('G-TARGET','blocked',p);
     const ip=payload(face,S.Interface,p);
     if(face?.external)r.mark('G-DATA','excluded',p);
-    if(ip){const ar=annexResult(face.ctx);const a=target(face.ctx,ip.action,'Action',p,`${face.p}/payload/action`);if(a&&!a.external&&action&&!action.external&&!same(a,action))r.find('G-TARGET',p,'Interface action differs from invocation');
+    if(ip){const ar=annexResult(face.ctx);const a=target(face.ctx,ip.action,'Action',p,`${face.p}/payload/action`);if(a&&!a.external&&action&&!action.external&&same(a,action)===false)r.find('G-TARGET',p,'Interface action differs from invocation');
       for(const field of ['inputs','outputs'])if(S.valid(S.Ports,ip[field])&&S.valid(S.Ports,s[field])){r.mark('G-DATA');if(!equal(ip[field],s[field]))r.find('G-DATA',p,'Interface port maps differ from invocation');}else r.mark('G-DATA','blocked',p);ar.mark('G-TARGET');}
     if(agent&&!agent.external){
       const usable=x=>S.valid(S.Relation,{source:x.v?.source,relation:x.v?.relation,target:x.v?.target,expectedKind:x.v?.expectedKind});

@@ -137,3 +137,66 @@ test('runtime parent shape does not suppress observable requirement and selectio
 test('extra fields on an Agent relation do not invent a missing Interface',()=>{
   const d=graphDoc();d.relations[1].extra=true;const x=execute('validateG',d);assert.ok(finding(x,'P-SHAPE','/relations/1/extra'));assert.ok(!last(x).findings.some(f=>f.rule==='G-TARGET'));assert.ok(!x.report.results[0].findings.some(f=>f.rule==='D-AGENT'));
 });
+
+test('unreadable definitions block lookup without inventing missing targets',()=>{
+  const d=graphDoc();d.definitions=null;const x=execute('validateD',d);
+  assert.ok(!last(x).findings.some(f=>f.rule==='D-REFERENCE'));
+  const blocked=last(x).checks.find(c=>c.rule==='D-REFERENCE'&&c.state==='blocked');
+  for(let i=0;i<3;i++)assert.ok(blocked.locations.some(l=>l.pointer===`/relations/${i}`));
+});
+test('absent graphs retain completed dependency checks in resolveG',()=>{
+  const x=execute('resolveG',doc());
+  assert.deepEqual(last(x).checks.filter(c=>c.rule==='G-RESOLVE'),[
+    {rule:'G-RESOLVE',state:'completed',locations:[]},
+    {rule:'G-RESOLVE',state:'excluded',locations:[{pointer:'/graphs'}]}
+  ]);
+});
+test('malformed selection does not advertise runtime child states',()=>{
+  const d=doc();d.runtime={requirements:[],selection:{engine:{identity:'engine',version:'1'},provider:'bad provider',evidence:[]}};
+  const x=execute('validateR',d);assert.ok(finding(x,'P-SHAPE','/runtime/selection/provider'));
+  assert.ok(!x.report.inventory.states.some(s=>s.pointer.startsWith('/runtime/')));
+});
+test('selected key collision preserves independent annex payload checks',()=>{
+  const {p,a}=external();p.definitions.push({...a.definitions[0],owner:p.root.key});
+  a.definitions[0].payload.extra=null;const b=bytes(a);p.dependencies[0].sha256=hash(b);
+  const x=execute('resolveG',p,{dep:b});
+  assert.ok(finding(x,'G-RESOLVE','/graphs/0/steps/0'));
+  assert.ok(x.report.results.some(r=>r.input==='annex/dep'&&r.unit==='G'&&r.findings.some(f=>f.rule==='P-SHAPE'&&f.location.pointer==='/definitions/0/payload/extra')));
+  assert.ok(!last(x).findings.some(f=>f.details==='Agent does not expose invocation Interface'));
+  assert.ok(!last(x).checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'));
+});
+
+test('candidate-2 exact Unicode byte witnesses',()=>{
+  const witnesses=[
+    ['225c756438303022',1],
+    ['225c75643830305c753030343122',1],
+    ['225c756463303022',1],
+    ['225c7564383030',1],
+    ['225c75643830305c7122',1],
+    ['225c756438473022',5],
+    ['225c75643830',6],
+    ['225c75643830305c753030473122',11],
+    ['225c75643830305c753030',11],
+    ['22e25822',2],
+    ['22e282',3],
+    ['22c3a95c756438303022',3],
+    ['22c3a95c75643830305c753030343122',3],
+    ['22c3a95c756463303022',3],
+    ['22c3a95c75643830305c753030473122',13],
+    ['22c3a9e25822',4],
+    ['22c3a9e282',5],
+  ];
+  for(const [hex,byte]of witnesses){
+    const source=Buffer.from(hex,'hex');assert.equal(parse(source).error?.byte,byte,hex);
+    const x=run({operation:'inspect',primary:source,annexes:{}});assert.deepEqual(last(x).findings.map(f=>({rule:f.rule,location:f.location,outcome:f.outcome})),[{rule:'P-SYNTAX',location:{byte},outcome:'fail'}],hex);
+  }
+});
+
+test('missing collections block existing affected records',()=>{
+  const d=graphDoc();delete d.relations;const x=execute('validateD',d);
+  assert.deepEqual(last(x).checks.find(c=>c.rule==='D-AGENT'&&c.state==='blocked').locations,[{pointer:'/definitions/0'}]);
+  assert.deepEqual(last(x).checks.find(c=>c.rule==='D-RELATION'&&c.state==='blocked').locations,[{pointer:''}]);
+  for(const r of execute('resolveG',{}).report.results)for(const c of r.checks.filter(c=>c.state==='blocked'))assert.deepEqual(c.locations,[{pointer:''}],c.rule);
+  d.relations=null;const y=execute('validateD',d);
+  assert.deepEqual(last(y).checks.find(c=>c.rule==='D-RELATION'&&c.state==='blocked').locations,[{pointer:'/relations'}]);
+});
