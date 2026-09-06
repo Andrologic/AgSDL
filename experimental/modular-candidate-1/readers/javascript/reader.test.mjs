@@ -424,6 +424,15 @@ test('an unreadable Skill dependency blocks its Application order',()=>{
   }
 });
 
+test('an extra ToolBinding observes its local payload without making it required',()=>{
+  const d=source(),tool=structuredClone(d.definitions.find(v=>v.kind==='Tool')),a=d.runtime.configurations[0].agents[0];tool.key.id='extra-tool';tool.payload.failures=null;d.definitions.push(tool);
+  const binding=structuredClone(a.tools[0]);binding.tool=tool.key;a.tools.push(binding);
+  const x=execute('validateR',d),p=`/definitions/${d.definitions.length-1}/payload`;
+  assert.ok(finding(x,'R','P-SHAPE',`${p}/failures`));
+  assert.ok(result(x,'R').findings.some(f=>f.rule==='R-TOOL'&&f.details.includes('coverage')));
+  assert.ok(!x.report.inventory.opaque.some(s=>s.pointer===p));
+});
+
 test('an empty graph entry blocks path lookup',()=>{
   const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));

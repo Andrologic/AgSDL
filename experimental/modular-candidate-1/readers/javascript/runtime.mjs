@@ -653,7 +653,12 @@ export function validateR(ctx, inventory) {
     if (missingTool || (toolClosureComplete && extraTool)) result.find('R-TOOL', ap, 'ToolBinding coverage differs from required Tools');
 
     const toolPayloads = new Map();
-    for (const [identity, requirement] of requiredTools) {
+    const observedTools = new Map(requiredTools);
+    for (const [identity, matches] of toolGroups) if (!observedTools.has(identity)) {
+      const binding = matches[0];
+      observedTools.set(identity, { found: binding.found, request: binding.tp });
+    }
+    for (const [identity, requirement] of observedTools) {
       const info = payload(requirement.found, 'Tool', 'R-TOOL', requirement.request);
       let blocked = requirement.found.status === 'blocked';
       if (info?.value) {
