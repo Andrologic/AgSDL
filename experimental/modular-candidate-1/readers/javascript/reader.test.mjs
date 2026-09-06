@@ -322,3 +322,9 @@ test('an unreadable Step id blocks dependent lookups',()=>{
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));
   assert.ok(!r.findings.some(f=>['Approval call is not an invocation','Step output binding missing or wrong type','Invalid graph path'].includes(f.details)));
 });
+
+test('an empty graph entry blocks path lookup',()=>{
+  const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
+  assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));
+  assert.ok(!r.findings.some(f=>f.rule==='G-PATH'));
+});
