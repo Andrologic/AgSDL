@@ -3,7 +3,15 @@ import { pointer, stringify } from './json.mjs';
 import { contract, context, hash, Result, validateD, rows, key, edition, equal, ext, declaration, modes, lookup } from './core.mjs';
 import { validateG } from './graph.mjs';
 export { stringify } from './json.mjs';
-export function run({operation,primary,annexes={},losses}) {
+export function run(request) {
+  if(!S.object(request)||!['operation','primary','annexes'].every(k=>Object.hasOwn(request,k))||Object.keys(request).some(k=>!['operation','primary','annexes','losses'].includes(k)))throw new TypeError('Invalid request fields');
+  const {operation,primary,annexes={},losses}=request;
+  if(!(primary instanceof Uint8Array)||!S.object(annexes)||Object.entries(annexes).some(([k,v])=>!k||!(v instanceof Uint8Array)))throw new TypeError('Expected primary bytes and an annex byte map');
+  if(losses!==undefined&&(!Array.isArray(losses)||losses.some(loss=>{
+    if(!S.object(loss)||!equal(Object.keys(loss).sort(),['input','location','information','reason','permission'].sort()))return true;
+    if(['input','information','reason'].some(k=>typeof loss[k]!=='string'||!loss[k])||loss.permission!==null)return true;
+    const loc=loss.location;return !S.object(loc)||Object.keys(loc).length!==1||!(Object.hasOwn(loc,'pointer')?typeof loc.pointer==='string':Object.hasOwn(loc,'byte')&&Number.isSafeInteger(loc.byte)&&loc.byte>=0);
+  })))throw new TypeError('Invalid prospective Loss record');
   if(!['inspect','validateD','validateG','resolveG','validateR','exchange','lossyExchange'].includes(operation))throw new TypeError('Unknown operation');
   if(losses!==undefined&&operation!=='lossyExchange')throw new TypeError('losses is only allowed for lossyExchange');
   const ctx=context('primary',primary,annexes), contexts=[ctx], inventory={tree:ctx.tree,states:[],opaque:[]};

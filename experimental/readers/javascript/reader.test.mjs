@@ -91,3 +91,21 @@ test('failed D cannot become a pass for absent G/R and syntax has fixed result p
   const d=doc();d.contract='wrong';for(const op of ['validateG','resolveG','validateR']){const x=execute(op,d);assert.equal(last(x).verdict,'fail');assert.ok(last(x).checks.some(c=>c.rule==='P-PREREQUISITE'&&c.state==='blocked'));}
   const x=execute('resolveG','[');assert.deepEqual(x.report.results.map(r=>[r.unit,r.phase]),[['D','unresolved-document'],['G','resolved-graph']]);
 });
+test('partial definition shape preserves identities and typed lookups',()=>{
+  const d=graphDoc();d.definitions[0].owner=17;
+  const x=execute('validateD',d);assert.ok(finding(x,'P-SHAPE','/definitions/0/owner'));assert.ok(!x.report.results[0].findings.some(f=>f.rule==='D-REFERENCE'));
+  d.definitions.push({...structuredClone(d.definitions[0]),key:{...K('a'),version:'2'}});const y=execute('validateD',d);assert.ok(finding(y,'D-IDENTITY','/definitions/7'));assert.ok(y.report.results[0].checks.some(c=>c.rule==='D-REFERENCE'&&c.state==='blocked'));
+});
+test('malformed terminal remains present for independent path checks',()=>{
+  const d=graphDoc();delete d.graphs[0].steps[2].reason;const x=execute('validateG',d);assert.ok(finding(x,'P-SHAPE','/graphs/0/steps/2'));assert.ok(!x.report.results.at(-1).findings.some(f=>f.rule==='G-PATH'));
+});
+test('host request rejects invalid loss permissions and preserves valid losses',()=>{
+  const loss={input:'primary',location:{pointer:''},information:'metadata',reason:'requested',permission:null};
+  const x=run({operation:'lossyExchange',primary:bytes('{}'),annexes:{},losses:[loss]});assert.deepEqual(x.report.losses,[loss]);
+  assert.throws(()=>run({operation:'lossyExchange',primary:bytes('{}'),annexes:{},losses:[{...loss,permission:'allowed'}]}),/Loss/);
+});
+
+test('API enforces the closed request boundary',()=>{
+  assert.throws(()=>run({operation:'inspect',primary:bytes('{}'),annexes:{},extra:1}),/request fields/);
+  assert.throws(()=>run({operation:'inspect',primary:bytes('{}')}),/request fields/);
+});

@@ -33,8 +33,8 @@ export function rows(ctx,name,type) { return Array.isArray(ctx.tree?.[name]) ? c
 export function lookup(ctx,k) { const found=ctx.defs.get(key(k));return found?.length===1?found[0]:null; }
 export function build(ctx) {
   const d=ctx.tree;
-  if(S.valid(S.Root,d?.root))ctx.defs.set(key(d.root.key),[{v:d.root,p:'/root',root:true,ctx}]);
-  for(const row of rows(ctx,'definitions',S.Definition)) if(row.ok){const k=key(row.v.key);ctx.defs.set(k,[...(ctx.defs.get(k)||[]),{...row,ctx}]);}
+  if(S.valid(S.Key,d?.root?.key))ctx.defs.set(key(d.root.key),[{v:d.root,p:'/root',root:true,ctx}]);
+  for(const row of rows(ctx,'definitions',S.Definition)) if(S.valid(S.Key,row.v?.key)){const k=key(row.v.key);ctx.defs.set(k,[...(ctx.defs.get(k)||[]),{...row,ctx}]);}
   // A scope/id collision makes every version lookup ambiguous in this boundary.
   const identities=new Map();
   for(const found of ctx.defs.values())for(const x of found){const p=pair(x.v.key);identities.set(p,[...(identities.get(p)||[]),x]);}
@@ -51,6 +51,7 @@ export function declaration(ctx,ref,kind,result,rule,p) {
   const found=ctx.defs.get(key(ref));
   if(!found?.length){result.find(rule,p,'Local target does not exist');return false;}
   if(found.length!==1){result.mark(rule,'blocked',p);return false;}
+  if(kind&&!S.valid(found[0].root?S.Root.fields.kind:S.Kind,found[0].v.kind)){result.mark(rule,'blocked',p);return false;}
   if(kind&&!equal(found[0].v.kind,kind)){result.find(rule,p,'Target kind does not match');return false;}
   return true;
 }
@@ -72,13 +73,19 @@ export function validateD(ctx) {
   const rootOK=S.valid(S.Root,d.root), defs=rows(ctx,'definitions',S.Definition), rels=rows(ctx,'relations',S.Relation), deps=rows(ctx,'dependencies',S.Dependency), defers=rows(ctx,'unresolved',S.Deferral);
   const blockArray=(name,rules)=>{if(!Array.isArray(d[name]))for(const rule of rules)r.mark(rule,'blocked',`/${name}`);};
   blockArray('definitions',['D-IDENTITY','D-OWNER','D-AGENT','D-REFERENCE']);blockArray('relations',['D-REFERENCE','D-RELATION','D-CYCLE','D-AGENT']);blockArray('exports',['D-EXPORT']);blockArray('unresolved',['D-DEFERRAL','D-AGENT']);blockArray('dependencies',['D-DEPENDENCY','D-INTEGRITY']);
-  const seen=new Set(rootOK?[pair(d.root.key)]:[]);
+  const seen=new Set(S.valid(S.Key,d.root?.key)?[pair(d.root.key)]:[]);
   function custom(kind,p){if(S.object(kind)){if(!Array.isArray(d.extensions)){r.mark('D-REFERENCE','blocked',p);return;}if(!rows(ctx,'extensions',S.Extension).some(x=>x.ok&&edition(x.v)===edition(kind.extension)))r.find('D-REFERENCE',p,'Custom kind edition is undeclared');}}
-  for(const x of defs){if(!x.ok){for(const rule of ['D-IDENTITY','D-OWNER','D-REFERENCE','D-AGENT'])r.mark(rule,'blocked',x.p);continue;}
-    custom(x.v.kind,x.p);for(const rule of ['D-IDENTITY','D-OWNER','D-REFERENCE'])r.mark(rule);
-    if(!rootOK){r.mark('D-IDENTITY','blocked',x.p);r.mark('D-OWNER','blocked',x.p);}else {
-      if(seen.has(pair(x.v.key))||x.v.key.scope!==d.root.key.scope)r.find('D-IDENTITY',x.p,'Duplicate local identity or wrong local scope');
-      if(!equal(x.v.owner,d.root.key))r.find('D-OWNER',x.p,'Owner is not the root key');}
+  for(const x of defs){
+    const keyOK=S.valid(S.Key,x.v?.key),kindOK=S.valid(S.Kind,x.v?.kind),ownerOK=S.valid(S.Key,x.v?.owner);
+    if(kindOK){custom(x.v.kind,x.p);r.mark('D-REFERENCE');}else r.mark('D-REFERENCE','blocked',x.p);
+    if(!keyOK){r.mark('D-IDENTITY','blocked',x.p);r.mark('D-OWNER','blocked',x.p);r.mark('D-AGENT','blocked',x.p);continue;}
+    r.mark('D-IDENTITY');
+    if(seen.has(pair(x.v.key)))r.find('D-IDENTITY',x.p,'Duplicate local identity');
+    if(!S.valid(S.Key,d.root?.key))r.mark('D-IDENTITY','blocked',x.p);
+    else if(x.v.key.scope!==d.root.key.scope)r.find('D-IDENTITY',x.p,'Wrong local scope');
+    if(!ownerOK||!S.valid(S.Key,d.root?.key))r.mark('D-OWNER','blocked',x.p);
+    else {r.mark('D-OWNER');if(!equal(x.v.owner,d.root.key))r.find('D-OWNER',x.p,'Owner is not the root key');}
+    if(!kindOK)r.mark('D-AGENT','blocked',x.p);
     seen.add(pair(x.v.key));
   }
   const seenRel=new Set(), edges=[];
@@ -103,7 +110,7 @@ export function validateD(ctx) {
     const good=d.root.kind==='Fragment'&&a?.v.kind==='Agent'&&!seenDef.has(key(x.v.subject))&&ar.filter(y=>y.v.relation==='exposes').length===0&&ar.filter(y=>y.v.relation==='actsAs').length===1&&ar.some(y=>y.v.relation==='directedBy');
     if(!good)r.find('D-DEFERRAL',x.p,'Deferral preconditions not satisfied');else{validDef.add(key(x.v.subject));r.find('D-DEFERRAL',x.p,'Interface minimum deferred','deferred');}seenDef.add(key(x.v.subject));
   }
-  for(const x of defs.filter(x=>x.ok&&x.v.kind==='Agent')){if(!Array.isArray(d.relations)||rels.some(x=>!x.ok)||!Array.isArray(d.unresolved)){r.mark('D-AGENT','blocked',x.p);continue;}r.mark('D-AGENT');const ar=rels.filter(y=>y.ok&&equal(y.v.source,x.v.key));if(ar.filter(y=>y.v.relation==='actsAs').length!==1||!ar.some(y=>y.v.relation==='directedBy')||(!ar.some(y=>y.v.relation==='exposes')&&!validDef.has(key(x.v.key))))r.find('D-AGENT',x.p,'Agent relation minimum not satisfied');}
+  for(const x of defs.filter(x=>S.valid(S.Key,x.v?.key)&&x.v?.kind==='Agent')){if(!Array.isArray(d.relations)||rels.some(x=>!x.ok)||!Array.isArray(d.unresolved)){r.mark('D-AGENT','blocked',x.p);continue;}r.mark('D-AGENT');const ar=rels.filter(y=>y.ok&&equal(y.v.source,x.v.key));if(ar.filter(y=>y.v.relation==='actsAs').length!==1||!ar.some(y=>y.v.relation==='directedBy')||(!ar.some(y=>y.v.relation==='exposes')&&!validDef.has(key(x.v.key))))r.find('D-AGENT',x.p,'Agent relation minimum not satisfied');}
   const ids=new Set(),roots=new Set();
   for(const x of deps){if(!x.ok){r.mark('D-DEPENDENCY','blocked',x.p);r.mark('D-INTEGRITY','blocked',x.p);continue;}r.mark('D-DEPENDENCY');r.mark('D-INTEGRITY');const dep=x.v,supplied=Object.hasOwn(ctx.annexes,dep.id);
     if(ids.has(dep.id)||roots.has(key(dep.rootKey))||new Set(dep.requiredFor).size!==dep.requiredFor.length||(dep.status==='included')!==supplied)r.find('D-DEPENDENCY',x.p,'Dependency uniqueness or delivery accounting');

@@ -56,20 +56,21 @@ export function validateG(primary,operation,inventory) {
     if(!found||found.external)return null;
     const p=`${found.p}/payload`, token=`${found.ctx.id}:${p}`;selected.add(token);
     if(!selectedCache.has(token)){const ar=annexResult(found.ctx);selectedCache.set(token,ar.shape(type,found.v.payload,p));}
-    if(!selectedCache.get(token)){r.mark('G-TARGET','blocked',consumer);if(type===S.Interface)r.mark('G-DATA','blocked',consumer);return null;}
+    if(!S.object(found.v.payload)){r.mark('G-TARGET','blocked',consumer);if(type===S.Interface)r.mark('G-DATA','blocked',consumer);return null;}
     return found.v.payload;
   }
   function same(a,b){return a&&b&&!a.external&&!b.external&&equal(a.v.key,b.v.key);}
   function matchRefs(ownerCtx,a,b,kind,consumer,p){const ta=target(ownerCtx,a,kind,consumer,p);if(!ta||!b)return null;if(ta.external||b.external)return undefined;return same(ta,b);}
   function invokeTargets(s,p){
     const agent=target(primary,s.agent,'Agent',p,`${p}/agent`), face=target(primary,s.interface,'Interface',p,`${p}/interface`),action=target(primary,s.action,'Action',p,`${p}/action`),principal=target(primary,s.principal,'Principal',p,`${p}/principal`);
-    const resources=new Set();for(const [i,v]of s.resources.entries()){target(primary,v,'Resource',p,`${p}/resources/${i}`);const sig=canonical(v);if(resources.has(sig))r.find('G-TARGET',p,'Duplicate Resource Ref');resources.add(sig);}
+    const resources=new Set();for(const [i,v]of (Array.isArray(s.resources)?s.resources:[]).entries()){if(!S.valid(S.Ref,v)){r.mark('G-TARGET','blocked',p);continue;}target(primary,v,'Resource',p,`${p}/resources/${i}`);const sig=canonical(v);if(resources.has(sig))r.find('G-TARGET',p,'Duplicate Resource Ref');resources.add(sig);}
     if(!face)r.mark('G-DATA','blocked',p);
     if(!face||!agent||!action||!principal)r.mark('G-TARGET','blocked',p);
+    if(!Array.isArray(s.resources))r.mark('G-TARGET','blocked',p);
     const ip=payload(face,S.Interface,p);
     if(face?.external)r.mark('G-DATA','excluded',p);
     if(ip){const ar=annexResult(face.ctx);const a=target(face.ctx,ip.action,'Action',p,`${face.p}/payload/action`);if(a&&!a.external&&action&&!action.external&&!same(a,action))r.find('G-TARGET',p,'Interface action differs from invocation');
-      if(!equal(ip.inputs,s.inputs)||!equal(ip.outputs,s.outputs))r.find('G-DATA',p,'Interface port maps differ from invocation');r.mark('G-DATA');ar.mark('G-TARGET');}
+      for(const field of ['inputs','outputs'])if(S.valid(S.Ports,ip[field])&&S.valid(S.Ports,s[field])){r.mark('G-DATA');if(!equal(ip[field],s[field]))r.find('G-DATA',p,'Interface port maps differ from invocation');}else r.mark('G-DATA','blocked',p);ar.mark('G-TARGET');}
     if(agent&&!agent.external){
       const rs=rows(agent.ctx,'relations',S.Relation).filter(x=>x.ok&&equal(x.v.source,agent.v.key));
       if(!Array.isArray(agent.ctx.tree.relations)||rows(agent.ctx,'relations',S.Relation).some(x=>!x.ok)){r.mark('G-TARGET','blocked',p);return;}
@@ -91,11 +92,20 @@ export function validateG(primary,operation,inventory) {
     if(!Array.isArray(g.steps)){for(const rule of ['G-TARGET','G-PATH','G-DATA','G-APPROVAL'])r.mark(rule,'blocked',gp);continue;}
     const steps=g.steps.map((v,i)=>({v,p:`${gp}/steps/${i}`,ok:S.valid(S.Step,v)}));
     const stepMap=new Map(), edges=[];let pathBad=false,pathBlocked=false;
-    for(const x of steps){if(!x.ok){pathBlocked=true;for(const rule of ['G-TARGET','G-DATA','G-APPROVAL'])r.mark(rule,'blocked',x.p);continue;}if(stepMap.has(x.v.id))pathBad=true;stepMap.set(x.v.id,x);const s=x.v;const labels=s.kind==='invoke'?['success','failure']:s.kind==='condition'?['true','false','failure']:s.kind==='approval'?['approved','denied','failure']:[];for(const label of labels)edges.push({from:s.id,to:s[label],label});}
+    const idCounts=new Map();
+    for(const x of steps){
+      const id=x.v?.id;
+      if(typeof id==='string'&&id.length){idCounts.set(id,(idCounts.get(id)||0)+1);if(stepMap.has(id))pathBad=true;stepMap.set(id,x);}
+      else pathBlocked=true;
+      const s=x.v;
+      const labels=s?.kind==='invoke'?['success','failure']:s?.kind==='condition'?['true','false','failure']:s?.kind==='approval'?['approved','denied','failure']:s?.kind==='end'?[]:null;
+      if(!labels){pathBlocked=true;continue;}
+      for(const label of labels)if(typeof s[label]==='string'&&s[label].length&&typeof id==='string')edges.push({from:id,to:s[label],label});else pathBlocked=true;
+    }
     const reachable=(from,skip)=>{const seen=new Set(),stack=[from];while(stack.length){const a=stack.pop();if(seen.has(a))continue;seen.add(a);for(const e of edges)if(e.from===a&&(!skip||!skip(e)))stack.push(e.to);}return seen;};
     if(typeof g.entry!=='string'){pathBlocked=true;}else if(!stepMap.has(g.entry))pathBad=true;
     if(edges.some(e=>!stepMap.has(e.to))||cyclic(edges.map(e=>[e.from,e.to])))pathBad=true;
-    if(typeof g.entry==='string'&&steps.filter(x=>x.ok).some(x=>!reachable(g.entry).has(x.v.id)))pathBad=true;
+    if(typeof g.entry==='string'&&steps.filter(x=>typeof x.v?.id==='string').some(x=>!reachable(g.entry).has(x.v.id)))pathBad=true;
     if(!steps.length)pathBlocked=true;
     if(pathBad)r.find('G-PATH',gp,'Invalid step identity, entry, edge, cycle, reachability or terminal path');
     if(pathBlocked)r.mark('G-PATH','blocked',gp);else r.mark('G-PATH');
@@ -104,18 +114,19 @@ export function validateG(primary,operation,inventory) {
       if(!S.valid(S.Binding,b)){r.mark('G-DATA','blocked',consumer);return;}
       r.mark('G-DATA');
       if(S.has(b,'input')){if(!S.valid(S.Ports,g.inputs))r.mark('G-DATA','blocked',consumer);else if(!Object.hasOwn(g.inputs,b.input)||g.inputs[b.input]!==type)r.find('G-DATA',consumer,'Graph input binding missing or wrong type');}
-      else {const producer=stepMap.get(b.step);if(!producer||producer.v.kind!=='invoke'||!Object.hasOwn(producer.v.outputs,b.port)||producer.v.outputs[b.port]!==type)r.find('G-DATA',consumer,'Step output binding missing or wrong type');
+      else {const producer=stepMap.get(b.step);if(idCounts.get(b.step)>1){r.mark('G-DATA','blocked',consumer);return;}if(producer&&!S.valid(S.Ports,producer.v?.outputs)){r.mark('G-DATA','blocked',consumer);return;}if(!producer||producer.v.kind!=='invoke'||!Object.hasOwn(producer.v.outputs,b.port)||producer.v.outputs[b.port]!==type)r.find('G-DATA',consumer,'Step output binding missing or wrong type');
         if(!pathOK)r.mark('G-DATA','blocked',consumer);else if(reachable(g.entry,e=>e.from===b.step&&e.label==='success').has(consumerId))r.find('G-DATA',consumer,'Producer success edge does not dominate consumer');}
     }
-    function bindings(s,consumer,consumerId){if(!equal(Object.keys(s.inputs).sort(),Object.keys(s.bindings).sort()))r.find('G-DATA',consumer,'Invocation binding names differ from inputs');for(const [name,b]of Object.entries(s.bindings))if(Object.hasOwn(s.inputs,name))binding(b,s.inputs[name],consumer,consumerId);binding(s.context,'json',consumer,consumerId);}
-    for(const x of steps){if(!x.ok)continue;const s=x.v,p=x.p;
+    function bindings(s,consumer,consumerId){if(S.valid(S.Ports,s.inputs)&&S.object(s.bindings)){r.mark('G-DATA');if(!equal(Object.keys(s.inputs).sort(),Object.keys(s.bindings).sort()))r.find('G-DATA',consumer,'Invocation binding names differ from inputs');for(const [name,b]of Object.entries(s.bindings))if(Object.hasOwn(s.inputs,name))binding(b,s.inputs[name],consumer,consumerId);}else r.mark('G-DATA','blocked',consumer);binding(s.context,'json',consumer,consumerId);}
+    for(const x of steps){if(!S.object(x.v)||!['invoke','condition','approval','end'].includes(x.v.kind)){for(const rule of ['G-TARGET','G-DATA','G-APPROVAL'])r.mark(rule,'blocked',x.p);continue;}const s=x.v,p=x.p;
       if(s.kind==='invoke'){invokeTargets(s,p);bindings(s,p,s.id);}
       if(s.kind==='condition')binding(s.test,'boolean',p,s.id);
-      if(s.kind==='end'&&s.outcome==='success'){if(!S.valid(S.Ports,g.outputs))r.mark('G-DATA','blocked',p);else{r.mark('G-DATA');if(!equal(Object.keys(g.outputs).sort(),Object.keys(s.bindings).sort()))r.find('G-DATA',p,'Terminal binding names differ from graph outputs');for(const [name,b]of Object.entries(s.bindings))if(Object.hasOwn(g.outputs,name))binding(b,g.outputs[name],p,s.id);}}
+      if(s.kind==='end'&&s.outcome==='success'){if(!S.valid(S.Ports,g.outputs)||!S.object(s.bindings))r.mark('G-DATA','blocked',p);else{r.mark('G-DATA');if(!equal(Object.keys(g.outputs).sort(),Object.keys(s.bindings).sort()))r.find('G-DATA',p,'Terminal binding names differ from graph outputs');for(const [name,b]of Object.entries(s.bindings))if(Object.hasOwn(g.outputs,name))binding(b,g.outputs[name],p,s.id);}}
       if(s.kind==='approval'){
         const requirement=target(primary,s.requirement,'ApprovalRequirement',p,`${p}/requirement`),ap=payload(requirement,S.ApprovalRequirement,p);
-        if(ap){const seen=new Set();for(const [i,ref]of ap.approvers.entries()){const loc=`${requirement.p}/payload`;target(requirement.ctx,ref,'Principal',p,`${loc}/approvers/${i}`);if(seen.has(canonical(ref)))annexResult(requirement.ctx).find('G-TARGET',loc,'Duplicate approver Ref');seen.add(canonical(ref));}}
-        const approved=stepMap.get(s.approved);
+        if(ap&&Array.isArray(ap.approvers)){const seen=new Set();for(const [i,ref]of ap.approvers.entries()){if(!S.valid(S.Ref,ref)){annexResult(requirement.ctx).mark('G-TARGET','blocked',`${requirement.p}/payload`);continue;}const loc=`${requirement.p}/payload`;target(requirement.ctx,ref,'Principal',p,`${loc}/approvers/${i}`);if(seen.has(canonical(ref)))annexResult(requirement.ctx).find('G-TARGET',loc,'Duplicate approver Ref');seen.add(canonical(ref));}}
+        const approved=idCounts.get(s.approved)>1?null:stepMap.get(s.approved);
+        if(idCounts.get(s.approved)>1){r.mark('G-APPROVAL','blocked',p);r.mark('G-DATA','blocked',p);continue;}
         if(!approved||approved.v.kind!=='invoke')r.find('G-APPROVAL',p,'Approved successor is not an invocation');
         if(!pathOK){r.mark('G-APPROVAL','blocked',p);r.mark('G-DATA','blocked',p);}else{
           r.mark('G-APPROVAL');const incoming=edges.filter(e=>e.to===s.approved);if(incoming.length!==1||incoming[0].from!==s.id||incoming[0].label!=='approved'||reachable(s.denied).has(s.approved)||reachable(s.failure).has(s.approved))r.find('G-APPROVAL',p,'Protected invocation has an alternate incoming or refusal path');
