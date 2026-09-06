@@ -560,8 +560,9 @@ export function validateR(ctx, inventory) {
       for (const dependency of entry.info.value.dependencies) {
         if (!S.valid(S.Ref, dependency)) continue;
         const prerequisites = applicationPositions.get(canonical(dependency)) || [];
-        for (const dependent of dependents) if (prerequisites.length && !prerequisites.some(prerequisite => prerequisite < dependent) && !unreadableApplicationPositions.some(position => position < dependent)) {
-          result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
+        for (const dependent of dependents) if (!prerequisites.some(prerequisite => prerequisite < dependent)) {
+          if (unreadableApplicationPositions.some(position => position < dependent)) result.mark('R-CONTENT', 'blocked', `${ap}/applications/${dependent}`);
+          else if (prerequisites.length) result.find('R-CONTENT', `${ap}/applications/${dependent}`, 'Skill dependency must appear earlier');
         }
       }
     }
