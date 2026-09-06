@@ -4,9 +4,14 @@ This local, non-normative reader implements the proposed experimental edition
 `proposal-0012-candidate-2` from
 [proposal 0012](../../../proposals/0012-minimal-0.1.0-contract.md).
 The exact semantic source is repository commit
-`b02c7933f33e439bc45c94e01e96dfb7b77c6eb4`. The implementation was written from
-that proposal without reading another reader or sharing its engine, SDK, or
-fixtures. It is not an adopted AgSDL specification or an execution engine.
+`40f9a8b28a957c6dad7fdd065fd10e29fa611eae`, integrated in
+`06d0e8554ba1242b2fef24b9b6125af1fca07139`. The proposal file SHA-256 is
+`c2247e8b821544a34eeb93c9c2d75f42777f5a5ac2c9cb62bd6eebcfd4748c9a`.
+The original implementation was written independently from the proposal at
+`b02c7933f33e439bc45c94e01e96dfb7b77c6eb4`. Subsequent corrections use shared
+comparison fixtures and reports, without reading the other reader's code or
+sharing its engine or SDK. This is not an adopted AgSDL specification or an
+execution engine.
 
 ## API and CLI
 
@@ -74,7 +79,8 @@ node --test experimental/readers/javascript/reader.test.mjs
 git diff --check
 ```
 
-Tests are independently constructed from the candidate text. They cover
+Tests are constructed from the candidate text, including its 17 exact Unicode
+byte witnesses, and defects identified during report comparison. They cover
 encoding, decoded duplicate keys, mathematical integer bounds, opaque numbers,
 source spans, invalid-byte exchange, accounting refusal, D checks/deferral,
 extensions, local and external G, approval and data-flow failures, annex

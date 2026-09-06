@@ -165,3 +165,29 @@ test('selected key collision preserves independent annex payload checks',()=>{
   assert.ok(!last(x).findings.some(f=>f.details==='Agent does not expose invocation Interface'));
   assert.ok(!last(x).checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'));
 });
+
+test('candidate-2 exact Unicode byte witnesses',()=>{
+  const witnesses=[
+    ['225c756438303022',1],
+    ['225c75643830305c753030343122',1],
+    ['225c756463303022',1],
+    ['225c7564383030',1],
+    ['225c75643830305c7122',1],
+    ['225c756438473022',5],
+    ['225c75643830',6],
+    ['225c75643830305c753030473122',11],
+    ['225c75643830305c753030',11],
+    ['22e25822',2],
+    ['22e282',3],
+    ['22c3a95c756438303022',3],
+    ['22c3a95c75643830305c753030343122',3],
+    ['22c3a95c756463303022',3],
+    ['22c3a95c75643830305c753030473122',13],
+    ['22c3a9e25822',4],
+    ['22c3a9e282',5],
+  ];
+  for(const [hex,byte]of witnesses){
+    const source=Buffer.from(hex,'hex');assert.equal(parse(source).error?.byte,byte,hex);
+    const x=run({operation:'inspect',primary:source,annexes:{}});assert.deepEqual(last(x).findings.map(f=>({rule:f.rule,location:f.location,outcome:f.outcome})),[{rule:'P-SYNTAX',location:{byte},outcome:'fail'}],hex);
+  }
+});

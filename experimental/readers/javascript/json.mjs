@@ -42,9 +42,9 @@ export function parse(bytes) {
       if (c !== 'u') bad(Math.min(at, b.length));
       let cp = hex();
       if (cp >= 0xd800 && cp <= 0xdbff) {
-        if (b[i] !== 92) bad(i); i++;
-        if (b[i] !== 117) bad(i); i++;
-        const lowAt = i, low = hex(); if (low < 0xdc00 || low > 0xdfff) bad(lowAt);
+        if (b[i] !== 92 || b[i + 1] !== 117) bad(at - 1);
+        i += 2;
+        const low = hex(); if (low < 0xdc00 || low > 0xdfff) bad(at - 1);
         cp = 0x10000 + ((cp - 0xd800) << 10) + low - 0xdc00;
       } else if (cp >= 0xdc00 && cp <= 0xdfff) bad(at - 1);
       s += String.fromCodePoint(cp);
