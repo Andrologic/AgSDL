@@ -106,9 +106,43 @@ def validate_location(location, input_id, source, parsed, allow_missing=False, a
         demand(neutral.uint(location["byte"]) <= len(source[input_id]), "byte location outside input")
 
 
-def state_key(state):
+def assessment_location(state, tree):
+    if state["input"] != "primary" or not isinstance(tree, dict):
+        return False
+    match = re.fullmatch(
+        r"/runtime/configurations/(0|[1-9][0-9]*)/agents/(0|[1-9][0-9]*)(?:/tools/(0|[1-9][0-9]*))?",
+        state["pointer"],
+    )
+    runtime = tree.get("runtime")
+    if match is None or not isinstance(runtime, dict) or not isinstance(runtime.get("selected"), str):
+        return False
+    configurations = runtime.get("configurations")
+    if not isinstance(configurations, list):
+        return False
+    index = int(match.group(1))
+    selected = [position for position, item in enumerate(configurations)
+                if isinstance(item, dict) and item.get("id") == runtime["selected"]]
+    if selected != [index]:
+        return False
+    configuration = configurations[index]
+    agents = configuration.get("agents")
+    agent_index = int(match.group(2))
+    if not isinstance(agents, list) or agent_index >= len(agents) or not isinstance(agents[agent_index], dict):
+        return False
+    if match.group(3) is None:
+        return True
+    tools = agents[agent_index].get("tools")
+    tool_index = int(match.group(3))
+    return isinstance(tools, list) and tool_index < len(tools) and isinstance(tools[tool_index], dict)
+
+
+def assessment_state(state, tree):
+    return state["detail"] in ASSESSMENTS and assessment_location(state, tree)
+
+
+def state_key(state, tree):
     value = {key: state[key] for key in ("input", "pointer", "state")}
-    if state["detail"] in ASSESSMENTS:
+    if assessment_state(state, tree):
         value["detail"] = state["detail"]
     return value
 
@@ -245,22 +279,20 @@ def validate_report(response, case, source):
     demand(isinstance(inventory["states"], list) and isinstance(inventory["opaque"], list), "inventory arrays")
     primary_tree = parsed["primary"].tree if parsed["primary"] else None
     demand(canonical(inventory["tree"]) == canonical(primary_tree), "inventory tree differs from source")
-    state_keys = set()
-    assessment_keys = set()
+    assessment_keys = {}
     for state in inventory["states"]:
         record(state, "input pointer state detail")
         demand(state["input"] in source and state["state"] in {"absent", "unknown", "declared", "unchecked"}, "State scope/domain")
         neutral.pointer(state["pointer"])
         text(state["detail"])
         demand(parsed[state["input"]] is not None and (state["pointer"] in parsed[state["input"]].spans or missing_child(state["pointer"], parsed[state["input"]])), "State pointer is not observable")
-        key = canonical(state_key(state))
-        demand(key not in state_keys, "duplicate State tuple")
-        state_keys.add(key)
-        if state["detail"] in ASSESSMENTS:
+        key = canonical(state_key(state, primary_tree))
+        if assessment_state(state, primary_tree):
             demand(state["state"] == ASSESSMENT_STATES[state["detail"]], "assessment detail/state mismatch")
             assessment_key = (state["input"], state["pointer"])
-            demand(assessment_key not in assessment_keys, "multiple aggregate assessment States")
-            assessment_keys.add(assessment_key)
+            demand(assessment_key not in assessment_keys or assessment_keys[assessment_key] == key,
+                   "conflicting aggregate assessment States")
+            assessment_keys[assessment_key] = key
     slices_by_input = {name: [] for name in source}
     slice_keys = set()
     for item in inventory["opaque"]:
@@ -359,7 +391,7 @@ def comparison(response):
         "results": frozenset(canonical(item) for item in result_rows(report)),
         "findings": frozenset(canonical(item) for item in finding_rows(report)),
         "checks": frozenset(canonical(item) for item in check_rows(report)),
-        "states": frozenset(canonical(state_key(item)) for item in report["inventory"]["states"]),
+        "states": frozenset(canonical(state_key(item, report["inventory"]["tree"])) for item in report["inventory"]["states"]),
         "opaque": frozenset(canonical(item) for item in report["inventory"]["opaque"]),
         "tree": canonical(report["inventory"]["tree"]),
         "losses": frozenset(canonical(item) for item in report["losses"]),
