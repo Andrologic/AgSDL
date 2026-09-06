@@ -135,13 +135,20 @@ class Document:
                 self.index[identity] = (value, path or '/root')
                 if not good('Root' if not path else 'Definition', value):
                     self.invalid.add(identity)
+        self.catalog_complete = (isinstance(self.obj.get('root'), dict) and good('Key', self.obj['root'].get('key'))
+                                 and isinstance(self.obj.get('definitions'), list)
+                                 and all(isinstance(v, dict) and good('Key', v.get('key')) for v in self.obj['definitions']))
         self.dependencies = {}
         self.bad_dependencies = set()
+        self.dependency_catalog_complete = (isinstance(self.obj.get('dependencies'), list)
+                                            and all(isinstance(v, dict) and good('text', v.get('id')) for v in self.obj['dependencies']))
         for i, dep in enumerate(items(self.obj, 'dependencies')):
             if good('Dependency', dep):
                 if dep['id'] in self.dependencies:
                     self.bad_dependencies.add(dep['id'])
                 self.dependencies[dep['id']] = (dep, '/dependencies/' + str(i))
+            elif isinstance(dep, dict) and good('text', dep.get('id')):
+                self.bad_dependencies.add(dep['id'])
         self.d = None
         self.g = None
         self.selected_payloads = set()
@@ -152,6 +159,9 @@ class Document:
             result.block(rule, path)
             return None
         found = self.index.get(identity)
+        if found is None and not self.catalog_complete:
+            result.block(rule, path)
+            return None
         if found is None or (kind is not None and found[0]['kind'] != kind):
             result.find(rule, path, 'missing or wrong-kind local target')
             return None
@@ -163,6 +173,9 @@ class Document:
             result.block(rule, path)
             return None
         dep = self.dependencies.get(name)
+        if dep is None and not self.dependency_catalog_complete:
+            result.block(rule, path)
+            return None
         if dep is None or dep[0]['rootKey']['scope'] != ref['key']['scope']:
             result.find(rule, path, 'undeclared dependency or target scope mismatch')
             return None
@@ -256,6 +269,8 @@ def validate_d(doc, annexes):
     if root_ok and isinstance(doc.obj.get('exports'), list):
         if (root['kind'] == 'Fragment' and not exports) or (root['kind'] == 'System' and exports):
             result.find('D-EXPORT', '/exports', 'root export constraint')
+    elif not root_ok:
+        result.block('D-EXPORT', '/exports')
     seen_exports = set()
     for i, export in enumerate(exports):
         path = '/exports/' + str(i)
@@ -377,6 +392,7 @@ def validate_r(doc):
             result.block(rule, '/runtime')
         return result
     seen, pairs = set(), set()
+    requirements_readable = good(array('Requirement'), runtime.get('requirements'))
     if not isinstance(runtime.get('requirements'), list):
         result.block('R-REQUIREMENT', '/runtime')
     for i, requirement in enumerate(items(runtime, 'requirements')):
@@ -418,8 +434,13 @@ def validate_r(doc):
         if not good('EvidenceClaim', claim):
             result.block('R-SELECTION', path)
             continue
-        if claim['requirement'] not in seen or claim['requirement'] in seen_claims:
-            result.find('R-SELECTION', path, 'missing or duplicate requirement claim')
+        if claim['requirement'] in seen_claims:
+            result.find('R-SELECTION', path, 'duplicate requirement claim')
+        if claim['requirement'] not in seen:
+            if requirements_readable:
+                result.find('R-SELECTION', path, 'missing requirement claim target')
+            else:
+                result.block('R-SELECTION', path)
         seen_claims.add(claim['requirement'])
     return result
 
@@ -489,6 +510,9 @@ class GraphValidation:
             if doc is None or doc.syntax:
                 return None
             identity = ref['key']
+            if not good(array('Key'), doc.obj.get('exports')):
+                self.result.block('G-RESOLVE', consumer)
+                return None
             if identity not in items(doc.obj, 'exports'):
                 self.result.find('G-RESOLVE', consumer, 'target not exported')
                 return None
@@ -498,6 +522,9 @@ class GraphValidation:
             report.block('G-TARGET', affected)
             return None
         target = doc.index.get(key(identity))
+        if target is None and not doc.catalog_complete:
+            report.block('G-TARGET', affected)
+            return None
         if target is None or target[0]['kind'] != expected:
             report.find('G-TARGET' if not external else 'G-RESOLVE', affected if not external else consumer, 'missing or wrong-kind target')
             return None

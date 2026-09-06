@@ -102,6 +102,8 @@ class ParserTests(unittest.TestCase):
                                 ('9007199254740992', None), ('1e999999999999999', None), ('1e-99999999999', None)]:
             self.assertEqual(integer(Number(value)), expected)
         self.assertIsNone(integer(True))
+        self.assertEqual(integer(Number('1' + '0' * 100000 + 'e-100000')), 1)
+        self.assertEqual(integer(Number('0.' + '0' * 99999 + '1e100000')), 1)
 
 
 class DocumentaryTests(unittest.TestCase):
@@ -159,6 +161,18 @@ class DocumentaryTests(unittest.TestCase):
         report = run(d)
         self.assertTrue(findings(report, 'P-SHAPE'))
         self.assertTrue(findings(report, 'D-OWNER'))
+
+    def test_invalid_root_kind_blocks_export_form(self):
+        d = doc(); d['root']['kind'] = 17
+        report = run(d)
+        self.assertTrue(any(c['rule'] == 'D-EXPORT' and c['state'] == 'blocked' and {'pointer': '/exports'} in c['locations'] for c in report['results'][0]['checks']))
+
+    def test_unknown_catalog_entry_does_not_prove_target_absent(self):
+        d = doc(); d['definitions'] = [17]
+        relation(d, 'system', 'uses', k('unknown'), 'Tool')
+        report = run(d)
+        self.assertFalse(findings(report, 'D-REFERENCE'))
+        self.assertTrue(any(c['rule'] == 'D-REFERENCE' and c['state'] == 'blocked' for c in report['results'][0]['checks']))
 
     def test_dependency_hash_and_delivery(self):
         d = doc(); d['dependencies'] = [{'id': 'a', 'rootKey': k('package'), 'status': 'external', 'requiredFor': ['validateD'], 'sha256': None}]
@@ -249,6 +263,16 @@ class OperationTests(unittest.TestCase):
         r = run(d, 'validateR')['results'][-1]
         self.assertTrue(any(c['rule'] == 'R-SELECTION' and c['state'] == 'blocked' for c in r['checks']))
 
+    def test_unreadable_requirement_catalog_blocks_claim_lookup(self):
+        d = doc(); d['runtime'] = {'requirements': 17, 'selection': {
+            'engine': {'identity': 'audit/e', 'version': '1'}, 'interface': {'identity': 'audit/i', 'version': '1'},
+            'evidence': [{'requirement': 'r', 'claim': 'satisfied', 'artifact': None}]}}
+        report = run(d, 'validateR')
+        self.assertFalse(findings(report, 'R-SELECTION'))
+        self.assertTrue(any(c['rule'] == 'R-SELECTION' and c['state'] == 'blocked' for c in report['results'][-1]['checks']))
+        d['runtime']['selection']['evidence'] *= 2
+        self.assertTrue(findings(run(d, 'validateR'), 'R-SELECTION'))
+
     def test_cli_lossless_tree_and_artifacts(self):
         primary = b'{"annotations":1e999999999999999999}'
         request = {'operation': 'exchange', 'primary': base64.b64encode(primary).decode(), 'annexes': {}}
@@ -279,6 +303,13 @@ class GraphTests(unittest.TestCase):
         self.assertTrue(findings(run(d, 'resolveG'), 'G-APPROVAL'))
         d = approval_doc(); d['graphs'][0]['steps'][3]['timeoutMs'] = True
         self.assertTrue(findings(run(d, 'validateG'), 'P-SHAPE'))
+
+    def test_equivalent_long_integer_timeout_is_valid(self):
+        original = raw(approval_doc())
+        replacement = b'"timeoutMs": ' + b'1' + b'0' * 100000 + b'e-100000'
+        changed = original.replace(b'"timeoutMs": 500', replacement)
+        self.assertNotEqual(original, changed)
+        self.assertEqual(read('validateG', changed)['report']['results'][-1]['verdict'], 'pass')
 
     def test_interface_type_and_action(self):
         d = graph_doc(); d['definitions'][5]['payload']['outputs']['answer'] = 'string'

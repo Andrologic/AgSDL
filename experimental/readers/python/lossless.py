@@ -21,9 +21,13 @@ def integer(value):
     if sign:
         return None
     exponent = exponent or '0'
-    if len(exponent.lstrip('+-0')) > 5:
+    exponent_digits = exponent.lstrip('+-0') or '0'
+    # A nonzero safe integer cannot require a decimal shift larger than the
+    # entire significand plus the safe-integer width. Compare as strings first.
+    bound = str(len(whole) + len(fraction or '') + 16)
+    if len(exponent_digits) > len(bound) or (len(exponent_digits) == len(bound) and exponent_digits > bound):
         return None
-    normalized_exponent = ('-' if exponent.startswith('-') else '') + (exponent.lstrip('+-0') or '0')
+    normalized_exponent = ('-' if exponent.startswith('-') else '') + exponent_digits
     shift = int(normalized_exponent) - len(fraction or '')
     if shift < 0:
         if -shift > len(digits) or any(c != '0' for c in digits[shift:]):
