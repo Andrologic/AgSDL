@@ -39,11 +39,12 @@ export function build(ctx) {
   const identities=new Map();
   for(const found of ctx.defs.values())for(const x of found){const p=pair(x.v.key);identities.set(p,[...(identities.get(p)||[]),x]);}
   for(const [k,found]of ctx.defs)if(identities.get(pair(found[0].v.key)).length>1)ctx.defs.set(k,identities.get(pair(found[0].v.key)));
-  for(const row of rows(ctx,'dependencies',S.Dependency))if(row.ok){ctx.deps.set(row.v.id,[...(ctx.deps.get(row.v.id)||[]),row]);}
+  for(const row of rows(ctx,'dependencies',S.Dependency))if(typeof row.v?.id==='string'&&row.v.id.length){ctx.deps.set(row.v.id,[...(ctx.deps.get(row.v.id)||[]),row]);}
 }
 export function declaration(ctx,ref,kind,result,rule,p) {
   if(ext(ref)) {
     const ds=ctx.deps.get(ref.dependency);
+    if(ds?.length===1&&!S.valid(S.Key,ds[0].v.rootKey)){result.mark(rule,'blocked',p);return false;}
     if(!ds?.length || (ds.length===1&&ref.key.scope!==ds[0].v.rootKey.scope)) {result.find(rule,p,'External dependency or scope does not match');return false;}
     if(ds.length!==1){result.mark(rule,'blocked',p);return false;}
     return true;
@@ -56,13 +57,21 @@ export function declaration(ctx,ref,kind,result,rule,p) {
   return true;
 }
 export function modes(ctx,r,op) {
-  const es=rows(ctx,'extensions',S.Extension), seen=new Set();
+  const es=rows(ctx,'extensions',S.Extension),seen=new Set();
   if(!Array.isArray(ctx.tree?.extensions)){r.mark('X-MODE','blocked','/extensions');return;}
-  for(const row of es){if(!row.ok){r.mark('X-MODE','blocked',row.p);continue;}const e=row.v,k=edition(e);r.mark('X-MODE');
-    const custom=rows(ctx,'definitions',S.Definition).some(x=>x.ok&&S.object(x.v.kind)&&edition(x.v.kind.extension)===k);
-    if(seen.has(k)|| (op==='validateD'&&custom&&e.operations.validateD!=='required'))r.find('X-MODE',row.p,'Duplicate edition or custom-kind mode conflict');
-    else {const m=e.operations[op];if(m==='required')r.find('X-MODE',row.p,'Extension interpreter not implemented','unsupported');else if(!m||m==='unknown')r.find('X-MODE',row.p,'Extension interpretation unknown','inconclusive');}
-    seen.add(k);
+  for(const row of es){
+    const e=row.v;
+    if(!S.valid(S.Edition,{identity:e?.identity,version:e?.version})){r.mark('X-MODE','blocked',row.p);continue;}
+    const k=edition(e),duplicate=seen.has(k);seen.add(k);
+    if(duplicate){r.find('X-MODE',row.p,'Duplicate edition');continue;}
+    const custom=rows(ctx,'definitions',S.Definition).some(x=>S.valid(S.Kind,x.v?.kind)&&S.object(x.v.kind)&&edition(x.v.kind.extension)===k);
+    if(!S.object(e.operations)){r.mark('X-MODE','blocked',row.p);continue;}
+    const m=e.operations[op],type=S.Extension.fields.operations.fields[op].optional;
+    if(m!==undefined&&!S.valid(type,m)){r.mark('X-MODE','blocked',row.p);continue;}
+    r.mark('X-MODE');
+    if(op==='validateD'&&custom&&m!=='required')r.find('X-MODE',row.p,'Custom-kind mode conflict');
+    else if(m==='required')r.find('X-MODE',row.p,'Extension interpreter not implemented','unsupported');
+    else if(m===undefined||m==='unknown')r.find('X-MODE',row.p,'Extension interpretation unknown','inconclusive');
   }
 }
 export function validateD(ctx) {
@@ -74,7 +83,7 @@ export function validateD(ctx) {
   const blockArray=(name,rules)=>{if(!Array.isArray(d[name]))for(const rule of rules)r.mark(rule,'blocked',`/${name}`);};
   blockArray('definitions',['D-IDENTITY','D-OWNER','D-AGENT','D-REFERENCE']);blockArray('relations',['D-REFERENCE','D-RELATION','D-CYCLE','D-AGENT']);blockArray('exports',['D-EXPORT']);blockArray('unresolved',['D-DEFERRAL','D-AGENT']);blockArray('dependencies',['D-DEPENDENCY','D-INTEGRITY']);
   const seen=new Set(S.valid(S.Key,d.root?.key)?[pair(d.root.key)]:[]);
-  function custom(kind,p){if(S.object(kind)){if(!Array.isArray(d.extensions)){r.mark('D-REFERENCE','blocked',p);return;}if(!rows(ctx,'extensions',S.Extension).some(x=>x.ok&&edition(x.v)===edition(kind.extension)))r.find('D-REFERENCE',p,'Custom kind edition is undeclared');}}
+  function custom(kind,p){if(S.object(kind)){if(!Array.isArray(d.extensions)){r.mark('D-REFERENCE','blocked',p);return;}if(!rows(ctx,'extensions',S.Extension).some(x=>S.valid(S.Edition,{identity:x.v?.identity,version:x.v?.version})&&edition(x.v)===edition(kind.extension)))r.find('D-REFERENCE',p,'Custom kind edition is undeclared');}}
   for(const x of defs){
     const keyOK=S.valid(S.Key,x.v?.key),kindOK=S.valid(S.Kind,x.v?.kind),ownerOK=S.valid(S.Key,x.v?.owner);
     if(kindOK){custom(x.v.kind,x.p);r.mark('D-REFERENCE');}else r.mark('D-REFERENCE','blocked',x.p);
@@ -95,7 +104,7 @@ export function validateD(ctx) {
     declaration(ctx,x.v.source,null,r,'D-REFERENCE',x.p);declaration(ctx,x.v.target,x.v.expectedKind,r,'D-REFERENCE',x.p);
     const sig=canonical(x.v);if(seenRel.has(sig))r.find('D-RELATION',x.p,'Duplicate relation');seenRel.add(sig);
     const typed={actsAs:['Principal'],exposes:['Interface'],directedBy:['Instructions','Role','Skill','ControlFlow']};
-    if(typed[x.v.relation]) {if(!source)r.mark('D-RELATION','blocked',x.p);else if(source.v.kind!=='Agent'||!typed[x.v.relation].includes(x.v.expectedKind))r.find('D-RELATION',x.p,'Relation kind direction is invalid');}
+    if(typed[x.v.relation]) {if(!source||!S.valid(source.root?S.Root.fields.kind:S.Kind,source.v.kind))r.mark('D-RELATION','blocked',x.p);else if(source.v.kind!=='Agent'||!typed[x.v.relation].includes(x.v.expectedKind))r.find('D-RELATION',x.p,'Relation kind direction is invalid');}
     if(x.v.relation==='contains'&&!ext(x.v.target))edges.push([key(x.v.source),key(x.v.target)]);
   }
   if(edges.length){r.mark('D-CYCLE');if(cyclic(edges))r.find('D-CYCLE','/relations','Local containment cycle');}
@@ -112,10 +121,19 @@ export function validateD(ctx) {
   }
   for(const x of defs.filter(x=>S.valid(S.Key,x.v?.key)&&x.v?.kind==='Agent')){if(!Array.isArray(d.relations)||rels.some(x=>!x.ok)||!Array.isArray(d.unresolved)){r.mark('D-AGENT','blocked',x.p);continue;}r.mark('D-AGENT');const ar=rels.filter(y=>y.ok&&equal(y.v.source,x.v.key));if(ar.filter(y=>y.v.relation==='actsAs').length!==1||!ar.some(y=>y.v.relation==='directedBy')||(!ar.some(y=>y.v.relation==='exposes')&&!validDef.has(key(x.v.key))))r.find('D-AGENT',x.p,'Agent relation minimum not satisfied');}
   const ids=new Set(),roots=new Set();
-  for(const x of deps){if(!x.ok){r.mark('D-DEPENDENCY','blocked',x.p);r.mark('D-INTEGRITY','blocked',x.p);continue;}r.mark('D-DEPENDENCY');r.mark('D-INTEGRITY');const dep=x.v,supplied=Object.hasOwn(ctx.annexes,dep.id);
-    if(ids.has(dep.id)||roots.has(key(dep.rootKey))||new Set(dep.requiredFor).size!==dep.requiredFor.length||(dep.status==='included')!==supplied)r.find('D-DEPENDENCY',x.p,'Dependency uniqueness or delivery accounting');
-    if(dep.sha256!==null&&supplied&&hash(ctx.annexes[dep.id])!==dep.sha256)r.find('D-INTEGRITY',x.p,'Hash mismatch');
-    if(dep.sha256===null&&dep.requiredFor.includes('validateD'))r.find('D-INTEGRITY',x.p,'Required integrity is unknown','inconclusive');ids.add(dep.id);roots.add(key(dep.rootKey));
+  for(const x of deps){
+    const dep=x.v;
+    if(!S.object(dep)){r.mark('D-DEPENDENCY','blocked',x.p);r.mark('D-INTEGRITY','blocked',x.p);continue;}
+    const idOK=typeof dep.id==='string'&&dep.id.length,rootKeyOK=S.valid(S.Key,dep.rootKey),statusOK=['included','external','omitted','unavailable'].includes(dep.status),reqOK=S.valid(S.Dependency.fields.requiredFor,dep.requiredFor),hashOK=S.valid(S.Dependency.fields.sha256,dep.sha256);
+    const supplied=idOK&&Object.hasOwn(ctx.annexes,dep.id);
+    if(idOK){r.mark('D-DEPENDENCY');if(ids.has(dep.id))r.find('D-DEPENDENCY',x.p,'Duplicate dependency id');ids.add(dep.id);}
+    if(rootKeyOK){r.mark('D-DEPENDENCY');if(roots.has(key(dep.rootKey)))r.find('D-DEPENDENCY',x.p,'Duplicate dependency root key');roots.add(key(dep.rootKey));}
+    if(reqOK){r.mark('D-DEPENDENCY');if(new Set(dep.requiredFor).size!==dep.requiredFor.length)r.find('D-DEPENDENCY',x.p,'Duplicate requiredFor entry');}
+    if(statusOK&&idOK){r.mark('D-DEPENDENCY');if((dep.status==='included')!==supplied)r.find('D-DEPENDENCY',x.p,'Dependency delivery accounting');}
+    if(!idOK||!rootKeyOK||!statusOK||!reqOK)r.mark('D-DEPENDENCY','blocked',x.p);
+    if(hashOK&&idOK){r.mark('D-INTEGRITY');if(dep.sha256!==null&&supplied&&hash(ctx.annexes[dep.id])!==dep.sha256)r.find('D-INTEGRITY',x.p,'Hash mismatch');}
+    if(hashOK&&reqOK){r.mark('D-INTEGRITY');if(dep.sha256===null&&dep.requiredFor.includes('validateD'))r.find('D-INTEGRITY',x.p,'Required integrity is unknown','inconclusive');}
+    if(!hashOK||!idOK||!reqOK)r.mark('D-INTEGRITY','blocked',x.p);
   }
   for(const id of Object.keys(ctx.annexes))if(!ids.has(id))r.find('D-DEPENDENCY','','Undeclared annex');
   modes(ctx,r,'validateD');ctx.d=r.finish();return ctx.d;

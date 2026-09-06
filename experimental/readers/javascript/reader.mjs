@@ -78,15 +78,35 @@ function validateR(ctx,inv) {
   const rt=ctx.tree.runtime;r.shape(S.Runtime,rt,'/runtime');
   if(!S.shell(S.Runtime,rt)||!Array.isArray(rt.requirements)){r.mark('R-REQUIREMENT','blocked','/runtime');r.mark('R-SELECTION','blocked','/runtime');return r.finish();}
   const ids=new Set(),pairs=new Set();
-  for(const [i,v]of rt.requirements.entries()){const p=`/runtime/requirements/${i}`;if(!S.valid(S.Requirement,v)){r.mark('R-REQUIREMENT','blocked',p);continue;}r.mark('R-REQUIREMENT');const sig=edition(v.capability)+key(v.subject),found=ctx.defs.get(key(v.subject));if(ids.has(v.id)||pairs.has(sig)||!found||found[0]?.root)r.find('R-REQUIREMENT',p,'Requirement uniqueness or subject lookup failed');if(found?.length>1)r.mark('R-REQUIREMENT','blocked',p);ids.add(v.id);pairs.add(sig);}
+  for(const [i,v]of rt.requirements.entries()){
+    const p=`/runtime/requirements/${i}`,idOK=typeof v?.id==='string'&&v.id.length,subjectOK=S.valid(S.Key,v?.subject),capOK=S.valid(S.Edition,v?.capability);
+    if(idOK){r.mark('R-REQUIREMENT');if(ids.has(v.id))r.find('R-REQUIREMENT',p,'Duplicate requirement id');ids.add(v.id);}
+    if(subjectOK){r.mark('R-REQUIREMENT');const found=ctx.defs.get(key(v.subject));if(found?.length>1)r.mark('R-REQUIREMENT','blocked',p);else if(!found||found[0].root)r.find('R-REQUIREMENT',p,'Requirement subject is not a local definition');}
+    if(capOK&&subjectOK){r.mark('R-REQUIREMENT');const sig=edition(v.capability)+key(v.subject);if(pairs.has(sig))r.find('R-REQUIREMENT',p,'Duplicate capability/subject pair');pairs.add(sig);}
+    if(!idOK||!subjectOK||!capOK)r.mark('R-REQUIREMENT','blocked',p);
+  }
   state(inv,ctx,'/runtime/selection',S.has(rt,'selection')?'declared':'absent');
   if(!S.has(rt,'selection')){r.mark('R-SELECTION','excluded','/runtime/selection');return r.finish();}
   const sel=rt.selection;
-  if(!S.valid(S.Selection,sel)){r.mark('R-SELECTION','blocked','/runtime/selection');return r.finish();}
-  r.mark('R-SELECTION');state(inv,ctx,'/runtime/selection/engine','unchecked');
-  for(const k of ['model','provider','hosting'])state(inv,ctx,`/runtime/selection/${k}`,S.has(sel,k)?'declared':'absent');
-  if(sel.hosting){declaration(ctx,sel.hosting,'Environment',r,'R-SELECTION','/runtime/selection');if(ext(sel.hosting))state(inv,ctx,'/runtime/selection/hosting','unchecked');}
-  const claims=new Set();for(const [i,v]of sel.evidence.entries()){const p=`/runtime/selection/evidence/${i}`;state(inv,ctx,p,'unchecked');if(v.artifact===null)state(inv,ctx,`${p}/artifact`,'unknown');if(!ids.has(v.requirement)||claims.has(v.requirement))r.find('R-SELECTION',p,'Evidence names unknown or repeated requirement');claims.add(v.requirement);}
-  for(const id of ids)if(!claims.has(id))state(inv,ctx,'/runtime/selection/evidence','absent',id);
+  if(!S.object(sel)){r.mark('R-SELECTION','blocked','/runtime/selection');return r.finish();}
+  const selectionOK=S.valid(S.Selection,sel);
+  if(selectionOK){
+    state(inv,ctx,'/runtime/selection/engine','unchecked');
+    for(const k of ['model','provider','hosting'])state(inv,ctx,`/runtime/selection/${k}`,S.has(sel,k)?'declared':'absent');
+  }
+  if(S.has(sel,'hosting')){
+    if(S.valid(S.Ref,sel.hosting)){r.mark('R-SELECTION');declaration(ctx,sel.hosting,'Environment',r,'R-SELECTION','/runtime/selection');if(selectionOK&&ext(sel.hosting))state(inv,ctx,'/runtime/selection/hosting','unchecked');}
+    else r.mark('R-SELECTION','blocked','/runtime/selection');
+  }
+  const claims=new Set();
+  if(!Array.isArray(sel.evidence))r.mark('R-SELECTION','blocked','/runtime/selection');
+  else for(const [i,v]of sel.evidence.entries()){
+    const p=`/runtime/selection/evidence/${i}`;
+    if(typeof v?.requirement!=='string'||!v.requirement){r.mark('R-SELECTION','blocked',p);continue;}
+    r.mark('R-SELECTION');
+    if(!ids.has(v.requirement)||claims.has(v.requirement))r.find('R-SELECTION',p,'Evidence names unknown or repeated requirement');claims.add(v.requirement);
+    if(selectionOK){state(inv,ctx,p,'unchecked');if(v.artifact===null)state(inv,ctx,`${p}/artifact`,'unknown');}
+  }
+  if(selectionOK)for(const id of ids)if(!claims.has(id))state(inv,ctx,'/runtime/selection/evidence','absent',id);
   return r.finish();
 }

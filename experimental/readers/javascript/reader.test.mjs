@@ -109,3 +109,16 @@ test('API enforces the closed request boundary',()=>{
   assert.throws(()=>run({operation:'inspect',primary:bytes('{}'),annexes:{},extra:1}),/request fields/);
   assert.throws(()=>run({operation:'inspect',primary:bytes('{}')}),/request fields/);
 });
+test('a non-invoke producer fails G-DATA rather than becoming unavailable',()=>{
+  const d=graphDoc(),g=d.graphs[0];g.inputs.b='boolean';g.entry='cond';g.steps.unshift({id:'cond',kind:'condition',test:{input:'b'},true:'call',false:'bad',failure:'bad'});g.steps[1].context={step:'cond',port:'x'};assert.ok(finding(execute('validateG',d),'G-DATA','/graphs/0/steps/1'));
+});
+test('custom classification and source kinds use only their required fields',()=>{
+  const d=doc();d.extensions=[{identity:'v/ext',version:'1',operations:{validateD:{ignoreRule:'annotation-only'}},payload:null}];add(d,'x',{extension:{identity:'v/ext',version:'1'},name:'x'});d.definitions[0].owner=null;assert.ok(finding(execute('validateD',d),'X-MODE','/extensions/0'));
+  const g=graphDoc();g.definitions[0].kind=null;const x=execute('validateD',g);assert.ok(!x.report.results[0].findings.some(f=>f.rule==='D-RELATION'));assert.ok(last(x).checks.some(c=>c.rule==='D-RELATION'&&c.state==='blocked'));
+});
+test('malformed dependency hint preserves external reference declaration',()=>{
+  const d=doc();d.dependencies=[{id:'x',rootKey:K('r','remote'),status:'external',requiredFor:[],sha256:null,location:null}];d.relations=[{source:K('root'),relation:'uses',target:{dependency:'x',key:K('resource','remote')},expectedKind:'Resource'}];const x=execute('validateD',d);assert.ok(finding(x,'P-SHAPE','/dependencies/0/location'));assert.ok(!last(x).findings.some(f=>f.rule==='D-REFERENCE'));
+});
+test('malformed engine does not hide an independently invalid evidence reference',()=>{
+  const d=doc();d.runtime={requirements:[],selection:{engine:null,interface:{identity:'v/i',version:'1'},evidence:[{requirement:'missing',claim:'satisfied',artifact:null}]}};const x=execute('validateR',d);assert.ok(finding(x,'P-SHAPE','/runtime/selection/engine'));assert.ok(finding(x,'R-SELECTION','/runtime/selection/evidence/0'));
+});

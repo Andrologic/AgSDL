@@ -9,7 +9,7 @@ export function validateG(primary,operation,inventory) {
   const state=(ctx,p)=>inventory.states.push({input:ctx.id,pointer:p,state:'unchecked',detail:'External target content unchecked'});
   function refs(step){if(!S.object(step))return [];if(step.kind==='invoke')return ['agent','interface','action','principal'].map(k=>[k,step[k]]).concat((Array.isArray(step.resources)?step.resources:[]).map((x,i)=>[`resources/${i}`,x]));if(step.kind==='approval')return [['requirement',step.requirement]];return [];}
   if(resolve){
-    for(const x of rows(primary,'dependencies',S.Dependency))if(x.ok&&x.v.requiredFor.includes('resolveG'))required.add(x.v.id);
+    for(const x of rows(primary,'dependencies',S.Dependency))if(Array.isArray(x.v?.requiredFor)&&x.v.requiredFor.includes('resolveG')&&typeof x.v.id==='string')required.add(x.v.id);
     if(Array.isArray(primary.tree?.graphs))for(const g of primary.tree.graphs)if(Array.isArray(g?.steps))for(const s of g.steps)for(const [,ref]of refs(s))if(S.valid(S.Ref,ref)&&ext(ref))required.add(ref.dependency);
     for(const id of [...required].sort())loadAnnex(id);
   }
@@ -18,8 +18,10 @@ export function validateG(primary,operation,inventory) {
     const dep=primary.deps.get(id);
     if(dep?.length!==1)return null;
     const {v:d,p}=dep[0];r.mark('G-RESOLVE');
+    if(!S.valid(S.Dependency.fields.status,d.status)||!S.valid(S.Key,d.rootKey)){r.mark('G-RESOLVE','blocked',p);return null;}
     if(d.status!=='included'||!Object.hasOwn(primary.annexes,id)){r.find('G-RESOLVE',p,'Required annex bytes missing');return null;}
-    if(d.sha256===null)r.find('G-RESOLVE',p,'Required annex integrity unknown','inconclusive');
+    if(!S.valid(S.Dependency.fields.sha256,d.sha256))r.mark('G-RESOLVE','blocked',p);
+    else if(d.sha256===null)r.find('G-RESOLVE',p,'Required annex integrity unknown','inconclusive');
     else if(hash(primary.annexes[id])!==d.sha256)r.find('G-RESOLVE',p,'Required annex hash mismatch');
     const ctx=context(`annex/${id}`,primary.annexes[id]);validateD(ctx);contexts.push(ctx);byId.set(id,ctx);r.prerequisites.push(ctx.d);
     if(ctx.error||!S.valid(S.Root,ctx.tree?.root)||ctx.tree.contract!=='proposal-0012-candidate-2'||!equal(ctx.tree.root.key,d.rootKey))r.find('G-RESOLVE',p,'Invalid annex content or root key');
@@ -41,7 +43,7 @@ export function validateG(primary,operation,inventory) {
       if(!resolve){state(ctx,p);r.mark(rule,'excluded',consumer);return {external:true};}
       if(ctx!==primary){state(ctx,p);r.find('G-RESOLVE',consumer,'Selected transitive external reference','unsupported');owner.mark(rule,'excluded',p);return {external:true};}
       r.mark('G-RESOLVE');dst=loadAnnex(ref.dependency);k=ref.key;
-      if(!dst){r.find('G-RESOLVE',consumer,'External target annex unavailable');return null;}
+      if(!dst){r.mark('G-RESOLVE','blocked',consumer);r.mark('G-TARGET','blocked',consumer);return null;}
       if(dst.error||!S.valid(S.Root,dst.tree?.root)){r.mark('G-TARGET','blocked',consumer);return null;}
       const exported=Array.isArray(dst.tree.exports)&&dst.tree.exports.some(x=>S.valid(S.Key,x)&&equal(x,k));
       const found=lookup(dst,k);
@@ -114,7 +116,7 @@ export function validateG(primary,operation,inventory) {
       if(!S.valid(S.Binding,b)){r.mark('G-DATA','blocked',consumer);return;}
       r.mark('G-DATA');
       if(S.has(b,'input')){if(!S.valid(S.Ports,g.inputs))r.mark('G-DATA','blocked',consumer);else if(!Object.hasOwn(g.inputs,b.input)||g.inputs[b.input]!==type)r.find('G-DATA',consumer,'Graph input binding missing or wrong type');}
-      else {const producer=stepMap.get(b.step);if(idCounts.get(b.step)>1){r.mark('G-DATA','blocked',consumer);return;}if(producer&&!S.valid(S.Ports,producer.v?.outputs)){r.mark('G-DATA','blocked',consumer);return;}if(!producer||producer.v.kind!=='invoke'||!Object.hasOwn(producer.v.outputs,b.port)||producer.v.outputs[b.port]!==type)r.find('G-DATA',consumer,'Step output binding missing or wrong type');
+      else {const producer=stepMap.get(b.step);if(idCounts.get(b.step)>1){r.mark('G-DATA','blocked',consumer);return;}if(producer?.v.kind==='invoke'&&!S.valid(S.Ports,producer.v.outputs)){r.mark('G-DATA','blocked',consumer);return;}if(!producer||producer.v.kind!=='invoke'||!Object.hasOwn(producer.v.outputs,b.port)||producer.v.outputs[b.port]!==type)r.find('G-DATA',consumer,'Step output binding missing or wrong type');
         if(!pathOK)r.mark('G-DATA','blocked',consumer);else if(reachable(g.entry,e=>e.from===b.step&&e.label==='success').has(consumerId))r.find('G-DATA',consumer,'Producer success edge does not dominate consumer');}
     }
     function bindings(s,consumer,consumerId){if(S.valid(S.Ports,s.inputs)&&S.object(s.bindings)){r.mark('G-DATA');if(!equal(Object.keys(s.inputs).sort(),Object.keys(s.bindings).sort()))r.find('G-DATA',consumer,'Invocation binding names differ from inputs');for(const [name,b]of Object.entries(s.bindings))if(Object.hasOwn(s.inputs,name))binding(b,s.inputs[name],consumer,consumerId);}else r.mark('G-DATA','blocked',consumer);binding(s.context,'json',consumer,consumerId);}
