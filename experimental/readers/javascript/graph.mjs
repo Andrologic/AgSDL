@@ -43,7 +43,7 @@ export function validateG(primary,operation,inventory) {
     let dst=ctx,k=ref;
     if(ext(ref)) {
       if(!resolve){state(ctx,p);r.mark(rule,'excluded',consumer);return {external:true};}
-      if(ctx!==primary){state(ctx,p);r.find('G-RESOLVE',consumer,'Selected transitive external reference','unsupported');owner.mark(rule,'excluded',p);return {external:true};}
+      if(ctx!==primary){r.find('G-RESOLVE',consumer,'Selected transitive external reference','unsupported');owner.mark(rule,'excluded',subject);r.mark(rule,'excluded',consumer);return {external:true};}
       r.mark('G-RESOLVE');dst=loadAnnex(ref.dependency);k=ref.key;
       if(!dst){r.mark('G-RESOLVE','blocked',consumer);r.mark('G-TARGET','blocked',consumer);return null;}
       if(dst.error||!S.valid(S.Root,dst.tree?.root)){r.mark('G-TARGET','blocked',consumer);return null;}
@@ -78,16 +78,16 @@ export function validateG(primary,operation,inventory) {
     if(!Array.isArray(s.resources))r.mark('G-TARGET','blocked',p);
     const ip=payload(face,S.Interface,p);
     if(face?.external)r.mark('G-DATA','excluded',p);
-    if(ip){const ar=annexResult(face.ctx);const a=target(face.ctx,ip.action,'Action',p,`${face.p}/payload/action`);if(a&&!a.external&&action&&!action.external&&same(a,action)===false)r.find('G-TARGET',p,'Interface action differs from invocation');
+    if(ip){const ar=annexResult(face.ctx);const a=target(face.ctx,ip.action,'Action',p,`${face.p}/payload/action`);if(!face.colliding&&a&&!a.external&&action&&!action.external&&same(a,action)===false)r.find('G-TARGET',p,'Interface action differs from invocation');
       for(const field of ['inputs','outputs'])if(S.valid(S.Ports,ip[field])&&S.valid(S.Ports,s[field])){r.mark('G-DATA');if(!equal(ip[field],s[field]))r.find('G-DATA',p,'Interface port maps differ from invocation');}else r.mark('G-DATA','blocked',p);ar.mark('G-TARGET');}
     if(agent&&!agent.external){
       const usable=x=>S.valid(S.Relation,{source:x.v?.source,relation:x.v?.relation,target:x.v?.target,expectedKind:x.v?.expectedKind});
       const rs=rows(agent.ctx,'relations',S.Relation).filter(x=>usable(x)&&equal(x.v.source,agent.v.key));
       if(!Array.isArray(agent.ctx.tree.relations)||rows(agent.ctx,'relations',S.Relation).some(x=>(!S.valid(S.Key,x.v?.source)||equal(x.v.source,agent.v.key))&&!usable(x))){r.mark('G-TARGET','blocked',p);return;}
-      const exposes=rs.filter(x=>x.v.relation==='exposes');let matched=false,unknown=false;
+      const exposes=rs.filter(x=>x.v.relation==='exposes');let matched=false,unknown=agent.colliding;
       for(const x of exposes){const m=matchRefs(agent.ctx,x.v.target,face,'Interface',p,`${x.p}/target`);if(m===true)matched=true;if(m===undefined)unknown=true;}
       if(!matched&&!unknown&&face&&!face.external)r.find('G-TARGET',p,'Agent does not expose invocation Interface');
-      const acts=rs.filter(x=>x.v.relation==='actsAs');if(acts.length!==1)r.find('G-TARGET',p,'Agent principal relation is not unique');else{const m=matchRefs(agent.ctx,acts[0].v.target,principal,'Principal',p,`${acts[0].p}/target`);if(m===false)r.find('G-TARGET',p,'Invocation principal differs from Agent');}
+      const acts=rs.filter(x=>x.v.relation==='actsAs');if(acts.length!==1)r.find('G-TARGET',p,'Agent principal relation is not unique');else{const m=matchRefs(agent.ctx,acts[0].v.target,principal,'Principal',p,`${acts[0].p}/target`);if(m===false&&!agent.colliding)r.find('G-TARGET',p,'Invocation principal differs from Agent');}
     }
   }
   if(primary.error||!S.object(primary.tree)){for(const rule of RULES.filter(x=>x!=='X-MODE'))r.mark(rule,'blocked','');if(resolve)r.mark('G-RESOLVE','blocked','');return finish();}

@@ -79,7 +79,20 @@ test('resolveG requires explicit dependencies even with absent graphs',()=>{
 });
 test('resolveG selected payloads report annex shape, integrity unknown and transitive refs',()=>{
   const {p,a}=external();a.definitions[0].payload.extra=1;let b=bytes(a);p.dependencies[0].sha256=hash(b);const x=execute('resolveG',p,{dep:b});assert.equal(last(x).verdict,'fail');assert.ok(x.report.results.some(r=>r.input==='annex/dep'&&r.unit==='G'&&r.findings.some(f=>f.rule==='P-SHAPE')));
-  delete a.definitions[0].payload.extra;a.dependencies=[{id:'next',rootKey:K('r','next'),status:'external',requiredFor:[],sha256:null}];a.definitions[0].payload.action={dependency:'next',key:K('act','next')};b=bytes(a);p.dependencies[0].sha256=hash(b);assert.equal(last(execute('resolveG',p,{dep:b})).verdict,'unsupported');
+  delete a.definitions[0].payload.extra;a.dependencies=[{id:'next',rootKey:K('r','next'),status:'external',requiredFor:[],sha256:null}];a.definitions[0].payload.action={dependency:'next',key:K('act','next')};b=bytes(a);p.dependencies[0].sha256=hash(b);
+  const y=execute('resolveG',p,{dep:b}),annex=y.report.results.find(r=>r.input==='annex/dep'&&r.unit==='G');
+  assert.equal(last(y).verdict,'unsupported');assert.equal(annex.verdict,'pass');
+  assert.deepEqual(annex.checks.filter(c=>c.rule==='G-TARGET'),[
+    {rule:'G-TARGET',state:'completed',locations:[]},
+    {rule:'G-TARGET',state:'excluded',locations:[{pointer:'/definitions/0/payload'}]}
+  ]);
+  assert.deepEqual(last(y).checks.filter(c=>c.rule==='G-TARGET'),[
+    {rule:'G-TARGET',state:'completed',locations:[]},
+    {rule:'G-TARGET',state:'excluded',locations:[{pointer:'/graphs/0/steps/0'}]}
+  ]);
+  assert.ok(!y.report.inventory.states.some(s=>s.input==='annex/dep'&&s.pointer.startsWith('/definitions/0/payload')));
+  assert.ok(!y.report.inventory.opaque.some(s=>s.input==='annex/dep'&&s.pointer==='/definitions/0/payload'));
+  assert.deepEqual(last(y).checks.filter(c=>c.rule==='G-DATA'),[{rule:'G-DATA',state:'completed',locations:[]}]);
 });
 test('R no defaults, unknown evidence and external hosting are inventoried without readiness',()=>{
   const d=doc();add(d,'a','Action');d.runtime={requirements:[{id:'need',capability:{identity:'vendor/cap',version:'1'},subject:K('a')} ]};let x=execute('validateR',d);assert.equal(last(x).verdict,'pass');assert.ok(x.report.inventory.states.some(s=>s.pointer==='/runtime/selection'&&s.state==='absent'));
@@ -199,4 +212,33 @@ test('missing collections block existing affected records',()=>{
   for(const r of execute('resolveG',{}).report.results)for(const c of r.checks.filter(c=>c.state==='blocked'))assert.deepEqual(c.locations,[{pointer:''}],c.rule);
   d.relations=null;const y=execute('validateD',d);
   assert.deepEqual(last(y).checks.find(c=>c.rule==='D-RELATION'&&c.state==='blocked').locations,[{pointer:'/relations'}]);
+});
+
+function laterCollision(kind){
+  const p=graphDoc(),a=doc();a.root={key:K('annex-root'),kind:'PackageVersion'};
+  const original=p.definitions.find(d=>d.kind===kind);
+  a.definitions.push({...structuredClone(original),owner:a.root.key});
+  if(kind==='Agent'){
+    const pr=add(a,'annex-principal','Principal'),face=add(a,'annex-face','Interface'),ins=add(a,'annex-instructions','Instructions');
+    a.relations=[{source:original.key,relation:'actsAs',target:pr,expectedKind:'Principal'},{source:original.key,relation:'exposes',target:face,expectedKind:'Interface'},{source:original.key,relation:'directedBy',target:ins,expectedKind:'Instructions'}];
+  }
+  const marker=add(a,'marker','Resource');a.exports=[marker];const b=bytes(a);
+  p.dependencies=[{id:'later',rootKey:a.root.key,status:'included',requiredFor:[],sha256:hash(b)}];
+  const call=p.graphs[0].steps[0],later=structuredClone(call);later.id='later';later.resources=[{dependency:'later',key:marker}];call.success='later';p.graphs[0].steps.splice(1,0,later);
+  return {p,b,call};
+}
+for(const kind of ['Action','Interface','Agent','Resource'])test(`later dependency ${kind} collision scopes identity agreement`,()=>{
+  const {p,b,call}=laterCollision(kind);
+  if(kind==='Agent'){
+    call.principal=add(p,'other-principal','Principal');
+    call.interface=add(p,'other-face','Interface',structuredClone(p.definitions.find(d=>d.kind==='Interface').payload));
+  }else call.action=add(p,'other-action','Action');
+  const x=execute('resolveG',p,{later:b}),r=last(x),step='/graphs/0/steps/0';
+  assert.ok(x.report.results.filter(r=>r.unit==='D').every(r=>r.verdict==='pass'));
+  assert.ok(r.findings.some(f=>f.rule==='G-RESOLVE'&&f.location.pointer===step));
+  const disagreements=r.findings.filter(f=>f.rule==='G-TARGET'&&f.location.pointer===step);
+  if(kind==='Resource')assert.ok(disagreements.some(f=>f.details.includes('Interface action differs')));
+  else assert.deepEqual(disagreements,[]);
+  assert.ok(r.checks.some(c=>c.rule==='G-TARGET'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===step)));
+  assert.deepEqual(r.checks.filter(c=>c.rule==='G-DATA'),[{rule:'G-DATA',state:'completed',locations:[]}]);
 });
