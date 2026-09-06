@@ -242,6 +242,33 @@ class OperationTests(unittest.TestCase):
         d['runtime']['requirements'].append(copy.deepcopy(d['runtime']['requirements'][0]))
         self.assertTrue(findings(run(d, 'validateR'), 'R-REQUIREMENT'))
 
+    def test_inventory_state_details_are_nonempty_and_keep_subjects(self):
+        d = graph_doc()
+        d['dependencies'] = [{'id': 'external', 'rootKey': k('other'), 'status': 'external',
+                              'requiredFor': [], 'sha256': None}]
+        d['graphs'][0]['steps'][0]['resources'] = [{'dependency': 'external', 'key': k('resource')}]
+        requirement = {'id': 'missing-claim', 'capability': {'identity': 'owner/c', 'version': '1'},
+                       'subject': k('agent')}
+        claimed = dict(requirement, id='claimed')
+        d['runtime'] = {'requirements': [requirement, claimed],
+                        'selection': {'engine': {'identity': 'owner/e', 'version': '1'},
+                                      'interface': {'identity': 'owner/i', 'version': '1'},
+                                      'evidence': [{'requirement': 'claimed', 'claim': 'satisfied', 'artifact': None}]}}
+        collected = []
+        for value in (doc(), d):
+            for operation in ('inspect', 'validateD', 'validateG', 'resolveG', 'validateR', 'exchange', 'lossyExchange'):
+                with self.subTest(operation=operation, runtime='runtime' in value):
+                    states = run(value, operation)['inventory']['states']
+                    for state in states:
+                        self.assertIsInstance(state['detail'], str)
+                        self.assertTrue(state['detail'])
+                    collected.extend(states)
+        self.assertTrue(any(s['state'] == 'unknown' for s in collected))
+        self.assertTrue(any(s['detail'] == 'external target excluded' for s in collected))
+        self.assertTrue(any(s['detail'] == 'evidence assessment excluded' for s in collected))
+        missing = [s for s in collected if s['pointer'] == '/runtime/selection/evidence' and s['state'] == 'absent']
+        self.assertEqual([s['detail'] for s in missing], ['missing-claim'])
+
     def test_runtime_hosting_and_claim_duplicates(self):
         d = doc(); definition(d, 'subject', 'Tool')
         d['runtime'] = {'requirements': [{'id': 'r', 'capability': {'identity': 'owner/c', 'version': '1'}, 'subject': k('subject')}],

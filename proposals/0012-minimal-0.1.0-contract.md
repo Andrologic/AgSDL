@@ -426,8 +426,50 @@ except cycle/path rules to Graph or relations array as specified below.
 Syntax errors point to the first offending byte, or byte length for unexpected
 EOF. Duplicate member names point to the opening quote of the second name.
 For simultaneous encoding and JSON defects report the earliest byte detectable
-by a left-to-right strict UTF-8 JSON scan. No parsed tree exists after syntax
-failure; preservation can still copy the raw input.
+by a left-to-right strict UTF-8 JSON scan. An invalid UTF-8 continuation points
+to that continuation byte, including a byte outside the range permitted after
+the leading byte. A sequence truncated before its next continuation points to
+EOF, at the input byte length.
+
+P-SYNTAX has one exception for Unicode escapes: a lexically complete `\uXXXX`
+escape containing an unpaired surrogate points to that escape's backslash.
+A high surrogate followed immediately by `\u` requires scanning all four
+hexadecimal digits of that second escape before checking the pair. If those
+digits are malformed or truncated, report that lexical error at the offending
+byte or EOF, not the first escape's backslash. If the second escape is complete
+but is not a low surrogate, report the first escape's backslash. A complete
+high surrogate without an immediately following `\u`, or a low surrogate
+without a preceding high surrogate, reports its own backslash. This includes a
+complete high surrogate at EOF; it does not reinterpret a later unrelated
+escape before reporting the unpaired surrogate. An escape that is itself
+lexically incomplete or malformed retains the ordinary lexical error location.
+
+These exact byte witnesses fix this experimental diagnostic convention. Offsets
+are zero-based; the hex column is authoritative and includes no trailing newline.
+This clarification does not adopt a normative language or change the model.
+
+| Input bytes in hex | P-SYNTAX byte | Reason |
+| --- | --- | --- |
+| `225c756438303022` | 1 | Complete high surrogate without a pair. |
+| `225c75643830305c753030343122` | 1 | Complete second escape is not a low surrogate. |
+| `225c756463303022` | 1 | Unpaired low surrogate. |
+| `225c7564383030` | 1 | Complete unpaired high surrogate at EOF. |
+| `225c75643830305c7122` | 1 | No following `\u`; the later escape does not replace the surrogate error. |
+| `225c756438473022` | 5 | Invalid hexadecimal digit in the first escape. |
+| `225c75643830` | 6 | First escape truncated at EOF. |
+| `225c75643830305c753030473122` | 11 | Invalid hexadecimal digit in the candidate second escape. |
+| `225c75643830305c753030` | 11 | Candidate second escape truncated at EOF. |
+| `22e25822` | 2 | Invalid UTF-8 continuation. |
+| `22e282` | 3 | UTF-8 sequence truncated at EOF. |
+| `22c3a95c756438303022` | 3 | High surrogate after the two-byte scalar U+00E9. |
+| `22c3a95c75643830305c753030343122` | 3 | Complete non-low second escape after U+00E9. |
+| `22c3a95c756463303022` | 3 | Low surrogate after U+00E9. |
+| `22c3a95c75643830305c753030473122` | 13 | Malformed candidate second escape after U+00E9. |
+| `22c3a9e25822` | 4 | Invalid continuation after U+00E9. |
+| `22c3a9e282` | 5 | Truncated UTF-8 sequence after U+00E9. |
+
+No parsed tree exists after syntax failure; preservation can still copy the
+raw input.
 
 Inputs include every supplied artifact, sorted primary then annex id. Results
 are ordered prerequisite D for primary, D for each required annex sorted by id
