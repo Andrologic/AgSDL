@@ -40,6 +40,7 @@ if command -v rg >/dev/null 2>&1; then
 fi
 
 git diff --check
+bash -n scripts/check-readers.sh
 bash -n scripts/verify-a2a-1.0.1-sources.sh
 bash -n scripts/test-verify-a2a-1.0.1-sources.sh
 ./scripts/test-verify-a2a-1.0.1-sources.sh
@@ -47,4 +48,5 @@ python3 scripts/test-check-markdown-links.py
 python3 scripts/check-markdown-links.py
 python3 experimental/candidate-2/check-fixtures.py
 python3 experimental/candidate-2/test-compare-readers.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experimental/readers/python -v
 echo "AgSDL repository checks passed."

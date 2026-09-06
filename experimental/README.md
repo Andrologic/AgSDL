@@ -85,6 +85,20 @@ pass neither proves engine support nor evaluates a capability claim. Exact
 exchange preserves bytes and accounts for supplied dependencies independently
 of semantic validity; lossy exchange is refused by this edition.
 
+## Automated reader checks
+
+Run `./scripts/check-readers.sh` for both existing reader test suites, using
+Python 3 and Node.js with `node --test` support. The general
+`./scripts/check.sh` includes the Python suite and keeps its Python-only runtime
+requirement.
+
+Run `./scripts/check-readers.sh --compare` for the complete corpus comparison,
+using Python 3.9 or newer and Node.js. This mode prints the summary, preserves
+the comparator's exit code and cleans its temporary reports on exit. It does
+not run the test suites. Discrepancies produce a nonzero exit; the command does
+not convert known differences into success. Use the explicit commands below
+when you need to retain raw reports.
+
 ## Compare reports, then inspect discrepancies
 
 Reuse the temporary directory to compare just the two examples:
