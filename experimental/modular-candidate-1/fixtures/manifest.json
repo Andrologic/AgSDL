@@ -1,0 +1,2236 @@
+{
+  "format": "agsdl-modular-corpus-1",
+  "contract": "proposal-0013-candidate-1",
+  "contractBase": "280347eec4e2e051d296f9271bfccc86c98d4d40",
+  "contractSha256": "7c9e2aa8e5c6d7c8c0b419aaf3afb666f9ad3510057c98dc7f0f3ac3e904773b",
+  "inheritedContract": {
+    "marker": "proposal-0012-candidate-2",
+    "base": "009a51eb301688f06d29bb7e2f1784e3c4a4cc98",
+    "sha256": "9f0ead2cbe9a5e158e3017f1ba692cbd3cba69e9240048130dc49c19c1222e07"
+  },
+  "schema": {
+    "path": "../schemas/modular.schema.json",
+    "sha256": "fa56fd4e723be942a8d089b5da479415e28fa170a32c9edf9f0f1f84b75da74a"
+  },
+  "requiredScenarios": [
+    "approval-call-invalid",
+    "approval-input-unavailable",
+    "approval-refusal-bypass",
+    "approval-success-refusal",
+    "approval-two-gates",
+    "content-dependency-cycle",
+    "content-dependency-order",
+    "content-reuse-order",
+    "declared-incompatible-not-readiness",
+    "declared-supported",
+    "declared-unknown-not-readiness",
+    "engine-absent-no-fallback",
+    "exact-agent-binding-coverage",
+    "exact-exchange-accounting-refusal",
+    "exact-exchange-new-payload-slices",
+    "external-runtime-reference-excluded",
+    "interface-operation-required",
+    "interface-two-operations-selected-individually",
+    "missing-application-preserves-incompatibility",
+    "partial-prerequisite-keeps-independent-failure",
+    "required-tool-binding",
+    "selection-absent-no-fallback",
+    "selection-unknown-no-fallback",
+    "tool-choice-absent-no-fallback",
+    "tool-specific-parameters",
+    "two-agents-different-engines",
+    "two-configurations"
+  ],
+  "coverage": {
+    "P-SHAPE": {
+      "positive": [
+        "modular-two-configurations",
+        "interface-two-operations"
+      ],
+      "negative": [
+        "partial-content-prerequisite"
+      ]
+    },
+    "R-SELECTION": {
+      "positive": [
+        "modular-two-configurations",
+        "selection-absent"
+      ],
+      "negative": [
+        "selection-unknown"
+      ]
+    },
+    "R-BINDING": {
+      "positive": [
+        "modular-two-configurations"
+      ],
+      "negative": [
+        "missing-agent-binding"
+      ]
+    },
+    "R-TOOL": {
+      "positive": [
+        "modular-two-configurations",
+        "tool-choice-not-provided"
+      ],
+      "negative": [
+        "missing-tool-binding"
+      ]
+    },
+    "R-CONTENT": {
+      "positive": [
+        "modular-two-configurations"
+      ],
+      "negative": [
+        "missing-application-keeps-incompatibility",
+        "skill-dependency-after-dependent",
+        "skill-dependency-cycle"
+      ],
+      "blocked": [
+        "partial-content-prerequisite"
+      ],
+      "excluded": [
+        "external-runtime-content"
+      ]
+    },
+    "R-COMPATIBILITY": {
+      "positive": [
+        "modular-two-configurations"
+      ],
+      "excluded": [
+        "selection-absent"
+      ],
+      "blocked": [
+        "selection-unknown",
+        "partial-content-prerequisite"
+      ],
+      "inconclusive": [
+        "engine-not-provided",
+        "tool-choice-not-provided",
+        "missing-application-keeps-incompatibility"
+      ],
+      "negative": [
+        "compatibility-incompatible",
+        "missing-application-keeps-incompatibility"
+      ],
+      "unknown": [
+        "compatibility-unknown",
+        "external-runtime-content"
+      ]
+    },
+    "G-TARGET": {
+      "positive": [
+        "interface-two-operations"
+      ],
+      "negative": [
+        "operation-not-found"
+      ]
+    },
+    "G-APPROVAL": {
+      "positive": [
+        "approval-two-gates-success-refusal"
+      ],
+      "negative": [
+        "approval-refusal-bypass",
+        "approval-call-invalid"
+      ]
+    },
+    "G-DATA": {
+      "positive": [
+        "approval-two-gates-success-refusal"
+      ],
+      "negative": [
+        "approval-input-unavailable"
+      ]
+    },
+    "E-PRESERVE": {
+      "positive": [
+        "modular-exact-exchange"
+      ],
+      "negative": [
+        "modular-exchange-accounting-refusal"
+      ]
+    }
+  },
+  "cases": [
+    {
+      "name": "modular-two-configurations",
+      "status": "ready",
+      "primary": {
+        "path": "modular-system.json",
+        "sha256": "0096d42a339f98032b60b896d67f62377ed1ff1ea63e89be55de1ce70b9c589b"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Closed record inventory",
+          "Configuration selection and assignments",
+          "Content composition, application and prerequisites",
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "P-SHAPE:positive",
+        "R-SELECTION:positive",
+        "R-BINDING:positive",
+        "R-TOOL:positive",
+        "R-CONTENT:positive",
+        "R-COMPATIBILITY:positive"
+      ],
+      "scenarios": [
+        "two-configurations",
+        "two-agents-different-engines",
+        "declared-supported",
+        "tool-specific-parameters",
+        "content-reuse-order"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        },
+        {
+          "entry": "ToolPayload",
+          "pointer": "/definitions/9/payload",
+          "valid": true
+        },
+        {
+          "entry": "InstructionsPayload",
+          "pointer": "/definitions/11/payload",
+          "valid": true
+        },
+        {
+          "entry": "SkillPayload",
+          "pointer": "/definitions/12/payload",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": []
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "P-SHAPE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-SELECTION",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-BINDING",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-TOOL",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-CONTENT",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-COMPATIBILITY",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "X-READINESS",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": "/runtime"
+              }
+            ]
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "X-EVIDENCE-ASSESSMENT",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": "/runtime"
+              }
+            ]
+          }
+        ],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/selected",
+            "state": "declared"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0",
+            "state": "unchecked",
+            "detail": "declared-supported"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/1",
+            "state": "unchecked",
+            "detail": "declared-supported"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0/parameters"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0/tools/0/choices/0/parameters"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0/applications/0/parameters"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/11/payload/body"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/12/payload/preconditions"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/12/payload/completion"
+          }
+        ],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "selection-absent",
+      "status": "ready",
+      "primary": {
+        "path": "selection-absent.json",
+        "sha256": "a1212e7ac8474488bc5c4c196fef3a6f0d37fa0c515472cbda219ed3fc2c137f"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Configuration selection and assignments",
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "R-SELECTION:positive",
+        "R-COMPATIBILITY:excluded"
+      ],
+      "scenarios": [
+        "selection-absent-no-fallback"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": []
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-SELECTION",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-COMPATIBILITY",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": "/runtime"
+              }
+            ]
+          }
+        ],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/selected",
+            "state": "absent"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "selection-unknown",
+      "status": "ready",
+      "primary": {
+        "path": "selection-unknown.json",
+        "sha256": "741829d09fa14bc4d393085cf0196a8787b182271e8ea4d1f7e78079adacbd78"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Configuration selection and assignments",
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "R-SELECTION:negative",
+        "R-COMPATIBILITY:blocked"
+      ],
+      "scenarios": [
+        "selection-unknown-no-fallback"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-SELECTION",
+              "location": {
+                "pointer": "/runtime"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-SELECTION",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-COMPATIBILITY",
+            "state": "blocked",
+            "locations": [
+              {
+                "pointer": "/runtime"
+              }
+            ]
+          }
+        ],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/selected",
+            "state": "declared"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "engine-not-provided",
+      "status": "ready",
+      "primary": {
+        "path": "engine-not-provided.json",
+        "sha256": "28d761b46dc7445c9174e2dfcbfda1a4459ebef70154cbc4aaa2063cd5fc965d"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "R-COMPATIBILITY:inconclusive"
+      ],
+      "scenarios": [
+        "engine-absent-no-fallback"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "inconclusive"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-COMPATIBILITY",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0"
+              },
+              "outcome": "inconclusive"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-COMPATIBILITY",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0/engine",
+            "state": "absent"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0",
+            "state": "absent",
+            "detail": "not-provided"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "tool-choice-not-provided",
+      "status": "ready",
+      "primary": {
+        "path": "tool-choice-not-provided.json",
+        "sha256": "f6868adec0ef607fbb191c6716fb91da6986c71e36da194cd94e8ae3e74800a0"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Configuration selection and assignments",
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "R-TOOL:positive",
+        "R-COMPATIBILITY:inconclusive"
+      ],
+      "scenarios": [
+        "tool-choice-absent-no-fallback"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "inconclusive"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-COMPATIBILITY",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0/tools/0"
+              },
+              "outcome": "inconclusive"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-TOOL",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-COMPATIBILITY",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0/tools/0/selected",
+            "state": "absent"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0/tools/0",
+            "state": "absent",
+            "detail": "not-provided"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "compatibility-incompatible",
+      "status": "ready",
+      "primary": {
+        "path": "compatibility-incompatible.json",
+        "sha256": "a61e72d2d8d017a0dd1c9540e0cad45c935357beb40fdec1f6a1a3f8898f53ff"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "R-COMPATIBILITY:negative"
+      ],
+      "scenarios": [
+        "declared-incompatible-not-readiness"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-COMPATIBILITY",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0",
+            "state": "declared",
+            "detail": "incompatible"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "compatibility-unknown",
+      "status": "ready",
+      "primary": {
+        "path": "compatibility-unknown.json",
+        "sha256": "c41e6adafcc124d21721a8bb554f83ec6aff833b1c84388227407a1a09a206c1"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "R-COMPATIBILITY:unknown"
+      ],
+      "scenarios": [
+        "declared-unknown-not-readiness"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "inconclusive"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-COMPATIBILITY",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0"
+              },
+              "outcome": "inconclusive"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0",
+            "state": "unknown",
+            "detail": "unknown"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0/claims/0/evidence",
+            "state": "unknown"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "missing-application-keeps-incompatibility",
+      "status": "ready",
+      "primary": {
+        "path": "missing-application-keeps-incompatibility.json",
+        "sha256": "bc0822b38f2f72314a1e36608e57ac21e3aaeb1e2e30edb3e68918c996e9ac0c"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Content composition, application and prerequisites",
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "R-CONTENT:negative",
+        "R-COMPATIBILITY:negative",
+        "R-COMPATIBILITY:inconclusive"
+      ],
+      "scenarios": [
+        "missing-application-preserves-incompatibility"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-CONTENT",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0"
+              },
+              "outcome": "fail"
+            },
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-COMPATIBILITY",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0"
+              },
+              "outcome": "fail"
+            },
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-COMPATIBILITY",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0"
+              },
+              "outcome": "inconclusive"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0",
+            "state": "declared",
+            "detail": "incompatible"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "missing-tool-binding",
+      "status": "ready",
+      "primary": {
+        "path": "missing-tool-binding.json",
+        "sha256": "8f0c67ecd3e5338de433f61e07d2b1b66b87779b8006e2302fb4d14c88bc5cfb"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Configuration selection and assignments"
+        ]
+      },
+      "coverage": [
+        "R-TOOL:negative"
+      ],
+      "scenarios": [
+        "required-tool-binding"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-TOOL",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "missing-agent-binding",
+      "status": "ready",
+      "primary": {
+        "path": "missing-agent-binding.json",
+        "sha256": "d32aad42948ec84cbedc3744ac4ed4104336c888070aca3e0845c4305fc6f8f1"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Configuration selection and assignments"
+        ]
+      },
+      "coverage": [
+        "R-BINDING:negative"
+      ],
+      "scenarios": [
+        "exact-agent-binding-coverage"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-BINDING",
+              "location": {
+                "pointer": "/runtime/configurations/0"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "skill-dependency-after-dependent",
+      "status": "ready",
+      "primary": {
+        "path": "skill-dependency-after-dependent.json",
+        "sha256": "e075f951249003f8528f4b7f292ca1b93e303b162d6202728e4536b28e3660a4"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Content composition, application and prerequisites"
+        ]
+      },
+      "coverage": [
+        "R-CONTENT:negative"
+      ],
+      "scenarios": [
+        "content-dependency-order"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-CONTENT",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0/applications/0"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "skill-dependency-cycle",
+      "status": "ready",
+      "primary": {
+        "path": "skill-dependency-cycle.json",
+        "sha256": "aeeca88bbaa1cdc0f35d6d822f8684617935b02653fdc3c9a2e52cbc4f3fa905"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Content composition, application and prerequisites"
+        ]
+      },
+      "coverage": [
+        "R-CONTENT:negative"
+      ],
+      "scenarios": [
+        "content-dependency-cycle"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-CONTENT",
+              "location": {
+                "pointer": "/definitions/12/payload"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "partial-content-prerequisite",
+      "status": "ready",
+      "primary": {
+        "path": "partial-content-prerequisite.json",
+        "sha256": "28a89f82932c81e7a7d6aecaf437641d044c02cc124a006ae3a3ccfbc0632118"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Closed record inventory",
+          "Content composition, application and prerequisites",
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "P-SHAPE:negative",
+        "R-CONTENT:blocked",
+        "R-COMPATIBILITY:blocked"
+      ],
+      "scenarios": [
+        "partial-prerequisite-keeps-independent-failure"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        },
+        {
+          "entry": "SkillPayload",
+          "pointer": "/definitions/12/payload",
+          "valid": false
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "P-SHAPE",
+              "location": {
+                "pointer": "/definitions/12/payload/dependencies"
+              },
+              "outcome": "fail"
+            },
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-COMPATIBILITY",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "P-SHAPE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-CONTENT",
+            "state": "blocked",
+            "locations": [
+              {
+                "pointer": "/definitions/12/payload"
+              }
+            ]
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-COMPATIBILITY",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-COMPATIBILITY",
+            "state": "blocked",
+            "locations": [
+              {
+                "pointer": "/runtime/configurations/0/agents/0"
+              }
+            ]
+          }
+        ],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0",
+            "state": "unchecked",
+            "detail": "blocked"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "external-runtime-content",
+      "status": "ready",
+      "primary": {
+        "path": "external-runtime-content.json",
+        "sha256": "15adc2d97db7a876e9ad56d59361cd5ca3baa6166d48c33cbda2a2c81d709444"
+      },
+      "annexes": {},
+      "operation": "validateR",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Content composition, application and prerequisites",
+          "Declared compatibility, not readiness"
+        ]
+      },
+      "coverage": [
+        "R-CONTENT:excluded",
+        "R-COMPATIBILITY:unknown"
+      ],
+      "scenarios": [
+        "external-runtime-reference-excluded"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "RuntimeDeclaration",
+          "pointer": "/runtime",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "phase": "unresolved-document",
+            "verdict": "inconclusive"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "R",
+              "rule": "R-COMPATIBILITY",
+              "location": {
+                "pointer": "/runtime/configurations/0/agents/0"
+              },
+              "outcome": "inconclusive"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-CONTENT",
+            "state": "excluded",
+            "locations": [
+              {
+                "pointer": "/runtime/configurations/0/agents/0/applications/0"
+              }
+            ]
+          },
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "R-COMPATIBILITY",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0/applications/0/content",
+            "state": "unchecked"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime/configurations/0/agents/0",
+            "state": "unknown",
+            "detail": "unknown"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "interface-two-operations",
+      "status": "ready",
+      "primary": {
+        "path": "modular-system.json",
+        "sha256": "0096d42a339f98032b60b896d67f62377ed1ff1ea63e89be55de1ce70b9c589b"
+      },
+      "annexes": {},
+      "operation": "validateG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Closed record inventory",
+          "G operation and approval records"
+        ]
+      },
+      "coverage": [
+        "G-TARGET:positive",
+        "P-SHAPE:positive"
+      ],
+      "scenarios": [
+        "interface-two-operations-selected-individually"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        },
+        {
+          "entry": "InterfacePayload",
+          "pointer": "/definitions/4/payload",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": []
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "P-SHAPE",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-TARGET",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [
+          {
+            "input": "primary",
+            "pointer": "/definitions/4/payload"
+          }
+        ],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "operation-not-found",
+      "status": "ready",
+      "primary": {
+        "path": "operation-not-found.json",
+        "sha256": "4e29fe74094410a4af0bdaf41e8d9fba2d70249c1a5c214516f9a8555a00ef3e"
+      },
+      "annexes": {},
+      "operation": "validateG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "G operation and approval records"
+        ]
+      },
+      "coverage": [
+        "G-TARGET:negative"
+      ],
+      "scenarios": [
+        "interface-operation-required"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "G",
+              "rule": "G-TARGET",
+              "location": {
+                "pointer": "/graphs/0/steps/0"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "approval-two-gates-success-refusal",
+      "status": "ready",
+      "primary": {
+        "path": "approval-two-gates.json",
+        "sha256": "e9fb74c1849caf579288405f2d5fe8ed7777ecacb176fc9dec7cb50e873822cf"
+      },
+      "annexes": {},
+      "operation": "validateG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Sequential approvals for one call"
+        ]
+      },
+      "coverage": [
+        "G-APPROVAL:positive",
+        "G-DATA:positive"
+      ],
+      "scenarios": [
+        "approval-two-gates",
+        "approval-success-refusal"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": []
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-APPROVAL",
+            "state": "completed",
+            "locations": []
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "G-DATA",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "approval-refusal-bypass",
+      "status": "ready",
+      "primary": {
+        "path": "approval-refusal-bypass.json",
+        "sha256": "083f0f97146a20cc629c4fdebd8da6db897d501ebc3aea0013954f7f72f1dd9e"
+      },
+      "annexes": {},
+      "operation": "validateG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Sequential approvals for one call"
+        ]
+      },
+      "coverage": [
+        "G-APPROVAL:negative"
+      ],
+      "scenarios": [
+        "approval-refusal-bypass"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "G",
+              "rule": "G-APPROVAL",
+              "location": {
+                "pointer": "/graphs/0/steps/1"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "approval-call-invalid",
+      "status": "ready",
+      "primary": {
+        "path": "approval-call-invalid.json",
+        "sha256": "f5a95f673c46f9b79e04d22d50ea4a68ee726f9cc78536972c6c34de57bd3bce"
+      },
+      "annexes": {},
+      "operation": "validateG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Sequential approvals for one call"
+        ]
+      },
+      "coverage": [
+        "G-APPROVAL:negative"
+      ],
+      "scenarios": [
+        "approval-call-invalid"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "G",
+              "rule": "G-APPROVAL",
+              "location": {
+                "pointer": "/graphs/0/steps/0"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "approval-input-unavailable",
+      "status": "ready",
+      "primary": {
+        "path": "approval-input-unavailable.json",
+        "sha256": "6e370f548faa61d69f4b3a96b246d433bb6c6b9947db3f35e51ed5b11092edfb"
+      },
+      "annexes": {},
+      "operation": "validateG",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Sequential approvals for one call"
+        ]
+      },
+      "coverage": [
+        "G-DATA:negative"
+      ],
+      "scenarios": [
+        "approval-input-unavailable"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        },
+        {
+          "entry": "Graphs",
+          "pointer": "/graphs",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          },
+          {
+            "input": "primary",
+            "unit": "G",
+            "phase": "unresolved-document",
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "G",
+              "rule": "G-DATA",
+              "location": {
+                "pointer": "/graphs/0/steps/0"
+              },
+              "outcome": "fail"
+            },
+            {
+              "input": "primary",
+              "unit": "G",
+              "rule": "G-DATA",
+              "location": {
+                "pointer": "/graphs/0/steps/1"
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [],
+        "states": [],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    },
+    {
+      "name": "modular-exact-exchange",
+      "status": "ready",
+      "primary": {
+        "path": "modular-system.json",
+        "sha256": "0096d42a339f98032b60b896d67f62377ed1ff1ea63e89be55de1ce70b9c589b"
+      },
+      "annexes": {},
+      "operation": "exchange",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Scope, authority and continuity"
+        ]
+      },
+      "coverage": [
+        "E-PRESERVE:positive"
+      ],
+      "scenarios": [
+        "exact-exchange-new-payload-slices"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "exchange",
+            "phase": null,
+            "verdict": "pass"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": []
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "exchange",
+            "rule": "E-PRESERVE",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/graphs",
+            "state": "unchecked"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime",
+            "state": "unchecked"
+          },
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "declared"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [
+          {
+            "input": "primary",
+            "pointer": "/definitions/0/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/1/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/2/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/3/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/4/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/5/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/6/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/7/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/8/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/9/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/10/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/11/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/12/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/13/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/graphs"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime"
+          }
+        ],
+        "absentOpaque": [],
+        "preservation": "exact-input-boundary"
+      }
+    },
+    {
+      "name": "modular-exchange-accounting-refusal",
+      "status": "ready",
+      "primary": {
+        "path": "modular-exchange-accounting-refusal.json",
+        "sha256": "e4c4899f0c98df9d5377d8de0f1615d5d25eaffe9c14f6d97b23a33b18ca4d82"
+      },
+      "annexes": {},
+      "operation": "exchange",
+      "source": {
+        "document": "../../../proposals/0013-modular-mvp-contract.md",
+        "sections": [
+          "Scope, authority and continuity"
+        ]
+      },
+      "coverage": [
+        "E-PRESERVE:negative"
+      ],
+      "scenarios": [
+        "exact-exchange-accounting-refusal"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "pointer": "",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "exchange",
+            "phase": null,
+            "verdict": "fail"
+          }
+        ],
+        "findings": {
+          "mode": "contains",
+          "items": [
+            {
+              "input": "primary",
+              "unit": "exchange",
+              "rule": "E-PRESERVE",
+              "location": {
+                "pointer": ""
+              },
+              "outcome": "fail"
+            }
+          ]
+        },
+        "checks": [
+          {
+            "input": "primary",
+            "unit": "exchange",
+            "rule": "E-PRESERVE",
+            "state": "completed",
+            "locations": []
+          }
+        ],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/graphs",
+            "state": "unchecked"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime",
+            "state": "unchecked"
+          },
+          {
+            "input": "primary",
+            "pointer": "/dependencies",
+            "state": "declared"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [
+          {
+            "input": "primary",
+            "pointer": "/definitions/0/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/1/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/2/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/3/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/4/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/5/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/6/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/7/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/8/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/9/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/10/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/11/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/12/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/definitions/13/payload"
+          },
+          {
+            "input": "primary",
+            "pointer": "/graphs"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime"
+          }
+        ],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      }
+    }
+  ]
+}

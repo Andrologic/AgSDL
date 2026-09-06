@@ -1,4 +1,16 @@
-# Try the experimental candidate
+# Experimental candidates
+
+The [modular candidate-1 corpus](modular-candidate-1/README.md) prepares
+proposal 0013 examples, text-derived oracles and comparison support for modular
+configurations, reusable content, addressable Interface operations and approval
+chains. Its 22 cases are ready for independent reader implementation. No modular
+reader exists yet, so there is no modular comparison result or implementation
+support claim.
+
+The guide below remains specific to proposal 0012 candidate-2. Its readers and
+121-case comparison do not accept or prove the modular edition.
+
+## Try candidate-2
 
 `proposal-0012-candidate-2` is an implementable experiment described in
 [proposal 0012](../proposals/0012-minimal-0.1.0-contract.md), not an adopted
