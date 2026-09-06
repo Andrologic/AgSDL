@@ -98,28 +98,43 @@ export function validateD(ctx) {
     seen.add(pair(x.v.key));
   }
   const seenRel=new Set(), edges=[];
-  for(const x of rels){if(!x.ok){for(const rule of ['D-REFERENCE','D-RELATION','D-CYCLE'])r.mark(rule,'blocked',x.p);continue;}
-    r.mark('D-REFERENCE');r.mark('D-RELATION');custom(x.v.expectedKind,x.p);
-    const source=lookup(ctx,x.v.source);
-    declaration(ctx,x.v.source,null,r,'D-REFERENCE',x.p);declaration(ctx,x.v.target,x.v.expectedKind,r,'D-REFERENCE',x.p);
-    const sig=canonical(x.v);if(seenRel.has(sig))r.find('D-RELATION',x.p,'Duplicate relation');seenRel.add(sig);
+  for(const x of rels){
+    const v=x.v;
+    const sourceOK=S.valid(S.Key,v?.source),targetOK=S.valid(S.Ref,v?.target),kindOK=S.valid(S.Kind,v?.expectedKind),relationOK=['actsAs','exposes','directedBy','uses','contains'].includes(v?.relation);
+    if(kindOK){r.mark('D-REFERENCE');custom(v.expectedKind,x.p);}else r.mark('D-REFERENCE','blocked',x.p);
+    if(sourceOK){r.mark('D-REFERENCE');declaration(ctx,v.source,null,r,'D-REFERENCE',x.p);}else r.mark('D-REFERENCE','blocked',x.p);
+    if(targetOK){r.mark('D-REFERENCE');declaration(ctx,v.target,kindOK?v.expectedKind:null,r,'D-REFERENCE',x.p);}else r.mark('D-REFERENCE','blocked',x.p);
+    if(sourceOK&&targetOK&&kindOK&&relationOK){
+      r.mark('D-RELATION');const sig=canonical({source:v.source,relation:v.relation,target:v.target,expectedKind:v.expectedKind});
+      if(seenRel.has(sig))r.find('D-RELATION',x.p,'Duplicate relation');seenRel.add(sig);
+    }else r.mark('D-RELATION','blocked',x.p);
     const typed={actsAs:['Principal'],exposes:['Interface'],directedBy:['Instructions','Role','Skill','ControlFlow']};
-    if(typed[x.v.relation]) {if(!source||!S.valid(source.root?S.Root.fields.kind:S.Kind,source.v.kind))r.mark('D-RELATION','blocked',x.p);else if(source.v.kind!=='Agent'||!typed[x.v.relation].includes(x.v.expectedKind))r.find('D-RELATION',x.p,'Relation kind direction is invalid');}
-    if(x.v.relation==='contains'&&!ext(x.v.target))edges.push([key(x.v.source),key(x.v.target)]);
+    if(relationOK&&typed[v.relation]){
+      const source=sourceOK?lookup(ctx,v.source):null;
+      if(!source||!kindOK||!S.valid(source.root?S.Root.fields.kind:S.Kind,source.v.kind))r.mark('D-RELATION','blocked',x.p);
+      else {r.mark('D-RELATION');if(source.v.kind!=='Agent'||!typed[v.relation].includes(v.expectedKind))r.find('D-RELATION',x.p,'Relation kind direction is invalid');}
+    }
+    if(v?.relation==='contains'){
+      if(!sourceOK||!targetOK)r.mark('D-CYCLE','blocked',x.p);
+      else if(!ext(v.target)){
+        if(!lookup(ctx,v.source)||!lookup(ctx,v.target))r.mark('D-CYCLE','blocked',x.p);
+        else edges.push([key(v.source),key(v.target)]);
+      }
+    }else if(!relationOK)r.mark('D-CYCLE','blocked',x.p);
   }
   if(edges.length){r.mark('D-CYCLE');if(cyclic(edges))r.find('D-CYCLE','/relations','Local containment cycle');}
   const exported=new Set();if(Array.isArray(d.exports)){
-    if(rootOK&&((d.root.kind==='Fragment'&&!d.exports.length)||(d.root.kind==='System'&&d.exports.length)))r.find('D-EXPORT','/exports','Root export requirement');
-    if(!rootOK)r.mark('D-EXPORT','blocked','/exports');
+    if(S.valid(S.Root.fields.kind,d.root?.kind)&&((d.root.kind==='Fragment'&&!d.exports.length)||(d.root.kind==='System'&&d.exports.length)))r.find('D-EXPORT','/exports','Root export requirement');
+    if(!S.valid(S.Root.fields.kind,d.root?.kind))r.mark('D-EXPORT','blocked','/exports');
     for(const [i,k]of d.exports.entries()){const p=`/exports/${i}`;if(!S.valid(S.Key,k)){r.mark('D-EXPORT','blocked',p);continue;}r.mark('D-EXPORT');const found=ctx.defs.get(key(k));if(found?.length>1)r.mark('D-EXPORT','blocked',p);else if(!found||found[0].root||exported.has(key(k)))r.find('D-EXPORT',p,'Export is not a unique local definition');exported.add(key(k));}
   }
   const seenDef=new Set(), validDef=new Set();
-  for(const x of defers){if(!x.ok){r.mark('D-DEFERRAL','blocked',x.p);continue;}r.mark('D-DEFERRAL');const a=lookup(ctx,x.v.subject);const ar=rels.filter(y=>y.ok&&equal(y.v.source,x.v.subject));
+  for(const x of defers){if(!x.ok){r.mark('D-DEFERRAL','blocked',x.p);continue;}r.mark('D-DEFERRAL');const a=lookup(ctx,x.v.subject);const ar=rels.filter(y=>S.valid(S.Key,y.v?.source)&&equal(y.v.source,x.v.subject)&&S.valid(S.Relation,{source:y.v.source,relation:y.v.relation,target:y.v.target,expectedKind:y.v.expectedKind}));
     if(!rootOK||!Array.isArray(d.relations)||ctx.defs.get(key(x.v.subject))?.length>1){r.mark('D-DEFERRAL','blocked',x.p);continue;}
     const good=d.root.kind==='Fragment'&&a?.v.kind==='Agent'&&!seenDef.has(key(x.v.subject))&&ar.filter(y=>y.v.relation==='exposes').length===0&&ar.filter(y=>y.v.relation==='actsAs').length===1&&ar.some(y=>y.v.relation==='directedBy');
     if(!good)r.find('D-DEFERRAL',x.p,'Deferral preconditions not satisfied');else{validDef.add(key(x.v.subject));r.find('D-DEFERRAL',x.p,'Interface minimum deferred','deferred');}seenDef.add(key(x.v.subject));
   }
-  for(const x of defs.filter(x=>S.valid(S.Key,x.v?.key)&&x.v?.kind==='Agent')){if(!Array.isArray(d.relations)||rels.some(x=>!x.ok)||!Array.isArray(d.unresolved)){r.mark('D-AGENT','blocked',x.p);continue;}r.mark('D-AGENT');const ar=rels.filter(y=>y.ok&&equal(y.v.source,x.v.key));if(ar.filter(y=>y.v.relation==='actsAs').length!==1||!ar.some(y=>y.v.relation==='directedBy')||(!ar.some(y=>y.v.relation==='exposes')&&!validDef.has(key(x.v.key))))r.find('D-AGENT',x.p,'Agent relation minimum not satisfied');}
+  for(const x of defs.filter(x=>S.valid(S.Key,x.v?.key)&&x.v?.kind==='Agent')){if(!Array.isArray(d.relations)||rels.some(y=>(!S.valid(S.Key,y.v?.source)||equal(y.v.source,x.v.key))&&!S.valid(S.Relation,{source:y.v?.source,relation:y.v?.relation,target:y.v?.target,expectedKind:y.v?.expectedKind}))||!Array.isArray(d.unresolved)||ctx.defs.get(key(x.v.key))?.length>1){r.mark('D-AGENT','blocked',x.p);continue;}r.mark('D-AGENT');const ar=rels.filter(y=>S.valid(S.Key,y.v?.source)&&equal(y.v.source,x.v.key)&&S.valid(S.Relation,{source:y.v.source,relation:y.v.relation,target:y.v.target,expectedKind:y.v.expectedKind}));if(ar.filter(y=>y.v.relation==='actsAs').length!==1||!ar.some(y=>y.v.relation==='directedBy')||(!ar.some(y=>y.v.relation==='exposes')&&!validDef.has(key(x.v.key))))r.find('D-AGENT',x.p,'Agent relation minimum not satisfied');}
   const ids=new Set(),roots=new Set();
   for(const x of deps){
     const dep=x.v;

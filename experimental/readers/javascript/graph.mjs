@@ -47,7 +47,11 @@ export function validateG(primary,operation,inventory) {
       if(dst.error||!S.valid(S.Root,dst.tree?.root)){r.mark('G-TARGET','blocked',consumer);return null;}
       const exported=Array.isArray(dst.tree.exports)&&dst.tree.exports.some(x=>S.valid(S.Key,x)&&equal(x,k));
       const found=lookup(dst,k);
-      if(!exported||!found||found.root||found.v.kind!==kind){r.find('G-RESOLVE',consumer,'External target missing, unexported, ambiguous, or wrong kind');return null;}
+      if(dst.defs.get(key(k))?.length>1){r.mark('G-RESOLVE','blocked',consumer);return null;}
+      if(!Array.isArray(dst.tree.exports)){r.mark('G-RESOLVE','blocked',consumer);return null;}
+      if(!exported||!found||found.root){r.find('G-RESOLVE',consumer,'External target missing or unexported');return null;}
+      if(!S.valid(S.Kind,found.v.kind)){r.mark('G-RESOLVE','blocked',consumer);r.mark('G-TARGET','blocked',consumer);return null;}
+      if(found.v.kind!==kind){r.find('G-RESOLVE',consumer,'External target has wrong kind');return null;}
     }
     const found=lookup(dst,k);if(!found)return null;
     if(resolve){const boundaries=[primary,...contexts].filter(c=>c.defs.has(key(k)));if(boundaries.length>1){r.find('G-RESOLVE',consumer,'Selected key occurs in multiple document boundaries');return null;}}
@@ -107,7 +111,7 @@ export function validateG(primary,operation,inventory) {
     const reachable=(from,skip)=>{const seen=new Set(),stack=[from];while(stack.length){const a=stack.pop();if(seen.has(a))continue;seen.add(a);for(const e of edges)if(e.from===a&&(!skip||!skip(e)))stack.push(e.to);}return seen;};
     if(typeof g.entry!=='string'){pathBlocked=true;}else if(!stepMap.has(g.entry))pathBad=true;
     if(edges.some(e=>!stepMap.has(e.to))||cyclic(edges.map(e=>[e.from,e.to])))pathBad=true;
-    if(typeof g.entry==='string'&&steps.filter(x=>typeof x.v?.id==='string').some(x=>!reachable(g.entry).has(x.v.id)))pathBad=true;
+    if(!pathBlocked&&typeof g.entry==='string'&&steps.filter(x=>typeof x.v?.id==='string').some(x=>!reachable(g.entry).has(x.v.id)))pathBad=true;
     if(!steps.length)pathBlocked=true;
     if(pathBad)r.find('G-PATH',gp,'Invalid step identity, entry, edge, cycle, reachability or terminal path');
     if(pathBlocked)r.mark('G-PATH','blocked',gp);else r.mark('G-PATH');
@@ -116,7 +120,7 @@ export function validateG(primary,operation,inventory) {
       if(!S.valid(S.Binding,b)){r.mark('G-DATA','blocked',consumer);return;}
       r.mark('G-DATA');
       if(S.has(b,'input')){if(!S.valid(S.Ports,g.inputs))r.mark('G-DATA','blocked',consumer);else if(!Object.hasOwn(g.inputs,b.input)||g.inputs[b.input]!==type)r.find('G-DATA',consumer,'Graph input binding missing or wrong type');}
-      else {const producer=stepMap.get(b.step);if(idCounts.get(b.step)>1){r.mark('G-DATA','blocked',consumer);return;}if(producer?.v.kind==='invoke'&&!S.valid(S.Ports,producer.v.outputs)){r.mark('G-DATA','blocked',consumer);return;}if(!producer||producer.v.kind!=='invoke'||!Object.hasOwn(producer.v.outputs,b.port)||producer.v.outputs[b.port]!==type)r.find('G-DATA',consumer,'Step output binding missing or wrong type');
+      else {const producer=stepMap.get(b.step);if(idCounts.get(b.step)>1){r.mark('G-DATA','blocked',consumer);return;}if(producer&&!['invoke','condition','approval','end'].includes(producer.v?.kind)){r.mark('G-DATA','blocked',consumer);return;}if(producer?.v.kind==='invoke'&&!S.valid(S.Ports,producer.v.outputs)){r.mark('G-DATA','blocked',consumer);return;}if(!producer||producer.v.kind!=='invoke'||!Object.hasOwn(producer.v.outputs,b.port)||producer.v.outputs[b.port]!==type)r.find('G-DATA',consumer,'Step output binding missing or wrong type');
         if(!pathOK)r.mark('G-DATA','blocked',consumer);else if(reachable(g.entry,e=>e.from===b.step&&e.label==='success').has(consumerId))r.find('G-DATA',consumer,'Producer success edge does not dominate consumer');}
     }
     function bindings(s,consumer,consumerId){if(S.valid(S.Ports,s.inputs)&&S.object(s.bindings)){r.mark('G-DATA');if(!equal(Object.keys(s.inputs).sort(),Object.keys(s.bindings).sort()))r.find('G-DATA',consumer,'Invocation binding names differ from inputs');for(const [name,b]of Object.entries(s.bindings))if(Object.hasOwn(s.inputs,name))binding(b,s.inputs[name],consumer,consumerId);}else r.mark('G-DATA','blocked',consumer);binding(s.context,'json',consumer,consumerId);}

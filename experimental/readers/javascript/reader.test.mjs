@@ -47,7 +47,7 @@ test('lossy exchange always refuses with prospective loss',()=>{const x=execute(
 test('D reference, identity, owner, relation and cycle failures retain separate findings',()=>{
   const d=graphDoc();assert.equal(last(execute('validateD',d)).verdict,'pass');d.definitions.push(structuredClone(d.definitions[0]));d.definitions[1].owner=K('wrong');d.relations.push({source:K('root'),relation:'contains',target:K('root'),expectedKind:'System'}); // invalid Kind is a shape error
   let x=execute('validateD',d);assert.ok(finding(x,'D-IDENTITY','/definitions/7'));assert.ok(finding(x,'D-OWNER','/definitions/1'));assert.ok(finding(x,'P-SHAPE','/relations/3/expectedKind'));
-  d.relations[3]={source:K('a'),relation:'contains',target:K('a'),expectedKind:'Agent'};x=execute('validateD',d);assert.ok(finding(x,'D-CYCLE','/relations'));
+  d.definitions.pop();d.relations[3]={source:K('a'),relation:'contains',target:K('a'),expectedKind:'Agent'};x=execute('validateD',d);assert.ok(finding(x,'D-CYCLE','/relations'));
 });
 test('Fragment deferral exempts only exposes and leaves deferred evidence',()=>{
   const d=graphDoc();delete d.graphs;d.root.kind='Fragment';d.exports=[K('a')];d.relations=d.relations.filter(r=>r.relation!=='exposes');d.unresolved=[{subject:K('a'),obligation:'agent-interface-minimum',rule:'fragment-interface-deferral',relation:'exposes',expectedKind:'Interface',missingMinimum:1,target:null,satisfyBy:'typed-exposes-relation',expiresBefore:'resolved-graph'}];
@@ -121,4 +121,12 @@ test('malformed dependency hint preserves external reference declaration',()=>{
 });
 test('malformed engine does not hide an independently invalid evidence reference',()=>{
   const d=doc();d.runtime={requirements:[],selection:{engine:null,interface:{identity:'v/i',version:'1'},evidence:[{requirement:'missing',claim:'satisfied',artifact:null}]}};const x=execute('validateR',d);assert.ok(finding(x,'P-SHAPE','/runtime/selection/engine'));assert.ok(finding(x,'R-SELECTION','/runtime/selection/evidence/0'));
+});
+
+test('malformed producer and external target kinds block dependent type checks',()=>{
+  const d=graphDoc();d.graphs[0].steps[0].kind=null;const x=execute('validateG',d);assert.ok(!last(x).findings.some(f=>f.rule==='G-DATA'));assert.ok(last(x).checks.some(c=>c.rule==='G-DATA'&&c.state==='blocked'));
+  const {p,a}=external();a.definitions[1].kind=null;const b=bytes(a);p.dependencies[0].sha256=hash(b);const y=execute('resolveG',p,{dep:b});assert.equal(last(y).verdict,'fail');assert.ok(!last(y).findings.some(f=>f.rule==='G-RESOLVE'));assert.ok(last(y).checks.some(c=>c.rule==='G-RESOLVE'&&c.state==='blocked'));
+});
+test('an extra relation field does not hide independently missing targets',()=>{
+  const d=doc();d.relations=[{source:K('missing'),relation:'uses',target:K('also-missing'),expectedKind:'Resource',extra:true}];const x=execute('validateD',d);assert.ok(finding(x,'P-SHAPE','/relations/0/extra'));assert.ok(finding(x,'D-REFERENCE','/relations/0'));
 });
