@@ -1,0 +1,29 @@
+{
+  "contract": "proposal-0012-candidate-2",
+  "root": {
+    "key": {
+      "scope": "local",
+      "id": "root",
+      "version": "1"
+    },
+    "kind": "System"
+  },
+  "definitions": [],
+  "relations": [],
+  "exports": [],
+  "dependencies": [
+    {
+      "id": "dep",
+      "rootKey": {
+        "scope": "annex",
+        "id": "root",
+        "version": "1"
+      },
+      "status": "included",
+      "requiredFor": [],
+      "sha256": "dbe1fcffd3cc16b4fc847771c986457ff260891d9bf83d0f2b872ec74273f7c7"
+    }
+  ],
+  "unresolved": [],
+  "extensions": []
+}

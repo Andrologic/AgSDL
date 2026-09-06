@@ -1,0 +1,125 @@
+{
+  "contract": "proposal-0012-candidate-2",
+  "root": {
+    "key": {
+      "scope": "local",
+      "id": "root",
+      "version": "1"
+    },
+    "kind": "Fragment"
+  },
+  "definitions": [
+    {
+      "key": {
+        "scope": "local",
+        "id": "agent",
+        "version": "1"
+      },
+      "kind": "Agent",
+      "owner": {
+        "scope": "local",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {}
+    },
+    {
+      "key": {
+        "scope": "local",
+        "id": "principal",
+        "version": "1"
+      },
+      "kind": "Principal",
+      "owner": {
+        "scope": "local",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {}
+    },
+    {
+      "key": {
+        "scope": "local",
+        "id": "interface",
+        "version": "1"
+      },
+      "kind": "Interface",
+      "owner": {
+        "scope": "local",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {}
+    },
+    {
+      "key": {
+        "scope": "local",
+        "id": "direction",
+        "version": "1"
+      },
+      "kind": "Instructions",
+      "owner": {
+        "scope": "local",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {}
+    }
+  ],
+  "relations": [
+    {
+      "source": {
+        "scope": "local",
+        "id": "agent",
+        "version": "1"
+      },
+      "relation": "actsAs",
+      "target": {
+        "scope": "local",
+        "id": "principal",
+        "version": "1"
+      },
+      "expectedKind": "Principal"
+    },
+    {
+      "source": {
+        "scope": "local",
+        "id": "agent",
+        "version": "1"
+      },
+      "relation": "directedBy",
+      "target": {
+        "scope": "local",
+        "id": "direction",
+        "version": "1"
+      },
+      "expectedKind": "Instructions"
+    }
+  ],
+  "exports": [
+    {
+      "scope": "local",
+      "id": "agent",
+      "version": "1"
+    }
+  ],
+  "dependencies": [],
+  "unresolved": [
+    {
+      "subject": {
+        "scope": "local",
+        "id": "agent",
+        "version": "1"
+      },
+      "obligation": "agent-interface-minimum",
+      "rule": "fragment-interface-deferral",
+      "relation": "exposes",
+      "expectedKind": "Interface",
+      "missingMinimum": 1,
+      "target": null,
+      "satisfyBy": "typed-exposes-relation",
+      "expiresBefore": "resolved-graph"
+    }
+  ],
+  "extensions": []
+}

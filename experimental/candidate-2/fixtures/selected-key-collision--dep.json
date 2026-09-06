@@ -1,0 +1,69 @@
+{
+  "contract": "proposal-0012-candidate-2",
+  "root": {
+    "key": {
+      "scope": "local",
+      "id": "annexroot",
+      "version": "1"
+    },
+    "kind": "PackageVersion"
+  },
+  "definitions": [
+    {
+      "key": {
+        "scope": "local",
+        "id": "interface",
+        "version": "1"
+      },
+      "kind": "Interface",
+      "owner": {
+        "scope": "local",
+        "id": "annexroot",
+        "version": "1"
+      },
+      "payload": {
+        "inputs": {
+          "x": "string"
+        },
+        "outputs": {
+          "y": "string"
+        },
+        "action": {
+          "scope": "local",
+          "id": "action",
+          "version": "1"
+        }
+      }
+    },
+    {
+      "key": {
+        "scope": "local",
+        "id": "action",
+        "version": "1"
+      },
+      "kind": "Action",
+      "owner": {
+        "scope": "local",
+        "id": "annexroot",
+        "version": "1"
+      },
+      "payload": {}
+    }
+  ],
+  "relations": [],
+  "exports": [
+    {
+      "scope": "local",
+      "id": "interface",
+      "version": "1"
+    },
+    {
+      "scope": "local",
+      "id": "action",
+      "version": "1"
+    }
+  ],
+  "dependencies": [],
+  "unresolved": [],
+  "extensions": []
+}
