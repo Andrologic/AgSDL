@@ -630,6 +630,7 @@ export function validateR(ctx, inventory) {
     const tools = Array.isArray(binding.tools) ? binding.tools : [];
     let toolIndexComplete = Array.isArray(binding.tools);
     const toolGroups = new Map();
+    const unindexedTools = [];
     for (const [index, toolBinding] of tools.entries()) {
       const tp = `${ap}/tools/${index}`;
       if (!S.object(toolBinding)) {
@@ -693,7 +694,10 @@ export function validateR(ctx, inventory) {
         if (matches.length) result.find('R-TOOL', tp, 'Duplicate ToolBinding');
         matches.push(itemForTool);
         toolGroups.set(identity, matches);
-      } else toolIndexComplete = false;
+      } else {
+        toolIndexComplete = false;
+        unindexedTools.push(itemForTool);
+      }
     }
 
     const missingTool = toolIndexComplete && [...requiredTools.keys()].some(identity => !toolGroups.has(identity));
@@ -731,6 +735,7 @@ export function validateR(ctx, inventory) {
     }
 
     if (!assess) return;
+    for (const toolBinding of unindexedTools) assessTool(toolBinding, null, true, false);
     for (const [identity, matches] of toolGroups) {
       const required = requiredTools.has(identity);
       const payloadInfo = toolPayloads.get(identity);

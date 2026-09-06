@@ -452,6 +452,16 @@ test('an unreadable Agent Ref preserves independent binding child checks',()=>{
   assert.ok(r.checks.some(c=>c.rule==='R-COMPATIBILITY'&&c.state==='blocked'));
 });
 
+test('an unreadable Tool Ref retains its blocked assessment and known selection omission',()=>{
+  for(const selected of[true,false]){
+    const d=source(),tool=d.runtime.configurations[0].agents[0].tools[0];tool.tool=null;if(!selected)delete tool.selected;
+    const x=execute('validateR',d),r=result(x,'R'),pointer='/runtime/configurations/0/agents/0/tools/0';
+    assert.ok(r.checks.some(c=>c.rule==='R-COMPATIBILITY'&&c.state==='blocked'&&c.locations.some(l=>l.pointer===pointer)));
+    assert.ok(x.report.inventory.states.some(s=>s.pointer===pointer&&s.detail==='blocked'));
+    assert.equal(r.findings.some(f=>f.rule==='R-COMPATIBILITY'&&f.location.pointer===pointer&&f.outcome==='inconclusive'),!selected);
+  }
+});
+
 test('an empty graph entry blocks path lookup',()=>{
   const d=source();d.graphs[0].entry='';const r=result(execute('validateG',d),'G');
   assert.ok(r.checks.some(c=>c.rule==='G-PATH'&&c.state==='blocked'));
