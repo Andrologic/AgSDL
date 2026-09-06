@@ -143,6 +143,124 @@ class StructuralTests(unittest.TestCase):
                             for item in findings(actual, 'R-CONTENT', 'fail')))
 
 
+class AuditRegressionTests(unittest.TestCase):
+    def test_missing_engine_returns_a_blocked_report(self):
+        value = fixture()
+        value['runtime']['configurations'][0]['agents'][0].pop('engine')
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0'
+        self.assertTrue(any(item['location']['pointer'] == pointer
+                            for item in findings(actual, 'P-SHAPE', 'fail')))
+        self.assertTrue(any(check['rule'] == 'R-BINDING' and check['state'] == 'blocked'
+                            and {'pointer': pointer} in check['locations']
+                            for check in actual['results'][-1]['checks']))
+
+    def test_content_requirement_duplicates_are_rejected(self):
+        value = fixture()
+        value['definitions'][11]['payload']['requires'] = [
+            {'identity': 'example/text', 'version': '1'},
+            {'identity': 'example/text', 'version': '1'},
+        ]
+        requirement = value['definitions'][12]['payload']['requires'][0]
+        value['definitions'][12]['payload']['requires'].append(copy.deepcopy(requirement))
+        actual = report(value)
+        locations = {item['location']['pointer']
+                     for item in findings(actual, 'R-CONTENT', 'fail')}
+        self.assertIn('/definitions/11/payload', locations)
+        self.assertIn('/definitions/12/payload', locations)
+
+    def test_partial_catalogs_keep_independent_findings(self):
+        value = fixture()
+        binding = value['runtime']['configurations'][0]['agents'][0]
+        binding['claims'][0]['status'] = 'unsupported'
+        binding['claims'].append(None)
+        binding['tools'].append(None)
+        binding['tools'][0]['selected'] = 'missing'
+        actual = report(value)
+        self.assertTrue(findings(actual, 'R-COMPATIBILITY', 'fail'))
+        self.assertTrue(any(item['location']['pointer'].endswith('/tools/0')
+                            for item in findings(actual, 'R-TOOL', 'fail')))
+
+    def test_missing_choice_catalog_returns_a_blocked_report(self):
+        value = fixture()
+        value['runtime']['configurations'][0]['agents'][0]['tools'][0].pop('choices')
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0/tools/0'
+        self.assertTrue(any(check['rule'] == 'R-TOOL' and check['state'] == 'blocked'
+                            and {'pointer': pointer} in check['locations']
+                            for check in actual['results'][-1]['checks']))
+
+    def test_unreadable_skill_closure_does_not_invent_unreachable_applications(self):
+        value = fixture()
+        value['definitions'][12]['payload']['dependencies'] = None
+        actual = report(value)
+        self.assertFalse(any('Application content is not reachable' in item['details']
+                             for item in findings(actual, 'R-CONTENT', 'fail')))
+        self.assertTrue(any(check['rule'] == 'R-CONTENT' and check['state'] == 'blocked'
+                            for check in actual['results'][-1]['checks']))
+
+    def test_skill_tools_are_typed_and_external_refs_are_visible(self):
+        value = fixture()
+        value['definitions'][12]['payload']['tools'].append(
+            copy.deepcopy(value['definitions'][11]['key']))
+        actual = report(value)
+        self.assertTrue(any(item['location']['pointer'] == '/definitions/12/payload'
+                            for item in findings(actual, 'R-CONTENT', 'fail')))
+
+        value = fixture()
+        value['dependencies'].append({
+            'id': 'external-tools',
+            'rootKey': {'scope': 'external', 'id': 'package', 'version': '1'},
+            'status': 'external', 'requiredFor': [], 'sha256': None,
+        })
+        value['definitions'][12]['payload']['tools'].append({
+            'dependency': 'external-tools',
+            'key': {'scope': 'external', 'id': 'tool', 'version': '1'},
+        })
+        actual = report(value)
+        pointer = '/definitions/12/payload/tools/1'
+        self.assertIn('external target excluded',
+                      {item['detail'] for item in states(actual, pointer)})
+
+    def test_required_tool_payload_is_observed_without_a_binding(self):
+        value = fixture()
+        for configuration in value['runtime']['configurations']:
+            for binding in configuration['agents']:
+                binding['tools'] = []
+        value['definitions'][9]['payload']['effects'] = 'invalid'
+        actual = report(value)
+        pointer = '/definitions/9/payload/effects'
+        self.assertTrue(any(item['location']['pointer'] == pointer
+                            for item in findings(actual, 'P-SHAPE', 'fail')))
+        self.assertNotIn('/definitions/9/payload',
+                         {item['pointer'] for item in actual['inventory']['opaque']})
+
+    def test_ambiguous_agent_and_unreadable_graph_block_aggregates(self):
+        value = fixture()
+        value['definitions'].append(copy.deepcopy(value['definitions'][0]))
+        actual = report(value)
+        agent = '/runtime/configurations/0/agents/0'
+        tool = agent + '/tools/0'
+        self.assertIn('blocked', {item['detail'] for item in states(actual, agent)})
+        self.assertIn('blocked', {item['detail'] for item in states(actual, tool)})
+
+        value = fixture()
+        value.pop('graphs')
+        actual = report(value)
+        self.assertIn('blocked', {item['detail'] for item in states(actual, agent)})
+        self.assertIn('blocked', {item['detail'] for item in states(actual, tool)})
+
+    def test_present_null_selection_blocks_compatibility(self):
+        value = fixture()
+        value['runtime']['selected'] = None
+        actual = report(value)
+        checks = actual['results'][-1]['checks']
+        self.assertTrue(any(check['rule'] == 'R-COMPATIBILITY'
+                            and check['state'] == 'blocked' for check in checks))
+        self.assertFalse(any(check['rule'] == 'R-COMPATIBILITY'
+                             and check['state'] == 'excluded' for check in checks))
+
+
 class GraphTests(unittest.TestCase):
     def test_duplicate_selected_operation_blocks_lookup(self):
         value = fixture()
@@ -191,6 +309,25 @@ class GraphTests(unittest.TestCase):
                                   'true': 'legal', 'false': 'finance', 'failure': 'failed'})
         actual = report(value, 'validateG')
         self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/2'
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
+    def test_operation_fields_remain_independently_checkable(self):
+        value = fixture()
+        operation = value['definitions'][4]['payload']['operations'][0]
+        operation['extra'] = True
+        operation['action']['id'] = 'missing'
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] ==
+                            '/definitions/4/payload/operations/0'
+                            for item in findings(actual, 'G-TARGET', 'fail')))
+
+    def test_approved_successor_kind_is_checked_when_paths_fail(self):
+        value = fixture('approval-two-gates.json')
+        value['graphs'][0]['steps'][0]['approved'] = 'ok'
+        value['graphs'][0]['steps'][2]['success'] = 'call'
+        actual = report(value, 'validateG')
+        self.assertTrue(findings(actual, 'G-PATH', 'fail'))
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/0'
                             for item in findings(actual, 'G-APPROVAL', 'fail')))
 
 

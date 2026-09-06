@@ -472,19 +472,19 @@ def validate_r(doc):
             return None
         return (doc, found[0], found[1]) if found else None
 
-    configurations = items(runtime, 'configurations')
-    if not isinstance(runtime.get('configurations'), list):
+    configurations_value = runtime.get('configurations')
+    if not isinstance(configurations_value, list):
         for rule in R_RULES[2:]:
             result.block(rule, '/runtime')
         return result
+    configurations = configurations_value
     if not configurations:
         for rule in ('R-SELECTION', 'R-BINDING', 'R-TOOL', 'R-CONTENT'):
             result.complete(rule)
 
     by_id = defaultdict(list)
+    configuration_records = []
     binding_entries = []
-    ambiguous_engine_claims = set()
-    external_agents = set()
     configuration_catalog_readable = True
     for i, configuration in enumerate(configurations):
         path = '/runtime/configurations/' + str(i)
@@ -498,6 +498,7 @@ def validate_r(doc):
             for rule in ('R-SELECTION', 'R-BINDING', 'R-TOOL', 'R-CONTENT'):
                 result.block(rule, path)
             continue
+        configuration_records.append((configuration, path))
         if good('Configuration', configuration):
             state(path, 'declared')
         if good('text', configuration.get('id')):
@@ -506,63 +507,96 @@ def validate_r(doc):
             result.block('R-SELECTION', path)
         if not good('Key', configuration.get('graph')):
             result.block('R-SELECTION', path)
-        if not isinstance(configuration.get('agents'), list):
+        bindings_value = configuration.get('agents')
+        if not isinstance(bindings_value, list):
             for rule in ('R-BINDING', 'R-TOOL', 'R-CONTENT'):
                 result.block(rule, path)
             continue
-        if not configuration['agents']:
+        if not bindings_value:
             for rule in ('R-BINDING', 'R-TOOL', 'R-CONTENT'):
                 result.complete(rule)
-        for j, binding in enumerate(configuration['agents']):
+        for j, binding in enumerate(bindings_value):
             bp = path + '/agents/' + str(j)
             if not isinstance(binding, dict):
                 for rule in ('R-BINDING', 'R-TOOL', 'R-CONTENT'):
                     result.block(rule, bp)
                 continue
-            core_ok = (good('Ref', binding.get('agent'))
-                       and (binding.get('engine') is None or good('Edition', binding.get('engine')))
-                       and good(array('Edition'), binding.get('requires'))
-                       and good(array('CapabilityClaim'), binding.get('claims')))
-            tools_ok = good(array('ToolBinding'), binding.get('tools'))
-            applications_ok = good(array('Application'), binding.get('applications'))
-            if not core_ok:
+
+            agent_ok = good('Ref', binding.get('agent'))
+            engine_ok = ('engine' in binding
+                         and (binding['engine'] is None or good('Edition', binding['engine'])))
+            requires_value = binding.get('requires')
+            requires_ok = isinstance(requires_value, list)
+            requirements = [item for item in requires_value if good('Edition', item)] if requires_ok else []
+            requires_complete = requires_ok and len(requirements) == len(requires_value)
+            claims_value = binding.get('claims')
+            claims_ok = isinstance(claims_value, list)
+            claims = [item for item in claims_value if good('CapabilityClaim', item)] if claims_ok else []
+            claims_complete = claims_ok and len(claims) == len(claims_value)
+            tools_value = binding.get('tools')
+            tools_ok = isinstance(tools_value, list)
+            tool_bindings = [(tool, bp + '/tools/' + str(k)) for k, tool in enumerate(tools_value)
+                             if isinstance(tool, dict)] if tools_ok else []
+            tools_complete = tools_ok and len(tool_bindings) == len(tools_value)
+            applications_value = binding.get('applications')
+            applications_ok = isinstance(applications_value, list)
+            applications = [(application, bp + '/applications/' + str(k))
+                            for k, application in enumerate(applications_value)
+                            if good('Application', application)] if applications_ok else []
+            applications_complete = applications_ok and len(applications) == len(applications_value)
+
+            if not all((agent_ok, engine_ok, requires_complete, claims_complete)):
                 result.block('R-BINDING', bp)
-            if not tools_ok:
+            if not tools_complete:
                 result.block('R-TOOL', bp)
-            if not applications_ok:
+            if not applications_complete:
                 result.block('R-CONTENT', bp)
-            if not core_ok:
-                continue
-            binding_entries.append((configuration, binding, bp, tools_ok, applications_ok,
-                                    good('AgentBinding', binding)))
             if good('AgentBinding', binding):
                 state(bp + '/engine', 'absent' if binding['engine'] is None else 'declared')
-            duplicates(binding['requires'], 'R-BINDING', bp, 'duplicate engine requirement')
-            if duplicates([claim['capability'] for claim in binding['claims']], 'R-BINDING', bp,
-                          'duplicate engine capability claim'):
-                ambiguous_engine_claims.add(bp)
-            for k, claim in enumerate(binding['claims']):
-                if claim['evidence'] is None:
+            duplicate_requirements = duplicates(requirements, 'R-BINDING', bp,
+                                                'duplicate engine requirement')
+            duplicate_claims = duplicates([claim['capability'] for claim in claims], 'R-BINDING', bp,
+                                          'duplicate engine capability claim')
+            for k, claim in enumerate(claims_value if claims_ok else []):
+                if good('CapabilityClaim', claim) and claim['evidence'] is None:
                     state(bp + '/claims/' + str(k) + '/evidence', 'unknown')
-            result.complete('R-BINDING')
-            agent_target = ref_target(binding['agent'], {'Agent'}, 'R-BINDING', bp, bp, bp + '/agent')
-            if agent_target and agent_target[0] == 'external':
-                external_agents.add(bp)
+            if any((agent_ok, engine_ok, requires_ok, claims_ok)):
+                result.complete('R-BINDING')
 
+            agent_target = (ref_target(binding['agent'], {'Agent'}, 'R-BINDING', bp,
+                                       bp, bp + '/agent') if agent_ok else None)
+            binding_entries.append({
+                'configuration': configuration, 'binding': binding, 'path': bp,
+                'agent_ok': agent_ok, 'agent_target': agent_target,
+                'engine_ok': engine_ok, 'requirements': requirements,
+                'requires_complete': requires_complete,
+                'claims': claims, 'claims_complete': claims_complete,
+                'duplicate_claims': duplicate_claims,
+                'duplicate_requirements': duplicate_requirements,
+                'tool_bindings': tool_bindings, 'tools_complete': tools_complete,
+                'applications': applications, 'applications_complete': applications_complete,
+                'binding_shape_ok': good('AgentBinding', binding),
+            })
+
+    selected_present = 'selected' in runtime
     selected = runtime.get('selected')
-    if selected is None:
+    if not selected_present:
         if good('Runtime', runtime):
             state('/runtime/selected', 'absent')
         result.complete('R-SELECTION')
         result.exclude('R-COMPATIBILITY', '/runtime', whole=True)
-    else:
+    elif good('text', selected):
         if good('Runtime', runtime):
             state('/runtime/selected', 'declared')
+    else:
+        result.block('R-SELECTION', '/runtime')
+        result.block('R-COMPATIBILITY', '/runtime', whole=True)
+
     selected_record = None
-    if selected is not None:
-        matches = by_id.get(selected, []) if isinstance(selected, str) else []
+    if selected_present and good('text', selected):
+        matches = by_id.get(selected, [])
         if not matches:
-            if isinstance(selected, str) and configuration_catalog_readable:
+            if configuration_catalog_readable:
                 result.find('R-SELECTION', '/runtime', 'selected configuration does not exist')
             else:
                 result.block('R-SELECTION', '/runtime')
@@ -581,59 +615,74 @@ def validate_r(doc):
         else:
             graph_index[key(graph['definition'])].append(graph)
 
-    selected_configuration_blocked = False
-    for configuration, path in [entry for group in by_id.values() for entry in group]:
-        graph_matches = graph_index.get(key(configuration['graph']), []) if good('Key', configuration.get('graph')) else []
+    configuration_blocked = {}
+    for configuration, path in configuration_records:
+        graph_key_ok = good('Key', configuration.get('graph'))
+        graph_matches = graph_index.get(key(configuration['graph']), []) if graph_key_ok else []
         graph = None
-        if not good('Key', configuration.get('graph')):
+        selection_blocked = False
+        if not graph_key_ok:
             result.block('R-SELECTION', path)
+            selection_blocked = True
         elif not graph_index_readable:
             result.block('R-SELECTION', path)
+            selection_blocked = True
         elif len(graph_matches) > 1:
             result.block('R-SELECTION', path)
+            selection_blocked = True
         elif not graph_matches:
             result.find('R-SELECTION', path, 'configuration graph does not exist')
+            selection_blocked = True
         else:
             graph = graph_matches[0]
-            doc.lookup(configuration['graph'], 'ControlFlow', result, 'R-SELECTION', path)
+            if doc.lookup(configuration['graph'], 'ControlFlow', result,
+                          'R-SELECTION', path) is None:
+                selection_blocked = True
 
         required_agents = []
         projection_readable = graph is not None and isinstance(graph.get('steps'), list)
         if projection_readable:
             for step in graph['steps']:
-                if not isinstance(step, dict) or step.get('kind') not in ('invoke', 'condition', 'approval', 'end'):
+                if (not isinstance(step, dict)
+                        or step.get('kind') not in ('invoke', 'condition', 'approval', 'end')):
                     projection_readable = False
                     break
                 if step['kind'] == 'invoke':
                     if not good('Ref', step.get('agent')):
                         projection_readable = False
                         break
-                    if frozen(step['agent']) not in [frozen(item) for item in required_agents]:
+                    if frozen(step['agent']) not in {frozen(item) for item in required_agents}:
                         required_agents.append(step['agent'])
+        projection_blocked = graph is None or not projection_readable
         if graph is not None and not projection_readable:
             result.block('R-BINDING', path)
         elif graph is not None:
             bindings = configuration.get('agents')
             if not isinstance(bindings, list):
                 result.block('R-BINDING', path)
-                continue
-            for ref in required_agents:
-                matches = [(binding, path + '/agents/' + str(i)) for i, binding in enumerate(bindings)
-                           if isinstance(binding, dict) and good('Ref', binding.get('agent')) and binding['agent'] == ref]
-                unreadable = any(not isinstance(binding, dict) or not good('Ref', binding.get('agent')) for binding in bindings)
-                if len(matches) != 1 and unreadable:
-                    result.block('R-BINDING', path)
-                elif len(matches) != 1:
-                    result.find('R-BINDING', path, 'missing or duplicate AgentBinding')
-            for i, binding in enumerate(bindings):
-                if isinstance(binding, dict) and good('Ref', binding.get('agent')) and binding['agent'] not in required_agents:
-                    result.find('R-BINDING', path + '/agents/' + str(i), 'unused AgentBinding')
-            result.complete('R-BINDING')
-        if selected_record and configuration is selected_record[0] and (graph is None or not projection_readable):
+            else:
+                readable_bindings = [(binding, path + '/agents/' + str(i))
+                                     for i, binding in enumerate(bindings)
+                                     if isinstance(binding, dict) and good('Ref', binding.get('agent'))]
+                binding_catalog_complete = len(readable_bindings) == len(bindings)
+                for ref in required_agents:
+                    matches = [(binding, bp) for binding, bp in readable_bindings
+                               if binding['agent'] == ref]
+                    if len(matches) != 1 and not binding_catalog_complete:
+                        result.block('R-BINDING', path)
+                    elif len(matches) != 1:
+                        result.find('R-BINDING', path, 'missing or duplicate AgentBinding')
+                for binding, bp in readable_bindings:
+                    if binding['agent'] not in required_agents:
+                        result.find('R-BINDING', bp, 'unused AgentBinding')
+                result.complete('R-BINDING')
+        configuration_blocked[id(configuration)] = selection_blocked or projection_blocked
+        if selected_record and configuration is selected_record[0] and configuration_blocked[id(configuration)]:
             result.block('R-COMPATIBILITY', path)
-            selected_configuration_blocked = True
 
     def agent_relations(agent_ref, relation_name, expected):
+        if not good('Ref', agent_ref):
+            return [], False
         if 'dependency' in agent_ref:
             return [], True
         if not isinstance(doc.obj.get('relations'), list):
@@ -642,7 +691,8 @@ def validate_r(doc):
         for i, relation in enumerate(doc.obj['relations']):
             if not good('Relation', relation):
                 readable = False
-            elif relation['source'] == agent_ref and relation['relation'] == relation_name and relation['expectedKind'] == expected:
+            elif (relation['source'] == agent_ref and relation['relation'] == relation_name
+                  and relation['expectedKind'] == expected):
                 refs.append((relation['target'], '/relations/' + str(i) + '/target'))
         return refs, readable
 
@@ -671,59 +721,64 @@ def validate_r(doc):
             statuses.append('unknown')
         if not_provided:
             statuses.append('not-provided')
-        if blocked:
-            status = 'blocked'
-        else:
-            status = min(statuses, key={'incompatible': 0, 'not-provided': 1, 'unknown': 2, 'declared-supported': 3}.get)
+        status = ('blocked' if blocked else
+                  min(statuses, key={'incompatible': 0, 'not-provided': 1,
+                                    'unknown': 2, 'declared-supported': 3}.get))
         if 'incompatible' in statuses:
             result.find('R-COMPATIBILITY', path, 'declared incompatible requirement')
         if any(item in ('not-provided', 'unknown') for item in statuses):
-            result.find('R-COMPATIBILITY', path, 'required capability or choice not established', 'inconclusive')
+            result.find('R-COMPATIBILITY', path,
+                        'required capability or choice not established', 'inconclusive')
         result.complete('R-COMPATIBILITY')
         if blocked:
             result.block('R-COMPATIBILITY', path)
-        state_value = {'incompatible': 'declared', 'not-provided': 'absent', 'unknown': 'unknown',
-                       'declared-supported': 'unchecked', 'blocked': 'unchecked'}[status]
+        state_value = {'incompatible': 'declared', 'not-provided': 'absent',
+                       'unknown': 'unknown', 'declared-supported': 'unchecked',
+                       'blocked': 'unchecked'}[status]
         if emit_state:
             state(path, state_value, status)
 
     selected_assessments = 0
-    selected_assessment_blocked = selected_configuration_blocked
-    if selected_record:
-        selected_configuration, selected_path = selected_record
-        if not isinstance(selected_configuration.get('agents'), list):
-            result.block('R-COMPATIBILITY', selected_path)
-            selected_assessment_blocked = True
-        else:
-            for i, binding in enumerate(selected_configuration['agents']):
-                if not good('AgentBinding', binding):
-                    result.block('R-COMPATIBILITY', selected_path + '/agents/' + str(i))
-                    selected_assessment_blocked = True
-    for configuration, binding, bp, tools_ok, applications_ok, binding_shape_ok in binding_entries:
+    selected_assessment_blocked = bool(selected_record and
+                                       configuration_blocked.get(id(selected_record[0]), True))
+
+    for entry in binding_entries:
+        configuration, binding, bp = entry['configuration'], entry['binding'], entry['path']
         assess_selected = bool(selected_record and configuration is selected_record[0])
-        external_agent = bp in external_agents
-        content_root_records, content_relations_ok = agent_relations(binding['agent'], 'directedBy', 'Instructions')
-        skill_root_records, skill_relations_ok = agent_relations(binding['agent'], 'directedBy', 'Skill')
-        tool_root_records, tool_relations_ok = agent_relations(binding['agent'], 'uses', 'Tool')
+        agent_target = entry['agent_target']
+        external_agent = bool(agent_target and agent_target[0] == 'external')
+        agent_prerequisite_blocked = entry['agent_ok'] and agent_target is None
+        if not entry['agent_ok']:
+            agent_prerequisite_blocked = True
+
+        content_root_records, content_relations_ok = agent_relations(binding.get('agent'),
+                                                                    'directedBy', 'Instructions')
+        skill_root_records, skill_relations_ok = agent_relations(binding.get('agent'),
+                                                                'directedBy', 'Skill')
+        tool_root_records, tool_relations_ok = agent_relations(binding.get('agent'),
+                                                              'uses', 'Tool')
         required_content_records = content_root_records + skill_root_records
         required_content = [ref for ref, _ in required_content_records]
         tool_roots = [ref for ref, _ in tool_root_records]
-        applications = binding['applications'] if applications_ok else []
+        applications = entry['applications']
         content_records, content_edges = {}, defaultdict(list)
         skill_tools = defaultdict(list)
         external_content = external_agent
-        content_blocked = not (content_relations_ok and skill_relations_ok and applications_ok)
+        content_blocked = not (content_relations_ok and skill_relations_ok
+                               and entry['applications_complete'])
+        content_closure_complete = content_relations_ok and skill_relations_ok
+        tool_closure_complete = content_closure_complete and tool_relations_ok
         missing_content = False
         if external_agent:
             result.exclude('R-CONTENT', bp)
             result.exclude('R-TOOL', bp)
         elif not tool_relations_ok:
             result.block('R-TOOL', bp)
+
         queue = ([(ref, path.rsplit('/', 1)[0], path.rsplit('/', 1)[0], path)
                   for ref, path in required_content_records]
-                 + [(application['content'], bp + '/applications/' + str(i),
-                     bp + '/applications/' + str(i), bp + '/applications/' + str(i) + '/content')
-                    for i, application in enumerate(applications)])
+                 + [(application['content'], ap, ap, ap + '/content')
+                    for application, ap in applications])
         visited = set()
         while queue:
             ref, request_path, excluded_path, ref_state_path = queue.pop(0)
@@ -733,11 +788,13 @@ def validate_r(doc):
                            excluded_path, ref_state_path)
                 continue
             visited.add(token)
-            known_missing = (good('Ref', ref) and 'dependency' not in ref
-                             and key(ref) not in doc.ambiguous and key(ref) not in doc.invalid
-                             and doc.catalog_complete
-                             and (key(ref) not in doc.index
-                                  or doc.index[key(ref)][0]['kind'] not in ('Instructions', 'Skill')))
+            local_identity = (key(ref) if good('Ref', ref) and 'dependency' not in ref else None)
+            known_missing = (local_identity is not None
+                             and local_identity not in doc.ambiguous
+                             and local_identity not in doc.invalid and doc.catalog_complete
+                             and (local_identity not in doc.index
+                                  or doc.index[local_identity][0]['kind']
+                                  not in ('Instructions', 'Skill')))
             target = ref_target(ref, {'Instructions', 'Skill'}, 'R-CONTENT', request_path,
                                 excluded_path, ref_state_path)
             if target is None:
@@ -745,171 +802,317 @@ def validate_r(doc):
                     missing_content = True
                 else:
                     content_blocked = True
+                    content_closure_complete = False
+                    tool_closure_complete = False
                 continue
             if target[0] == 'external':
                 external_content = True
+                content_closure_complete = False
+                tool_closure_complete = False
                 continue
             _, definition, dp = target
-            schema = 'InstructionsPayload' if definition['kind'] == 'Instructions' else 'SkillPayload'
-            doc.selected_payloads.add(dp + '/payload')
+            schema = ('InstructionsPayload' if definition['kind'] == 'Instructions'
+                      else 'SkillPayload')
             payload_path = dp + '/payload'
+            doc.selected_payloads.add(payload_path)
             payload_ok = result.shape(schema, definition['payload'], payload_path)
             if not isinstance(definition['payload'], dict):
                 result.block('R-CONTENT', payload_path)
                 content_blocked = True
+                content_closure_complete = False
+                tool_closure_complete = False
                 continue
             payload = definition['payload']
             content_records[token] = (ref, definition, dp, payload, payload_ok)
             if not payload_ok:
                 result.block('R-CONTENT', payload_path)
                 content_blocked = True
+
+            requires_value = payload.get('requires')
+            if isinstance(requires_value, list):
+                duplicates([item for item in requires_value if good('Edition', item)],
+                           'R-CONTENT', payload_path, 'duplicate content requirement')
+            else:
+                content_blocked = True
+
             if definition['kind'] == 'Skill':
-                deps = items(payload, 'dependencies')
-                tools = items(payload, 'tools')
-                if not isinstance(payload.get('dependencies'), list):
+                dependencies_value = payload.get('dependencies')
+                if not isinstance(dependencies_value, list):
                     content_blocked = True
+                    content_closure_complete = False
+                    tool_closure_complete = False
                 else:
-                    duplicates(deps, 'R-CONTENT', payload_path, 'duplicate Skill dependency')
-                    for i, dep in enumerate(deps):
+                    valid_dependencies = [dep for dep in dependencies_value if good('Ref', dep)]
+                    duplicates(valid_dependencies, 'R-CONTENT', payload_path,
+                               'duplicate Skill dependency')
+                    if len(valid_dependencies) != len(dependencies_value):
+                        content_blocked = True
+                        content_closure_complete = False
+                        tool_closure_complete = False
+                    for i, dep in enumerate(dependencies_value):
                         if good('Ref', dep):
                             content_edges[token].append(frozen(dep))
                             queue.append((dep, payload_path, payload_path,
                                           payload_path + '/dependencies/' + str(i)))
-                if not isinstance(payload.get('tools'), list):
-                    content_blocked = True
-                else:
-                    duplicates(tools, 'R-CONTENT', payload_path, 'duplicate Skill tool')
-                    for tool in tools:
-                        if good('Ref', tool):
-                            skill_tools[token].append(tool)
-        for token, (_, definition, dp, _, _) in content_records.items():
-            if definition['kind'] == 'Skill' and token in reachable(token, {k: [('dependency', v) for v in values] for k, values in content_edges.items()}) and token in content_edges.get(token, []):
-                result.find('R-CONTENT', dp + '/payload', 'Skill dependency cycle')
-            elif definition['kind'] == 'Skill':
-                edges = {k: [('dependency', v) for v in values] for k, values in content_edges.items()}
-                for successor in content_edges.get(token, []):
-                    if token in reachable(successor, edges):
-                        result.find('R-CONTENT', dp + '/payload', 'Skill dependency cycle')
-                        break
 
-        content_graph = {k: [('dependency', v) for v in values] for k, values in content_edges.items()}
+                tools_value = payload.get('tools')
+                if not isinstance(tools_value, list):
+                    content_blocked = True
+                    tool_closure_complete = False
+                else:
+                    valid_tools = [tool for tool in tools_value if good('Ref', tool)]
+                    duplicates(valid_tools, 'R-CONTENT', payload_path,
+                               'duplicate Skill tool')
+                    if len(valid_tools) != len(tools_value):
+                        content_blocked = True
+                        tool_closure_complete = False
+                    for i, tool in enumerate(tools_value):
+                        if not good('Ref', tool):
+                            continue
+                        target = ref_target(tool, {'Tool'}, 'R-CONTENT', payload_path,
+                                            payload_path, payload_path + '/tools/' + str(i))
+                        if target is None:
+                            tool_closure_complete = False
+                        elif target[0] == 'external':
+                            external_content = True
+                            skill_tools[token].append(tool)
+                        else:
+                            skill_tools[token].append(tool)
+
+        content_graph = {token: [('dependency', successor) for successor in successors]
+                         for token, successors in content_edges.items()}
+        for token, (_, definition, dp, _, _) in content_records.items():
+            if definition['kind'] != 'Skill':
+                continue
+            if any(token in reachable(successor, content_graph)
+                   for successor in content_edges.get(token, [])):
+                result.find('R-CONTENT', dp + '/payload', 'Skill dependency cycle')
+
         required_tokens = set()
         for ref in required_content:
             required_tokens.update(reachable(frozen(ref), content_graph))
-        application_tokens = [frozen(app['content']) for app in applications]
-        for token in required_tokens:
-            if token not in application_tokens:
-                result.find('R-CONTENT', bp, 'required content Application missing')
-        for i, application in enumerate(applications):
-            ap = bp + '/applications/' + str(i)
+        application_tokens = [frozen(application['content']) for application, _ in applications]
+        if entry['applications_complete']:
+            for token in required_tokens:
+                if token not in application_tokens:
+                    result.find('R-CONTENT', bp, 'required content Application missing')
+        for i, (application, ap) in enumerate(applications):
             token = frozen(application['content'])
             if token not in required_tokens and not external_agent:
-                result.find('R-CONTENT', ap, 'Application content is not reachable')
-            target = ref_target(application['content'], {'Instructions', 'Skill'}, 'R-CONTENT',
-                                ap, ap, ap + '/content')
+                if content_closure_complete:
+                    result.find('R-CONTENT', ap, 'Application content is not reachable')
+                else:
+                    result.block('R-CONTENT', ap)
+            target = ref_target(application['content'], {'Instructions', 'Skill'},
+                                'R-CONTENT', ap, ap, ap + '/content')
             if target and target[0] != 'external':
                 record = content_records.get(token)
-                if record and record[1]['kind'] == 'Skill' and isinstance(record[3].get('dependencies'), list):
-                    earlier = application_tokens[:i]
-                    if any(frozen(dep) not in earlier for dep in record[3]['dependencies'] if good('Ref', dep)):
-                        result.find('R-CONTENT', ap, 'Skill dependency Application must be earlier')
+                if record and record[1]['kind'] == 'Skill':
+                    dependencies_value = record[3].get('dependencies')
+                    if isinstance(dependencies_value, list):
+                        earlier = application_tokens[:i]
+                        if any(frozen(dep) not in earlier for dep in dependencies_value
+                               if good('Ref', dep)):
+                            result.find('R-CONTENT', ap,
+                                        'Skill dependency Application must be earlier')
+                    else:
+                        result.block('R-CONTENT', ap)
         result.complete('R-CONTENT')
 
-        required_tools = list(tool_roots)
+        required_tools = []
         for ref, path in tool_root_records:
+            if frozen(ref) not in {frozen(item) for item in required_tools}:
+                required_tools.append(ref)
             ref_target(ref, {'Tool'}, 'R-TOOL', path.rsplit('/', 1)[0],
                        path.rsplit('/', 1)[0], path)
         for token in required_tokens:
             for tool in skill_tools.get(token, []):
-                if frozen(tool) not in [frozen(item) for item in required_tools]:
+                if frozen(tool) not in {frozen(item) for item in required_tools}:
                     required_tools.append(tool)
-        tool_bindings = binding['tools'] if tools_ok else []
-        required_tool_tokens = {frozen(ref) for ref in required_tools}
-        if tools_ok:
-            for ref in required_tools:
-                matches = [(tool, bp + '/tools/' + str(i)) for i, tool in enumerate(tool_bindings) if tool['tool'] == ref]
-                if len(matches) != 1:
-                    result.find('R-TOOL', bp, 'missing or duplicate required ToolBinding')
-        for i, tool in enumerate(tool_bindings):
-            tp = bp + '/tools/' + str(i)
-            state(tp + '/selected', 'declared' if 'selected' in tool else 'absent')
-            if frozen(tool['tool']) not in required_tool_tokens and not external_agent:
-                result.find('R-TOOL', tp, 'unused ToolBinding')
-            target = ref_target(tool['tool'], {'Tool'}, 'R-TOOL', tp, tp, tp + '/tool')
-            payload, tool_unknown, tool_blocked = None, False, False
+
+        observed_tools = {}
+
+        def observe_tool(ref, request_path, state_path):
+            token = frozen(ref)
+            target = ref_target(ref, {'Tool'}, 'R-TOOL', request_path,
+                                request_path, state_path)
+            if token in observed_tools:
+                return observed_tools[token]
+            payload, requirements, unknown, blocked = None, [], False, False
             if target and target[0] == 'external':
-                tool_unknown = True
+                unknown = True
             elif target:
                 _, definition, dp = target
-                doc.selected_payloads.add(dp + '/payload')
-                payload_ok = result.shape('ToolPayload', definition['payload'], dp + '/payload')
+                payload_path = dp + '/payload'
+                doc.selected_payloads.add(payload_path)
+                payload_ok = result.shape('ToolPayload', definition['payload'], payload_path)
                 if isinstance(definition['payload'], dict):
                     payload = definition['payload']
-                    tool_blocked = not payload_ok
-                    duplicates(items(payload, 'requires'), 'R-TOOL', dp + '/payload', 'duplicate Tool requirement')
-                    duplicates(items(payload, 'failures'), 'R-TOOL', dp + '/payload', 'duplicate Tool failure')
-                    if good('Ref', payload.get('action')):
-                        if ref_target(payload['action'], {'Action'}, 'R-TOOL', dp + '/payload',
-                                      dp + '/payload', dp + '/payload/action') is None:
-                            tool_blocked = True
+                    blocked = not payload_ok
+                    requires_value = payload.get('requires')
+                    if isinstance(requires_value, list):
+                        requirements = [item for item in requires_value if good('Edition', item)]
+                        if len(requirements) != len(requires_value):
+                            blocked = True
+                        duplicates(requirements, 'R-TOOL', payload_path,
+                                   'duplicate Tool requirement')
                     else:
-                        tool_blocked = True
+                        blocked = True
+                    failures_value = payload.get('failures')
+                    if isinstance(failures_value, list):
+                        duplicates([item for item in failures_value if good('text', item)],
+                                   'R-TOOL', payload_path, 'duplicate Tool failure')
+                    else:
+                        blocked = True
+                    if good('Ref', payload.get('action')):
+                        if ref_target(payload['action'], {'Action'}, 'R-TOOL', payload_path,
+                                      payload_path, payload_path + '/action') is None:
+                            blocked = True
+                    else:
+                        blocked = True
                 else:
-                    tool_blocked = True
+                    blocked = True
             else:
-                tool_blocked = True
-            choices = tool['choices']
+                blocked = True
+            observed_tools[token] = (payload, requirements, unknown, blocked)
+            return observed_tools[token]
+
+        for ref in required_tools:
+            observe_tool(ref, bp, bp)
+
+        required_tool_tokens = {frozen(ref) for ref in required_tools}
+        readable_tool_bindings = []
+        for tool, tp in entry['tool_bindings']:
+            if good('Ref', tool.get('tool')):
+                readable_tool_bindings.append((tool, tp))
+            else:
+                result.block('R-TOOL', tp)
+        if entry['tools_complete']:
+            for ref in required_tools:
+                matches = [(tool, tp) for tool, tp in readable_tool_bindings
+                           if tool['tool'] == ref]
+                if len(matches) != 1:
+                    result.find('R-TOOL', bp,
+                                'missing or duplicate required ToolBinding')
+        else:
+            result.block('R-TOOL', bp)
+
+        for tool, tp in entry['tool_bindings']:
+            tool_shape_ok = good('ToolBinding', tool)
+            if tool_shape_ok:
+                state(tp + '/selected', 'declared' if 'selected' in tool else 'absent')
+            tool_ref_ok = good('Ref', tool.get('tool'))
+            if tool_ref_ok and frozen(tool['tool']) not in required_tool_tokens and not external_agent:
+                if tool_closure_complete:
+                    result.find('R-TOOL', tp, 'unused ToolBinding')
+                else:
+                    result.block('R-TOOL', tp)
+
+            payload, tool_requirements, tool_unknown, tool_blocked = (None, [], False, True)
+            if tool_ref_ok:
+                payload, tool_requirements, tool_unknown, tool_blocked = observe_tool(
+                    tool['tool'], tp, tp + '/tool')
+
+            choices_value = tool.get('choices')
+            choices_ok = isinstance(choices_value, list)
+            choices = [(choice, tp + '/choices/' + str(j))
+                       for j, choice in enumerate(choices_value if choices_ok else [])
+                       if isinstance(choice, dict) and good('text', choice.get('id'))]
+            choices_complete = choices_ok and len(choices) == len(choices_value)
+            if not choices_complete:
+                result.block('R-TOOL', tp)
             choice_ids = defaultdict(list)
-            ambiguous_choice_claims = set()
-            for j, choice in enumerate(choices):
-                cp = tp + '/choices/' + str(j)
+            ambiguous_choices = set()
+            choice_claims = {}
+            choice_complete = {}
+            for choice, cp in choices:
                 choice_ids[choice['id']].append((choice, cp))
                 if len(choice_ids[choice['id']]) > 1:
                     result.find('R-TOOL', cp, 'duplicate Implementation id')
-                if duplicates([claim['capability'] for claim in choice['claims']], 'R-TOOL', cp,
+                    ambiguous_choices.add(choice['id'])
+                claims_value = choice.get('claims')
+                valid_claims = ([claim for claim in claims_value
+                                if good('CapabilityClaim', claim)]
+                               if isinstance(claims_value, list) else [])
+                complete = (isinstance(claims_value, list)
+                            and len(valid_claims) == len(claims_value)
+                            and good('Edition', choice.get('implementation'))
+                            and 'parameters' in choice)
+                choice_claims[cp] = valid_claims
+                choice_complete[cp] = complete
+                if not complete:
+                    result.block('R-TOOL', cp)
+                if duplicates([claim['capability'] for claim in valid_claims],
+                              'R-TOOL', cp,
                               'duplicate implementation capability claim'):
-                    ambiguous_choice_claims.add(cp)
-                for k, claim in enumerate(choice['claims']):
-                    if claim['evidence'] is None:
-                        state(cp + '/claims/' + str(k) + '/evidence', 'unknown')
+                    ambiguous_choices.add(choice['id'])
+                if isinstance(claims_value, list):
+                    for k, claim in enumerate(claims_value):
+                        if good('CapabilityClaim', claim) and claim['evidence'] is None:
+                            state(cp + '/claims/' + str(k) + '/evidence', 'unknown')
+
+            selected_choice_present = 'selected' in tool
             selected_choice = tool.get('selected')
-            chosen = choice_ids.get(selected_choice, []) if selected_choice is not None else []
-            if selected_choice is not None and not chosen:
-                result.find('R-TOOL', tp, 'selected Implementation does not exist')
+            selected_choice_valid = not selected_choice_present or good('text', selected_choice)
+            chosen = (choice_ids.get(selected_choice, [])
+                      if selected_choice_present and good('text', selected_choice) else [])
+            if selected_choice_present and good('text', selected_choice) and not chosen:
+                if choices_complete:
+                    result.find('R-TOOL', tp,
+                                'selected Implementation does not exist')
+                else:
+                    result.block('R-TOOL', tp)
             elif len(chosen) > 1:
                 result.block('R-TOOL', tp)
+            elif not selected_choice_valid:
+                result.block('R-TOOL', tp)
             result.complete('R-TOOL')
+
             if assess_selected:
-                requirements = items(payload, 'requires') if payload else []
-                claims = chosen[0][0]['claims'] if len(chosen) == 1 else []
-                invalid_selection = selected_choice is not None and len(chosen) != 1
-                if invalid_selection:
-                    result.block('R-COMPATIBILITY', tp)
-                    state(tp, 'unchecked', 'blocked')
-                else:
-                    assess(requirements, claims, len(chosen) == 1, tp,
-                           unknown=tool_unknown or bool(payload and payload.get('effects') == 'unknown'),
-                           blocked=(tool_blocked
-                                    or bool(chosen and chosen[0][1] in ambiguous_choice_claims)))
+                chosen_claims = choice_claims.get(chosen[0][1], []) if len(chosen) == 1 else []
+                selection_blocked = (not selected_choice_valid or len(chosen) > 1
+                                     or (selected_choice_present and not chosen))
+                supplied = len(chosen) == 1
+                assess(tool_requirements, chosen_claims, supplied, tp,
+                       unknown=tool_unknown or bool(payload and payload.get('effects') == 'unknown'),
+                       blocked=(configuration_blocked.get(id(configuration), True)
+                                or agent_prerequisite_blocked
+                                or selection_blocked or tool_blocked
+                                or not tool_ref_ok or not choices_complete
+                                or (bool(chosen) and not choice_complete.get(chosen[0][1], False))
+                                or selected_choice in ambiguous_choices),
+                       emit_state=tool_shape_ok)
                 selected_assessments += 1
 
-        engine_requirements = list(binding['requires'])
+        engine_requirements = list(entry['requirements'])
         for token, (_, definition, _, payload, _) in content_records.items():
             if token not in required_tokens:
                 continue
-            engine_requirements.extend(items(payload, 'requires'))
+            requires_value = payload.get('requires')
+            if isinstance(requires_value, list):
+                engine_requirements.extend(item for item in requires_value
+                                           if good('Edition', item))
             if definition['kind'] == 'Instructions' and good('Edition', payload.get('format')):
                 engine_requirements.append(payload['format'])
-        engine_requirements.extend(app['adapter'] for app in applications)
-        missing_application = any(token not in application_tokens for token in required_tokens)
+        engine_requirements.extend(application['adapter'] for application, _ in applications)
+        missing_application = (entry['applications_complete']
+                               and any(token not in application_tokens
+                                       for token in required_tokens))
         if assess_selected:
-            assess(engine_requirements, binding['claims'], binding['engine'] is not None, bp,
-                   unknown=external_content, blocked=content_blocked or bp in ambiguous_engine_claims,
+            engine = binding.get('engine') if entry['engine_ok'] else None
+            assess(engine_requirements, entry['claims'], engine is not None, bp,
+                   unknown=external_content,
+                   blocked=(configuration_blocked.get(id(configuration), True)
+                            or agent_prerequisite_blocked or content_blocked
+                            or not entry['engine_ok'] or not entry['requires_complete']
+                            or not entry['claims_complete'] or entry['duplicate_claims']
+                            or entry['duplicate_requirements']),
                    not_provided=missing_application or missing_content,
-                   emit_state=binding_shape_ok)
+                   emit_state=entry['binding_shape_ok'])
             selected_assessments += 1
 
-    if selected_record is None and selected is not None and ('R-COMPATIBILITY', 'blocked') not in result.checks:
+    if (selected_record is None and selected_present
+            and ('R-COMPATIBILITY', 'blocked') not in result.checks):
         result.block('R-COMPATIBILITY', '/runtime', whole=True)
     elif selected_record is not None and not selected_assessments and not selected_assessment_blocked:
         result.complete('R-COMPATIBILITY')
@@ -917,7 +1120,6 @@ def validate_r(doc):
         if rule not in {name for name, _ in result.checks}:
             result.complete(rule)
     return result
-
 
 class GraphValidation:
     def __init__(self, primary, annexes, resolve=False):
@@ -1267,13 +1469,20 @@ class GraphValidation:
                         result.block('G-DATA', sp)
                     else:
                         operation, op_path = selected[0]
-                        if not good('Operation', operation):
+                        operation_ok = good('Operation', operation)
+                        if not operation_ok:
+                            # P-SHAPE owns the complete record.  G keeps checking
+                            # each independently readable field below.
                             result.block('G-TARGET', sp)
                             result.block('G-DATA', sp)
-                        else:
+                        if good(('enum', ('inbound', 'outbound', 'bidirectional')),
+                                operation.get('direction')):
                             result.complete('G-TARGET')
                             if operation['direction'] == 'outbound':
                                 result.find('G-TARGET', sp, 'outbound operation cannot be invoked')
+                        else:
+                            result.block('G-TARGET', sp)
+                        if good('Ref', operation.get('action')):
                             action = self.ref(operation['action'], 'Action', owner, sp,
                                               op_path + '/action', owner_result, op_path)
                             if action is not None and targets['action'] is not None:
@@ -1283,13 +1492,15 @@ class GraphValidation:
                                 result.exclude('G-TARGET', sp)
                             else:
                                 result.block('G-TARGET', sp)
-                            for field in ('inputs', 'outputs'):
-                                if good('Ports', step.get(field)):
-                                    result.complete('G-DATA')
-                                    if operation[field] != step[field]:
-                                        result.find('G-DATA', sp, 'Interface operation port maps differ')
-                                else:
-                                    result.block('G-DATA', sp)
+                        else:
+                            result.block('G-TARGET', sp)
+                        for field in ('inputs', 'outputs'):
+                            if good('Ports', operation.get(field)) and good('Ports', step.get(field)):
+                                result.complete('G-DATA')
+                                if operation[field] != step[field]:
+                                    result.find('G-DATA', sp, 'Interface operation port maps differ')
+                            else:
+                                result.block('G-DATA', sp)
                 elif targets['interface'] is None and not self.resolve and good('Ref', step.get('interface')) and 'dependency' in step['interface']:
                     result.exclude('G-DATA', sp)
                 else:
@@ -1336,24 +1547,32 @@ class GraphValidation:
                 result.block('G-DATA', sp)
 
         approvals = [(sid, step, sp) for sid, step, sp in records if step.get('kind') == 'approval']
+        by_call = defaultdict(list)
+        for sid, step, sp in approvals:
+            if good('text', step.get('call')):
+                by_call[step['call']].append((sid, step, sp))
+            approved_id = step.get('approved')
+            if not good('text', approved_id) or approved_id in ambiguous:
+                result.block('G-APPROVAL', sp)
+                continue
+            successor = steps.get(approved_id)
+            if successor is None:
+                if index_readable:
+                    result.find('G-APPROVAL', sp, 'approved successor is missing')
+                else:
+                    result.block('G-APPROVAL', sp)
+            elif successor.get('kind') == 'approval' and successor.get('call') != step.get('call'):
+                result.find('G-APPROVAL', sp, 'approval chain changes call')
+            elif successor.get('kind') == 'invoke' and approved_id != step.get('call'):
+                result.find('G-APPROVAL', sp, 'approved invoke differs from call')
+            elif successor.get('kind') not in ('approval', 'invoke'):
+                result.find('G-APPROVAL', sp, 'approved successor is not a gate or call')
+
         if approvals and paths_ok:
             incoming = defaultdict(list)
             for source, links in edges.items():
                 for label, target in links:
                     incoming[target].append((source, label))
-            by_call = defaultdict(list)
-            for sid, step, sp in approvals:
-                if good('text', step.get('call')):
-                    by_call[step['call']].append((sid, step, sp))
-                successor = steps.get(step.get('approved'))
-                if successor is None:
-                    result.find('G-APPROVAL', sp, 'approved successor is missing')
-                elif successor.get('kind') == 'approval' and successor.get('call') != step.get('call'):
-                    result.find('G-APPROVAL', sp, 'approval chain changes call')
-                elif successor.get('kind') == 'invoke' and step.get('approved') != step.get('call'):
-                    result.find('G-APPROVAL', sp, 'approved invoke differs from call')
-                elif successor.get('kind') not in ('approval', 'invoke'):
-                    result.find('G-APPROVAL', sp, 'approved successor is not a gate or call')
             for call_id, gates in by_call.items():
                 call = steps.get(call_id)
                 if not call or call.get('kind') != 'invoke':
