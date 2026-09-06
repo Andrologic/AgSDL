@@ -227,7 +227,10 @@ ResolveG requires every dependency named by a G Ref or marked resolveG in
 requiredFor to be included, parseable as this edition, hash-known and matching.
 Missing bytes or invalid content fails; null declared hash is inconclusive,
 not permission to invent integrity. Verify its rootKey against the parsed root.
-Each G Ref resolves to exactly one exported definition of expected core kind.
+Each external G Ref from the primary document resolves to exactly one exported
+definition of the expected core kind in its annex. Local G Refs resolve within
+their owning document without an export requirement, including local references
+inside selected annex payloads and relations.
 A selected key appearing in more than one document boundary, including the
 primary, fails G-RESOLVE rather than merging definitions; repeated references
 within the same boundary are allowed. Only direct primary dependencies are supported: when a selected annex payload
@@ -521,6 +524,7 @@ are deliberately nonsemantic for D, including the Principal's two identities.
 | Add a well-shaped external Interface relation with null dependency hash and no validateD requirement | D checks declaration, does not fetch; target/integrity unchecked. A G use of the missing annex fails resolveG. |
 | Unknown custom Kind with required extension | D unsupported, X-MODE, while identity/reference checks still run; exchange can preserve. |
 | Unsupported extension marked annotation-only while declaring a custom Kind | D fail, X-MODE; optional classification cannot hide a kind. |
+| D-valid System with a fully local valid invocation graph, exports empty and no dependencies | resolveG passes; local targets require no export, and no annex is fetched. |
 | Invoke success and failure both reach an end consuming its output | G fail, G-DATA at that end Step. |
 | Approval approved and denied both reach its protected invoke | G fail, G-APPROVAL at the approval Step. |
 | Runtime with empty requirements and no selection | R pass, selection absent, readiness excluded. |
