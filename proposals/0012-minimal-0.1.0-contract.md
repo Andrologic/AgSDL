@@ -2,6 +2,7 @@
 
 - Status: proposed, awaiting maintainer choices; no normative adoption.
 - Date: 2026-09-05.
+- Experimental completion revision: 2026-09-06.
 - Basis: [Decision 0001](../docs/decisions/0001-specification-before-syntax.md),
   [Decision 0004](../docs/decisions/0004-approved-design-directions.md),
   proposals [0002](0002-core-conceptual-model.md),
@@ -15,7 +16,7 @@ covered checks and findings. Proposal 0011 leaves those implementation choices
 open. This proposal recommends a bounded answer and a separately selectable
 simple control-flow contract. Every rule and spelling below is a recommendation,
 conditional on approval, including examples and diagnostic categories. They are
-not published feature identities or an executable specification. Review the
+not published feature identities or an adopted specification. Review the
 concepts and choices before adopting representation, as Decision 0001 requires.
 
 The proposed release scope has three separate units, provisionally called D,
@@ -59,7 +60,8 @@ A model, provider, engine interface and hosting environment are different facts.
 ## Choices for maintainer review
 
 Each row is a material recommendation. The following sections specify its
-candidate details; approval must identify rows accepted, amended or deferred.
+candidate details. The delegated experiment uses these recommendations; a later
+adoption record identifies the resulting scope without inventing prior approvals.
 
 | Choice | Recommendation | Alternative and consequence |
 | --- | --- | --- |
@@ -74,244 +76,435 @@ candidate details; approval must identify rows accepted, amended or deferred.
 | C9: runtime declarations | Open exact engine identities, optional selection, explicit requirement evidence; no defaults. | Deferring R keeps engine metadata opaque. A vendor enum or inferred default contradicts the recorded user direction. |
 | C10: delivery evidence | Two independent validation implementations and scope-labelled evidence, with no required product integration. | Adding execution conformance would require a separately reviewed general contract and observed runs by third-party implementations; structural evidence alone cannot support it. |
 
-## Candidate JSON representation for D
+## Candidate grammar and operation boundary
 
-Use one JSON object, UTF-8 without BOM, no duplicate member names at any depth,
-no invalid Unicode scalar values, no non-JSON numeric values. Core numbers are
-integers from 0 through 9007199254740991; opaque payload numbers are retained as
-source text and not interpreted by D. Object member order has no meaning;
-array order is retained, with ordering semantics only where stated. No aliases,
-implicit conversions, defaults, includes or executable expressions are read.
-Unknown members outside `annotations`, `payload` or `extensions` fail the
-candidate shape check. This does not permit hidden extensions in core fields.
+The maintainer delegated continued preparation and experimentation on 2026-09-06.
+That instruction is not a recorded acceptance of each C1-C10 choice. The rules
+below close one experimental edition, `proposal-0012-candidate-2`. They define
+candidate behavior precisely enough to implement and compare; they establish
+no official AgSDL feature, diagnostic, syntax or conformance claim. Candidate-1
+is a previous proposal spelling, not an accepted compatibility target.
 
-The envelope requires `contract`, `root`, `definitions`, `relations`, `exports`,
-`dependencies`, `unresolved` and `extensions`. Arrays may be empty subject to
-checks below. `annotations` and `evidence` are optional opaque JSON values;
-`graphs` and `runtime` are optional containers for G and R. D inventories those
-two containers and reports their contents unchecked. `evidence` retains
-occurrence and artifact material without validating its semantics or collapsing
-it into definition records. Prototype `contract` is exactly
-`proposal-0012-candidate-1`; adoption would replace it with the agreed immutable
-edition. It is not a claim to the unreleased specification version `0.1.0`.
+### Notation and shared JSON rules
 
-A key is exactly `{scope, id, version}`, each a nonempty Unicode string.
-Compare decoded scalar sequences exactly, case-sensitively, without Unicode,
-URI, path or numeric normalization. Version is opaque and exact, never a range
-or `latest` selector. Equality compares all three components; kind is checked
-separately. Within one document, a scope/id pair has one version and one record,
-including its root; duplicates fail even if identical. Across dependencies,
-different versions may coexist and each reference selects one exact tuple.
-No compatibility follows from version order.
+In the tables, listed fields are required unless followed by `?`. Each record
+is closed: no other members are allowed. `T[]` means an array of T, empty unless
+a minimum is stated. `map<T>` means an object whose keys are nonempty strings
+and values have type T. Map keys such as `__proto__` have ordinary data meaning.
+`text` is a nonempty Unicode string; `JSON` is any JSON value, including null.
+`uint` is an integer in 0..9007199254740991; `positive` excludes zero. A literal
+in quotes is the only permitted string value. Absence is permitted only at `?`;
+null is permitted only where explicitly listed or inside JSON. There are no
+implicit values, conversions, merge rules or fetching operations.
 
-`root` requires `key` and `kind`, one of `System`, `Fragment`, `PackageVersion`.
-It has no owner. Every `definitions` record requires `key`, `kind`, `owner`,
-`payload`; `owner` equals the root key. All local keys share the root scope.
-Optional `annotations` and `provenance` are retained. `kind` uses exact entity
-names from 0002, with multiword names joined without spaces, such as
-`ControlFlow`; only identity, ownership and relation declarations of kinds
-outside the local Agent checks are validated by D. Unknown kinds require an
-extension declaration, otherwise fail shape validation. `payload` is opaque
-for D and cannot override the record key, kind, owner or relations. Deeper
-kind invariants, including Principal identity content, remain unchecked by D.
-Root payload and annotations are optional and likewise opaque.
+Input is one UTF-8 JSON object without BOM, duplicate member names, invalid
+Unicode scalar values or trailing non-whitespace content. JSON numbers use the
+JSON number grammar; interpreted uint/positive values are checked mathematically
+without binary floating-point rounding. Opaque numbers retain their original
+lexeme without a magnitude limit. Object order has no semantic meaning. Arrays
+retain order for locations; only steps connected by edges determine scheduling.
+Equality of strings compares decoded Unicode scalar sequences exactly, without
+case folding, Unicode normalization, URI normalization or version ordering.
 
-A `relations` item requires `source`, `relation`, `target` and `expectedKind`.
-Source is a local key including the root. Target is exactly a key for local
-references, or `{dependency, key}` for external references; `dependency` names
-one dependency entry. Presence of that wrapper determines locality, never URI
-shape. `expectedKind` is a nonempty kind name. Local lookup is unique and its
-kind matches. Relation names below supply the fixed candidate checks:
-
-| Relation | Source and target constraint in D |
+| Type | Fields or values |
 | --- | --- |
-| `actsAs` | Agent to Principal; exactly one per local Agent. |
-| `exposes` | Agent to Interface; at least one per local Agent, except the single permitted deferral. |
-| `directedBy` | Agent to Instructions, Role, Skill or ControlFlow; at least one per local Agent. |
-| `uses` | Any local source to a declared kind; System-to-Agent participation is inventoried without certifying System completeness. |
-| `contains` | Any local source to a declared kind; local containment graph is acyclic. |
+| Key | `scope:text`, `id:text`, `version:text` |
+| Edition | `identity:text`, `version:text`; identity matches `[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*` in full |
+| Ref | Key, or exactly `dependency:text`, `key:Key` |
+| Hash | 64 lowercase hexadecimal characters |
+| Kind | One known-kind string below, or exactly `extension:Edition`, `name:text` |
+| Ports | map of `"string"`, `"boolean"` or `"json"` |
+| Binding | Exactly `input:text`, or exactly `step:text`, `port:text` |
 
-Ownership is encoded only by `owner`; there is no second `owns` edge or Identity
-record for the same Agent key. Duplicate relation tuples fail. Other semantic
-relations require extensions in this candidate subset. An `exports` item is a
-local definition key; no duplicate or missing exports. Fragment exports at
-least one; System exports are empty; Package version exports may be empty.
-These explicit encoding restrictions narrow 0011 rather than adopting all of
-0002's relation table. Information outside the encoding can be preserved as
-original evidence or a declared extension, not silently treated as validated.
+Key equality compares all three fields; a version is an exact opaque identity,
+not a range, selector or compatibility promise. Edition equality compares both
+fields. A local scope/id pair has one version and record, including the root.
+Across supplied documents different versions can coexist. A Ref wrapper always
+means external, even when its key shares a local scope. Kind equality compares
+the string or all fields of the custom Kind. No custom Kind aliases a core kind.
 
-A dependency entry requires `id`, `rootKey`, `status`, `requiredFor`, `sha256`.
-IDs are nonempty and unique; `rootKey` is exact. Status is `included`,
-`external`, `omitted` or `unavailable`. `requiredFor` is an array drawn from
-`validateD`, `resolveG`, `exchange`, with no duplicates. `sha256` is 64 lowercase
-hex characters for the exact dependency bytes. Optional `location` is a
-nonempty opaque string, never a fetch instruction. The only resolution policy
-is the caller-supplied artifact map keyed by dependency id. No relative base,
-registry discovery, secret resolution or network access is inferred. External
-target keys have the dependency root's scope. D checks declarations and hashes
-of supplied bytes, not dependency internals. `included` without supplied bytes
-fails dependency accounting; an unfetched `external` target remains unchecked.
-A missing required target fails a requested resolved-graph check. Hashes provide
-content identity, not authentication. Imported records are never copied locally.
+The closed known-kind list for local definitions is `Agent`, `Principal`,
+`Interface`, `Instructions`, `Role`, `Skill`, `ControlFlow`, `Action`, `Resource`,
+`ApprovalRequirement`, `Tool`, `Model`, `Environment`, `Runtime`, `Deployment`,
+`Policy`, `Memory`, `Knowledge`, `State`, `Topology`, `Protocol`. These names
+activate only this candidate's checks, not all of proposal 0002. Other concepts,
+including occurrences, are opaque evidence or declared extensions. Root kinds
+are separate. A custom Kind's exact extension Edition must occur once in the
+same document's extension array. Generic use/containment can name a custom
+Kind; it cannot satisfy a core Agent, Interface or other typed minimum.
 
-A permitted `unresolved` entry has exactly `subject` as a local Agent key,
-`obligation: "agent-interface-minimum"`, `rule: "fragment-interface-deferral"`,
-`relation: "exposes"`, `expectedKind: "Interface"`, `missingMinimum: 1`,
-`target` as a key or explicit null, `satisfyBy: "typed-exposes-relation"`, and
-`expiresBefore: "resolved-graph"`. Null means unknown target identity.
-It applies only where no exposes relation exists; one entry per missing
-obligation, no stale or duplicate entries. All other missing covered facts
-fail. A later composition must record the supplied relation and its provenance
-in a new artifact; it cannot rewrite the original Fragment's validation history.
-The first candidate does not define an overlay or composition language.
+### Operations, phases and supplied inputs
 
-## Unknown information, exchange and diagnostics
+A request is exactly `operation`, `primary` as a byte string, and `annexes` as a
+map of byte strings. Operation is one of `inspect`, `validateD`, `validateG`,
+`resolveG`, `validateR`, `exchange`, `lossyExchange`. An optional `losses` array
+is allowed only with lossyExchange and uses the loss record below. Callers
+provide the entire observed input boundary. Byte strings and maps describe the
+host API, not a new transport. Annex map keys are exact dependency ids of the
+primary document. No other files, URLs, secrets or processes are accessed.
 
-An extension envelope has exactly `identity` as an owner-qualified nonempty
-string, `version` as an exact nonempty string, `operations` as an object and
-`payload` as opaque JSON. Operations are `validateD`, `validateG`, `validateR`;
-each requested validation operation needs an entry `required`, `unknown`, or
-`{ignoreRule: key}`. An ignore rule is usable only if the processor implements
-that exact rule and it proves which portable meaning remains for this operation.
-An unsupported required extension yields unsupported; absent classification or
-unknown applicability yields inconclusive. It is not a known shape violation
-merely because interpretation is unavailable. Extension payload never changes
-core meaning silently. `annotations` alone has a candidate core rule that it
-cannot affect identity, reference, graph, runtime or authority meaning and may
-be ignored in validation. This rule, not an optional flag, permits continuation.
-
-Exact exchange returns the original artifact bytes unchanged, with each supplied
-annex in its original boundary. Compare bytes directly; hashes identify report
-inputs. Whitespace and unknown payloads survive. Inventory dependencies by
-status and actual delivery. Copying a known invalid artifact can succeed while
-validation fails. This is a preservation consumer operation, not a producer
-conformance claim under 0003. Recommend excluding lossy output in 0.1.0:
-requested loss is refused with a prospective loss report before any output.
-Each loss names artifact hash, location, information, reason and absent or
-applicable permission. No normalization or round-trip semantic claim follows.
-
-Reports contain processor identity/version, candidate edition, operation,
-primary artifact hash, annex hashes, unit, phase, input-boundary inventory,
-extension support, checks, findings, deferred obligations and exclusions.
-For parsed JSON, locations are JSON Pointer strings; parse failures use
-zero-based UTF-8 byte offsets. A finding contains artifact hash, location,
-rule/category, outcome and evidence. Candidate categories are `syntax`,
-`shape`, `identity`, `owner`, `reference`, `integrity`, `cycle`, `agent-minimum`,
-`deferral`, `extension`, `graph`, `runtime` and `preservation`; these are not
-stable diagnostic codes. Compare category, rule, location and outcome between
-implementations, not prose or ordering. Publish exact rule identifiers only
-with the later normative inventory and fixtures.
-
-For each requested unit/phase, retain all findings and aggregate known failure
-before unsupported required checking, then inconclusive evidence, then pass.
-Pass needs every applicable check completed or a permitted D deferral. A parse
-failure stops dependent checks and records them unperformed. Unrequested units
-have no verdict. D uses unresolved-document only; G's requested resolved-graph
-verdict is separate and bounded to G dependencies and checks, not all of 0002.
-No successful structural or exchange result supplies execution evidence.
-
-## Candidate G: simple control flow
-
-Conceptual example: accept text, invoke a drafting Agent, read its Boolean
-`needsReview`, ask a human about one proposed publish action when true, then
-invoke that action and finish. False bypasses publication and returns the draft.
-Refusal ends as denied; timeout or invalid input ends as failure. Two sequential
-Agent invocations use the same rules. A single Agent needs no synthetic topology.
-
-Recommend a finite acyclic graph with one entry and one active step. Every step
-is reachable from entry and every path ends at a terminal. Step kinds are
-`invoke`, `condition`, `approval`, `end`; their explicit successor labels below
-are exhaustive. No implicit next step, parallel branch, arbitrary cycle, retry,
-model-selected transition or general expression evaluation exists in G.
-
-Each graph has a local ControlFlow `definition` key, `entry`, `inputs`, `outputs`
-and `steps`. Step ids are unique nonempty strings scoped to that graph.
-I/O contracts are finite maps from port names to `string`, `boolean` or `json`.
-All declared inputs/outputs are required; undeclared ports fail. `json` accepts
-any JSON value but has no selector or implicit coercion. A binding is a graph
-input port or a prior step output port, both identified explicitly; matching
-types must be equal. Only invoke steps produce step output ports. The producing invocation must
-dominate its consumer, and every path to that consumer must traverse the
-producer's `success` edge. Its `failure` edge makes none of its outputs
-available. These rules apply to end-step output bindings as well. No ambient
-state or merge inference supplies a value.
-G validates these static properties without invoking a participant.
-
-| Step | Candidate content and outcomes |
+| Operation | Coverage and phase |
 | --- | --- |
-| invoke | Agent reference, its Interface reference, input/output port maps, bindings for all inputs, `success` and `failure` successors. The Interface must be exposed by the Agent. Success requires all output values; missing/ill-typed output takes failure without partial outputs. |
-| condition | One Boolean binding, `true`, `false`, `failure` successors. Only literal Boolean values select true/false; missing or non-Boolean value takes failure. No truthiness or expression string. |
-| approval | ApprovalRequirement reference, protected immediate successor invoke id, bindings identifying proposed Action definition, Resources, requesting Principal and material context; positive integer `timeoutMs`; `approved`, `denied`, `failure` successors. Approved targets that protected invocation. |
-| end | Outcome `success`, `failure` or `denied`, no successors. Success binds all graph output ports; failure/denied emit no success output and name a nonempty reason. |
+| inspect | Syntax and D inventory, no semantic validation verdict. Return source tree and opaque slices when parseable; otherwise bytes and syntax finding. |
+| validateD | D rules, phase `unresolved-document`. |
+| validateG | D prerequisite plus G local rules, phase `unresolved-document`. External G obligations are recorded unchecked, outside this phase's positive scope. |
+| resolveG | D prerequisite plus G local rules and direct external G target checks against supplied annexes, phase `resolved-graph`. This is a bounded G graph, not full model resolution. |
+| validateR | D prerequisite plus R rules, phase `unresolved-document`; no deployment assessment. |
+| exchange | Exact byte preservation and dependency accounting, phase null; independent of semantic validation. |
+| lossyExchange | Refuse output, phase null; report all requested losses, or one whole-artifact loss if none supplied. |
 
-Recommend that an approval step dominates its protected invocation. The only
-incoming edge of that invocation is this step's `approved` edge; neither its
-`denied` nor its `failure` path may reach the protected invocation. The
-ApprovalRequirement identifies allowed human
-Principal definitions, presented context, approve/deny decisions and expiry.
-Its decision is scoped to one request and proposed Action/context and expires
-at the earlier of its stated expiry or the graph timeout. No response at the
-deadline, expired/mismatched evidence or inability to establish validity takes
-failure; a valid denial takes denied. There is no default approval, reuse for
-later actions or implied Authorization decision. Other required authorization
-checks remain separate and must still be mediated by an external runtime.
-Validation checks the declarations and edges, not human identity or enforcement.
-Execution evidence formats and mediation coverage require a later reviewed
-runtime mapping before anyone claims executable approval support.
+G/R operations include a separate D result in the report. A failing, unsupported
+or inconclusive D result prevents dependent checks from claiming success. It
+does not convert unchecked G/R rules into passes. No operation not requested,
+apart from this explicit prerequisite, gets a result. G validates all graphs
+present, R validates the runtime container present. Absence of either container
+is valid and reported `absent`, with its rules not applicable; it grants no
+engine selection or graph. No operation executes the described behavior.
 
-Graph I/O is an additional G contract for the named Interface invocation; it
-does not infer or validate every Interface operation invariant in 0002. Require
-explicit agreement of supplied Interface I/O declarations with the invoke port
-maps before a resolved G pass. Missing external Agent/Interface/approval content
-fails that phase. D can still pass its reference declaration checks. G
-unresolved-document checks cover local shapes, paths and local type evidence;
-unobserved external type agreement is listed unchecked, never as established.
-The JSON spellings for G are design candidates to be completed with an exact
-field inventory after C8 review, before schemas or two-implementation claims.
+### D envelope and reference declarations
 
-## Candidate R: open runtime declarations
+| Record | Fields |
+| --- | --- |
+| Document | `contract:"proposal-0012-candidate-2"`, `root:Root`, `definitions:Definition[]`, `relations:Relation[]`, `exports:Key[]`, `dependencies:Dependency[]`, `unresolved:Deferral[]`, `extensions:Extension[]`, `annotations?:JSON`, `evidence?:JSON`, `graphs?:JSON`, `runtime?:JSON` |
+| Root | `key:Key`, `kind:"System" or "Fragment" or "PackageVersion"`, `payload?:JSON`, `annotations?:JSON` |
+| Definition | `key:Key`, `kind:Kind`, `owner:Key`, `payload:JSON`, `annotations?:JSON`, `provenance?:JSON` |
+| Relation | `source:Key`, `relation:"actsAs" or "exposes" or "directedBy" or "uses" or "contains"`, `target:Ref`, `expectedKind:Kind` |
+| Dependency | `id:text`, `rootKey:Key`, `status:"included" or "external" or "omitted" or "unavailable"`, `requiredFor:("validateD" or "resolveG" or "exchange")[]`, `sha256:Hash or null`, `location?:text` |
+| Deferral | `subject:Key`, `obligation:"agent-interface-minimum"`, `rule:"fragment-interface-deferral"`, `relation:"exposes"`, `expectedKind:"Interface"`, `missingMinimum:1`, `target:Key or null`, `satisfyBy:"typed-exposes-relation"`, `expiresBefore:"resolved-graph"` |
+| Extension | `identity:text`, `version:text`, `operations:ExtensionOperations`, `payload:JSON` |
+| ExtensionOperations | `validateD?:ExtensionMode`, `validateG?:ExtensionMode`, `validateR?:ExtensionMode` |
+| ExtensionMode | `"required"`, `"unknown"`, or exactly `ignoreRule:"annotation-only"` |
 
-Recommend `runtime` as a declaration object with `requirements` and optional
-`selection`. Each requirement identifies an exact owner-qualified capability
-contract/version and its required subject definition key. Capabilities describe
-needs such as session resumption or mediation of a specified effect; no vendor
-name proves a capability. These examples mint no capability identities.
+An Extension's identity/version satisfy Edition. Edition duplicates fail.
+All definitions share the root's scope and have exactly the root key as owner;
+the root has no owner and is not a definition owned by itself. The package root
+remains an immutable-artifact boundary. No synthetic System, Identity record,
+instance or ownership edge is inferred. Provenance is retained as an assertion,
+not verified evidence of authenticity. Opaque provenance/payload cannot change
+key, owner, kind or relation meaning in this edition.
 
-`selection` identifies exact engine and interface identity/version strings,
-separate optional model identity/version, provider identity, hosting reference,
-and evidence references for each requirement. There is no vendor enum or
-inference between those fields. An absent selection is valid documentary input,
-recorded as unselected. An unknown custom engine is retained as declared, with
-support unassessed. A custom engine contract may remain undefined; naming it
-does not establish capabilities or compatibility.
+Every relation source exists locally, including the root. Local targets exist
+uniquely with matching expectedKind. External targets name one declared
+dependency, have its rootKey scope, and are not looked up by D. `actsAs` is
+Agent to Principal, `exposes` Agent to Interface, `directedBy` Agent to
+Instructions/Role/Skill/ControlFlow. `uses` and `contains` allow any source and
+any declared Kind. Duplicate relation tuples fail. The local contains graph
+has no directed cycle or self-edge; ownership is already constrained to root.
+Each local Agent has exactly one actsAs, at least one directedBy, and at least
+one exposes unless the one allowed deferral applies. External declared targets
+count toward relation presence, not evidence of target content.
 
-A future deployment assessment records each requirement as satisfied,
-unsatisfied or indeterminate against versioned evidence, separate from R's
-structural result. Missing selection or evidence cannot yield readiness. A
-known gap is unsatisfied; unknown support is indeterminate. No automatic
-fallback or degradation is proposed. Session, streaming, cancellation, ambient
-configuration and approval behavior need exact interface coverage as outlined
-in the [runtime research](../docs/research/runtime-engine-interfaces.md).
-R's final field grammar and capability contracts remain adoption prerequisites;
-R does not prescribe an implementation or execute an engine.
+Exports are unique local definition keys. Fragment exports are nonempty,
+System exports empty, PackageVersion exports may be empty. A Deferral is valid
+only for a local Agent in a Fragment with zero exposes relations, one declaration
+per subject, all other Agent minima intact. Non-null target is an exact future
+Interface key constraint; null explicitly states it is unknown. No dangling
+reference is excused. Resolving G cannot satisfy a missing relation by invention;
+if G needs that Agent's missing Interface, its graph fails. D deferrals outside
+G's dependency closure remain explicitly excluded from bounded G resolution.
 
-## Candidate D example and refusal variants
+D reads the outer JSON of all fields, but interprets only the closed D records.
+Definition payloads, root payload, annotations, provenance, evidence and the
+entire graphs/runtime values are opaque in D. G interprets graphs and selected
+Interface/ApprovalRequirement payloads; R interprets runtime. Thus `graphs:17`
+can pass D, fails G shape, and is still preserved exactly. Unsupported G is not
+unknown D core syntax. Extra members inside a G-interpreted payload fail G,
+while unrelated payloads remain opaque. No declared scope may silently shrink
+to avoid a local Agent failure.
 
-This example is a complete D candidate Fragment, not a conforming AgSDL artifact.
-Principal and Instructions payload semantics remain unchecked by D.
+### Dependencies, unknowns and extension handling
+
+Dependency ids, rootKeys and requiredFor entries are unique within their arrays. Status `included` requires
+an annex; other statuses require its absence. Undeclared annex ids fail
+accounting. Hash null means explicitly unknown, never absent or mismatched.
+A non-null hash is checked against supplied bytes. If validateD is in requiredFor
+and hash is null, D is inconclusive, even when no annex was supplied. D otherwise
+accepts null and reports integrity unchecked. D never requires annex availability
+solely from requiredFor; local declaration and supplied-content checks remain
+separate. `location` is an opaque hint, not a resolution base or retrieval grant.
+
+ResolveG requires every dependency named by a G Ref or marked resolveG in
+requiredFor to be included, parseable as this edition, hash-known and matching.
+Missing bytes or invalid content fails; null declared hash is inconclusive,
+not permission to invent integrity. Verify its rootKey against the parsed root.
+Each G Ref resolves to exactly one exported definition of expected core kind.
+A selected key appearing in more than one document boundary, including the
+primary, fails G-RESOLVE rather than merging definitions; repeated references
+within the same boundary are allowed. Only direct primary dependencies are supported: when a selected annex payload
+or relation needs an external Ref, report unsupported for that G check. No
+transitive resolver, composition, overlay, profile application or cycle-breaking
+policy exists here. An annex's D validation is required for resolveG and reported
+separately; its own included dependencies cannot be supplied by the flat primary
+map, so such an annex fails its accounting rather than triggering recursion.
+Unused annex G/R containers remain unchecked. Imported ownership never changes.
+
+The edition implements no semantic extension interpreter. For each requested
+validation unit, required gives unsupported, unknown or absent classification
+gives inconclusive. `ignoreRule:annotation-only` is a candidate core permission:
+the entire extension is a nonsemantic annotation for that unit and cannot
+change core facts. A custom Kind declaration forces validateD required for its
+extension; any other validateD mode on that extension fails classification.
+This prevents an unknown kind from bypassing typed checks with an ignore label.
+G uses validateG classification for both phases, R uses validateR; D prerequisite
+classification remains independent. No extension code or ignore-rule definition
+is loaded. Future semantic interpreters need a new candidate contract, not an
+implementation-specific pass in this one. The closed ignore rule makes the
+candidate oracle identical in two independently implemented readers.
+
+Absence, explicit unknown, unsupported interpretation, excluded checks and
+failed facts are distinct. Missing mandatory fields fail shape. Null permitted
+hashes and unknown extension modes remain visible unknowns. No extension blocks
+exact preservation merely because its interpretation is unavailable.
+
+## G: closed simple-graph grammar
+
+Conceptual example: draft through one Agent Interface, branch on its Boolean
+needsReview output, obtain human approval for a second Agent invocation when
+true, then finish. False returns the draft directly. The protected invocation
+is still an Agent call; its Action reference describes the proposed action of
+that call, not a second instruction or an `invokeAction` opcode.
+
+When G is requested, graphs is Graph[]. An empty array is valid. Each graph's
+definition uniquely selects a local ControlFlow. All graphs in this container
+are checked; nested graphs, parallelism, arbitrary cycles and expressions are
+outside G and fail its closed grammar if encoded as step kinds or fields.
+
+| Record | Fields |
+| --- | --- |
+| Graph | `definition:Key`, `entry:text`, `inputs:Ports`, `outputs:Ports`, `steps:Step[]` with at least one step |
+| invoke Step | `id:text`, `kind:"invoke"`, `agent:Ref`, `interface:Ref`, `action:Ref`, `resources:Ref[]` nonempty, `principal:Ref`, `context:Binding`, `inputs:Ports`, `outputs:Ports`, `bindings:map<Binding>`, `success:text`, `failure:text` |
+| condition Step | `id:text`, `kind:"condition"`, `test:Binding`, `true:text`, `false:text`, `failure:text` |
+| approval Step | `id:text`, `kind:"approval"`, `requirement:Ref`, `timeoutMs:positive`, `approved:text`, `denied:text`, `failure:text` |
+| success end Step | `id:text`, `kind:"end"`, `outcome:"success"`, `bindings:map<Binding>` |
+| other end Step | `id:text`, `kind:"end"`, `outcome:"failure" or "denied"`, `reason:text` |
+| Selected Interface payload | `inputs:Ports`, `outputs:Ports`, `action:Ref` |
+| Selected ApprovalRequirement payload | `approvers:Ref[]` nonempty, `validForMs:positive` |
+
+Every G/R Ref obeys the same local/external declaration rules as D relations,
+including dependency existence and scope matching; opaque D treatment does not
+waive these checks when G/R interprets it. All selected graph refs are typed: agent Agent, interface Interface, action
+Action, resources Resource, principal and approvers Principal, requirement
+ApprovalRequirement. Resources and approvers have no duplicate Refs. Other
+payloads, including Action/Principal/Resource and ControlFlow, are not evaluated.
+G invents neither an acting identity nor authorization evidence from them.
+An invoke's Interface is exposed by its Agent through one D relation, its
+principal equals that Agent's actsAs target, and its action equals the Interface
+payload action. Equality here uses resolved keys when targets are available;
+validateG checks known local matches and records external comparisons unchecked.
+Refs inside a selected annex record use that annex as their local scope; the
+primary invocation still identifies it using the external wrapper.
+
+Interface inputs/outputs equal the invoke's maps, including names and types.
+The bindings map has exactly the invoke input names. Success terminals bind
+exactly graph outputs; failure/denied terminals bind none. Context has type
+json; condition test has type boolean. Binding input names exist in graph
+inputs; step bindings name an invoke and one of its output ports. Types match
+exactly, with no string-to-json coercion or selectors. All ports are required.
+Only invoke produces ports. For every step-output binding, every path from entry
+to its consumer must traverse that producer's success edge. Removing the success
+edge must make the consumer unreachable. This also excludes self-use and
+failure-path outputs. For an approval step, additionally check all bindings of
+its approved invoke, including context, at the approval step itself, because
+the request presents those values before the invocation occurs.
+
+Step ids are unique. Every successor and entry names a step. The graph is
+acyclic, every step reachable from entry, every maximal path ends at an end
+step. The only end steps have no successors. Successor labels are distinct
+edges even if their target ids coincide. Conditions choose exactly true/false
+for Boolean values; unusable values lead to failure. Invocations produce all
+declared outputs on success; unusable/missing outputs lead to failure with no
+partial outputs. These are declared meanings, not observations of a run.
+
+An approval's approved successor is an invoke and has that approved edge as its
+only incoming edge. Neither denied nor failure may reach that invocation.
+At most one approval protects one invoke. The requirement, action, resources,
+requesting Principal definition, input values and context of the proposed call
+are the request's declared scope. Approval refers only to that immediate call.
+The request permits decisions approve/deny by one of the requirement's declared
+human Principal definitions. Validation checks references, not whether a real
+human controls an identity. The maximum wait/validity interval begins on entry
+to the approval step and is min(timeoutMs, validForMs) milliseconds. There is no
+graph-level timeout. A valid approval within that interval selects approved;
+a valid refusal selects denied. At or after the deadline, no response or
+unusable/expired/mismatched decision selects failure. Matching, authentication,
+authorization and timing evidence are not simulated by a validator. The
+candidate defines no executable decision intake API, retries or approval reuse.
+This is a declaration of a human gate, not proof of permission or enforcement.
+
+ValidateG checks available local targets/payloads and all graph shapes, edges,
+bindings and local agreements. An external Ref's declaration is checked, then
+target-dependent checks are explicitly excluded at this phase, even if annexes
+were supplied. ResolveG checks the same rules using its direct target set;
+missing required G references fail and none may use a D deferral to pass.
+The G verdict covers G's selected target payloads only, not full Interface,
+Action, approval or System validity from proposal 0002.
+
+## R: closed runtime-declaration grammar
+
+When R is requested, runtime is RuntimeDeclaration. R has no resolved or ready
+operation. Open Edition identifiers are declarations, not a registry or proof
+that an engine or capability contract exists.
+
+| Record | Fields |
+| --- | --- |
+| RuntimeDeclaration | `requirements:Requirement[]`, `selection?:Selection` |
+| Requirement | `id:text`, `capability:Edition`, `subject:Key` |
+| Selection | `engine:Edition`, `interface:Edition`, `model?:Edition`, `provider?:text`, `hosting?:Ref`, `evidence:EvidenceClaim[]` |
+| EvidenceClaim | `requirement:text`, `claim:"satisfied" or "unsatisfied" or "indeterminate"`, `artifact:Hash or null`, `location?:text` |
+
+Requirement ids are unique; subject selects a local definition, not the root.
+Duplicate capability/subject pairs fail. All requirements are needed by the
+subject; empty requirements is valid. No implied capability taxonomy exists.
+Provider, when present, uses the identity pattern of Edition but has no implied
+model or engine relationship. Hosting expects Environment; R checks local kind
+or external declaration only, never deployment resolution. Evidence requirement
+names exist, one EvidenceClaim per requirement at most; missing claims are valid
+and reported absent. Null artifact means unknown evidence identity. Claim is
+an unverified assertion retained verbatim, even when it says satisfied or when
+an engine is unknown. Evidence location is an opaque hint, never dereferenced.
+No source truth, capability compatibility or claim plausibility is assessed.
+
+No selection is valid and reported absent; no engine is inferred. Present
+selection is reported declared, with support unassessed for every engine,
+including known product names and custom engines. Model/provider/hosting remain
+absent when not supplied. R pass means well-formed declarations only; the report
+always excludes readiness, evidence assessment and execution. A later assessment
+could interpret known gaps as unsatisfied and unknown support as indeterminate,
+but that operation is outside this edition. No automatic fallback is encoded.
+
+## Exact results, locations and experimental diagnostics
+
+The following report records use the same closed notation. These are candidate
+identifiers scoped to candidate-2, not stable official diagnostics. Checks are
+run in the table order below. A prerequisite shape failure suppresses only rules
+that need that malformed value. Unrelated well-formed records are still checked.
+For duplicate keys or ambiguous identities, dependent lookup is not attempted.
+Each rule emits one finding per failing or unknown subject location, not one
+finding per possible explanation. If several reasons apply at that location,
+retain them in details but keep one rule/location/outcome tuple.
+
+| Report record | Fields |
+| --- | --- |
+| Report | `contract:"proposal-0012-candidate-2"`, `processor:Edition`, `operation:text`, `inputs:InputRecord[]`, `results:Result[]`, `inventory:Inventory`, `losses:Loss[]`, `outputs:OutputRecord[]` |
+| InputRecord | `id:text`, `sha256:Hash`; primary id is `primary`, annex ids are `annex/` followed by supplied map key |
+| Result | `input:text`, `unit:"D" or "G" or "R" or "inspect" or "exchange"`, `phase:"unresolved-document" or "resolved-graph" or null`, `verdict:"pass" or "fail" or "unsupported" or "inconclusive"`, `findings:Finding[]`, `checks:Check[]` |
+| Finding | `rule:text`, `location:Location`, `outcome:"fail" or "unsupported" or "inconclusive" or "deferred"`, `details:text` |
+| Location | Exactly `pointer:string`, or exactly `byte:uint`; empty pointer is root |
+| Check | `rule:text`, `state:"completed" or "excluded" or "blocked"`, `locations:Location[]` |
+| Inventory | `tree:JSON`, `states:State[]`, `opaque:Slice[]`; tree is null on parse failure |
+| State | `input:text`, `pointer:string`, `state:"absent" or "unknown" or "declared" or "unchecked"`, `detail:text` |
+| Slice | `input:text`, `pointer:string`, `start:uint`, `end:uint`; half-open UTF-8 byte span |
+| Loss | `input:text`, `location:Location`, `information:text`, `reason:text`, `permission:null` |
+| OutputRecord | `id:text`, `sha256:Hash` |
+
+`string` in Location/State/Slice permits empty string. Parsed locations are JSON
+Pointers: escape ~ as ~0 and / as ~1; array indices are zero-based decimal.
+Missing-field shape findings point to its parent record; wrong type/extra field
+findings point to that value. All other rules point to the affected record,
+except cycle/path rules to Graph or relations array as specified below.
+Syntax errors point to the first offending byte, or byte length for unexpected
+EOF. Duplicate member names point to the opening quote of the second name.
+For simultaneous encoding and JSON defects report the earliest byte detectable
+by a left-to-right strict UTF-8 JSON scan. No parsed tree exists after syntax
+failure; preservation can still copy the raw input.
+
+Inputs include every supplied artifact, sorted primary then annex id. Results
+are ordered prerequisite D for primary, D for each required annex sorted by id
+when resolveG requests them, then requested operation result. ValidateD emits
+only its D result; inspect/exchange emit only their own result. Annex D input
+uses its own bytes with an empty annex map. Its syntax/version failures become
+failed dependency checks in resolveG; unsupported/inconclusive D evidence stays
+unsupported/inconclusive. G/R requested result aggregates prerequisite D findings
+without copying them: a blocked check entry names `P-PREREQUISITE` and its state;
+verdict precedence below includes those prerequisite results. No pass follows a
+failed prerequisite, even for an absent G/R container.
+
+Inventory tree is the primary parsed JSON value; opaque numeric values can be
+exposed as lossless host representations, with slices as the comparison source.
+Inventory states enumerate absent graphs/runtime/selection/model/provider/hosting,
+null dependency/evidence hashes, missing evidence per requirement, and external
+target checks excluded in the selected operation. Declared definitions/relations
+are the source tree itself, not a synthesized normalized graph. Opaque slices
+are the maximal unexamined JSON values for the requested unit: D opaque fields
+listed above, G/R unselected payloads/containers, annotations/evidence/provenance
+and extension payloads. Inspect uses D boundaries. Compare slices by their source
+bytes, not a host JSON serializer. No normalized JSON codec is required.
+
+| Rule | Deterministic check and finding location |
+| --- | --- |
+| P-SYNTAX | Shared JSON encoding/parse constraints; byte location. On failure all shape/semantic rules are blocked. |
+| P-SHAPE | Closed record grammar, required/optional fields, enums and primitive domains for requested scope; malformed field or parent as above. Wrong contract marker is a shape failure. |
+| D-IDENTITY | Duplicate scope/id among root/definitions, wrong local scope; offending later definition in array or record with wrong scope. |
+| D-OWNER | Owner not equal to root key; definition record. |
+| D-REFERENCE | Every D source/local target exists and kind matches, external wrapper names dependency and matching scope, custom Kind has declared Edition; relation or custom-kind definition record. |
+| D-RELATION | Source/expected target kinds allowed, duplicate relation tuple; offending relation, later one for duplicates. |
+| D-CYCLE | Local contains cycle including self-edge; relations array, one finding for any cycles. |
+| D-EXPORT | Export missing/duplicate, root export minimum/form; later invalid export item, or exports array for minimum/form. |
+| D-AGENT | Each local Agent minima; Agent record, one finding for any unsatisfied minima. Valid Interface deferral exempts only that minimum. |
+| D-DEFERRAL | All deferral preconditions, duplicate/stale declaration; deferral record. Valid deferral emits deferred at that record, not a pass for the missing relation. |
+| D-DEPENDENCY | Dependency id/rootKey/requiredFor uniqueness, declared delivery status vs actual annex map, undeclared annex; dependency record, later entry for duplicates; root pointer for undeclared annex. |
+| D-INTEGRITY | Supplied known hash mismatch fails; required validateD hash null inconclusive; dependency record. |
+| X-MODE | Duplicate Editions/custom Kind mode conflict fails at extension record; otherwise required unsupported, unknown/absent mode inconclusive there; annotation-only completes with no finding. Applies independently to each requested unit. |
+| G-TARGET | Graph ControlFlow key/type/uniqueness; local typed Refs, selected payload refs, Agent exposure/principal and Interface action agreement, Resource/approver duplicate refs; affected Graph, Step or selected payload record. External target-dependent parts excluded in validateG. |
+| G-PATH | Unique step ids, entry/successor existence, acyclicity, reachability, terminal paths; Graph record, one failure for any defect. |
+| G-DATA | Port-map agreement, binding names/types, success-edge availability; Step record. Approval pre-invocation availability failure points to approval Step. |
+| G-APPROVAL | Approved target is invoke, sole incoming approved edge, denied/failure unreachable to protected invoke; approval Step record. |
+| G-RESOLVE | Missing required annex, invalid annex/rootKey, cross-document selected-key collision, missing/unexported/wrong-kind external target fails; unknown declared hash inconclusive; transitive selected Ref unsupported; dependency record for artifact issue, consuming Step for target issue. |
+| R-REQUIREMENT | Unique ids and capability/subject, local subject lookup; later offending Requirement. |
+| R-SELECTION | Hosting reference/kind, evidence requirement existence/uniqueness; Selection or offending EvidenceClaim. No interpretation of claims. |
+| E-PRESERVE | Output bytes and input boundary identical, supplied annex accounting consistent; root pointer on refusal/failure. Known hash mismatch fails at dependency record. |
+| E-LOSS | lossyExchange refused; root pointer and separate prospective Loss records. |
+
+P-SHAPE applies to selected Interface/ApprovalRequirement payloads when G can
+observe them. G findings in annex payloads have a Result whose input is that
+annex, unit G, same phase, emitted before the primary G result; aggregate them
+as prerequisites. Ref comparison does not recursively activate all kind rules.
+For shape failures emit one P-SHAPE finding at each malformed field/parent;
+multiple missing fields at one parent coalesce. Semantic rules with absent
+prerequisites list blocked locations; valid unaffected records still run.
+G-PATH failure blocks availability and approval reachability checks in that
+Graph, but not local type/target checks. All candidate validators implement
+these same rules; no user-selected arbitrary subset produces a unit pass.
+
+Aggregation is fail before unsupported before inconclusive before pass. Deferred
+findings do not prevent D pass, but remain outstanding. Excluded checks do not
+claim success. A completed rule with no finding is satisfied for its scope;
+blocked checks make the unit inconclusive unless a higher-precedence finding
+or prerequisite already decides it. Unrequested checks are absent. Validation
+results never imply execution evidence, even when all three units pass.
+
+Exact exchange returns every supplied artifact's bytes unchanged using original
+ids; OutputRecord hashes describe those bytes, transferred separately. Syntax
+or semantic invalidity alone does not prevent copying. If the primary is
+parseable and has well-shaped dependencies, enforce delivery accounting and
+known hashes; if dependency declarations cannot be read, record them unchecked,
+copy the supplied boundary only, and claim no declared package completeness.
+RequiredFor exchange additionally requires included bytes and a known hash;
+otherwise refuse exchange, with fail for missing bytes, inconclusive for null
+hash. No output is delivered on refusal. Exchange inventories unknown content
+without interpretation and is not producer conformance. LossyExchange always
+returns fail, E-LOSS and no output, even if a caller asserts omission permission;
+this edition grants none. A default loss names primary root and information
+`unspecified requested loss`. Neither byte equality nor a loss report proves
+semantic equivalence.
+
+## Candidate examples and experimental oracles
+
+The following minimal Fragment passes D with one explicit deferral. Payloads
+are deliberately nonsemantic for D, including the Principal's two identities.
 
 ```json
 {
-  "contract": "proposal-0012-candidate-1",
-  "root": {"key": {"scope": "example", "id": "drafting", "version": "1"}, "kind": "Fragment"},
+  "contract": "proposal-0012-candidate-2",
+  "root": {"key": {"scope": "example", "id": "fragment", "version": "1"}, "kind": "Fragment"},
   "definitions": [
-    {"key": {"scope": "example", "id": "agent", "version": "1"}, "kind": "Agent", "owner": {"scope": "example", "id": "drafting", "version": "1"}, "payload": {}},
-    {"key": {"scope": "example", "id": "author", "version": "1"}, "kind": "Principal", "owner": {"scope": "example", "id": "drafting", "version": "1"}, "payload": {"identities": [{"scope": "team", "id": "author"}, {"scope": "review", "id": "author"}]}},
-    {"key": {"scope": "example", "id": "instructions", "version": "1"}, "kind": "Instructions", "owner": {"scope": "example", "id": "drafting", "version": "1"}, "payload": {"text": "Draft a reply."}}
+    {"key": {"scope": "example", "id": "agent", "version": "1"}, "kind": "Agent", "owner": {"scope": "example", "id": "fragment", "version": "1"}, "payload": {}},
+    {"key": {"scope": "example", "id": "actor", "version": "1"}, "kind": "Principal", "owner": {"scope": "example", "id": "fragment", "version": "1"}, "payload": {"identities": ["team/author", "review/author"]}},
+    {"key": {"scope": "example", "id": "direction", "version": "1"}, "kind": "Instructions", "owner": {"scope": "example", "id": "fragment", "version": "1"}, "payload": "Draft a reply."}
   ],
   "relations": [
-    {"source": {"scope": "example", "id": "agent", "version": "1"}, "relation": "actsAs", "target": {"scope": "example", "id": "author", "version": "1"}, "expectedKind": "Principal"},
-    {"source": {"scope": "example", "id": "agent", "version": "1"}, "relation": "directedBy", "target": {"scope": "example", "id": "instructions", "version": "1"}, "expectedKind": "Instructions"}
+    {"source": {"scope": "example", "id": "agent", "version": "1"}, "relation": "actsAs", "target": {"scope": "example", "id": "actor", "version": "1"}, "expectedKind": "Principal"},
+    {"source": {"scope": "example", "id": "agent", "version": "1"}, "relation": "directedBy", "target": {"scope": "example", "id": "direction", "version": "1"}, "expectedKind": "Instructions"}
   ],
   "exports": [{"scope": "example", "id": "agent", "version": "1"}],
   "dependencies": [],
@@ -320,39 +513,40 @@ Principal and Instructions payload semantics remain unchecked by D.
 }
 ```
 
-Candidate D result is pass with the Interface obligation separately deferred.
-Remove its declaration: fail `agent-minimum`. Change the root to System and
-clear exports: fail `deferral` and the unsatisfied minimum. Add a dangling local
-exposes edge: fail `reference`, not a permitted missing minimum. Duplicate the
-Agent record: fail `identity`. A valid external Interface declaration without
-retrieval can pass D, with content unchecked; requesting G resolution with that
-required artifact absent fails its separate phase. Exact copying of each
-invalid variant can still pass exchange, never producer conformance.
+| Mutation or supplied case | Candidate oracle |
+| --- | --- |
+| Remove the deferral above | D fail, D-AGENT at /definitions/0. |
+| Duplicate the Agent record | D fail, D-IDENTITY at the later definition; dependent ambiguous lookups blocked. |
+| Add graphs:17 | D still passes; validateG fails P-SHAPE at /graphs. |
+| Add a well-shaped external Interface relation with null dependency hash and no validateD requirement | D checks declaration, does not fetch; target/integrity unchecked. A G use of the missing annex fails resolveG. |
+| Unknown custom Kind with required extension | D unsupported, X-MODE, while identity/reference checks still run; exchange can preserve. |
+| Unsupported extension marked annotation-only while declaring a custom Kind | D fail, X-MODE; optional classification cannot hide a kind. |
+| Invoke success and failure both reach an end consuming its output | G fail, G-DATA at that end Step. |
+| Approval approved and denied both reach its protected invoke | G fail, G-APPROVAL at the approval Step. |
+| Runtime with empty requirements and no selection | R pass, selection absent, readiness excluded. |
+| Runtime with custom engine and asserted satisfied evidence with null artifact | R may pass shape/relations, hash unknown and evidence unassessed; no ready result. |
 
-## Blocking choices, compatibility and delivery
+An experimental corpus supplies complete local D records for each G case,
+including Interface action/I/O, Agent relations and a finite graph. The grammar
+and rules above are its oracle; schemas enforce them without adding semantics.
+Every rule needs positive, negative and relevant unknown/excluded variants.
+Two readers compare verdicts, rule/location/outcome tuples, inventory slices
+and exclusions, not diagnostic prose or timing. No fixture or comparison has
+been executed by this documentation step.
 
-Before adoption, record acceptance or amendment of C1-C10. In particular:
+## Adoption, compatibility and delivery
 
-- 0011 excludes resolved graphs; G adds a separately bounded operation. It
-  cannot be presented as silently expanding 0011 or certifying System validity.
-- The Identity interpretation and encoded-owner restriction need reconciliation
-  in adopted model text. They are recommendations, not prior editorial fixes.
-- G approval semantics need the maintainer's agreement on one-action scope and
-  timeout/refusal behavior. They do not settle execution evidence or authority.
-- The exact G/R field inventories, Interface I/O representation, diagnostic rule
-  inventory and capability contracts must be written and reviewed after scope
-  selection. Until then G/R are concrete conceptual contracts, not parser-ready.
-- Execution conformance is outside the proposed structural delivery evidence.
-  Any later execution claim requires a reviewed general contract and observed
-  runs; no particular product supplies or determines portable semantics.
+The recommended candidate-2 choices are now specified for experimentation.
+C1-C10 remain recommendations, not ten approvals inferred from a delegation.
+Experimental comparison comes before a separate adoption review reconciling
+these bounded rules with proposals 0002/0003/0011 and Decisions 0001/0004.
+In particular G adds bounded direct resolution outside 0011's D operation;
+Identity interpretation and human-gate meaning still require adoption review.
 
-Adoption would create the first bounded syntax, not compatibility with an
-existing AgSDL codec. No framework mapping or execution-equivalence promise is
-made. Unknown content and references are untrusted data; validation neither
-loads code nor grants authority. Byte retention can retain sensitive source
-material, so an exchange consumer must use the caller's authorized artifact
-boundary rather than discover additional files.
-
-The [delivery plan](../docs/plans/2026-09-05-0.1.0-delivery.md) orders approval,
-normative work and independent evidence. Completion of this proposal means the
-maintainer can choose a concrete scope. It does not mean 0.1.0 is finished.
+The candidate has no official compatibility or runtime claim. Future execution,
+semantic extensions, transitive resolution, normalization and lossy transforms
+need their own reviewed contracts. Missing such features is a stated boundary,
+not an unspecified behavior inside D/G/R. No particular product determines
+portable requirements. The [delivery plan](../docs/plans/2026-09-05-0.1.0-delivery.md)
+orders experimental fixtures, two independent readers and adoption review.
+A complete experimental contract is not a completed or published 0.1.0 release.
