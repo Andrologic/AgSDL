@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { contract, hash, processor } from './core.mjs';
 import { run } from './reader.mjs';
 
@@ -222,4 +222,42 @@ test('CLI host errors are distinct from validation failures', () => {
   assert.equal(response.report.contract, contract);
   assert.equal(result(response, 'D').verdict, 'fail');
   assert.deepEqual(response.artifacts, {});
+});
+
+test('CLI decodes a UTF-8 character split across stdin chunks exactly once', async () => {
+  const cli = fileURLToPath(new URL('./cli.mjs', import.meta.url));
+  const request = {
+    operation: 'lossyExchange',
+    primary: 'e30=',
+    annexes: {},
+    losses: [{
+      input: 'primary',
+      location: { pointer: '' },
+      information: 'métadonnées',
+      reason: 'demandé',
+      permission: null,
+    }],
+  };
+  const raw = Buffer.from(JSON.stringify(request));
+  const cut = raw.indexOf(Buffer.from('é')) + 1;
+  const child = spawn(process.execPath, [cli]);
+  child.stdout.setEncoding('utf8');
+  child.stderr.setEncoding('utf8');
+  let stdout = '';
+  let stderr = '';
+  child.stdout.on('data', chunk => { stdout += chunk; });
+  child.stderr.on('data', chunk => { stderr += chunk; });
+  child.stdin.write(raw.subarray(0, cut));
+  await new Promise(resolve => setTimeout(resolve, 50));
+  child.stdin.end(raw.subarray(cut));
+  const status = await new Promise((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', resolve);
+  });
+
+  assert.equal(status, 0, stderr);
+  assert.equal(stderr, '');
+  const response = JSON.parse(stdout);
+  assert.equal(response.report.losses[0].information, request.losses[0].information);
+  assert.equal(response.report.losses[0].reason, request.losses[0].reason);
 });

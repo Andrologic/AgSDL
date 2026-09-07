@@ -26,6 +26,7 @@ function transport(request) {
   return { report: outcome.report, artifacts };
 }
 
+process.stdin.setEncoding('utf8');
 let input = '';
 for await (const chunk of process.stdin) input += chunk;
 try {
