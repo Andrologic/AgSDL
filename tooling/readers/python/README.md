@@ -17,13 +17,25 @@ The implemented feature Editions are:
 | `agsdl/exchange` | `0.1.0` | `exchange` |
 | `agsdl/lossyExchange` | `0.1.0` | `lossyExchange` |
 
-The reader reuses the repository's pinned modular candidate Python rule engine.
-The official grammar adapter sets the `agsdl-0.1.0` Document marker before
-parsing or validation. The official `read` function invokes the D, G and R rule
-operations directly and constructs a new official report. It never invokes the
-experimental `read` entry point and never relabels an experimental report or
-input. The historical source and corpus stay unchanged. No JavaScript reader is
-loaded or consulted.
+The `agsdl_reader` package contains the official grammar, lossless JSON parser
+and rule engine. These started as local copies of the modular candidate engine
+and are maintained for the current contract only. Runtime imports and reads do
+not depend on `experimental/`. No JavaScript reader is loaded or consulted.
+
+For Python callers, add `tooling/readers/python` to the module search path,
+then use the qualified package API:
+
+```python
+from agsdl_reader import read
+
+response = read("validateD", primary_bytes, annexes={})
+```
+
+Distribute `agsdl_reader/` and `cli.py` together to use the reader outside this
+repository. No installation or third-party package is needed. Historical
+readers retain their own imports and contract markers; importing this package
+before or after either historical reader does not configure their modules.
+The former unqualified `from reader import read` is replaced by the package API.
 
 Run the standard-library CLI from the repository root without installation:
 

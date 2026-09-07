@@ -1,16 +1,10 @@
 """Official, offline AgSDL 0.1.0 Python reader. No described system runs."""
-from grammar import CONTRACT, array, good
-from lossless import integer
-from _reuse import load
+from .grammar import CONTRACT, array, good
+from .lossless import integer
+from . import core as _core
 
 
 PROCESSOR = {"identity": "agsdl-reference/python-reader", "version": "0.1.0"}
-_core = load("_agsdl_010_rule_engine", "reader.py")
-
-# The shared rule engine also serves the historical reader. Its fallback prose
-# must not identify an official diagnostic as a candidate result.
-_core.Result.find.__defaults__ = ("", "official rule violation", "fail", None)
-
 
 def _validate_losses(losses):
     if losses is None:
