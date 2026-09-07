@@ -53,6 +53,22 @@ class CorpusCheckerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "seven operations"):
             checker.check_manifest(changed)
 
+    def test_rejects_loss_oracle_without_required_information(self):
+        changed = deepcopy(self.manifest)
+        case = next(item for item in changed["cases"]
+                    if item["operation"] == "lossyExchange")
+        del case["expected"]["losses"][0]["information"]
+        with self.assertRaisesRegex(ValueError, "closed fields"):
+            checker.check_manifest(changed)
+
+    def test_rejects_requested_loss_not_retained_by_oracle(self):
+        changed = deepcopy(self.manifest)
+        case = next(item for item in changed["cases"]
+                    if isinstance(item.get("losses"), list))
+        case["expected"]["losses"][0]["information"] = "different"
+        with self.assertRaisesRegex(ValueError, "requested losses differ"):
+            checker.check_manifest(changed)
+
     def test_main_reports_invalid_manifest(self):
         class InvalidManifest:
             @staticmethod

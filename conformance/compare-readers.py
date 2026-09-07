@@ -258,7 +258,13 @@ def validate_report(response, case, source):
             text(finding["details"])
             demand(finding["rule"] in executed, "Finding rule outside scope")
             demand(finding["outcome"] in {"fail", "unsupported", "inconclusive", "deferred"}, "Finding outcome")
-            validate_location(finding["location"], input_id, source, parsed)
+            validate_location(
+                finding["location"], input_id, source, parsed,
+                allow_unobservable=(
+                    finding["rule"] == "E-LOSS"
+                    and finding["location"] == {"pointer": ""}
+                ),
+            )
             demand((finding["rule"], "completed") in seen, "Finding has no completed Check")
             demand(("byte" in finding["location"]) == (finding["rule"] == "P-SYNTAX"), "Finding location kind")
             finding_keys.append((finding["rule"], canonical(finding["location"]), finding["outcome"]))
@@ -286,7 +292,21 @@ def validate_report(response, case, source):
         demand(state["input"] in source and state["state"] in {"absent", "unknown", "declared", "unchecked"}, "State scope/domain")
         neutral.pointer(state["pointer"])
         text(state["detail"])
-        demand(parsed[state["input"]] is not None and (state["pointer"] in parsed[state["input"]].spans or missing_child(state["pointer"], parsed[state["input"]])), "State pointer is not observable")
+        dependency_probe = (
+            operation in {"inspect", "exchange", "lossyExchange"}
+            and state["input"] == "primary"
+            and state["pointer"] == "/dependencies"
+            and state["state"] == "unchecked"
+            and (parsed["primary"] is None or not isinstance(primary_tree, dict))
+        )
+        demand(
+            dependency_probe
+            or (parsed[state["input"]] is not None and (
+                state["pointer"] in parsed[state["input"]].spans
+                or missing_child(state["pointer"], parsed[state["input"]])
+            )),
+            "State pointer is not observable",
+        )
         key = canonical(state_key(state, primary_tree))
         if assessment_state(state, primary_tree):
             demand(state["state"] == ASSESSMENT_STATES[state["detail"]], "assessment detail/state mismatch")
@@ -294,6 +314,18 @@ def validate_report(response, case, source):
             demand(assessment_key not in assessment_keys or assessment_keys[assessment_key] == key,
                    "conflicting aggregate assessment States")
             assessment_keys[assessment_key] = key
+    if operation in {"inspect", "exchange", "lossyExchange"}:
+        dependencies = [
+            state for state in inventory["states"]
+            if state["input"] == "primary" and state["pointer"] == "/dependencies"
+        ]
+        demand(len(dependencies) == 1, "dependency inventory State missing")
+        if parsed["primary"] is None or not isinstance(primary_tree, dict):
+            demand(dependencies[0]["state"] == "unchecked", "unreadable dependency inventory mismatch")
+        elif "dependencies" not in primary_tree:
+            demand(dependencies[0]["state"] == "absent", "absent dependency inventory mismatch")
+        elif not isinstance(primary_tree["dependencies"], list):
+            demand(dependencies[0]["state"] == "unchecked", "malformed dependency inventory mismatch")
     slices_by_input = {name: [] for name in source}
     slice_keys = set()
     for item in inventory["opaque"]:
@@ -317,7 +349,10 @@ def validate_report(response, case, source):
         demand(operation == "lossyExchange" and loss["input"] in source and loss["permission"] is None, "Loss outside operation/boundary")
         text(loss["information"])
         text(loss["reason"])
-        validate_location(loss["location"], loss["input"], source, parsed)
+        validate_location(
+            loss["location"], loss["input"], source, parsed,
+            allow_unobservable=loss["location"] == {"pointer": ""},
+        )
     neutral.unique(report["losses"], "Loss")
     demand(bool(report["losses"]) == (operation == "lossyExchange"), "missing or unexpected Loss records")
 
@@ -329,10 +364,11 @@ def validate_report(response, case, source):
         demand(isinstance(encoded, str), "artifact base64")
         decoded[name] = base64.b64decode(encoded, validate=True)
     demand(len(report["outputs"]) == len(decoded), "output/artifact boundary mismatch")
-    expected_outputs = sorted(
-        ({"id": name, "sha256": neutral.digest(data)} for name, data in decoded.items()),
-        key=lambda item: item["id"],
-    )
+    demand(set(decoded) <= set(source), "output artifact outside input boundary")
+    expected_outputs = [
+        {"id": name, "sha256": neutral.digest(decoded[name])}
+        for name in input_order if name in decoded
+    ]
     demand(report["outputs"] == expected_outputs, "output hashes or order")
     return decoded
 
@@ -379,9 +415,21 @@ def observe(case, response, source):
                 errors.append("output bytes or boundary changed")
         elif artifacts or report["outputs"]:
             errors.append("unexpected output")
+        if "losses" in expected:
+            wanted_losses = expected["losses"]
+            if (len(report["losses"]) != len(wanted_losses)
+                    or any(not contains(report["losses"], item) for item in wanted_losses)):
+                errors.append("prospective losses differ from oracle")
         return errors
     except (ValueError, TypeError, KeyError, IndexError, OverflowError, RecursionError) as exc:
         return ["invalid response: " + str(exc)]
+
+
+def loss_key(loss):
+    if (loss["input"] == "primary" and loss["location"] == {"pointer": ""}
+            and loss["information"] == "unspecified requested loss"):
+        return {key: value for key, value in loss.items() if key != "reason"}
+    return loss
 
 
 def comparison(response):
@@ -395,10 +443,27 @@ def comparison(response):
         "states": frozenset(canonical(state_key(item, report["inventory"]["tree"])) for item in report["inventory"]["states"]),
         "opaque": frozenset(canonical(item) for item in report["inventory"]["opaque"]),
         "tree": canonical(report["inventory"]["tree"]),
-        "losses": frozenset(canonical(item) for item in report["losses"]),
+        "losses": frozenset(canonical(loss_key(item)) for item in report["losses"]),
         "outputs": frozenset(canonical(item) for item in report["outputs"]),
         "artifacts": tuple(sorted((name, base64.b64decode(data, validate=True)) for name, data in response["artifacts"].items())),
     }
+
+
+def request_bytes(case, primary, annexes):
+    request = {
+        "operation": case["operation"],
+        "primary": base64.b64encode(primary).decode(),
+        "annexes": {
+            name: base64.b64encode(data).decode()
+            for name, data in annexes.items()
+        },
+    }
+    if case.get("losses") is not None:
+        request["losses"] = case["losses"]
+    return json.dumps(
+        request, separators=(",", ":"), ensure_ascii=False,
+        default=lambda value: neutral.uint(value),
+    ).encode("utf-8")
 
 
 def main(argv=None):
@@ -446,8 +511,7 @@ def main(argv=None):
             primary = artifact(case["primary"])
             annexes = {name: artifact(metadata) for name, metadata in case["annexes"].items()}
             source = {"primary": primary, **{"annex/" + name: data for name, data in annexes.items()}}
-            request = {"operation": case["operation"], "primary": base64.b64encode(primary).decode(), "annexes": {name: base64.b64encode(data).decode() for name, data in annexes.items()}}
-            wire = json.dumps(request, separators=(",", ":")).encode()
+            wire = request_bytes(case, primary, annexes)
         except (ValueError, TypeError, KeyError, OSError) as exc:
             failures.append({"case": case["name"], "issue": str(exc)})
             continue

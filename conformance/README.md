@@ -5,10 +5,10 @@ for the seven operations defined by [AgSDL 0.1.0](../spec/README.md). The
 normative specification is the only source of oracle meaning. Fixtures,
 schemas, this corpus and reader output do not add semantics.
 
-The corpus is ready for official readers, but no official reader comparison has
-run yet. A successful corpus check proves that the checked-in inputs, hashes,
-schema expectations, oracle records and coverage index are internally
-consistent. It does not prove that any reader implements the specification.
+The corpus does not bundle reader outputs or comparison evidence. A successful
+corpus check proves that the checked-in inputs, hashes, schema expectations,
+oracle records and coverage index are internally consistent. It does not prove
+that any reader implements the specification.
 
 ## Contents
 
@@ -51,7 +51,7 @@ schema assertion: a normal host JSON parser rounds its deliberately non-integral
 large number before a schema library sees it. Its P-SHAPE oracle follows the
 specification's mathematical check and stays in the report corpus.
 
-## Future reader comparison
+## Reader comparison
 
 Each reader command must consume one JSON request on standard input and emit one
 JSON response on standard output. The request contains `operation`, base64

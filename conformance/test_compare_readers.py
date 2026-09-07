@@ -35,7 +35,11 @@ def exchange_fixture():
         "operation": "exchange",
         "inputs": [{"id": "primary", "sha256": hashlib.sha256(raw).hexdigest()}],
         "results": [{"input": "primary", "unit": "exchange", "phase": None, "verdict": "pass", "findings": [], "checks": [completed("E-PRESERVE")]}],
-        "inventory": {"tree": json.loads(raw), "states": [], "opaque": [{"input": "primary", "pointer": "/annotations", "start": start, "end": end}]},
+        "inventory": {
+            "tree": json.loads(raw),
+            "states": [{"input": "primary", "pointer": "/dependencies", "state": "absent", "detail": "absent"}],
+            "opaque": [{"input": "primary", "pointer": "/annotations", "start": start, "end": end}],
+        },
         "losses": [],
         "outputs": [{"id": "primary", "sha256": hashlib.sha256(raw).hexdigest()}],
     }
@@ -45,7 +49,8 @@ def exchange_fixture():
             "results": [{"input": "primary", "unit": "exchange", "phase": None, "verdict": "pass"}],
             "findings": {"mode": "exact", "items": []},
             "checks": [{"input": "primary", "unit": "exchange", "rule": "E-PRESERVE", "state": "completed", "locations": []}],
-            "states": [], "absentStates": [], "opaque": [{"input": "primary", "pointer": "/annotations"}], "absentOpaque": [],
+            "states": [{"input": "primary", "pointer": "/dependencies", "state": "absent"}],
+            "absentStates": [], "opaque": [{"input": "primary", "pointer": "/annotations"}], "absentOpaque": [],
             "preservation": "exact-input-boundary",
         },
     }
@@ -186,6 +191,56 @@ def syntax_failure_fixture():
     return case, response, source
 
 
+def lossy_fixture(raw=b"{"):
+    source = {"primary": raw}
+    report = {
+        "contract": compare.CONTRACT,
+        "processor": {"identity": "example/reader", "version": "1"},
+        "operation": "lossyExchange",
+        "inputs": [{"id": "primary", "sha256": hashlib.sha256(raw).hexdigest()}],
+        "results": [{
+            "input": "primary", "unit": "exchange", "phase": None, "verdict": "fail",
+            "findings": [{
+                "rule": "E-LOSS", "location": {"pointer": ""}, "outcome": "fail",
+                "details": "lossy exchange is refused",
+            }],
+            "checks": [completed("E-LOSS")],
+        }],
+        "inventory": {
+            "tree": None,
+            "states": [{
+                "input": "primary", "pointer": "/dependencies", "state": "unchecked",
+                "detail": "primary syntax is unreadable",
+            }],
+            "opaque": [],
+        },
+        "losses": [{
+            "input": "primary", "location": {"pointer": ""},
+            "information": "unspecified requested loss", "reason": "reader prose",
+            "permission": None,
+        }],
+        "outputs": [],
+    }
+    expected = {
+        "results": [{"input": "primary", "unit": "exchange", "phase": None, "verdict": "fail"}],
+        "findings": {"mode": "exact", "items": [{
+            "input": "primary", "unit": "exchange", "rule": "E-LOSS",
+            "location": {"pointer": ""}, "outcome": "fail",
+        }]},
+        "checks": [{
+            "input": "primary", "unit": "exchange", "rule": "E-LOSS",
+            "state": "completed", "locations": [],
+        }],
+        "states": [{"input": "primary", "pointer": "/dependencies", "state": "unchecked"}],
+        "absentStates": [], "opaque": [], "absentOpaque": [], "preservation": "no-output",
+        "losses": [{
+            "input": "primary", "location": {"pointer": ""},
+            "information": "unspecified requested loss", "permission": None,
+        }],
+    }
+    return {"operation": "lossyExchange", "expected": expected}, {"report": report, "artifacts": {}}, source
+
+
 class ComparatorTests(unittest.TestCase):
     def test_reuses_candidate_two_neutral_parser(self):
         self.assertEqual(
@@ -202,6 +257,62 @@ class ComparatorTests(unittest.TestCase):
         self.assertEqual(compare.observe(case, response, source), [])
         response["artifacts"]["primary"] = base64.b64encode(b"changed").decode()
         self.assertTrue(compare.observe(case, response, source))
+
+    def test_exchange_output_order_follows_input_boundary(self):
+        case, response, source = exchange_fixture()
+        annex = b'{"contract":"agsdl-0.1.0"}'
+        source["annex/z"] = annex
+        response["report"]["inputs"].append({
+            "id": "annex/z", "sha256": hashlib.sha256(annex).hexdigest(),
+        })
+        response["report"]["outputs"].append({
+            "id": "annex/z", "sha256": hashlib.sha256(annex).hexdigest(),
+        })
+        response["artifacts"] = {
+            "annex/z": base64.b64encode(annex).decode(),
+            "primary": response["artifacts"]["primary"],
+        }
+        self.assertEqual(compare.observe(case, response, source), [])
+        response["report"]["outputs"].reverse()
+        self.assertTrue(compare.observe(case, response, source))
+
+    def test_unparseable_lossy_exchange_has_virtual_dependency_state_and_root_loss(self):
+        case, response, source = lossy_fixture()
+        self.assertEqual(compare.observe(case, response, source), [])
+        response["report"]["inventory"]["states"] = []
+        self.assertTrue(compare.observe(case, response, source))
+
+    def test_loss_oracle_is_enforced(self):
+        case, response, source = lossy_fixture()
+        self.assertEqual(compare.observe(case, response, source), [])
+        response["report"]["losses"][0]["information"] = "different loss"
+        self.assertTrue(compare.observe(case, response, source))
+
+    def test_default_loss_reason_is_not_a_cross_reader_key(self):
+        _, first, _ = lossy_fixture()
+        second = deepcopy(first)
+        second["report"]["losses"][0]["reason"] = "different reader prose"
+        self.assertEqual(compare.comparison(first)["losses"], compare.comparison(second)["losses"])
+        first["report"]["losses"][0]["information"] = "custom"
+        second["report"]["losses"][0]["information"] = "custom"
+        self.assertNotEqual(compare.comparison(first)["losses"], compare.comparison(second)["losses"])
+
+    def test_requested_losses_are_sent_to_readers(self):
+        losses = [{
+            "input": "primary", "location": {"pointer": "/annotations"},
+            "information": "annotation", "reason": "requested removal", "permission": None,
+        }]
+        case = {"operation": "lossyExchange", "losses": losses}
+        request = json.loads(compare.request_bytes(case, b"{}", {}))
+        self.assertEqual(request["losses"], losses)
+        self.assertNotIn("losses", json.loads(compare.request_bytes(
+            {"operation": "lossyExchange", "losses": None}, b"{}", {},
+        )))
+        losses[0]["location"] = {"byte": compare.load("1")}
+        self.assertEqual(
+            json.loads(compare.request_bytes(case, b"{}", {}))["losses"][0]["location"],
+            {"byte": 1},
+        )
 
     def test_rejects_wrong_edition_and_missing_rule(self):
         case, response, source = validation_fixture()

@@ -94,6 +94,19 @@ def check_location(location):
                 0 <= location["byte"] <= 9007199254740991, "invalid byte location")
 
 
+def check_loss(loss, inputs, require_reason):
+    optional = set() if require_reason else {"reason"}
+    exact(loss, {"input", "location", "information", "permission"} |
+          ({"reason"} if require_reason else set()), optional)
+    require(loss["input"] in inputs, "Loss input outside boundary")
+    check_location(loss["location"])
+    require(isinstance(loss["information"], str) and loss["information"],
+            "Loss information")
+    if "reason" in loss:
+        require(isinstance(loss["reason"], str) and loss["reason"], "Loss reason")
+    require(loss["permission"] is None, "Loss permission")
+
+
 def heading_exists(path, heading):
     return any(line in {"# " + heading, "## " + heading, "### " + heading}
                for line in path.read_text().splitlines())
@@ -193,6 +206,23 @@ def check_expected(case, inputs):
     if case["operation"] == "lossyExchange":
         require(isinstance(expected.get("losses"), list) and expected["losses"],
                 "lossyExchange requires prospective losses")
+        for loss in expected["losses"]:
+            check_loss(loss, inputs, require_reason=False)
+        requested = case.get("losses")
+        require(requested is None or isinstance(requested, list),
+                "requested losses must be null or a list")
+        if requested is not None:
+            require(requested, "requested losses must not be empty")
+            for loss in requested:
+                check_loss(loss, inputs, require_reason=True)
+            require(len(expected["losses"]) == len(requested) and all(
+                any(all(candidate.get(key) == value for key, value in loss.items())
+                    for candidate in expected["losses"])
+                for loss in requested
+            ), "requested losses differ from oracle")
+    else:
+        require("losses" not in case and "losses" not in expected,
+                "losses outside lossyExchange")
 
 
 def check_manifest(manifest):
