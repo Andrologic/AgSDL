@@ -415,3 +415,214 @@ test('missing Agent identity blocks coverage and supplied Tool membership', () =
   const outcome = execute('validateR', document);
   assert.ok(hasFinding(outcome, 'R', 'R-COMPATIBILITY', `${cp}/agents/1`));
 });
+
+// Stabilized F witness: official/missing-engine.json. Only engine is absent;
+// the nested ToolBinding is well-shaped and explicitly selects its sole choice.
+const inventoryWitness = () => {
+  const key = (id) => ({ scope: 'native', id, version: '1' });
+  const edition = (name) => ({ identity: `native/${name}`, version: '1' });
+  const claim = (name) => ({
+    capability: edition(name),
+    status: 'supported',
+    evidence: 'a'.repeat(64),
+  });
+  const definition = (id, kind, payload = {}) => ({
+    key: key(id),
+    kind,
+    owner: key('system'),
+    payload,
+  });
+  return {
+    contract,
+    root: { key: key('system'), kind: 'System' },
+    definitions: [
+      definition('agent', 'Agent'),
+      definition('principal', 'Principal'),
+      definition('interface', 'Interface', {
+        operations: [
+          {
+            id: 'call',
+            direction: 'inbound',
+            mode: 'request-response',
+            action: key('action'),
+            inputs: {},
+            outputs: {},
+          },
+        ],
+      }),
+      definition('flow', 'ControlFlow'),
+      definition('action', 'Action'),
+      definition('resource', 'Resource'),
+      definition('instructions', 'Instructions', {
+        target: 'Agent',
+        at: 'before-invoke',
+        format: edition('text'),
+        body: 'Do the declared work.',
+        requires: [],
+      }),
+      definition('tool', 'Tool', {
+        action: key('action'),
+        inputs: {},
+        outputs: {},
+        effects: 'none',
+        failures: [],
+        requires: [],
+      }),
+    ],
+    relations: [
+      ['actsAs', 'principal', 'Principal'],
+      ['exposes', 'interface', 'Interface'],
+      ['directedBy', 'instructions', 'Instructions'],
+      ['uses', 'tool', 'Tool'],
+    ].map(([relation, target, expectedKind]) => ({
+      source: key('agent'),
+      relation,
+      target: key(target),
+      expectedKind,
+    })),
+    exports: [],
+    dependencies: [],
+    unresolved: [],
+    extensions: [],
+    graphs: [
+      {
+        definition: key('flow'),
+        entry: 'call',
+        inputs: { context: 'json' },
+        outputs: {},
+        steps: [
+          {
+            id: 'call',
+            kind: 'invoke',
+            operation: 'call',
+            agent: key('agent'),
+            interface: key('interface'),
+            action: key('action'),
+            resources: [key('resource')],
+            principal: key('principal'),
+            context: { input: 'context' },
+            inputs: {},
+            outputs: {},
+            bindings: {},
+            success: 'done',
+            failure: 'failed',
+          },
+          { id: 'done', kind: 'end', outcome: 'success', bindings: {} },
+          { id: 'failed', kind: 'end', outcome: 'failure', reason: 'Failed' },
+        ],
+      },
+    ],
+    runtime: {
+      selected: 'selected',
+      configurations: [
+        {
+          id: 'selected',
+          graph: key('flow'),
+          agents: [
+            {
+              agent: key('agent'),
+              parameters: {},
+              requires: [],
+              claims: [claim('text'), claim('adapter')],
+              tools: [
+                {
+                  tool: key('tool'),
+                  choices: [
+                    {
+                      id: 'only',
+                      implementation: edition('tool'),
+                      parameters: {},
+                      claims: [],
+                    },
+                  ],
+                  selected: 'only',
+                },
+              ],
+              applications: [
+                {
+                  content: key('instructions'),
+                  adapter: edition('adapter'),
+                  parameters: {},
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  };
+};
+
+// spec/reports.md, Runtime inventory: each State requires its own well-shaped
+// parent record. Missing runtime selection never creates assessment States.
+test('runtime inventory observes shaped ToolBindings beneath an incomplete AgentBinding', () => {
+  const ap = '/runtime/configurations/0/agents/0',
+    tp = `${ap}/tools/0`;
+  for (const selectedConfiguration of [true, false]) {
+    for (const selectedTool of [true, false]) {
+      const document = inventoryWitness();
+      if (!selectedConfiguration) delete document.runtime.selected;
+      if (!selectedTool)
+        delete document.runtime.configurations[0].agents[0].tools[0].selected;
+      const outcome = execute('validateR', document);
+      const states = outcome.report.inventory.states;
+      assert.ok(hasFinding(outcome, 'R', 'P-SHAPE', ap));
+      assert.equal(
+        states.some(
+          (item) => item.pointer === ap || item.pointer === `${ap}/engine`,
+        ),
+        false,
+      );
+      assert.equal(
+        states.some((item) => item.pointer === '/runtime/selected'),
+        false,
+      );
+      assert.deepEqual(
+        states.filter((item) => item.pointer === `${tp}/selected`),
+        [
+          {
+            input: 'primary',
+            pointer: `${tp}/selected`,
+            state: selectedTool ? 'declared' : 'absent',
+            detail: selectedTool ? 'declared' : 'absent',
+          },
+        ],
+      );
+      const assessments = states.filter((item) =>
+        [ap, tp].includes(item.pointer),
+      );
+      assert.deepEqual(
+        assessments,
+        selectedConfiguration
+          ? [
+              {
+                input: 'primary',
+                pointer: tp,
+                state: selectedTool ? 'unchecked' : 'absent',
+                detail: selectedTool ? 'declared-supported' : 'not-provided',
+              },
+            ]
+          : [],
+      );
+      if (selectedConfiguration)
+        assert.ok(
+          blockedPointers(outcome, 'R', 'R-COMPATIBILITY').includes(ap),
+        );
+      else
+        assert.deepEqual(
+          check(outcome, 'R', 'R-COMPATIBILITY', 'excluded')?.locations,
+          [{ pointer: '/runtime' }],
+        );
+    }
+  }
+  const document = inventoryWitness();
+  delete document.runtime.configurations[0].agents[0].tools[0].choices;
+  const outcome = execute('validateR', document);
+  assert.ok(hasFinding(outcome, 'R', 'P-SHAPE', tp));
+  assert.equal(
+    outcome.report.inventory.states.some((item) =>
+      [tp, `${tp}/selected`].includes(item.pointer),
+    ),
+    false,
+  );
+});
