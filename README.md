@@ -4,8 +4,8 @@ AgSDL is the Agentic Systems Definition Language, an open,
 implementation-independent specification for describing agentic systems in a
 form that people and software can read, validate, exchange and version.
 
-The repository has locally adopted the bounded AgSDL 0.1.0 contract. It is an
-unpublished, limited first draft, not a stable or universal language release.
+AgSDL 0.1.0 is published as a bounded first-draft MVP under `v0.1.0`. It is
+not a stable or universal language release.
 It defines a deterministic Document/Graph/Runtime declaration model and seven
 static reader operations. It does not define Agent execution, engine launch,
 hot reload, deployment or runtime interoperability.
@@ -15,8 +15,7 @@ Start with the [0.1.0 specification](spec/README.md), then read the
 [reader guide](tooling/README.md). The Python and JavaScript readers can inspect
 the example and validate its D, G and R units without installation. Their
 official 137-case comparison has no blocked case, failure or mismatch. Version
-0.1.0 is ready in the local repository for its bounded first-draft scope, but it
-is not published or stable.
+0.1.0 is published for this bounded first-draft scope and remains unstable.
 
 ## What 0.1.0 describes
 
@@ -64,7 +63,7 @@ See the [project scope](docs/scope.md) and
 
 ## Repository structure
 
-- `spec/` contains the locally adopted normative 0.1.0 text.
+- `spec/` contains the adopted normative 0.1.0 text.
 - `schemas/` contains derived JSON Schema shapes; the specification controls.
 - `examples/0.1.0/` contains official but non-normative examples of that text.
 - `tooling/readers/` contains non-normative official-edition readers.
@@ -81,7 +80,7 @@ normative 0.1.0 subset was adopted separately by
 [Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md); material not adopted
 by that decision remains proposed or experimental.
 
-- [0.1.0 local release notes](docs/releases/0.1.0.md)
+- [0.1.0 release notes](docs/releases/0.1.0.md)
 - [Delivery-readiness review](docs/reviews/0008-0.1.0-release-readiness.md)
 - [Roadmap](ROADMAP.md)
 - [0.0.2 release](https://github.com/Andrologic/AgSDL/releases/tag/v0.0.2)

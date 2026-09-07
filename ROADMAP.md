@@ -15,34 +15,34 @@ external-binding research and the first exchange-contract candidate. Decision
 0006 authorized that publication without adopting a syntax or claiming software
 support. See the [0.0.2 notes](docs/releases/0.0.2.md).
 
-Those tags are historical snapshots. Their status is not changed by the local
+Those tags are historical snapshots. Their status is not changed by the
 0.1.0 adoption.
 
-## Locally adopted: bounded 0.1.0 first draft
+## Published: bounded 0.1.0 first draft
 
 [Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md) adopts the selected
 0013 contract and unreplaced 0012 rules as a bounded normative first draft. The
 text now lives in `spec/`, its derived shapes live in `schemas/`, and independent
 Python and JavaScript readers are integrated under `tooling/readers/`.
 
-This is a locally ready, unpublished first draft. It does not make AgSDL stable,
+This first-draft MVP is published under `v0.1.0`. It does not make AgSDL stable,
 universal or executable. Both readers agree on the pinned 137-case official
 corpus with no blocked case or failure, and the delivery review records the
-limits of that evidence. Publication remains a separate maintainer decision.
+limits of that evidence. The maintainer authorized publication on 2026-09-07.
 
 ## Current delivery sequence
 
 | Work | Status |
 | --- | --- |
-| Adopt and apply the bounded D/G/R contract | Done locally. |
-| Derive official schemas and reader/report identities | Done locally. |
-| Integrate an official JavaScript reader | Done locally. |
-| Integrate the independent Python reader | Done locally. |
-| Integrate the official corpus and comparison tooling | Done locally. |
-| Prepare public documentation and one official example | Done on the N5 feature branch. |
-| Run and retain the official cross-reader comparison | Done locally: 137 cases, no blocked case or failure. |
+| Adopt and apply the bounded D/G/R contract | Done. |
+| Derive official schemas and reader/report identities | Done. |
+| Integrate an official JavaScript reader | Done. |
+| Integrate the independent Python reader | Done. |
+| Integrate the official corpus and comparison tooling | Done. |
+| Prepare public documentation and one official example | Done. |
+| Run and retain the official cross-reader comparison | Done: 137 cases, no blocked case or failure. |
 | Complete independent whole-delivery review | Done for the bounded 0.1.0 delivery. |
-| Authorize and publish 0.1.0 | Not authorized. |
+| Authorize and publish 0.1.0 | Published as the `v0.1.0` MVP pre-release. |
 
 ## Phase 0: foundation
 
@@ -67,8 +67,8 @@ adopts them.
 
 ## Phase 2: bounded language draft
 
-Status: the local 0.1.0 D/G/R contract, schemas, two readers, official corpus and
-bounded delivery evidence are complete. Publication is not authorized.
+Status: the 0.1.0 D/G/R contract, schemas, two readers, official corpus and
+bounded delivery evidence are complete. The bounded MVP is published under `v0.1.0`.
 
 - Maintain both readers against the same pinned official inputs and assertions.
 - Preserve nonzero comparison results and resolve founded defects before release.
