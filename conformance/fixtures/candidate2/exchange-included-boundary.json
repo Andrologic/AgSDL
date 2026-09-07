@@ -1,0 +1,31 @@
+{
+  "contract": "agsdl-0.1.0",
+  "root": {
+    "key": {
+      "scope": "local",
+      "id": "root",
+      "version": "1"
+    },
+    "kind": "System"
+  },
+  "definitions": [],
+  "relations": [],
+  "exports": [],
+  "dependencies": [
+    {
+      "id": "dep",
+      "rootKey": {
+        "scope": "annex",
+        "id": "root",
+        "version": "1"
+      },
+      "status": "included",
+      "requiredFor": [
+        "exchange"
+      ],
+      "sha256": "6023b19e201ad01ad561e4e3c3ac1d2d8b05bca19846079d4ac0bb9edffb4fea"
+    }
+  ],
+  "unresolved": [],
+  "extensions": []
+}

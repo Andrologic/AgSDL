@@ -18,6 +18,11 @@ required_files=(
   scripts/test-verify-a2a-1.0.1-sources.sh
   scripts/check-markdown-links.py
   scripts/test-check-markdown-links.py
+  conformance/README.md
+  conformance/COVERAGE.md
+  conformance/fixtures/manifest.json
+  conformance/check-corpus.py
+  conformance/compare-readers.py
 )
 
 for file in "${required_files[@]}"; do
@@ -40,9 +45,22 @@ if command -v rg >/dev/null 2>&1; then
 fi
 
 git diff --check
+bash -n scripts/check-readers.sh
 bash -n scripts/verify-a2a-1.0.1-sources.sh
 bash -n scripts/test-verify-a2a-1.0.1-sources.sh
 ./scripts/test-verify-a2a-1.0.1-sources.sh
 python3 scripts/test-check-markdown-links.py
 python3 scripts/check-markdown-links.py
+python3 experimental/candidate-2/check-fixtures.py
+python3 experimental/candidate-2/test-compare-readers.py
+python3 experimental/modular-candidate-1/check-fixtures.py
+PYTHONDONTWRITEBYTECODE=1 python3 experimental/modular-candidate-1/test_check_fixtures.py
+PYTHONDONTWRITEBYTECODE=1 python3 experimental/modular-candidate-1/test_compare_readers.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experimental/readers/python -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experimental/modular-candidate-1/readers/python -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tooling/readers/python -v
+PYTHONDONTWRITEBYTECODE=1 python3 conformance/check-corpus.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+  conformance/test_build_corpus.py conformance/test_check_corpus.py \
+  conformance/test_compare_readers.py -v
 echo "AgSDL repository checks passed."

@@ -1,0 +1,126 @@
+{
+  "contract": "agsdl-0.1.0",
+  "root": {
+    "key": {
+      "scope": "annex",
+      "id": "annex-root",
+      "version": "1"
+    },
+    "kind": "PackageVersion"
+  },
+  "definitions": [
+    {
+      "key": {
+        "scope": "annex",
+        "id": "work-interface",
+        "version": "1"
+      },
+      "kind": "Interface",
+      "owner": {
+        "scope": "annex",
+        "id": "annex-root",
+        "version": "1"
+      },
+      "payload": {
+        "operations": [
+          {
+            "id": "notify",
+            "direction": "outbound",
+            "mode": "request-response",
+            "action": {
+              "scope": "annex",
+              "id": "notify-action",
+              "version": "1"
+            },
+            "inputs": {
+              "x": "string"
+            },
+            "outputs": {
+              "y": "string"
+            }
+          },
+          {
+            "id": "ask",
+            "direction": "inbound",
+            "mode": "request-response",
+            "action": {
+              "dependency": "next",
+              "key": {
+                "scope": "next",
+                "id": "ask-action",
+                "version": "1"
+              }
+            },
+            "inputs": {
+              "x": "string"
+            },
+            "outputs": {
+              "y": "string"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": {
+        "scope": "annex",
+        "id": "ask-action",
+        "version": "1"
+      },
+      "kind": "Action",
+      "owner": {
+        "scope": "annex",
+        "id": "annex-root",
+        "version": "1"
+      },
+      "payload": {}
+    },
+    {
+      "key": {
+        "scope": "annex",
+        "id": "notify-action",
+        "version": "1"
+      },
+      "kind": "Action",
+      "owner": {
+        "scope": "annex",
+        "id": "annex-root",
+        "version": "1"
+      },
+      "payload": {}
+    }
+  ],
+  "relations": [],
+  "exports": [
+    {
+      "scope": "annex",
+      "id": "work-interface",
+      "version": "1"
+    },
+    {
+      "scope": "annex",
+      "id": "ask-action",
+      "version": "1"
+    },
+    {
+      "scope": "annex",
+      "id": "notify-action",
+      "version": "1"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "next",
+      "rootKey": {
+        "scope": "next",
+        "id": "root",
+        "version": "1"
+      },
+      "status": "external",
+      "requiredFor": [],
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "unresolved": [],
+  "extensions": []
+}

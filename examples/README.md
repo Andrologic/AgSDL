@@ -1,12 +1,17 @@
 # Conceptual examples for AgSDL
 
+For the locally adopted 0.1.0 contract, start with the
+[official D/G/R example](0.1.0/README.md). It is non-normative, uses the official
+edition marker and can be checked with both official readers. The
+conceptual examples below preserve their earlier proposal-era status.
+
 The first two examples originated in the AgSDL 0.0.1 conceptual release. The
 versions below follow the current proposed model, including the composition
 and authorization directions in [Decision
 0004](../docs/decisions/0004-approved-design-directions.md). The `v0.0.1` tag
-preserves the released versions. These examples remain non-normative and
-independent of serialization syntax, frameworks, providers, transports, and
-runtimes.
+preserves the released versions. These conceptual examples remain non-normative
+and independent of serialization syntax, frameworks, providers, transports,
+and runtimes.
 
 The [imported-Agent composition and authorization
 example](conceptual/composition-and-authorization.md) illustrates the revised

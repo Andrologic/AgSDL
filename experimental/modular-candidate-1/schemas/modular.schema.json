@@ -1,0 +1,625 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Proposal 0013 modular candidate-1 shapes",
+  "$comment": "Experimental shapes derived from proposal 0013; no semantic verdict, runtime support or normative adoption. Entry point is D Document; select Graphs, RuntimeDeclaration or payload definitions explicitly for other scopes.",
+  "$ref": "#/$defs/Document",
+  "$defs": {
+    "Text": {
+      "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Text"
+    },
+    "Key": {
+      "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Key"
+    },
+    "Edition": {
+      "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Edition"
+    },
+    "Hash": {
+      "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Hash"
+    },
+    "Ref": {
+      "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Ref"
+    },
+    "Ports": {
+      "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Ports"
+    },
+    "Bindings": {
+      "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Bindings"
+    },
+    "Binding": {
+      "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Binding"
+    },
+    "Positive": {
+      "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Positive"
+    },
+    "ApprovalRequirementPayload": {
+      "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/ApprovalRequirementPayload"
+    },
+    "Document": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "const": "proposal-0013-candidate-1"
+        },
+        "root": {
+          "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Root"
+        },
+        "definitions": {
+          "type": "array",
+          "items": {
+            "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Definition"
+          }
+        },
+        "relations": {
+          "type": "array",
+          "items": {
+            "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Relation"
+          }
+        },
+        "exports": {
+          "type": "array",
+          "items": {
+            "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Key"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Dependency"
+          }
+        },
+        "unresolved": {
+          "type": "array",
+          "items": {
+            "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Deferral"
+          }
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "$ref": "../../candidate-2/schemas/D.schema.json#/$defs/Extension"
+          }
+        },
+        "annotations": true,
+        "evidence": true,
+        "graphs": true,
+        "runtime": true
+      },
+      "required": [
+        "contract",
+        "root",
+        "definitions",
+        "relations",
+        "exports",
+        "dependencies",
+        "unresolved",
+        "extensions"
+      ],
+      "additionalProperties": false
+    },
+    "InvokeStep": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Text"
+        },
+        "kind": {
+          "const": "invoke"
+        },
+        "agent": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Ref"
+        },
+        "interface": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Ref"
+        },
+        "action": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Ref"
+        },
+        "principal": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Ref"
+        },
+        "resources": {
+          "type": "array",
+          "items": {
+            "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Ref"
+          },
+          "minItems": 1
+        },
+        "context": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Binding"
+        },
+        "inputs": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Ports"
+        },
+        "outputs": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Ports"
+        },
+        "bindings": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Bindings"
+        },
+        "success": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Text"
+        },
+        "failure": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Text"
+        },
+        "operation": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "agent",
+        "interface",
+        "action",
+        "principal",
+        "resources",
+        "context",
+        "inputs",
+        "outputs",
+        "bindings",
+        "success",
+        "failure",
+        "operation"
+      ],
+      "additionalProperties": false
+    },
+    "ApprovalStep": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Text"
+        },
+        "kind": {
+          "const": "approval"
+        },
+        "requirement": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Ref"
+        },
+        "timeoutMs": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Positive"
+        },
+        "approved": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Text"
+        },
+        "denied": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Text"
+        },
+        "failure": {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/Text"
+        },
+        "call": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "requirement",
+        "timeoutMs",
+        "approved",
+        "denied",
+        "failure",
+        "call"
+      ],
+      "additionalProperties": false
+    },
+    "Step": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/InvokeStep"
+        },
+        {
+          "$ref": "#/$defs/ApprovalStep"
+        },
+        {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/ConditionStep"
+        },
+        {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/SuccessEndStep"
+        },
+        {
+          "$ref": "../../candidate-2/schemas/G.schema.json#/$defs/OtherEndStep"
+        }
+      ]
+    },
+    "Graph": {
+      "type": "object",
+      "properties": {
+        "definition": {
+          "$ref": "#/$defs/Key"
+        },
+        "entry": {
+          "$ref": "#/$defs/Text"
+        },
+        "inputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "outputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "definition",
+        "entry",
+        "inputs",
+        "outputs",
+        "steps"
+      ],
+      "additionalProperties": false
+    },
+    "Graphs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Graph"
+      }
+    },
+    "Operation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "direction": {
+          "enum": [
+            "inbound",
+            "outbound",
+            "bidirectional"
+          ]
+        },
+        "mode": {
+          "const": "request-response"
+        },
+        "action": {
+          "$ref": "#/$defs/Ref"
+        },
+        "inputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "outputs": {
+          "$ref": "#/$defs/Ports"
+        }
+      },
+      "required": [
+        "id",
+        "direction",
+        "mode",
+        "action",
+        "inputs",
+        "outputs"
+      ],
+      "additionalProperties": false
+    },
+    "InterfacePayload": {
+      "type": "object",
+      "properties": {
+        "operations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Operation"
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "operations"
+      ],
+      "additionalProperties": false
+    },
+    "RuntimeDeclaration": {
+      "type": "object",
+      "properties": {
+        "configurations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Configuration"
+          }
+        },
+        "selected": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "configurations"
+      ],
+      "additionalProperties": false
+    },
+    "Configuration": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "graph": {
+          "$ref": "#/$defs/Key"
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentBinding"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "graph",
+        "agents"
+      ],
+      "additionalProperties": false
+    },
+    "AgentBinding": {
+      "type": "object",
+      "properties": {
+        "agent": {
+          "$ref": "#/$defs/Ref"
+        },
+        "engine": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Edition"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "parameters": true,
+        "requires": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Edition"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityClaim"
+          }
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolBinding"
+          }
+        },
+        "applications": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Application"
+          }
+        }
+      },
+      "required": [
+        "agent",
+        "engine",
+        "parameters",
+        "requires",
+        "claims",
+        "tools",
+        "applications"
+      ],
+      "additionalProperties": false
+    },
+    "ToolBinding": {
+      "type": "object",
+      "properties": {
+        "tool": {
+          "$ref": "#/$defs/Ref"
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Implementation"
+          }
+        },
+        "selected": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "tool",
+        "choices"
+      ],
+      "additionalProperties": false
+    },
+    "Implementation": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "implementation": {
+          "$ref": "#/$defs/Edition"
+        },
+        "parameters": true,
+        "claims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CapabilityClaim"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "implementation",
+        "parameters",
+        "claims"
+      ],
+      "additionalProperties": false
+    },
+    "Application": {
+      "type": "object",
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/Ref"
+        },
+        "adapter": {
+          "$ref": "#/$defs/Edition"
+        },
+        "parameters": true
+      },
+      "required": [
+        "content",
+        "adapter",
+        "parameters"
+      ],
+      "additionalProperties": false
+    },
+    "CapabilityClaim": {
+      "type": "object",
+      "properties": {
+        "capability": {
+          "$ref": "#/$defs/Edition"
+        },
+        "status": {
+          "enum": [
+            "supported",
+            "unsupported",
+            "unknown"
+          ]
+        },
+        "evidence": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "capability",
+        "status",
+        "evidence"
+      ],
+      "additionalProperties": false
+    },
+    "ToolPayload": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/Ref"
+        },
+        "inputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "outputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "effects": {
+          "enum": [
+            "none",
+            "external",
+            "unknown"
+          ]
+        },
+        "failures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Text"
+          }
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Edition"
+          }
+        }
+      },
+      "required": [
+        "action",
+        "inputs",
+        "outputs",
+        "effects",
+        "failures",
+        "requires"
+      ],
+      "additionalProperties": false
+    },
+    "InstructionsPayload": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "const": "Agent"
+        },
+        "at": {
+          "const": "before-invoke"
+        },
+        "format": {
+          "$ref": "#/$defs/Edition"
+        },
+        "body": {
+          "$ref": "#/$defs/Text"
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Edition"
+          }
+        }
+      },
+      "required": [
+        "target",
+        "at",
+        "format",
+        "body",
+        "requires"
+      ],
+      "additionalProperties": false
+    },
+    "SkillPayload": {
+      "type": "object",
+      "properties": {
+        "inputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "outputs": {
+          "$ref": "#/$defs/Ports"
+        },
+        "preconditions": {
+          "$ref": "#/$defs/Text"
+        },
+        "completion": {
+          "$ref": "#/$defs/Text"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ref"
+          }
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Ref"
+          }
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Edition"
+          }
+        }
+      },
+      "required": [
+        "inputs",
+        "outputs",
+        "preconditions",
+        "completion",
+        "dependencies",
+        "tools",
+        "requires"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

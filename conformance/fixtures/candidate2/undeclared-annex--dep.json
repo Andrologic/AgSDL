@@ -1,0 +1,69 @@
+{
+  "contract": "agsdl-0.1.0",
+  "root": {
+    "key": {
+      "scope": "annex",
+      "id": "root",
+      "version": "1"
+    },
+    "kind": "PackageVersion"
+  },
+  "definitions": [
+    {
+      "key": {
+        "scope": "annex",
+        "id": "interface",
+        "version": "1"
+      },
+      "kind": "Interface",
+      "owner": {
+        "scope": "annex",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {
+        "inputs": {
+          "x": "string"
+        },
+        "outputs": {
+          "y": "string"
+        },
+        "action": {
+          "scope": "annex",
+          "id": "action",
+          "version": "1"
+        }
+      }
+    },
+    {
+      "key": {
+        "scope": "annex",
+        "id": "action",
+        "version": "1"
+      },
+      "kind": "Action",
+      "owner": {
+        "scope": "annex",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {}
+    }
+  ],
+  "relations": [],
+  "exports": [
+    {
+      "scope": "annex",
+      "id": "interface",
+      "version": "1"
+    },
+    {
+      "scope": "annex",
+      "id": "action",
+      "version": "1"
+    }
+  ],
+  "dependencies": [],
+  "unresolved": [],
+  "extensions": []
+}

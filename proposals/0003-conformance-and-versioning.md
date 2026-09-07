@@ -4,6 +4,15 @@
 - Target: pre-draft conformance model
 - Depends on: Decisions 0001 and 0004
 
+## 0.1.0 disposition, 2026-09-07
+
+This conceptual proposal remains proposed. [Decision 0007](../docs/decisions/0007-adopt-0.1.0-contract.md)
+adopts only the bounded concrete contract selected through 0012/0013 and applied
+in [spec](../spec/README.md). Its [traceability record](../docs/reviews/0007-0.1.0-contract-traceability.md)
+identifies the adopted subset and exclusions. Earlier pending-adoption wording
+below describes the conceptual preparation stage, not the status of that
+applied 0.1.0 contract. No whole-proposal acceptance follows.
+
 ## Problem
 
 AgSDL needs testable conformance claims before it selects a serialization. A

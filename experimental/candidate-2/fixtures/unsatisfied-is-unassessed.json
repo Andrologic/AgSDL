@@ -1,0 +1,65 @@
+{
+  "contract": "proposal-0012-candidate-2",
+  "root": {
+    "key": {
+      "scope": "local",
+      "id": "root",
+      "version": "1"
+    },
+    "kind": "System"
+  },
+  "definitions": [
+    {
+      "key": {
+        "scope": "local",
+        "id": "subject",
+        "version": "1"
+      },
+      "kind": "Resource",
+      "owner": {
+        "scope": "local",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {}
+    }
+  ],
+  "relations": [],
+  "exports": [],
+  "dependencies": [],
+  "unresolved": [],
+  "extensions": [],
+  "runtime": {
+    "requirements": [
+      {
+        "id": "cap",
+        "capability": {
+          "identity": "custom/capability",
+          "version": "1"
+        },
+        "subject": {
+          "scope": "local",
+          "id": "subject",
+          "version": "1"
+        }
+      }
+    ],
+    "selection": {
+      "engine": {
+        "identity": "my/custom-engine",
+        "version": "unknown"
+      },
+      "interface": {
+        "identity": "my/interface",
+        "version": "1"
+      },
+      "evidence": [
+        {
+          "requirement": "cap",
+          "claim": "unsatisfied",
+          "artifact": null
+        }
+      ]
+    }
+  }
+}

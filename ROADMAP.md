@@ -1,114 +1,85 @@
 # Roadmap
 
 Every phase follows the repository boundary established by
-`docs/decisions/0003-repository-boundary.md` and maintained in `docs/scope.md`.
+[Decision 0003](docs/decisions/0003-repository-boundary.md) and maintained in
+[the project scope](docs/scope.md).
 
-## Published: version 0.0.1 conceptual pre-draft
+## Published history: 0.0.1 and 0.0.2
 
-Version `0.0.1` was published under the tag `v0.0.1`. It packages reviewed
-conceptual work without making it normative.
+Version `0.0.1` was published under `v0.0.1` as reviewed conceptual work. It did
+not define syntax, compatibility, conformance, execution or interoperability.
+Its four proposals remained proposed inputs.
 
-The tagged release contains:
+Version `0.0.2` was published under `v0.0.2` with eleven proposed documents,
+external-binding research and the first exchange-contract candidate. Decision
+0006 authorized that publication without adopting a syntax or claiming software
+support. See the [0.0.2 notes](docs/releases/0.0.2.md).
 
-- the corrected conceptual core;
-- exactly two non-normative conceptual examples;
-- the repository license and release documentation; and
-- proposals 0001 through 0004 as proposed conceptual inputs.
+Those tags are historical snapshots. Their status is not changed by the
+0.1.0 adoption.
 
-Version `0.0.1` does not define syntax, compatibility, conformance, execution,
-or interoperability. Its four proposals remain proposed inputs to later work.
-This list describes the tagged release, not the current `develop` branch.
+## Published: bounded 0.1.0 first draft
 
-## Published: version 0.0.2 conceptual pre-draft
+[Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md) adopts the selected
+0013 contract and unreplaced 0012 rules as a bounded normative first draft. The
+text now lives in `spec/`, its derived shapes live in `schemas/`, and independent
+Python and JavaScript readers are integrated under `tooling/readers/`.
 
-Version `0.0.2` packages the cumulative conceptual work since `v0.0.1` under tag
-`v0.0.2`. [Decision 0006](docs/decisions/0006-publish-version-0.0.2.md) authorizes
-publication of the [prepared scope](docs/decisions/0005-version-0.0.2.md).
-The [release notes](docs/releases/0.0.2.md) describe its contents and limits.
+This first-draft MVP is published under `v0.1.0`. It does not make AgSDL stable,
+universal or executable. Both readers agree on the pinned 137-case official
+corpus with no blocked case or failure, and the delivery review records the
+limits of that evidence. The maintainer authorized publication on 2026-09-07.
 
-The release contains eleven proposed documents. It keeps proposals 0001 through
-0004 non-normative, adds six proposed external bindings, and includes proposal
-0011 as a first exchange-contract candidate for maintainer review. It also
-records the accepted directions from Decision 0004, their reconciliation across
-proposed material and examples, the repository boundary, research, and local
-verification tools.
+## Current delivery sequence
 
-Publication does not claim software support for any binding. It does not adopt
-proposal 0011, define syntax or compatibility, or establish conformance,
-execution, or interoperability.
-
-The next intended milestone is `0.1.0`, an implementable draft for software
-including Macro and Agent Graph Studio. Its exact contract, graph behavior,
-serialization, implementation scope, and acceptance criteria remain to be
-agreed. The `0.0.2` publication does not resolve those choices.
-
-## Conceptual work included in 0.0.2
-
-Proposals 0005 through 0010 investigate versioned bindings to MCP, A2A, AG-UI,
-A2UI, AP2, and Open Agent Specification. They remain non-normative and do not
-establish implementation support or interoperability.
-
-[Decision 0004](docs/decisions/0004-approved-design-directions.md) records five
-accepted design directions:
-
-- allow a complete System to use exclusively imported Agent definitions while
-  preserving their lifecycle ownership;
-- associate one Action occurrence directly with several Authorization decisions,
-  each tied to its evaluated requirement and Policy application point;
-- use implementation features and conformance profiles for claims, amending
-  Decision 0001's reference to general conformance levels;
-- permit validation by phase, with explicit declarations and applicable rules
-  for each permitted deferral in an incomplete Fragment;
-- prepare a bounded contract for reading, inspection, structural validation,
-  and exchange, including missing information, preservation, and loss reporting.
-
-The [reconciliation work plan](docs/plans/2026-09-05-conceptual-reconciliation.md)
-records the reviewed proposal changes and preparation of the
-[first contract candidate](proposals/0011-first-exchange-contract.md).
-The exact first contract, including its normative subset, permitted deferral
-inventory, identity-relation interpretation, and input and result rules, still
-requires maintainer review. Neither the directions nor the reconciled proposals
-adopt a language, stable feature identities, syntax, or implementation support.
+| Work | Status |
+| --- | --- |
+| Adopt and apply the bounded D/G/R contract | Done. |
+| Derive official schemas and reader/report identities | Done. |
+| Integrate an official JavaScript reader | Done. |
+| Integrate the independent Python reader | Done. |
+| Integrate the official corpus and comparison tooling | Done. |
+| Prepare public documentation and one official example | Done. |
+| Run and retain the official cross-reader comparison | Done: 137 cases, no blocked case or failure. |
+| Complete independent whole-delivery review | Done for the bounded 0.1.0 delivery. |
+| Authorize and publish 0.1.0 | Published as the `v0.1.0` MVP pre-release. |
 
 ## Phase 0: foundation
 
-Status: the repository boundary and initial research are established;
-requirements, terminology, and versioning semantics remain proposed.
+Status: the repository boundary, initial research and versioned decision process
+are established. Broader governance and terminology beyond the bounded 0.1.0
+contract remain future work.
 
-- Fix the project scope and non-goals.
-- Establish terminology and a requirements inventory.
-- Inventory existing standards and agent frameworks.
-- Establish governance and versioning rules.
+- Maintain the scope and non-goals.
+- Extend terminology through reviewed proposals when needed.
+- Keep research about external systems separate from implementation claims.
+- Define broader governance before a stable release.
 
 ## Phase 1: conceptual model
 
-Status: proposals and conceptual examples exist, but no conceptual proposal is
-normative.
+Status: a bounded subset is normative for 0.1.0. Broader conceptual proposals,
+external bindings and examples remain non-normative unless a later decision
+adopts them.
 
-- Define the system, agent, resource, protocol, policy, and runtime entities.
-- Define identity, references, composition, inheritance, and extension rules.
-- Define security, observability, evaluation, and human-control concepts.
-- Publish representative system examples without committing to syntax.
+- Preserve Definition, Configuration and Execution as distinct concepts.
+- Propose material semantic additions before changing the specification.
+- Keep historical conceptual examples and proposals labelled by their status.
 
-## Phase 2: language draft
+## Phase 2: bounded language draft
 
-Status: future work, pending accepted conceptual semantics.
+Status: the 0.1.0 D/G/R contract, schemas, two readers, official corpus and
+bounded delivery evidence are complete. The bounded MVP is published under `v0.1.0`.
 
-- Choose canonical and authoring serializations.
-- Publish schemas and validation rules.
-- Define precise feature and conformance-profile contracts, validation-phase
-  rules, and compatibility rules within the accepted design directions.
-- Build non-normative reference tooling after the relevant behavior is accepted.
-- Candidate operations include parsing, validation, normalization, reference
-  resolution, and static inspection.
+- Maintain both readers against the same pinned official inputs and assertions.
+- Preserve nonzero comparison results and resolve founded defects before release.
+- Keep the evidence limits visible in every implementation claim.
 
-## Phase 3: interoperability
+## Phase 3: later interoperability work
 
-Status: research and binding proposals exist; accepted mappings, executable
-evidence, and interoperability claims remain future work.
+Status: research and binding proposals exist; adopted mappings, execution
+evidence and interoperability claims remain future work.
 
-- Map AgSDL concepts to selected frameworks and protocols.
-- Add round-trip and portability tests.
-- Publish a conformance test suite.
-- Publish versioned binding fixtures and evidence requirements.
-- Produce the first public draft.
+- Map AgSDL concepts to selected frameworks and protocols through proposals.
+- Define any future execution or conformance contract separately.
+- Add round-trip and portability evidence appropriate to an adopted contract.
+- Publish versioned binding fixtures only with explicit scope and evidence.

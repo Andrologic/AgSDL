@@ -1,0 +1,421 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Experimental candidate-2 D shape",
+  "$comment": "Derived from proposal 0012 candidate-2. Shape only; no normative adoption or unit verdict.",
+  "$ref": "#/$defs/Document",
+  "$defs": {
+    "Text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "Key": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/Text"
+        },
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "version": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "scope",
+        "id",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "Edition": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*(?![\\s\\S])"
+        },
+        "version": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "identity",
+        "version"
+      ],
+      "additionalProperties": false
+    },
+    "Hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}(?![\\s\\S])"
+    },
+    "Ref": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Key"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "dependency": {
+              "$ref": "#/$defs/Text"
+            },
+            "key": {
+              "$ref": "#/$defs/Key"
+            }
+          },
+          "required": [
+            "dependency",
+            "key"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Kind": {
+      "oneOf": [
+        {
+          "enum": [
+            "Agent",
+            "Principal",
+            "Interface",
+            "Instructions",
+            "Role",
+            "Skill",
+            "ControlFlow",
+            "Action",
+            "Resource",
+            "ApprovalRequirement",
+            "Tool",
+            "Model",
+            "Environment",
+            "Runtime",
+            "Deployment",
+            "Policy",
+            "Memory",
+            "Knowledge",
+            "State",
+            "Topology",
+            "Protocol"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "extension": {
+              "$ref": "#/$defs/Edition"
+            },
+            "name": {
+              "$ref": "#/$defs/Text"
+            }
+          },
+          "required": [
+            "extension",
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "Root": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/Key"
+        },
+        "kind": {
+          "enum": [
+            "System",
+            "Fragment",
+            "PackageVersion"
+          ]
+        },
+        "payload": true,
+        "annotations": true
+      },
+      "required": [
+        "key",
+        "kind"
+      ],
+      "additionalProperties": false
+    },
+    "Definition": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/Key"
+        },
+        "kind": {
+          "$ref": "#/$defs/Kind"
+        },
+        "owner": {
+          "$ref": "#/$defs/Key"
+        },
+        "payload": true,
+        "annotations": true,
+        "provenance": true
+      },
+      "required": [
+        "key",
+        "kind",
+        "owner",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "Relation": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "$ref": "#/$defs/Key"
+        },
+        "relation": {
+          "enum": [
+            "actsAs",
+            "exposes",
+            "directedBy",
+            "uses",
+            "contains"
+          ]
+        },
+        "target": {
+          "$ref": "#/$defs/Ref"
+        },
+        "expectedKind": {
+          "$ref": "#/$defs/Kind"
+        }
+      },
+      "required": [
+        "source",
+        "relation",
+        "target",
+        "expectedKind"
+      ],
+      "additionalProperties": false
+    },
+    "Dependency": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Text"
+        },
+        "rootKey": {
+          "$ref": "#/$defs/Key"
+        },
+        "status": {
+          "enum": [
+            "included",
+            "external",
+            "omitted",
+            "unavailable"
+          ]
+        },
+        "requiredFor": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "validateD",
+              "resolveG",
+              "exchange"
+            ]
+          }
+        },
+        "sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Hash"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "location": {
+          "$ref": "#/$defs/Text"
+        }
+      },
+      "required": [
+        "id",
+        "rootKey",
+        "status",
+        "requiredFor",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "Deferral": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "$ref": "#/$defs/Key"
+        },
+        "obligation": {
+          "const": "agent-interface-minimum"
+        },
+        "rule": {
+          "const": "fragment-interface-deferral"
+        },
+        "relation": {
+          "const": "exposes"
+        },
+        "expectedKind": {
+          "const": "Interface"
+        },
+        "missingMinimum": {
+          "const": 1
+        },
+        "target": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Key"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "satisfyBy": {
+          "const": "typed-exposes-relation"
+        },
+        "expiresBefore": {
+          "const": "resolved-graph"
+        }
+      },
+      "required": [
+        "subject",
+        "obligation",
+        "rule",
+        "relation",
+        "expectedKind",
+        "missingMinimum",
+        "target",
+        "satisfyBy",
+        "expiresBefore"
+      ],
+      "additionalProperties": false
+    },
+    "ExtensionMode": {
+      "oneOf": [
+        {
+          "enum": [
+            "required",
+            "unknown"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "ignoreRule": {
+              "const": "annotation-only"
+            }
+          },
+          "required": [
+            "ignoreRule"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "ExtensionOperations": {
+      "type": "object",
+      "properties": {
+        "validateD": {
+          "$ref": "#/$defs/ExtensionMode"
+        },
+        "validateG": {
+          "$ref": "#/$defs/ExtensionMode"
+        },
+        "validateR": {
+          "$ref": "#/$defs/ExtensionMode"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "Extension": {
+      "type": "object",
+      "properties": {
+        "identity": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*(?![\\s\\S])"
+        },
+        "version": {
+          "$ref": "#/$defs/Text"
+        },
+        "operations": {
+          "$ref": "#/$defs/ExtensionOperations"
+        },
+        "payload": true
+      },
+      "required": [
+        "identity",
+        "version",
+        "operations",
+        "payload"
+      ],
+      "additionalProperties": false
+    },
+    "Document": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "const": "proposal-0012-candidate-2"
+        },
+        "root": {
+          "$ref": "#/$defs/Root"
+        },
+        "definitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Definition"
+          }
+        },
+        "relations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Relation"
+          }
+        },
+        "exports": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Key"
+          }
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          }
+        },
+        "unresolved": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Deferral"
+          }
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Extension"
+          }
+        },
+        "annotations": true,
+        "evidence": true,
+        "graphs": true,
+        "runtime": true
+      },
+      "required": [
+        "contract",
+        "root",
+        "definitions",
+        "relations",
+        "exports",
+        "dependencies",
+        "unresolved",
+        "extensions"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,759 @@
+"""Focused implementation tests for the modular candidate-1 Python reader."""
+import base64
+import copy
+import importlib.util
+import json
+from pathlib import Path
+import subprocess
+import sys
+import unittest
+
+from reader import read
+from lossless import dumps
+
+
+ROOT = Path(__file__).resolve().parents[2]
+FIXTURES = ROOT / 'fixtures'
+SPEC = importlib.util.spec_from_file_location('modular_compare', ROOT / 'compare-readers.py')
+compare = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(compare)
+
+
+def fixture(name='modular-system.json'):
+    return json.loads((FIXTURES / name).read_bytes())
+
+
+def raw(value):
+    return json.dumps(value, ensure_ascii=False, separators=(',', ':')).encode()
+
+
+def report(value, operation='validateR'):
+    return read(operation, raw(value))['report']
+
+
+def findings(value, rule, outcome=None):
+    found = [item for result in value['results'] for item in result['findings'] if item['rule'] == rule]
+    return [item for item in found if outcome is None or item['outcome'] == outcome]
+
+
+def states(value, pointer):
+    return [item for item in value['inventory']['states'] if item['pointer'] == pointer]
+
+
+class CorpusTests(unittest.TestCase):
+    def test_all_twenty_six_oracles(self):
+        manifest = json.loads((FIXTURES / 'manifest.json').read_bytes())
+        self.assertEqual(len(manifest['cases']), 26)
+        for case in manifest['cases']:
+            with self.subTest(case=case['name']):
+                primary = (FIXTURES / case['primary']['path']).read_bytes()
+                annexes = {name: (FIXTURES / item['path']).read_bytes() for name, item in case['annexes'].items()}
+                response = read(case['operation'], primary, annexes)
+                wire_response = compare.load(dumps({
+                    'report': response['report'],
+                    'artifacts': {name: base64.b64encode(data).decode() for name, data in response['artifacts'].items()},
+                }).encode())
+                source = {'primary': primary, **{'annex/' + name: data for name, data in annexes.items()}}
+                self.assertEqual(compare.observe(case, wire_response, source), [])
+
+    def test_seven_operations_keep_modular_marker(self):
+        data = (FIXTURES / 'modular-system.json').read_bytes()
+        for operation in ('inspect', 'validateD', 'validateG', 'resolveG', 'validateR', 'exchange', 'lossyExchange'):
+            with self.subTest(operation=operation):
+                response = read(operation, data)
+                self.assertEqual(response['report']['contract'], 'proposal-0013-candidate-1')
+
+    def test_cli_preserves_the_modular_envelope(self):
+        data = (FIXTURES / 'modular-system.json').read_bytes()
+        request = {'operation': 'validateR', 'primary': base64.b64encode(data).decode(), 'annexes': {}}
+        process = subprocess.run([sys.executable, str(Path(__file__).with_name('cli.py'))],
+                                 input=json.dumps(request).encode(), capture_output=True, check=False)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        response = json.loads(process.stdout)
+        self.assertEqual(set(response), {'report', 'artifacts'})
+        self.assertEqual(response['report']['contract'], 'proposal-0013-candidate-1')
+
+
+class StructuralTests(unittest.TestCase):
+    def test_unselected_configuration_is_still_checked(self):
+        value = fixture()
+        choice = value['runtime']['configurations'][1]['agents'][0]['tools'][0]['choices'][0]
+        value['runtime']['configurations'][1]['agents'][0]['tools'][0]['choices'].append(copy.deepcopy(choice))
+        actual = report(value)
+        self.assertTrue(findings(actual, 'R-TOOL', 'fail'))
+        self.assertEqual(actual['results'][-1]['verdict'], 'fail')
+
+    def test_malformed_tool_collection_keeps_content_checks(self):
+        value = fixture()
+        value['runtime']['configurations'][0]['agents'][0]['tools'] = None
+        actual = report(value)
+        result = actual['results'][-1]
+        self.assertTrue(any(check['rule'] == 'R-TOOL' and check['state'] == 'blocked'
+                            for check in result['checks']))
+        self.assertTrue(any(check['rule'] == 'R-CONTENT' and check['state'] == 'completed'
+                            for check in result['checks']))
+
+    def test_unknown_tool_choice_blocks_its_assessment(self):
+        value = fixture()
+        tool = value['runtime']['configurations'][0]['agents'][0]['tools'][0]
+        tool['selected'] = 'missing'
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0/tools/0'
+        self.assertTrue(findings(actual, 'R-TOOL', 'fail'))
+        self.assertIn('blocked', {item['detail'] for item in states(actual, pointer)})
+
+    def test_duplicate_engine_claim_blocks_aggregate_but_keeps_known_failure(self):
+        value = fixture()
+        binding = value['runtime']['configurations'][0]['agents'][0]
+        duplicate = copy.deepcopy(binding['claims'][0])
+        duplicate['status'] = 'unsupported'
+        binding['claims'].append(duplicate)
+        binding['claims'][1]['status'] = 'unsupported'
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0'
+        self.assertTrue(findings(actual, 'R-BINDING', 'fail'))
+        self.assertTrue(findings(actual, 'R-COMPATIBILITY', 'fail'))
+        self.assertIn('blocked', {item['detail'] for item in states(actual, pointer)})
+
+    def test_missing_local_skill_dependency_is_not_provided(self):
+        value = fixture()
+        value['definitions'][12]['payload']['dependencies'][0]['id'] = 'missing'
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0'
+        self.assertTrue(any(item['location']['pointer'] == '/definitions/12/payload'
+                            for item in findings(actual, 'R-CONTENT', 'fail')))
+        self.assertTrue(findings(actual, 'R-COMPATIBILITY', 'inconclusive'))
+        self.assertIn('not-provided', {item['detail'] for item in states(actual, pointer)})
+
+    def test_unreachable_application_is_rejected(self):
+        value = fixture()
+        binding = value['runtime']['configurations'][0]['agents'][0]
+        extra = copy.deepcopy(binding['applications'][0])
+        extra['content']['id'] = 'unrelated'
+        value['definitions'].append({
+            'key': {'scope': 'mvp', 'id': 'unrelated', 'version': '1'},
+            'kind': 'Instructions', 'owner': value['root']['key'],
+            'payload': {'target': 'Agent', 'at': 'before-invoke',
+                        'format': {'identity': 'example/text', 'version': '1'},
+                        'body': 'Unrelated.', 'requires': []},
+        })
+        binding['applications'].append(extra)
+        actual = report(value)
+        self.assertTrue(any(item['location']['pointer'].endswith('/applications/2')
+                            for item in findings(actual, 'R-CONTENT', 'fail')))
+
+
+class AuditRegressionTests(unittest.TestCase):
+    def test_missing_engine_returns_a_blocked_report(self):
+        value = fixture()
+        value['runtime']['configurations'][0]['agents'][0].pop('engine')
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0'
+        self.assertTrue(any(item['location']['pointer'] == pointer
+                            for item in findings(actual, 'P-SHAPE', 'fail')))
+        self.assertTrue(any(check['rule'] == 'R-BINDING' and check['state'] == 'blocked'
+                            and {'pointer': pointer} in check['locations']
+                            for check in actual['results'][-1]['checks']))
+
+    def test_content_requirement_duplicates_are_rejected(self):
+        value = fixture()
+        value['definitions'][11]['payload']['requires'] = [
+            {'identity': 'example/text', 'version': '1'},
+            {'identity': 'example/text', 'version': '1'},
+        ]
+        requirement = value['definitions'][12]['payload']['requires'][0]
+        value['definitions'][12]['payload']['requires'].append(copy.deepcopy(requirement))
+        actual = report(value)
+        locations = {item['location']['pointer']
+                     for item in findings(actual, 'R-CONTENT', 'fail')}
+        self.assertIn('/definitions/11/payload', locations)
+        self.assertIn('/definitions/12/payload', locations)
+
+    def test_partial_catalogs_keep_independent_findings(self):
+        value = fixture()
+        binding = value['runtime']['configurations'][0]['agents'][0]
+        binding['claims'][0]['status'] = 'unsupported'
+        binding['claims'].append(None)
+        binding['tools'].append(None)
+        binding['tools'][0]['selected'] = 'missing'
+        actual = report(value)
+        self.assertTrue(findings(actual, 'R-COMPATIBILITY', 'fail'))
+        self.assertTrue(any(item['location']['pointer'].endswith('/tools/0')
+                            for item in findings(actual, 'R-TOOL', 'fail')))
+
+    def test_missing_choice_catalog_returns_a_blocked_report(self):
+        value = fixture()
+        value['runtime']['configurations'][0]['agents'][0]['tools'][0].pop('choices')
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0/tools/0'
+        self.assertTrue(any(check['rule'] == 'R-TOOL' and check['state'] == 'blocked'
+                            and {'pointer': pointer} in check['locations']
+                            for check in actual['results'][-1]['checks']))
+
+    def test_unreadable_skill_closure_does_not_invent_unreachable_applications(self):
+        value = fixture()
+        value['definitions'][12]['payload']['dependencies'] = None
+        actual = report(value)
+        self.assertFalse(any('Application content is not reachable' in item['details']
+                             for item in findings(actual, 'R-CONTENT', 'fail')))
+        self.assertTrue(any(check['rule'] == 'R-CONTENT' and check['state'] == 'blocked'
+                            for check in actual['results'][-1]['checks']))
+
+    def test_skill_tools_are_typed_and_external_refs_are_visible(self):
+        value = fixture()
+        value['definitions'][12]['payload']['tools'].append(
+            copy.deepcopy(value['definitions'][11]['key']))
+        actual = report(value)
+        self.assertTrue(any(item['location']['pointer'] == '/definitions/12/payload'
+                            for item in findings(actual, 'R-CONTENT', 'fail')))
+
+        value = fixture()
+        value['dependencies'].append({
+            'id': 'external-tools',
+            'rootKey': {'scope': 'external', 'id': 'package', 'version': '1'},
+            'status': 'external', 'requiredFor': [], 'sha256': None,
+        })
+        value['definitions'][12]['payload']['tools'].append({
+            'dependency': 'external-tools',
+            'key': {'scope': 'external', 'id': 'tool', 'version': '1'},
+        })
+        actual = report(value)
+        pointer = '/definitions/12/payload/tools/1'
+        self.assertIn('external target excluded',
+                      {item['detail'] for item in states(actual, pointer)})
+
+    def test_required_tool_payload_is_observed_without_a_binding(self):
+        value = fixture()
+        for configuration in value['runtime']['configurations']:
+            for binding in configuration['agents']:
+                binding['tools'] = []
+        value['definitions'][9]['payload']['effects'] = 'invalid'
+        actual = report(value)
+        pointer = '/definitions/9/payload/effects'
+        self.assertTrue(any(item['location']['pointer'] == pointer
+                            for item in findings(actual, 'P-SHAPE', 'fail')))
+        self.assertNotIn('/definitions/9/payload',
+                         {item['pointer'] for item in actual['inventory']['opaque']})
+
+    def test_ambiguous_agent_and_unreadable_graph_block_aggregates(self):
+        value = fixture()
+        value['definitions'].append(copy.deepcopy(value['definitions'][0]))
+        actual = report(value)
+        agent = '/runtime/configurations/0/agents/0'
+        tool = agent + '/tools/0'
+        self.assertIn('blocked', {item['detail'] for item in states(actual, agent)})
+        self.assertIn('blocked', {item['detail'] for item in states(actual, tool)})
+
+        value = fixture()
+        value.pop('graphs')
+        actual = report(value)
+        self.assertIn('blocked', {item['detail'] for item in states(actual, agent)})
+        self.assertIn('blocked', {item['detail'] for item in states(actual, tool)})
+
+    def test_present_null_selection_blocks_compatibility(self):
+        value = fixture()
+        value['runtime']['selected'] = None
+        actual = report(value)
+        checks = actual['results'][-1]['checks']
+        self.assertTrue(any(check['rule'] == 'R-COMPATIBILITY'
+                            and check['state'] == 'blocked' for check in checks))
+        self.assertFalse(any(check['rule'] == 'R-COMPATIBILITY'
+                             and check['state'] == 'excluded' for check in checks))
+
+    def test_unreadable_tool_identity_blocks_coverage(self):
+        value = fixture()
+        binding = value['runtime']['configurations'][0]['agents'][0]
+        binding['tools'][0]['tool'] = None
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0'
+        self.assertFalse(any(item['location']['pointer'] == pointer
+                             and 'missing or duplicate required ToolBinding' in item['details']
+                             for item in findings(actual, 'R-TOOL', 'fail')))
+        self.assertTrue(any(check['rule'] == 'R-TOOL' and check['state'] == 'blocked'
+                            and {'pointer': pointer} in check['locations']
+                            for check in actual['results'][-1]['checks']))
+
+    def test_extra_application_field_keeps_order_and_parameter_slices(self):
+        value = fixture()
+        value['runtime']['configurations'][0]['agents'][0]['applications'][0]['extra'] = True
+        actual = report(value)
+        self.assertFalse(any('Skill dependency Application must be earlier' in item['details']
+                             for item in findings(actual, 'R-CONTENT', 'fail')))
+        opaque = {item['pointer'] for item in actual['inventory']['opaque']}
+        prefix = '/runtime/configurations/0/agents/0'
+        self.assertTrue({prefix + '/parameters',
+                         prefix + '/tools/0/choices/0/parameters',
+                         prefix + '/applications/0/parameters',
+                         prefix + '/applications/1/parameters'} <= opaque)
+
+    def test_custom_kind_at_typed_tool_returns_a_cli_report(self):
+        value = fixture()
+        value['definitions'][9]['kind'] = {
+            'extension': {'identity': 'example/custom', 'version': '1'},
+            'name': 'CustomTool',
+        }
+        value['extensions'].append({
+            'identity': 'example/custom', 'version': '1',
+            'operations': {'validateD': 'required', 'validateR': 'required'},
+            'payload': {},
+        })
+        request = {'operation': 'validateR', 'primary': base64.b64encode(raw(value)).decode(),
+                   'annexes': {}}
+        process = subprocess.run([sys.executable, str(Path(__file__).with_name('cli.py'))],
+                                 input=json.dumps(request).encode(), capture_output=True,
+                                 check=False)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        actual = json.loads(process.stdout)['report']
+        self.assertTrue(findings(actual, 'R-TOOL', 'fail'))
+
+    def test_duplicate_agent_bindings_block_only_affected_aggregates(self):
+        value = fixture()
+        bindings = value['runtime']['configurations'][0]['agents']
+        bindings.append(copy.deepcopy(bindings[0]))
+        actual = report(value)
+        prefix = '/runtime/configurations/0/agents/'
+        for suffix in ('0', '0/tools/0', '2', '2/tools/0'):
+            self.assertIn('blocked',
+                          {item['detail'] for item in states(actual, prefix + suffix)})
+        self.assertIn('declared-supported',
+                      {item['detail'] for item in states(actual, prefix + '1')})
+
+    def test_unreadable_earlier_application_blocks_order_conclusion(self):
+        value = fixture()
+        binding = value['runtime']['configurations'][0]['agents'][0]
+        binding['applications'][0]['content'] = None
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0/applications/1'
+        self.assertFalse(any(item['location']['pointer'] == pointer
+                             and 'Skill dependency Application must be earlier'
+                             in item['details']
+                             for item in findings(actual, 'R-CONTENT', 'fail')))
+        self.assertTrue(any(check['rule'] == 'R-CONTENT' and check['state'] == 'blocked'
+                            and {'pointer': pointer} in check['locations']
+                            for check in actual['results'][-1]['checks']))
+
+    def test_duplicate_tool_bindings_block_only_their_aggregates(self):
+        value = fixture()
+        tools = value['runtime']['configurations'][0]['agents'][0]['tools']
+        tools.append(copy.deepcopy(tools[0]))
+        actual = report(value)
+        prefix = '/runtime/configurations/0/agents/0/tools/'
+        for index in ('0', '1'):
+            self.assertIn('blocked',
+                          {item['detail'] for item in states(actual, prefix + index)})
+        self.assertTrue(any('missing or duplicate required ToolBinding' in item['details']
+                            for item in findings(actual, 'R-TOOL', 'fail')))
+
+    def test_extra_claim_field_keeps_known_incompatibility(self):
+        value = fixture()
+        claim = value['runtime']['configurations'][0]['agents'][0]['claims'][0]
+        claim['status'] = 'unsupported'
+        claim['extra'] = True
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0'
+        self.assertTrue(any(item['location']['pointer'] == pointer
+                            for item in findings(actual, 'R-COMPATIBILITY', 'fail')))
+
+    def test_extra_implementation_claim_field_keeps_known_incompatibility(self):
+        value = fixture()
+        claim = (value['runtime']['configurations'][0]['agents'][0]
+                 ['tools'][0]['choices'][0]['claims'][0])
+        claim['status'] = 'unsupported'
+        claim['extra'] = True
+        actual = report(value)
+        pointer = '/runtime/configurations/0/agents/0/tools/0'
+        self.assertTrue(any(item['location']['pointer'] == pointer
+                            for item in findings(actual, 'R-COMPATIBILITY', 'fail')))
+
+
+class GraphTests(unittest.TestCase):
+    def test_duplicate_selected_operation_blocks_lookup(self):
+        value = fixture()
+        interface = value['definitions'][4]['payload']['operations']
+        interface.append(copy.deepcopy(interface[0]))
+        actual = report(value, 'validateG')
+        self.assertTrue(findings(actual, 'G-TARGET', 'fail'))
+        self.assertTrue(any(check['rule'] == 'G-TARGET' and check['state'] == 'blocked'
+                            for check in actual['results'][-1]['checks']))
+
+    def test_unreadable_operation_index_does_not_invent_absence(self):
+        value = fixture('operation-not-found.json')
+        value['definitions'][4]['payload']['operations'][0]['id'] = None
+        actual = report(value, 'validateG')
+        step = '/graphs/0/steps/0'
+        self.assertFalse(any(item['location']['pointer'] == step
+                             for item in findings(actual, 'G-TARGET', 'fail')))
+        self.assertTrue(any(check['rule'] == 'G-TARGET' and check['state'] == 'blocked'
+                            and {'pointer': step} in check['locations']
+                            for check in actual['results'][-1]['checks']))
+
+    def test_outbound_operation_cannot_be_invoked(self):
+        value = fixture()
+        value['definitions'][4]['payload']['operations'][0]['direction'] = 'outbound'
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/0'
+                            for item in findings(actual, 'G-TARGET', 'fail')))
+
+    def test_parallel_gate_path_is_rejected(self):
+        value = fixture('approval-two-gates.json')
+        graph = value['graphs'][0]
+        graph['inputs']['flag'] = 'boolean'
+        graph['entry'] = 'branch'
+        graph['steps'].insert(0, {'id': 'branch', 'kind': 'condition', 'test': {'input': 'flag'},
+                                  'true': 'legal', 'false': 'finance', 'failure': 'failed'})
+        graph['steps'][1]['approved'] = 'call'
+        actual = report(value, 'validateG')
+        self.assertTrue(findings(actual, 'G-APPROVAL', 'fail'))
+
+    def test_later_gate_rejects_an_ordinary_incoming_edge(self):
+        value = fixture('approval-two-gates.json')
+        graph = value['graphs'][0]
+        graph['inputs']['flag'] = 'boolean'
+        graph['entry'] = 'branch'
+        graph['steps'].insert(0, {'id': 'branch', 'kind': 'condition', 'test': {'input': 'flag'},
+                                  'true': 'legal', 'false': 'finance', 'failure': 'failed'})
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/2'
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
+    def test_operation_fields_remain_independently_checkable(self):
+        value = fixture()
+        operation = value['definitions'][4]['payload']['operations'][0]
+        operation['extra'] = True
+        operation['action']['id'] = 'missing'
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] ==
+                            '/definitions/4/payload/operations/0'
+                            for item in findings(actual, 'G-TARGET', 'fail')))
+
+    def test_unreadable_invoke_operation_blocks_lookup(self):
+        for replacement in ('missing', 'null'):
+            with self.subTest(replacement=replacement):
+                value = fixture()
+                if replacement == 'missing':
+                    value['graphs'][0]['steps'][0].pop('operation')
+                else:
+                    value['graphs'][0]['steps'][0]['operation'] = None
+                actual = report(value, 'validateG')
+                pointer = '/graphs/0/steps/0'
+                self.assertFalse(any(item['location']['pointer'] == pointer
+                                     and 'selected Interface operation does not exist'
+                                     in item['details']
+                                     for item in findings(actual, 'G-TARGET', 'fail')))
+                self.assertTrue(any(check['rule'] == 'G-TARGET'
+                                    and check['state'] == 'blocked'
+                                    and {'pointer': pointer} in check['locations']
+                                    for check in actual['results'][-1]['checks']))
+
+    def test_approved_successor_kind_is_checked_when_paths_fail(self):
+        value = fixture('approval-two-gates.json')
+        value['graphs'][0]['steps'][0]['approved'] = 'ok'
+        value['graphs'][0]['steps'][2]['success'] = 'call'
+        actual = report(value, 'validateG')
+        self.assertTrue(findings(actual, 'G-PATH', 'fail'))
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/0'
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
+    def test_unreadable_approval_fields_do_not_invent_chain_failures(self):
+        mutations = (
+            lambda graph: graph['steps'][0].update(call=None),
+            lambda graph: graph['steps'][1].update(call=None),
+            lambda graph: graph['steps'][1].update(kind='invalid'),
+        )
+        invented = ('approval chain changes call', 'approved chain does not reach call',
+                    'call must have one final approved gate',
+                    'approved invoke differs from call',
+                    'approved successor is not a gate or call')
+        for index, mutate in enumerate(mutations):
+            with self.subTest(index=index):
+                value = fixture('approval-two-gates.json')
+                mutate(value['graphs'][0])
+                actual = report(value, 'validateG')
+                details = ' '.join(item['details']
+                                   for item in findings(actual, 'G-APPROVAL', 'fail'))
+                self.assertFalse(any(detail in details for detail in invented))
+                self.assertTrue(any(check['rule'] == 'G-APPROVAL'
+                                    and check['state'] == 'blocked'
+                                    for check in actual['results'][-1]['checks']))
+
+    def test_known_bad_successor_kind_survives_unreadable_call(self):
+        value = fixture('approval-two-gates.json')
+        gate = value['graphs'][0]['steps'][0]
+        gate['call'] = None
+        gate['approved'] = 'ok'
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/0'
+                            and 'approved successor is not a gate or call'
+                            in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
+    def test_unreadable_call_target_kind_blocks_direct_check(self):
+        for replacement in (None, {}, [], 'invalid'):
+            with self.subTest(replacement=replacement):
+                value = fixture('approval-two-gates.json')
+                value['graphs'][0]['steps'][2]['kind'] = replacement
+                actual = report(value, 'validateG')
+                self.assertFalse(any('approval call is not an invoke' in item['details']
+                                     for item in findings(actual, 'G-APPROVAL', 'fail')))
+                self.assertTrue(any(check['rule'] == 'G-APPROVAL'
+                                    and check['state'] == 'blocked'
+                                    for check in actual['results'][-1]['checks']))
+
+    def test_unreadable_call_in_one_chain_keeps_another_bypass(self):
+        value = fixture('approval-two-gates.json')
+        graph = value['graphs'][0]
+        second = copy.deepcopy(graph['steps'][:3])
+        renamed = {'legal': 'legal2', 'finance': 'finance2', 'call': 'call2'}
+        for step in second:
+            for field in ('id', 'call', 'approved', 'success', 'failure', 'denied'):
+                if step.get(field) in renamed:
+                    step[field] = renamed[step[field]]
+        graph['steps'][2]['success'] = 'legal2'
+        graph['steps'].extend(second)
+        graph['steps'][0]['call'] = None
+        graph['steps'][-3]['denied'] = 'call2'
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/7'
+                            and 'denied or failure path bypasses approval'
+                            in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/8'
+                            and 'call must have one final approved gate'
+                            in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
+    def test_unreadable_call_keeps_other_chain_gate_incoming_failures(self):
+        def two_chains():
+            value = fixture('approval-two-gates.json')
+            graph = value['graphs'][0]
+            second = copy.deepcopy(graph['steps'][:3])
+            renamed = {'legal': 'legal2', 'finance': 'finance2', 'call': 'call2'}
+            for step in second:
+                for field in ('id', 'call', 'approved', 'success', 'failure', 'denied'):
+                    if step.get(field) in renamed:
+                        step[field] = renamed[step[field]]
+            graph['steps'][2]['success'] = 'legal2'
+            graph['steps'].extend(second)
+            graph['steps'][0]['call'] = None
+            return value, graph
+
+        value, graph = two_chains()
+        graph['steps'][2]['failure'] = 'finance2'
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/8'
+                            and 'later gate has another incoming edge' in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
+        value, graph = two_chains()
+        legal3 = copy.deepcopy(graph['steps'][7])
+        legal3['id'] = 'legal3'
+        graph['steps'][2]['failure'] = 'legal3'
+        graph['steps'].append(legal3)
+        actual = report(value, 'validateG')
+        self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/8'
+                            and 'gate has multiple approved predecessors' in item['details']
+                            for item in findings(actual, 'G-APPROVAL', 'fail')))
+
+    def test_unreadable_call_keeps_refusal_paths_to_known_later_gate(self):
+        for route in ('denied', 'failure', 'indirect'):
+            with self.subTest(route=route):
+                value = fixture('approval-two-gates.json')
+                graph = value['graphs'][0]
+                second = copy.deepcopy(graph['steps'][:3])
+                renamed = {'legal': 'legal2', 'finance': 'finance2', 'call': 'call2'}
+                for step in second:
+                    for field in ('id', 'call', 'approved', 'success', 'failure', 'denied'):
+                        if step.get(field) in renamed:
+                            step[field] = renamed[step[field]]
+                graph['steps'][2]['success'] = 'legal2'
+                graph['steps'][2]['failure'] = 'call2'
+                graph['steps'].extend(second)
+                graph['steps'][0]['call'] = None
+                graph['steps'][8]['approved'] = 'ok'
+                if route == 'indirect':
+                    graph['inputs']['flag'] = 'boolean'
+                    graph['steps'][7]['denied'] = 'detour'
+                    graph['steps'].append({
+                        'id': 'detour', 'kind': 'condition',
+                        'test': {'input': 'flag'}, 'true': 'finance2',
+                        'false': 'denied', 'failure': 'failed',
+                    })
+                else:
+                    graph['steps'][7][route] = 'finance2'
+                actual = report(value, 'validateG')
+                self.assertTrue(any(item['location']['pointer'] == '/graphs/0/steps/7'
+                                    and 'denied or failure path bypasses approval'
+                                    in item['details']
+                                    for item in findings(actual, 'G-APPROVAL', 'fail')))
+
+
+
+class PartialDocumentTests(unittest.TestCase):
+    def test_relation_semantics_survive_an_extra_member(self):
+        value = fixture()
+        relation = value['relations'][0]
+        relation['target']['id'] = 'missing-principal'
+        relation['extra'] = True
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/relations/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-REFERENCE', 'fail')})
+
+    def test_relation_reference_fields_are_observed_independently(self):
+        for missing in ('relation', 'target', 'expectedKind'):
+            with self.subTest(missing=missing):
+                value = fixture()
+                value['relations'][0]['source']['id'] = 'missing-agent'
+                value['relations'][0].pop(missing)
+                actual = read('validateD', raw(value))['report']
+                self.assertIn('/relations/0', {f['location']['pointer']
+                              for f in findings(actual, 'D-REFERENCE', 'fail')})
+        value = fixture()
+        value['relations'][0]['target']['id'] = 'missing-principal'
+        value['relations'][0].pop('source')
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/relations/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-REFERENCE', 'fail')})
+
+    def test_duplicate_relation_ignores_unknown_members(self):
+        value = fixture()
+        duplicate = copy.deepcopy(value['relations'][0])
+        duplicate['extra'] = True
+        value['relations'].append(duplicate)
+        actual = read('validateD', raw(value))['report']
+        path = '/relations/' + str(len(value['relations']) - 1)
+        self.assertIn(path, {f['location']['pointer']
+                      for f in findings(actual, 'D-RELATION', 'fail')})
+
+    def test_custom_kind_uses_partial_extension_catalog_evidence(self):
+        custom_kind = {
+            'extension': {'identity': 'example/custom', 'version': '1'},
+            'name': 'Worker',
+        }
+        for extension, blocked in (({}, True), ({
+            'identity': 'example/custom', 'version': '1', 'operations': {},
+        }, False)):
+            with self.subTest(extension=extension):
+                value = fixture()
+                value['definitions'].append({
+                    'key': {'scope': 'mvp', 'id': 'custom', 'version': '1'},
+                    'kind': custom_kind,
+                    'owner': copy.deepcopy(value['root']['key']),
+                    'payload': {},
+                })
+                value['extensions'] = [extension]
+                actual = read('validateD', raw(value))['report']
+                path = '/definitions/' + str(len(value['definitions']) - 1)
+                self.assertNotIn(path, {f['location']['pointer']
+                                 for f in findings(actual, 'D-REFERENCE', 'fail')})
+                self.assertEqual(any(c['rule'] == 'D-REFERENCE'
+                                     and c['state'] == 'blocked'
+                                     and {'pointer': path} in c['locations']
+                                     for c in actual['results'][0]['checks']), blocked)
+
+    def test_partial_agent_keeps_an_observable_minimum_failure(self):
+        value = fixture()
+        value['definitions'][0].pop('payload')
+        value['relations'].append(copy.deepcopy(value['relations'][0]))
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/definitions/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-AGENT', 'fail')})
+        self.assertFalse(any(c['rule'] == 'D-AGENT' and c['state'] == 'blocked'
+                             and {'pointer': '/definitions/0'} in c['locations']
+                             for c in actual['results'][0]['checks']))
+
+    def test_reference_uses_readable_key_and_kind_from_partial_definition(self):
+        value = fixture()
+        value['definitions'][2].pop('payload')
+        actual = read('validateD', raw(value))['report']
+        self.assertFalse(any(c['rule'] == 'D-REFERENCE' and c['state'] == 'blocked'
+                             and {'pointer': '/relations/0'} in c['locations']
+                             for c in actual['results'][0]['checks']))
+
+    def test_dependency_extra_member_does_not_block_readable_rules(self):
+        value = fixture()
+        value['dependencies'] = [{
+            'id': 'a',
+            'rootKey': {'scope': 'dep', 'id': 'root', 'version': '1'},
+            'status': 'external',
+            'requiredFor': [],
+            'sha256': None,
+            'extra': True,
+        }]
+        actual = read('validateD', raw(value))['report']
+        checks = actual['results'][0]['checks']
+        for rule in ('D-DEPENDENCY', 'D-INTEGRITY'):
+            self.assertTrue(any(c['rule'] == rule and c['state'] == 'completed'
+                                for c in checks))
+            self.assertFalse(any(c['rule'] == rule and c['state'] == 'blocked'
+                                 and {'pointer': '/dependencies/0'} in c['locations']
+                                 for c in checks))
+
+    def test_missing_dependency_hash_blocks_integrity(self):
+        value = fixture()
+        value['dependencies'] = [{
+            'id': 'a',
+            'rootKey': {'scope': 'dep', 'id': 'root', 'version': '1'},
+            'status': 'external',
+            'requiredFor': [],
+        }]
+        actual = read('validateD', raw(value))['report']
+        self.assertTrue(any(c['rule'] == 'D-INTEGRITY' and c['state'] == 'blocked'
+                            and {'pointer': '/dependencies/0'} in c['locations']
+                            for c in actual['results'][0]['checks']))
+
+    def test_readable_definition_identity_and_owner(self):
+        value = fixture()
+        original = value['definitions'][0]
+        value['definitions'].append({'key': copy.deepcopy(original['key']),
+                                     'owner': dict(value['root']['key'], id='wrong')})
+        actual = read('validateD', raw(value))['report']
+        path = '/definitions/' + str(len(value['definitions']) - 1)
+        for rule in ('D-IDENTITY', 'D-OWNER'):
+            self.assertIn(path, {f['location']['pointer'] for f in findings(actual, rule, 'fail')})
+
+    def test_partial_dependency_ids_do_not_invent_undeclared_annexes(self):
+        for dependencies, duplicate in (([{'id': 'a'}], False),
+                                        ([{'id': 'a'}, {'id': 'a'}], True),
+                                        ([{}], False)):
+            with self.subTest(dependencies=dependencies):
+                value = fixture()
+                value['dependencies'] = dependencies
+                actual = read('validateD', raw(value), {'a': b'bytes'})['report']
+                failures = findings(actual, 'D-DEPENDENCY', 'fail')
+                self.assertFalse(any(f['location'] == {'pointer': ''} for f in failures))
+                self.assertEqual(any(f['location'] == {'pointer': '/dependencies/1'}
+                                     for f in failures), duplicate)
+
+    def test_partial_dependency_keeps_independent_checks(self):
+        dep = {'id': 'a', 'rootKey': {'scope': 'dep', 'id': 'root', 'version': '1'},
+               'status': 'included', 'requiredFor': ['validateD'], 'sha256': None}
+        for field in ('id', 'rootKey', 'requiredFor', 'status', 'sha256'):
+            with self.subTest(field=field):
+                value = fixture()
+                first = copy.deepcopy(dep)
+                later = copy.deepcopy(dep)
+                later['requiredFor'] = ['validateD', 'validateD', None]
+                later['status'] = 'external'
+                later.pop(field)
+                value['dependencies'] = [first, later]
+                actual = read('validateD', raw(value), {'a': b'bytes'})['report']
+                self.assertIn('/dependencies/1', {f['location']['pointer']
+                              for f in findings(actual, 'D-DEPENDENCY', 'fail')})
+                if field not in ('sha256', 'requiredFor'):
+                    self.assertIn('/dependencies/1', {f['location']['pointer']
+                                  for f in findings(actual, 'D-INTEGRITY', 'inconclusive')})
+        value = fixture()
+        value['dependencies'] = [dict(dep, sha256='0' * 64)]
+        value['dependencies'][0].pop('rootKey')
+        actual = read('validateD', raw(value), {'a': b'bytes'})['report']
+        self.assertTrue(findings(actual, 'D-INTEGRITY', 'fail'))
+
+    def test_agent_excess_survives_an_unreadable_relation(self):
+        value = fixture()
+        value['relations'].extend([copy.deepcopy(value['relations'][0]), {}])
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/definitions/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-AGENT', 'fail')})
+
+if __name__ == '__main__':
+    unittest.main()

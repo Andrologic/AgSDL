@@ -8,6 +8,15 @@ Decision 0004 approves the directions for imported-Agent composition, direct
 authorization accounting, and validation by phase. The relations and detailed
 rules below remain proposed; they are not adopted normative semantics.
 
+## 0.1.0 disposition, 2026-09-07
+
+This conceptual proposal remains proposed. [Decision 0007](../docs/decisions/0007-adopt-0.1.0-contract.md)
+adopts only the bounded concrete contract selected through 0012/0013 and applied
+in [spec](../spec/README.md). Its [traceability record](../docs/reviews/0007-0.1.0-contract-traceability.md)
+identifies the adopted subset and exclusions. Earlier pending-adoption wording
+below describes the conceptual preparation stage, not the status of that
+applied 0.1.0 contract. No whole-proposal acceptance follows.
+
 ## Problem
 
 Agent frameworks expose different units of composition. One may treat a prompt
@@ -225,12 +234,13 @@ Invariants:
 - Authorization does not retroactively make missing or invalid authentication
   evidence valid when the applicable authorization requirement demands it.
 
-The `Agent represented by Identity` relation below remains underspecified. Its
-exact target meaning and cardinalities need review when preparing the first
-external contract under Decision 0004. The distinction between definition
-identity and Principal identity does not decide whether that row names the
-Agent definition or an acting identity. The row is retained as an open contract
-question and cannot establish an additional restriction on Principal identities.
+The `Agent represented by Identity` relation below remains a broader conceptual
+question. For the adopted 0.1.0 contract, Decision 0007 resolves its bounded
+interpretation: the Agent Key identifies its Definition, exactly one actsAs
+reference names its declared Principal, and invoke.principal equals that target.
+Configuration does not rebind the Principal; authentication remains external.
+The conceptual row cannot add Identity records or Principal cardinality checks
+to that specification.
 
 ### Cardinality notation
 
@@ -1369,7 +1379,8 @@ the remaining contract choices below.
 14. Which Effect categories need standardized names for portable risk analysis?
 15. What does `Agent represented by Identity` identify, and what cardinalities
     should that relation have in the first external contract? Its interpretation
-    remains open; definition identity and Principal identity remain distinct.
+    is resolved for 0.1.0 by Decision 0007 as recorded above. Broader conceptual
+    identity design remains open; definition and Principal identity stay distinct.
 16. Which exact obligations may a future contract defer during unresolved-document
     validation, and which declarations prove that permission? Proposal 0003
     governs the phases; this proposal adds no general deferral inventory.
