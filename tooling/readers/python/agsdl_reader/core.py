@@ -375,11 +375,12 @@ def validate_d(doc, annexes):
     if cyclic(edges):
         result.find('D-CYCLE', '/relations', 'containment cycle')
     exports = items(doc.obj, 'exports')
-    if root_ok and isinstance(doc.obj.get('exports'), list):
+    root_kind_ok = isinstance(root, dict) and root.get('kind') in ('System', 'Fragment', 'PackageVersion')
+    if root_kind_ok and isinstance(doc.obj.get('exports'), list):
         result.complete('D-EXPORT')
         if (root['kind'] == 'Fragment' and not exports) or (root['kind'] == 'System' and exports):
             result.find('D-EXPORT', '/exports', 'root export constraint')
-    elif not root_ok:
+    elif not root_kind_ok:
         result.block('D-EXPORT', '/exports' if 'exports' in doc.obj else '')
     seen_exports = set()
     for i, export in enumerate(exports):
@@ -388,6 +389,8 @@ def validate_d(doc, annexes):
             result.block('D-EXPORT', path)
             continue
         ident = key(export)
+        if not root_key_ok:
+            result.block('D-EXPORT', path)
         if ident in seen_exports or (root_ok and export == root['key']):
             result.find('D-EXPORT', path, 'duplicate or root export')
         doc.lookup(export, None, result, 'D-EXPORT', path, partial=True)
@@ -531,7 +534,7 @@ def extension_checks(doc, result, operation):
 
 
 def validate_r(doc):
-    """Validate the modular static configuration without resolving R annexes."""
+    """Validate the static configuration without resolving R annexes."""
     result = Result(doc.id, 'R', 'unresolved-document', R_RULES)
     if doc.syntax:
         for rule in R_RULES:
@@ -698,6 +701,7 @@ def validate_r(doc):
                 'engine_ok': engine_ok, 'requirements': requirements,
                 'requires_complete': requires_complete,
                 'claims': claims, 'claims_complete': claims_complete,
+                'claims_ok': claims_ok,
                 'duplicate_claims': duplicate_claims,
                 'duplicate_requirements': duplicate_requirements,
                 'tool_bindings': tool_bindings, 'tools_complete': tools_complete,
@@ -818,7 +822,8 @@ def validate_r(doc):
                     if binding['agent'] not in required_agents:
                         result.find('R-BINDING', bp, 'unused AgentBinding')
                 result.complete('R-BINDING')
-        configuration_blocked[id(configuration)] = selection_blocked or projection_blocked
+        configuration_blocked[id(configuration)] = (selection_blocked or projection_blocked
+                                                   or not isinstance(configuration.get('agents'), list))
         if selected_record and configuration is selected_record[0] and configuration_blocked[id(configuration)]:
             result.block('R-COMPATIBILITY', path)
 
@@ -839,7 +844,7 @@ def validate_r(doc):
         return refs, readable
 
     def assess(requirements, claims, supplied, path, unknown=False, blocked=False,
-               not_provided=False, emit_state=True):
+               not_provided=False, emit_state=True, claims_available=True):
         statuses = []
         claim_groups = defaultdict(list)
         for claim in claims:
@@ -849,6 +854,9 @@ def validate_r(doc):
             if len(matching) > 1:
                 continue
             claim = matching[0] if matching else None
+            # None means the mandatory engine value is unreadable, not null.
+            if supplied is None or (supplied and not claims_available):
+                continue
             if not supplied:
                 statuses.append('not-provided')
             elif claim and claim['status'] == 'unsupported':
@@ -858,7 +866,7 @@ def validate_r(doc):
                 statuses.append('unknown')
             else:
                 statuses.append('declared-supported')
-        if not requirements:
+        if not requirements and supplied is not None:
             statuses.append('declared-supported' if supplied else 'not-provided')
         if unknown:
             statuses.append('unknown')
@@ -872,7 +880,8 @@ def validate_r(doc):
         if any(item in ('not-provided', 'unknown') for item in statuses):
             result.find('R-COMPATIBILITY', path,
                         'required capability or choice not established', 'inconclusive')
-        result.complete('R-COMPATIBILITY')
+        if statuses:
+            result.complete('R-COMPATIBILITY')
         if blocked:
             result.block('R-COMPATIBILITY', path)
         state_value = {'incompatible': 'declared', 'not-provided': 'absent',
@@ -915,8 +924,11 @@ def validate_r(doc):
         if external_agent:
             result.exclude('R-CONTENT', bp)
             result.exclude('R-TOOL', bp)
-        elif not tool_relations_ok:
-            result.block('R-TOOL', bp)
+        else:
+            if not (content_relations_ok and skill_relations_ok):
+                result.block('R-CONTENT', bp)
+            if not tool_relations_ok:
+                result.block('R-TOOL', bp)
 
         queue = ([(ref, path.rsplit('/', 1)[0], path.rsplit('/', 1)[0], path)
                   for ref, path in required_content_records]
@@ -958,7 +970,7 @@ def validate_r(doc):
                       else 'SkillPayload')
             payload_path = dp + '/payload'
             doc.selected_payloads.add(payload_path)
-            payload_ok = result.shape(schema, definition['payload'], payload_path)
+            result.shape(schema, definition['payload'], payload_path)
             if not isinstance(definition['payload'], dict):
                 result.block('R-CONTENT', payload_path)
                 content_blocked = True
@@ -966,8 +978,16 @@ def validate_r(doc):
                 tool_closure_complete = False
                 continue
             payload = definition['payload']
-            content_records[token] = (ref, definition, dp, payload, payload_ok)
-            if not payload_ok:
+            content_records[token] = (ref, definition, dp, payload)
+            # Only semantic prerequisites block R-CONTENT. Preserve the open
+            # target/at dependency convention pending a normative decision.
+            content_fields = [('requires', array('Edition'))]
+            if definition['kind'] == 'Instructions':
+                content_fields += [('target', ('enum', ('Agent',))),
+                                   ('at', ('enum', ('before-invoke',)))]
+            else:
+                content_fields += [('dependencies', array('Ref')), ('tools', array('Ref'))]
+            if any(not good(shape, payload.get(field)) for field, shape in content_fields):
                 result.block('R-CONTENT', payload_path)
                 content_blocked = True
 
@@ -1024,7 +1044,7 @@ def validate_r(doc):
 
         content_graph = {token: [('dependency', successor) for successor in successors]
                          for token, successors in content_edges.items()}
-        for token, (_, definition, dp, _, _) in content_records.items():
+        for token, (_, definition, dp, _) in content_records.items():
             if definition['kind'] != 'Skill':
                 continue
             if any(token in reachable(successor, content_graph)
@@ -1096,10 +1116,13 @@ def validate_r(doc):
                 _, definition, dp = target
                 payload_path = dp + '/payload'
                 doc.selected_payloads.add(payload_path)
-                payload_ok = result.shape('ToolPayload', definition['payload'], payload_path)
+                result.shape('ToolPayload', definition['payload'], payload_path)
                 if isinstance(definition['payload'], dict):
                     payload = definition['payload']
-                    blocked = not payload_ok
+                    blocked = not good(('enum', ('none', 'external', 'unknown')), payload.get('effects'))
+                    if any(not good(shape, payload.get(field)) for field, shape in
+                           [('action', 'Ref'), ('failures', array('text')), ('requires', array('Edition'))]):
+                        result.block('R-TOOL', payload_path)
                     requires_value = payload.get('requires')
                     if isinstance(requires_value, list):
                         requirements = [item for item in requires_value if good('Edition', item)]
@@ -1122,6 +1145,7 @@ def validate_r(doc):
                     else:
                         blocked = True
                 else:
+                    result.block('R-TOOL', payload_path)
                     blocked = True
             else:
                 blocked = True
@@ -1251,23 +1275,27 @@ def validate_r(doc):
                 selected_assessments += 1
 
         engine_requirements = list(entry['requirements'])
-        for token, (_, definition, _, payload, _) in content_records.items():
+        for token, (_, definition, _, payload) in content_records.items():
             if token not in required_tokens:
                 continue
             requires_value = payload.get('requires')
             if isinstance(requires_value, list):
                 engine_requirements.extend(item for item in requires_value
                                            if good('Edition', item))
-            if definition['kind'] == 'Instructions' and good('Edition', payload.get('format')):
-                engine_requirements.append(payload['format'])
+            if definition['kind'] == 'Instructions':
+                if good('Edition', payload.get('format')):
+                    engine_requirements.append(payload['format'])
+                else:
+                    content_blocked = True
         engine_requirements.extend(application['adapter'] for application, _ in applications
                                    if good('Edition', application.get('adapter')))
         missing_application = (entry['application_catalog_complete']
                                and any(token not in application_tokens
                                        for token in required_tokens))
         if assess_selected:
-            engine = binding.get('engine') if entry['engine_ok'] else None
-            assess(engine_requirements, entry['claims'], engine is not None, bp,
+            supplied = (binding['engine'] is not None) if entry['engine_ok'] else None
+            assess(engine_requirements, entry['claims'], supplied, bp,
+                   claims_available=entry['claims_ok'],
                    unknown=external_content,
                    blocked=(configuration_blocked.get(id(configuration), True)
                             or agent_prerequisite_blocked or bp in ambiguous_agent_bindings
@@ -1578,6 +1606,8 @@ class GraphValidation:
                 for field, expected in (('agent', 'Agent'), ('interface', 'Interface'), ('action', 'Action'), ('principal', 'Principal')):
                     targets[field] = self.ref(step.get(field), expected, doc, sp, sp + '/' + field)
                 seen = set()
+                if not isinstance(step.get('resources'), list):
+                    result.block('G-TARGET', sp)
                 for j, ref in enumerate(items(step, 'resources')):
                     if good('Ref', ref):
                         if frozen(ref) in seen:
