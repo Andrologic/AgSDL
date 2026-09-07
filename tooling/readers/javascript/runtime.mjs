@@ -98,29 +98,46 @@ export function validateR(ctx, inventory) {
       '/runtime/selected',
       S.has(runtime, 'selected') ? 'declared' : 'absent',
     );
-    for (const [ci, configuration] of configurations.entries()) {
-      const cp = `/runtime/configurations/${ci}`;
-      state(cp, 'declared');
-      for (const [ai, binding] of configuration.agents.entries()) {
-        const ap = `${cp}/agents/${ai}`;
+  }
+  // Inventory belongs to each record, not to the validity of its ancestors.
+  for (const [ci, configuration] of configurations.entries()) {
+    const cp = `/runtime/configurations/${ci}`;
+    if (S.valid(S.Configuration, configuration)) state(cp, 'declared');
+    if (!S.object(configuration) || !Array.isArray(configuration.agents))
+      continue;
+    for (const [ai, binding] of configuration.agents.entries()) {
+      const ap = `${cp}/agents/${ai}`;
+      if (S.valid(S.AgentBinding, binding)) {
         state(`${ap}/engine`, binding.engine === null ? 'absent' : 'declared');
-        for (const [claimIndex, claim] of binding.claims.entries())
-          if (claim.evidence === null)
-            state(`${ap}/claims/${claimIndex}/evidence`, 'unknown');
-        for (const [ti, tool] of binding.tools.entries()) {
-          const tp = `${ap}/tools/${ti}`;
+      }
+      if (!S.object(binding)) continue;
+      for (const [claimIndex, claim] of (Array.isArray(binding.claims)
+        ? binding.claims
+        : []
+      ).entries()) {
+        if (S.valid(S.CapabilityClaim, claim) && claim.evidence === null)
+          state(`${ap}/claims/${claimIndex}/evidence`, 'unknown');
+      }
+      for (const [ti, tool] of (Array.isArray(binding.tools)
+        ? binding.tools
+        : []
+      ).entries()) {
+        const tp = `${ap}/tools/${ti}`;
+        if (S.valid(S.ToolBinding, tool)) {
           state(
             `${tp}/selected`,
             S.has(tool, 'selected') ? 'declared' : 'absent',
           );
-          for (const [choiceIndex, choice] of tool.choices.entries()) {
-            for (const [claimIndex, claim] of choice.claims.entries()) {
-              if (claim.evidence === null)
-                state(
-                  `${tp}/choices/${choiceIndex}/claims/${claimIndex}/evidence`,
-                  'unknown',
-                );
-            }
+        }
+        if (!S.object(tool) || !Array.isArray(tool.choices)) continue;
+        for (const [choiceIndex, choice] of tool.choices.entries()) {
+          if (!S.object(choice) || !Array.isArray(choice.claims)) continue;
+          for (const [claimIndex, claim] of choice.claims.entries()) {
+            if (S.valid(S.CapabilityClaim, claim) && claim.evidence === null)
+              state(
+                `${tp}/choices/${choiceIndex}/claims/${claimIndex}/evidence`,
+                'unknown',
+              );
           }
         }
       }
@@ -1147,7 +1164,7 @@ export function validateR(ctx, inventory) {
       return [...new Set(values)];
     }
 
-    function recordAssessment(pointer, values, blocked = false) {
+    function recordAssessment(pointer, values, blocked, wellShaped) {
       result.mark('R-COMPATIBILITY');
       if (values.includes('incompatible'))
         result.find(
@@ -1164,7 +1181,7 @@ export function validateR(ctx, inventory) {
         );
       if (blocked) {
         result.mark('R-COMPATIBILITY', 'blocked', pointer);
-        state(pointer, 'unchecked', 'blocked');
+        if (wellShaped) state(pointer, 'unchecked', 'blocked');
         return;
       }
       const aggregate = values.includes('incompatible')
@@ -1174,7 +1191,7 @@ export function validateR(ctx, inventory) {
           : values.includes('unknown')
             ? 'unknown'
             : 'declared-supported';
-      state(pointer, assessmentStates[aggregate], aggregate);
+      if (wellShaped) state(pointer, assessmentStates[aggregate], aggregate);
     }
 
     function assessAgent() {
@@ -1191,6 +1208,7 @@ export function validateR(ctx, inventory) {
         ap,
         [...new Set(values)],
         assessmentBlocked || claims.blocked,
+        S.valid(S.AgentBinding, binding),
       );
     }
 
@@ -1209,11 +1227,17 @@ export function validateR(ctx, inventory) {
           tp,
           values,
           forcedBlocked || toolBinding.choiceBlocked || payloadInfo?.blocked,
+          S.valid(S.ToolBinding, toolBinding.toolBinding),
         );
         return;
       }
       if (selection.status !== 'selected') {
-        recordAssessment(tp, [], true);
+        recordAssessment(
+          tp,
+          [],
+          true,
+          S.valid(S.ToolBinding, toolBinding.toolBinding),
+        );
         return;
       }
       const values = evaluate(
@@ -1232,6 +1256,7 @@ export function validateR(ctx, inventory) {
           selection.blocked ||
           selection.claims.blocked ||
           payloadInfo?.blocked,
+        S.valid(S.ToolBinding, toolBinding.toolBinding),
       );
     }
   }
