@@ -4,8 +4,8 @@ import base64
 import binascii
 import sys
 
-from lossless import Parser, SyntaxFailure, dumps
-from reader import read
+from agsdl_reader.lossless import Parser, SyntaxFailure, dumps
+from agsdl_reader import read
 
 
 def main():
