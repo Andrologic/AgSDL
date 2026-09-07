@@ -1,7 +1,7 @@
 # Governance
 
-AgSDL remains in incubation. Its bounded 0.1.0 first draft is published;
-0.1.1 is in local preparation. See [release status](README.md#release-status-and-history).
+AgSDL remains in incubation. See [release status](README.md#release-status-and-history)
+for the current publication and maintenance version.
 The contract remains unstable and bounded. Repository maintainers
 approve changes through reviewed pull requests.
 

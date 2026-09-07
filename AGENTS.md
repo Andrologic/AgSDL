@@ -1,7 +1,7 @@
 # AgSDL agent instructions
 
-AgSDL 0.1.0 is published as a bounded first draft; 0.1.1 is in local
-preparation with contract marker `agsdl-0.1.0`. Neither is stable or universal.
+AgSDL remains a bounded first draft with contract marker `agsdl-0.1.0`.
+It is neither stable nor universal.
 Read [release status](README.md#release-status-and-history) before stating
 publication status. Preserve the distinction between normative text,
 established decisions, proposals, examples, evidence, and open questions. Keep
