@@ -205,6 +205,40 @@ def _agent_binding_paths(document):
     }
 
 
+def _validate_d_with_partial_agent_findings(document, annexes):
+    """Keep definitive Agent minima failures when other relations are unreadable."""
+    result = _reused_validate_d(document, annexes)
+    relations = document.obj.get("relations")
+    if not isinstance(relations, list):
+        return result
+    acts_as_counts = {}
+    for relation in relations:
+        if (
+            good("Relation", relation)
+            and relation["relation"] == "actsAs"
+            and relation["expectedKind"] == "Principal"
+        ):
+            token = _core.frozen(relation["source"])
+            acts_as_counts[token] = acts_as_counts.get(token, 0) + 1
+    for index, definition in enumerate(_core.items(document.obj, "definitions")):
+        if not good("Definition", definition) or definition["kind"] != "Agent":
+            continue
+        identity = _core.key(definition["key"])
+        if identity in document.ambiguous:
+            continue
+        if acts_as_counts.get(_core.frozen(definition["key"]), 0) > 1:
+            result.find(
+                "D-AGENT",
+                f"/definitions/{index}",
+                "Agent relation minimum not met",
+            )
+    return result
+
+
+_reused_validate_d = _core.validate_d
+_core.validate_d = _validate_d_with_partial_agent_findings
+
+
 def _validate_losses(losses):
     if losses is None:
         return

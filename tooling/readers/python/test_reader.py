@@ -223,6 +223,19 @@ class ByteAndAnnexTests(unittest.TestCase):
 
 
 class GraphAndRuntimeTests(unittest.TestCase):
+    def test_readable_agent_failure_survives_an_unreadable_relation(self):
+        document = official_fixture("modular-system.json")
+        document["relations"].append(copy.deepcopy(document["relations"][0]))
+        document["relations"].append({})
+        report = read("validateD", encode(document))["report"]
+        self.assertTrue(
+            any(
+                item["location"] == {"pointer": "/definitions/0"}
+                for item in findings(report, "D-AGENT", "fail")
+            )
+        )
+        self.assertTrue(checks(report, "D-AGENT", "blocked"))
+
     def test_duplicate_binding_findings_point_to_the_later_binding(self):
         document = official_fixture("modular-system.json")
         bindings = document["runtime"]["configurations"][0]["agents"]
