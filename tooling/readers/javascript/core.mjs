@@ -474,6 +474,8 @@ export function validateD(ctx) {
   }
   const exported = new Set();
   if (Array.isArray(d.exports)) {
+    // An empty per-export domain is observed even if root form is unreadable.
+    if (!d.exports.length) r.mark('D-EXPORT');
     if (
       S.valid(S.Root.fields.kind, d.root?.kind) &&
       ((d.root.kind === 'Fragment' && !d.exports.length) ||

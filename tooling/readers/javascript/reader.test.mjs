@@ -328,3 +328,90 @@ test('API and CLI run all seven operations without the repository or experimenta
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+const diagnosticDocument = () => JSON.parse(readFileSync(new URL(
+  '../../../examples/0.1.0/general-purpose-system.json', import.meta.url,
+)));
+const check = (outcome, unit, rule, state) => result(outcome, unit).checks.find(
+  item => item.rule === rule && item.state === state,
+);
+const blockedPointers = (outcome, unit, rule) =>
+  check(outcome, unit, rule, 'blocked')?.locations.map(location => location.pointer) || [];
+
+// spec/reports.md: observed work and known empty domains complete independently
+// of blocked portions; spec/document.md: root form and per-export lookup differ.
+test('empty exports complete independently of missing root kind or identity', () => {
+  for (const field of ['kind', 'key']) {
+    const document = diagnosticDocument();
+    delete document.root[field];
+    const outcome = execute('validateD', document);
+    assert.ok(hasFinding(outcome, 'D', 'P-SHAPE', '/root'));
+    assert.deepEqual(check(outcome, 'D', 'D-EXPORT', 'completed')?.locations, []);
+    assert.deepEqual(blockedPointers(outcome, 'D', 'D-EXPORT'), field === 'kind' ? ['/exports'] : []);
+  }
+  const document = diagnosticDocument();
+  delete document.root.kind;
+  delete document.exports;
+  const outcome = execute('validateD', document);
+  assert.equal(check(outcome, 'D', 'D-EXPORT', 'completed'), undefined);
+  assert.deepEqual(blockedPointers(outcome, 'D', 'D-EXPORT'), ['']);
+});
+
+// spec/reports.md, Runtime rule execution: an absent required enumeration is
+// blocked at its existing parent, and is not an observed empty domain.
+test('missing configurations block selection without inventing completed work', () => {
+  const document = diagnosticDocument();
+  delete document.runtime.configurations;
+  const outcome = execute('validateR', document);
+  assert.ok(hasFinding(outcome, 'R', 'P-SHAPE', '/runtime'));
+  assert.equal(result(outcome, 'R').verdict, 'fail');
+  assert.equal(check(outcome, 'R', 'R-SELECTION', 'completed'), undefined);
+  for (const rule of ['R-SELECTION', 'R-BINDING', 'R-TOOL', 'R-CONTENT', 'R-COMPATIBILITY']) {
+    assert.deepEqual(blockedPointers(outcome, 'R', rule), ['/runtime']);
+  }
+  assert.equal(outcome.report.inventory.states.some(item => item.pointer.startsWith('/runtime/')), false);
+  document.runtime.configurations = [];
+  const empty = execute('validateR', document);
+  assert.deepEqual(check(empty, 'R', 'R-SELECTION', 'completed')?.locations, []);
+  assert.ok(hasFinding(empty, 'R', 'R-SELECTION', '/runtime'));
+});
+
+// spec/runtime.md, Configuration selection and assignments, and spec/reports.md:
+// id uniqueness and selected lookup block separately; readable graph checks run.
+test('missing configuration id blocks its record and selected lookup', () => {
+  const document = diagnosticDocument();
+  delete document.runtime.configurations[0].id;
+  const outcome = execute('validateR', document);
+  assert.ok(hasFinding(outcome, 'R', 'P-SHAPE', '/runtime/configurations/0'));
+  assert.deepEqual(blockedPointers(outcome, 'R', 'R-SELECTION'), ['/runtime', '/runtime/configurations/0']);
+  assert.deepEqual(check(outcome, 'R', 'R-SELECTION', 'completed')?.locations, []);
+  assert.equal(hasFinding(outcome, 'R', 'R-SELECTION', '/runtime'), false);
+  document.runtime.configurations[1].graph.id = 'missing-graph';
+  const independent = execute('validateR', document);
+  assert.ok(hasFinding(independent, 'R', 'R-SELECTION', '/runtime/configurations/1'));
+});
+
+// spec/runtime.md requires exact Agent/Tool coverage in every configuration.
+// Missing Agent identity hides membership, but not readable sibling claims.
+// The dossier's group E aggregate ambiguity is deliberately not an exact oracle.
+test('missing Agent identity blocks coverage and supplied Tool membership', () => {
+  const cp = '/runtime/configurations/0', ap = `${cp}/agents/0`;
+  for (const selected of [true, false]) {
+    const document = diagnosticDocument();
+    delete document.runtime.configurations[0].agents[0].agent;
+    if (!selected) delete document.runtime.selected;
+    const outcome = execute('validateR', document);
+    assert.ok(hasFinding(outcome, 'R', 'P-SHAPE', ap));
+    assert.deepEqual(blockedPointers(outcome, 'R', 'R-BINDING'), [cp, ap]);
+    assert.deepEqual(blockedPointers(outcome, 'R', 'R-TOOL'), [ap, `${ap}/tools/0`]);
+    assert.deepEqual(check(outcome, 'R', 'R-BINDING', 'completed')?.locations, []);
+    assert.deepEqual(check(outcome, 'R', 'R-TOOL', 'completed')?.locations, []);
+    assert.equal(hasFinding(outcome, 'R', 'R-BINDING', cp), false);
+    assert.equal(hasFinding(outcome, 'R', 'R-TOOL', ap), false);
+  }
+  const document = diagnosticDocument();
+  delete document.runtime.configurations[0].agents[0].agent;
+  for (const claim of document.runtime.configurations[0].agents[1].claims) claim.status = 'unsupported';
+  const outcome = execute('validateR', document);
+  assert.ok(hasFinding(outcome, 'R', 'R-COMPATIBILITY', `${cp}/agents/1`));
+});

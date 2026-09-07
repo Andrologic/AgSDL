@@ -80,11 +80,12 @@ export function validateR(ctx, inventory) {
   const configurationIds = new Map();
   let configurationIndexComplete = configurationsReadable;
   for (const [index, configuration] of configurations.entries()) {
+    const pointer = `/runtime/configurations/${index}`;
     if (typeof configuration?.id !== 'string' || !configuration.id) {
+      result.mark('R-SELECTION', 'blocked', pointer);
       configurationIndexComplete = false;
       continue;
     }
-    const pointer = `/runtime/configurations/${index}`;
     const matches = configurationIds.get(configuration.id) || [];
     if (matches.length)
       result.find('R-SELECTION', pointer, 'Duplicate configuration id');
@@ -133,7 +134,7 @@ export function validateR(ctx, inventory) {
     result.mark('R-SELECTION', 'blocked', '/runtime');
     result.mark('R-COMPATIBILITY', 'blocked', '/runtime');
   } else {
-    result.mark('R-SELECTION');
+    if (configurationsReadable) result.mark('R-SELECTION');
     const matches = configurationIds.get(runtime.selected);
     if (!matches && !configurationIndexComplete) {
       result.mark('R-SELECTION', 'blocked', '/runtime');
@@ -392,6 +393,7 @@ export function validateR(ctx, inventory) {
       }
     }
 
+    if (!bindingIndexComplete) result.mark('R-BINDING', 'blocked', cp);
     if (used && bindingIndexComplete) {
       result.mark('R-BINDING');
       const needed = new Set(used.map(canonical));
@@ -1018,6 +1020,15 @@ export function validateR(ctx, inventory) {
     const extraTool = [...toolGroups.keys()].some(
       (identity) => !requiredTools.has(identity),
     );
+    // Supplied Tools still need a membership check in unselected configurations.
+    if (toolClosureBlocked) {
+      for (const [identity, matches] of toolGroups) {
+        if (!requiredTools.has(identity)) {
+          for (const toolBinding of matches)
+            result.mark('R-TOOL', 'blocked', toolBinding.tp);
+        }
+      }
+    }
     if (missingTool || (toolClosureComplete && extraTool))
       result.find(
         'R-TOOL',
