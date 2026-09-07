@@ -6,6 +6,10 @@ from copy import deepcopy
 import hashlib
 import importlib.util
 import json
+import shutil
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 import unittest
 
@@ -263,10 +267,20 @@ def lossy_fixture(raw=b"{"):
 
 
 class ComparatorTests(unittest.TestCase):
-    def test_reuses_candidate_two_neutral_parser(self):
+    def test_comparator_loads_without_experimental_tree(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            for name in ("compare-readers.py", "report_support.py"):
+                shutil.copyfile(HERE / name, directory / name)
+            result = subprocess.run(
+                [sys.executable, "-B", str(directory / "compare-readers.py"), "--help"],
+                cwd=directory, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_uses_local_lossless_parser(self):
         self.assertEqual(
             compare.neutral.__file__,
-            str(HERE.parent / "experimental" / "candidate-2" / "compare-readers.py"),
+            str(HERE / "report_support.py"),
         )
         left = compare.load(b'{"n":9007199254740991,"b":true}')
         right = compare.load(b'{"n":9007199254740991.0,"b":true}')

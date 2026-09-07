@@ -227,22 +227,29 @@ def check_expected(case, inputs):
 
 def check_manifest(manifest):
     exact(manifest, {"format", "contract", "normativeBase", "normativeSources",
-                     "schemas", "historicalDerivation", "coverage", "cases"})
+                     "schemas", "historicalDerivation", "historicalNormativeSources", "coverage", "cases"})
     require(manifest["format"] == FORMAT and manifest["contract"] == CONTRACT,
             "manifest identity")
-    require(subprocess.check_output(["git", "rev-parse", manifest["normativeBase"]],
-                                    text=True).strip() == manifest["normativeBase"],
-            "normative base does not resolve exactly")
+    require(isinstance(manifest["normativeBase"], str) and
+            re.fullmatch(r"[0-9a-f]{40}", manifest["normativeBase"]),
+            "invalid normative base")
+    spec_names = {str(path.relative_to(REPOSITORY))
+                  for path in (REPOSITORY / "spec").glob("*.md")}
+    require(set(manifest["normativeSources"]) == spec_names and
+            set(manifest["historicalNormativeSources"]) == spec_names,
+            "normative source inventory differs")
+    require(all(isinstance(value, str) and HASH.fullmatch(value)
+                for value in manifest["historicalNormativeSources"].values()),
+            "historical normative hash")
     for name, expected in manifest["normativeSources"].items():
         path = (REPOSITORY / name).resolve()
         require(path.is_relative_to(REPOSITORY / "spec") and
                 HASH.fullmatch(expected) and digest(path) == expected,
                 f"normative source changed: {name}")
-        source = subprocess.check_output(
-            ["git", "show", manifest["normativeBase"] + ":" + name]
-        )
-        require(hashlib.sha256(source).hexdigest() == expected,
-                f"normative base mismatch: {name}")
+    require(set(manifest["schemas"]) == {
+        str(path.relative_to(REPOSITORY))
+        for path in (REPOSITORY / "schemas").glob("*.json")
+    }, "schema inventory differs")
     for name, expected in manifest["schemas"].items():
         path = (REPOSITORY / name).resolve()
         require(path.is_relative_to(REPOSITORY / "schemas") and
@@ -265,6 +272,25 @@ def check_manifest(manifest):
             derivation["candidate2Cases"], "candidate-2 count")
     require(sum(name.startswith("modular-") for name in names) ==
             derivation["modularCases"], "modular count")
+    native = []
+    for path in sorted((FIXTURES / "official").glob("*.cases.json")):
+        records = json.loads(path.read_text())
+        require(isinstance(records, list), "native case file must contain a list")
+        native.extend(records)
+    require([case for case in cases if case["derivation"].get("family") == "official"]
+            == native, "native case files differ from manifest")
+    historical = {}
+    for family, directory in (("candidate2", "candidate-2"),
+                              ("modular", "modular-candidate-1")):
+        source = REPOSITORY / "experimental" / directory / "fixtures/manifest.json"
+        historical[family] = {item["name"]: item for item in
+                              json.loads(source.read_text())["cases"]}
+    for family, originals in historical.items():
+        expected_names = {family + "-" + name for name, item in originals.items()
+                          if item["status"] == "ready" and
+                          not (family == "candidate2" and item["operation"] == "validateR")}
+        require({name for name in names if name.startswith(family + "-")} == expected_names,
+                "historical case inventory differs")
     by_name = {case["name"]: case for case in cases}
     for case in cases:
         exact(case, {"name", "status", "primary", "annexes", "operation", "source",
@@ -272,9 +298,24 @@ def check_manifest(manifest):
                      "derivation"}, {"losses"})
         require(case["status"] == "ready" and case["operation"] in OPERATIONS,
                 "case status/operation")
-        exact(case["derivation"], {"family", "historicalCase", "method"})
-        require(case["derivation"]["family"] in {"candidate2", "modular"},
-                "derivation family")
+        derivation_case = case["derivation"]
+        family = derivation_case.get("family")
+        if family == "official":
+            exact(derivation_case, {"family", "method"})
+            require(derivation_case["method"] == "normative-oracle" and
+                    case["name"].startswith("official-"), "native provenance")
+        else:
+            exact(derivation_case, {"family", "historicalCase", "method"})
+            require(family in historical, "derivation family")
+            original = historical[family].get(derivation_case["historicalCase"])
+            method = ("explicit-g-record-conversion" if family == "candidate2" and
+                      case["operation"] in {"validateG", "resolveG"} else "marker-and-hash")
+            require(original is not None and original["status"] == "ready" and
+                    original["operation"] == case["operation"] and
+                    case["name"] == family + "-" + original["name"] and
+                    derivation_case["method"] == method and
+                    not (family == "candidate2" and case["operation"] == "validateR"),
+                    "inconsistent historical provenance")
         require(isinstance(case["source"], list) and case["source"],
                 "normative sources")
         for source in case["source"]:
@@ -292,6 +333,9 @@ def check_manifest(manifest):
             require(path.is_relative_to(FIXTURES) and path.is_file() and
                     HASH.fullmatch(metadata["sha256"]) and
                     digest(path) == metadata["sha256"], "fixture hash/path")
+            if family == "official":
+                require(path.is_relative_to(FIXTURES / "official"),
+                        "native fixture must be under official")
             try:
                 values[input_id] = json.loads(path.read_text())
             except (json.JSONDecodeError, UnicodeDecodeError):
@@ -330,6 +374,19 @@ def check_manifest(manifest):
                         "forward coverage association")
 
 
+def check_git_provenance(manifest):
+    """Verify the initial normative evidence, independently of current hashes."""
+    base = manifest["normativeBase"]
+    require(subprocess.check_output(
+        ["git", "rev-parse", base], cwd=REPOSITORY, text=True).strip() == base,
+        "normative base does not resolve exactly")
+    for name, expected in manifest["historicalNormativeSources"].items():
+        source = subprocess.check_output(["git", "show", base + ":" + name],
+                                         cwd=REPOSITORY)
+        require(hashlib.sha256(source).hexdigest() == expected,
+                f"normative base mismatch: {name}")
+
+
 def validate_shapes(manifest):
     try:
         from jsonschema import Draft202012Validator
@@ -362,10 +419,14 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--jsonschema", action="store_true",
                         help="validate recorded shapes with installed Draft 2020-12 support")
+    parser.add_argument("--git-provenance", action="store_true",
+                        help="also require and verify the initial normative Git revision")
     args = parser.parse_args(argv)
     try:
         manifest = json.loads(MANIFEST.read_text())
         check_manifest(manifest)
+        if args.git_provenance:
+            check_git_provenance(manifest)
         if args.jsonschema:
             validate_shapes(manifest)
     except (ValueError, KeyError, TypeError, OSError, subprocess.CalledProcessError,
@@ -374,6 +435,8 @@ def main(argv=None):
         return 1
     suffix = " and Draft 2020-12 assertions" if args.jsonschema else ""
     print(f"{len(manifest['cases'])} official cases checked{suffix}.")
+    print("Historical Git provenance verified." if args.git_provenance else
+          "Distribution checked; historical Git provenance not requested.")
     print("No reader, runtime or described Agent was executed.")
     return 0
 

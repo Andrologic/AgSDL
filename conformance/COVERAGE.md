@@ -70,3 +70,11 @@ No candidate-2 R case is carried forward. No official case covers the removed
 R-REQUIREMENT rule, old subjectless Selection, EvidenceClaim, model/provider or
 hosting inventory. The corpus also makes no execution, authentication,
 authorization enforcement, readiness, interoperability or publication claim.
+
+## Native maintenance coverage
+
+`official-empty-system-validateD` witnesses D-AGENT positive with no local
+Agents. Its oracle follows the Document Agent minima and the rule execution
+requirement that a rule with no subjects completes. The 137 historical-derived
+cases and their coverage remain unchanged. Native additions are indexed alongside
+them without claiming historical provenance.
