@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { copyFileSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 import { contract, hash, processor } from './core.mjs';
-import { run } from './reader.mjs';
+import { run, stringify } from './reader.mjs';
 
 const fixture = name => readFileSync(new URL(
   `../../../experimental/modular-candidate-1/fixtures/${name}`,
@@ -291,4 +293,38 @@ test('CLI decodes a UTF-8 character split across stdin chunks exactly once', asy
   const response = JSON.parse(stdout);
   assert.equal(response.report.losses[0].information, request.losses[0].information);
   assert.equal(response.report.losses[0].reason, request.losses[0].reason);
+});
+
+// The distribution must work with only this directory and Node's standard library.
+test('API and CLI run all seven operations without the repository or experimental', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'agsdl-javascript-'));
+  try {
+    const source = fileURLToPath(new URL('.', import.meta.url));
+    for (const name of readdirSync(source)) {
+      if (name.endsWith('.mjs') && !name.endsWith('.test.mjs')) {
+        copyFileSync(join(source, name), join(directory, name));
+      }
+    }
+    const isolated = await import(pathToFileURL(join(directory, 'reader.mjs')));
+    for (const operation of ['inspect', 'validateD', 'validateG', 'resolveG', 'validateR', 'exchange', 'lossyExchange']) {
+      const primary = officialBytes();
+      const request = { operation, primary, annexes: {} };
+      const expected = run(request);
+      assert.equal(isolated.stringify(isolated.run(request)), stringify(expected), operation);
+      const cli = spawnSync(process.execPath, [join(directory, 'cli.mjs')], {
+        cwd: directory,
+        input: JSON.stringify({ ...request, primary: primary.toString('base64') }),
+        encoding: 'utf8',
+      });
+      assert.equal(cli.status, 0, cli.stderr);
+      assert.equal(cli.stderr, '');
+      const response = JSON.parse(cli.stdout);
+      assert.deepEqual(response.report, JSON.parse(stringify(expected.report)), operation);
+      assert.deepEqual(response.artifacts, Object.fromEntries(
+        Object.entries(expected.artifacts).map(([id, bytes]) => [id, bytes.toString('base64')]),
+      ), operation);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

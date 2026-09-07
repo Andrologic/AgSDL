@@ -52,8 +52,10 @@ identity.
 
 ## Boundaries and verification
 
-The implementation reuses the lossless JavaScript scanner and the final modular
-D/G/R implementation with an explicit official contract and Processor Edition.
+The implementation owns local copies of the lossless JavaScript scanner and
+D/G/R modules adopted from the retained readers. All runtime imports stay in
+this directory or use the Node.js standard library; `experimental/` is not
+needed to use the API or CLI. The historical readers remain separate.
 It does not import or execute a Python reader. It performs no network access,
 transitive resolution, Agent execution, engine invocation, approval intake or
 runtime action.
