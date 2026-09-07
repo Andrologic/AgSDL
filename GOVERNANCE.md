@@ -1,7 +1,8 @@
 # Governance
 
-AgSDL is in a pre-draft incubation phase. Repository maintainers approve changes
-through reviewed pull requests.
+AgSDL remains in incubation. Its bounded 0.1.0 first draft is locally ready but
+unpublished; it is not a stable or universal release. Repository maintainers
+approve changes through reviewed pull requests.
 
 Governance applies to changes within the repository boundary established by
 Decision 0003 and maintained in `docs/scope.md`. Rules for conformance claims

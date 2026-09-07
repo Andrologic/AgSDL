@@ -48,4 +48,6 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
 All input bytes come from the caller. The reader performs no fetching, engine or
 adapter execution, approval intake, authentication, evidence retrieval, state
 migration or fallback selection. Its results cover only the requested operation
-and phase. Full official corpus comparison is a separate integration step.
+and phase. The final local comparison with the JavaScript reader covers all 137
+official cases without a blocked case, failure or mismatch; this is bounded
+static evidence, not exhaustive correctness.

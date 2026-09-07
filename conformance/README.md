@@ -35,21 +35,23 @@ python3 conformance/check-corpus.py
 python3 -m unittest conformance/test_check_corpus.py conformance/test_compare_readers.py -v
 ```
 
-The retained schema environment used during this lot can also check the
-official Draft 2020-12 assertions:
+An optional project-local environment can also check the official Draft 2020-12
+assertions:
 
 ```sh
-/private/tmp/agsdl-010-orchestration/schema-env/bin/python \
-  conformance/check-corpus.py --jsonschema
+python3 -m venv .venv
+. .venv/bin/activate
+python3 -m pip install jsonschema
+python3 conformance/check-corpus.py --jsonschema
 ```
 
-The second command is supplementary because that local environment is not part
-of the repository. `scripts/check.sh` runs the standard-library corpus check and
-the two focused test modules. Syntax-error cases have no schema assertion because
-schema validation starts after parsing. `interpreted-number-exact` also has no
-schema assertion: a normal host JSON parser rounds its deliberately non-integral
-large number before a schema library sees it. Its P-SHAPE oracle follows the
-specification's mathematical check and stays in the report corpus.
+The package is supplementary and is not a project dependency. `scripts/check.sh`
+runs the standard-library corpus check and focused test modules. Syntax-error
+cases have no schema assertion because schema validation starts after parsing.
+`interpreted-number-exact` also has no schema assertion: a normal host JSON
+parser rounds its deliberately non-integral large number before a schema library
+sees it. Its P-SHAPE oracle follows the specification's mathematical check and
+stays in the report corpus.
 
 ## Reader comparison
 
@@ -66,8 +68,8 @@ letters, digits, underscore and hyphen.
 ```sh
 agsdl_reports=$(mktemp -d)
 python3 conformance/compare-readers.py \
-  --reader '["reader-a","python3","path/to/official-reader-a.py"]' \
-  --reader '["reader-b","node","path/to/official-reader-b.mjs"]' \
+  --reader '["python","python3","tooling/readers/python/cli.py"]' \
+  --reader '["javascript","node","tooling/readers/javascript/cli.mjs"]' \
   --reports "$agsdl_reports"
 ```
 
@@ -78,10 +80,12 @@ unit/phase/verdict, Finding tuples, Check sets and locations, State sets includi
 the specified R assessment details, exact Slice byte ranges and bytes, Loss
 records, OutputRecord hashes and delivered artifact bytes.
 
+The final local delivery comparison covers all 137 cases with no blocked case,
+failure or mismatch. Its 274 reports also satisfy `schemas/report.schema.json`.
 The comparator never chooses the correct semantic result. The manifest supplies
 the normative oracle, and full cross-reader agreement can still preserve a
-shared implementation mistake outside covered combinations. Keep the raw
-reports and exact reader SHAs when this future evidence is run.
+shared implementation mistake outside covered combinations. Keep raw reports,
+the summary digest and the exact tested revision when retaining evidence.
 
 ## Derivation boundary
 

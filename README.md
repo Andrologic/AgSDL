@@ -1,108 +1,98 @@
 # AgSDL
 
-AgSDL is the working identifier for the Agentic Systems Definition Language.
-It is an open, implementation-independent specification for describing complete
-agentic systems in a form that people and software can read, validate, exchange,
-and version.
+AgSDL is the Agentic Systems Definition Language, an open,
+implementation-independent specification for describing agentic systems in a
+form that people and software can read, validate, exchange and version.
 
-The project is at the pre-draft stage. Version `0.0.2` is a non-normative
-conceptual release under the tag `v0.0.2`. It makes no promise of syntax,
-compatibility, conformance, execution, or interoperability. The eleven proposals
-included in that release remain proposed and non-normative, including the first
-exchange-contract candidate.
+The repository has locally adopted the bounded AgSDL 0.1.0 contract. It is an
+unpublished, limited first draft, not a stable or universal language release.
+It defines a deterministic Document/Graph/Runtime declaration model and seven
+static reader operations. It does not define Agent execution, engine launch,
+hot reload, deployment or runtime interoperability.
 
-The working tree also contains experimental candidate-2 readers, shape schemas
-and fixtures. [Try the experimental candidate](experimental/README.md) for local
-commands and evidence limits. Both readers agree on the full 121-case
-experimental corpus at the [recorded source revision](docs/reviews/0006-candidate-0.1.0-adoption.md#final-experimental-comparison).
-Candidate-2 is not adopted, and version `0.1.0` has not been delivered.
+Start with the [0.1.0 specification](spec/README.md), then read the
+[official example](examples/0.1.0/README.md) and the
+[reader guide](tooling/README.md). The Python and JavaScript readers can inspect
+the example and validate its D, G and R units without installation. Their
+official 137-case comparison has no blocked case, failure or mismatch. Version
+0.1.0 is ready in the local repository for its bounded first-draft scope, but it
+is not published or stable.
 
-See the [0.0.2 release](https://github.com/Andrologic/AgSDL/releases/tag/v0.0.2),
-[release notes](docs/releases/0.0.2.md), and
-[publication decision](docs/decisions/0006-publish-version-0.0.2.md).
-The earlier `v0.0.1` release retains the status recorded in
-[Decision 0002](docs/decisions/0002-version-0.0.1.md).
+## What 0.1.0 describes
 
-## Intended scope
+The contract separates three declaration layers:
 
-An AgSDL document should eventually be able to describe:
+- **Definition (D)** records the document boundary, definitions, typed
+  relations, dependencies, deferrals and extensions.
+- **Graph (G)** records a closed control flow of invocations, conditions,
+  approval gates and terminal outcomes.
+- **Runtime declaration (R)** records explicit configurations, per-Agent
+  engines, Tool implementations and reusable content applications. It declares
+  compatibility evidence; it does not verify readiness or execute anything.
 
-- the system boundary, purpose, inputs, outputs, and ownership;
-- agents, roles, models, instructions, tools, skills, memory, and knowledge;
-- topology, delegation, handoffs, messages, and interaction protocols;
-- permissions, secrets, trust boundaries, human approvals, and failure policies;
-- runtime requirements, deployment targets, lifecycle, and portability;
-- traces, metrics, evaluations, conformance claims, and extension points.
+Configurations never inherit defaults. A document may declare several
+configurations for the same graph, and selection is explicit or absent. Engine
+and adapter identities are open Edition values, so custom names receive no
+special trust.
 
-AgSDL will define a portable system model. It will not require a particular
-agent framework, model provider, transport, or execution engine.
+## Reader operations
+
+The adopted contract names seven independent operation contracts:
+
+| Operation | Purpose |
+| --- | --- |
+| `inspect` | Inventory readable structure without semantic validation. |
+| `validateD` | Validate the Document declarations. |
+| `validateG` | Validate graph structure using local declarations. |
+| `resolveG` | Validate graph structure with directly supplied dependency annexes. |
+| `validateR` | Validate runtime declarations and declared compatibility. |
+| `exchange` | Preserve supplied bytes exactly when lossless exchange is available. |
+| `lossyExchange` | Refuse or report explicitly declared loss; this edition defines no silent conversion. |
+
+Each operation emits a scoped report. A successful process exit only means that
+a response was produced. It is not a whole-document conformance, execution or
+readiness claim.
 
 ## Repository boundary
 
-This repository maintains the specification, its supporting artifacts, and the
-material needed to govern, publish, and verify them. It may also publish
-non-normative reference tooling for reading, transforming, and analyzing AgSDL
-documents. Planned operations include parsing, validation, normalization,
-reference resolution, and static inspection.
-
-Reference tooling may produce transformed artifacts, diagnostics, and reports.
-It does not execute the systems described by AgSDL documents. See the
-[`project scope`](docs/scope.md) and
-[`Decision 0003`](docs/decisions/0003-repository-boundary.md) for the complete
-boundary.
+This repository maintains the specification, its supporting artifacts and the
+material needed to govern, publish and verify them. It may publish non-normative
+reference tooling for reading, transforming and analyzing AgSDL documents.
+Reference tooling does not execute the systems described by those documents.
+See the [project scope](docs/scope.md) and
+[Decision 0003](docs/decisions/0003-repository-boundary.md).
 
 ## Repository structure
 
-- `spec/` will contain normative specification text.
-- `schemas/` will contain machine-readable validation artifacts.
-- `examples/` contains non-normative conceptual examples during the pre-draft
-  stage.
-- `experimental/` contains the candidate-2 guide, readers, shape schemas and corpus.
+- `spec/` contains the locally adopted normative 0.1.0 text.
+- `schemas/` contains derived JSON Schema shapes; the specification controls.
+- `examples/0.1.0/` contains official but non-normative examples of that text.
+- `tooling/readers/` contains non-normative official-edition readers.
+- `experimental/` preserves candidate editions and their bounded evidence.
+- `proposals/` records proposed material changes and the adoption history.
+- `docs/` contains scope, decisions, plans, reviews, research and release notes.
 - `scripts/` contains repository and source-verification checks.
-- `proposals/` records proposed normative changes before they enter the spec.
-- `docs/` contains scope, rationale, and architecture decisions.
 
-## Current work
+## Release status and history
 
-The repository now contains twelve proposals, all proposed and non-normative. Proposals 0001 through
-0004 were the conceptual inputs included in `v0.0.1`; proposals 0005 through
-0010 were added later to investigate external bindings. Proposal 0011 prepares
-a bounded reading, inspection, structural-validation, and exchange contract
-for maintainer review. Proposal 0012 presents a minimal 0.1.0 contract candidate
-and delivery choices. None has been accepted into the normative specification.
-Candidate-2 explores a concrete experimental contract. Its syntax and bounded
-checks remain proposed pending normative adoption.
+The published `v0.0.1` and `v0.0.2` tags remain conceptual pre-drafts. Their
+proposals and examples keep the status recorded at those releases. The current
+normative 0.1.0 subset was adopted separately by
+[Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md); material not adopted
+by that decision remains proposed or experimental.
 
-- [`Roadmap`](ROADMAP.md)
-- [`Minimal 0.1.0 contract candidate`](proposals/0012-minimal-0.1.0-contract.md)
-- [`Candidate 0.1.0 delivery plan`](docs/plans/2026-09-05-0.1.0-delivery.md)
-- [`Local 0.1.0 preparation record`](docs/plans/2026-09-05-version-0.1.0-preparation.md)
-- [`Conceptual reconciliation and first-contract preparation`](docs/plans/2026-09-05-conceptual-reconciliation.md)
-- [`Approved design directions`](docs/decisions/0004-approved-design-directions.md)
-- [`First exchange contract candidate`](proposals/0011-first-exchange-contract.md)
-- [`Version 0.0.2 preparation decision`](docs/decisions/0005-version-0.0.2.md)
-- [`Version 0.0.2 release notes`](docs/releases/0.0.2.md)
-- [`Local implementation-preparation work plan`](docs/plans/2026-09-04-local-work.md)
-- [`Project scope`](docs/scope.md)
-- [`Prior-art research`](docs/research/prior-art.md)
-- [`MCP 2026-07-28 binding research`](docs/research/mcp-2026-07-28.md)
-- [`A2A 1.0.1 binding research`](docs/research/a2a-1.0.1.md)
-- [`AG-UI research`](docs/research/agent-user-interaction-protocol.md)
-- [`A2UI research`](docs/research/a2ui.md)
-- [`AP2 v0.2.0 binding research`](docs/research/ap2-v0.2.0.md)
-- [`Open Agent Specification research`](docs/research/open-agent-specification.md)
-- [`Cross-proposal review`](docs/reviews/0001-cross-proposal-review.md)
-- [`Post-correction review`](docs/reviews/0002-post-correction-review.md)
-- [`Proposals`](proposals/README.md)
-- [`Version 0.0.1 decision`](docs/decisions/0002-version-0.0.1.md)
-- [`Repository boundary decision`](docs/decisions/0003-repository-boundary.md)
+- [0.1.0 local release notes](docs/releases/0.1.0.md)
+- [Delivery-readiness review](docs/reviews/0008-0.1.0-release-readiness.md)
+- [Roadmap](ROADMAP.md)
+- [0.0.2 release](https://github.com/Andrologic/AgSDL/releases/tag/v0.0.2)
+- [0.0.2 release notes](docs/releases/0.0.2.md)
+- [0.0.1 decision](docs/decisions/0002-version-0.0.1.md)
 
 ## Contributing
 
-Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before proposing normative changes.
-Run `./scripts/check.sh` before committing.
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing normative behavior or
+terminology. Run `./scripts/check.sh` before committing.
 
 ## License
 
-The entire repository is licensed under the
-[Apache License 2.0](LICENSE).
+The entire repository is licensed under the [Apache License 2.0](LICENSE).

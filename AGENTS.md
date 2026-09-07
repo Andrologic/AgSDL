@@ -1,7 +1,9 @@
 # AgSDL agent instructions
 
-AgSDL is a pre-draft specification. Preserve the distinction between established
-decisions, proposals, examples, and open questions.
+AgSDL has a locally ready, unpublished 0.1.0 first-draft contract. It is not a
+stable or universal release. Preserve the distinction between normative text,
+established decisions, proposals, examples, evidence, and open questions. Keep
+execution support outside claims made from static reader evidence.
 
 ## Read before changing the project
 
@@ -10,6 +12,8 @@ decisions, proposals, examples, and open questions.
 - Read `CONTRIBUTING.md` before changing normative behavior or terminology.
 - Read the relevant file in `docs/decisions/` before revisiting a recorded
   decision.
+- Read `spec/` and `conformance/README.md` before changing a reader, fixture,
+  oracle or comparison command.
 
 ## Repository boundary
 

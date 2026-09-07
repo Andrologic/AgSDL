@@ -68,7 +68,8 @@ node --test experimental/modular-candidate-1/readers/javascript/reader.test.mjs
 git diff --check
 ```
 
-The official corpus is prepared in a separate delivery lot. Until that corpus
-and its independent full comparison are integrated, these local tests establish
-the official marker, operation behavior and retained regression boundaries, but
-do not claim the complete official corpus comparison.
+The independent Python reader and official corpus are integrated. The final
+local comparison covers all 137 official cases without a blocked case, failure
+or mismatch. The focused and retained regression suites establish additional
+local boundaries, but none of these checks proves exhaustive correctness,
+execution support or interoperability.
