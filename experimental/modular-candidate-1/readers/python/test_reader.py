@@ -587,5 +587,173 @@ class GraphTests(unittest.TestCase):
                                     for item in findings(actual, 'G-APPROVAL', 'fail')))
 
 
+
+class PartialDocumentTests(unittest.TestCase):
+    def test_relation_semantics_survive_an_extra_member(self):
+        value = fixture()
+        relation = value['relations'][0]
+        relation['target']['id'] = 'missing-principal'
+        relation['extra'] = True
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/relations/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-REFERENCE', 'fail')})
+
+    def test_relation_reference_fields_are_observed_independently(self):
+        for missing in ('relation', 'target', 'expectedKind'):
+            with self.subTest(missing=missing):
+                value = fixture()
+                value['relations'][0]['source']['id'] = 'missing-agent'
+                value['relations'][0].pop(missing)
+                actual = read('validateD', raw(value))['report']
+                self.assertIn('/relations/0', {f['location']['pointer']
+                              for f in findings(actual, 'D-REFERENCE', 'fail')})
+        value = fixture()
+        value['relations'][0]['target']['id'] = 'missing-principal'
+        value['relations'][0].pop('source')
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/relations/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-REFERENCE', 'fail')})
+
+    def test_duplicate_relation_ignores_unknown_members(self):
+        value = fixture()
+        duplicate = copy.deepcopy(value['relations'][0])
+        duplicate['extra'] = True
+        value['relations'].append(duplicate)
+        actual = read('validateD', raw(value))['report']
+        path = '/relations/' + str(len(value['relations']) - 1)
+        self.assertIn(path, {f['location']['pointer']
+                      for f in findings(actual, 'D-RELATION', 'fail')})
+
+    def test_custom_kind_uses_partial_extension_catalog_evidence(self):
+        custom_kind = {
+            'extension': {'identity': 'example/custom', 'version': '1'},
+            'name': 'Worker',
+        }
+        for extension, blocked in (({}, True), ({
+            'identity': 'example/custom', 'version': '1', 'operations': {},
+        }, False)):
+            with self.subTest(extension=extension):
+                value = fixture()
+                value['definitions'].append({
+                    'key': {'scope': 'mvp', 'id': 'custom', 'version': '1'},
+                    'kind': custom_kind,
+                    'owner': copy.deepcopy(value['root']['key']),
+                    'payload': {},
+                })
+                value['extensions'] = [extension]
+                actual = read('validateD', raw(value))['report']
+                path = '/definitions/' + str(len(value['definitions']) - 1)
+                self.assertNotIn(path, {f['location']['pointer']
+                                 for f in findings(actual, 'D-REFERENCE', 'fail')})
+                self.assertEqual(any(c['rule'] == 'D-REFERENCE'
+                                     and c['state'] == 'blocked'
+                                     and {'pointer': path} in c['locations']
+                                     for c in actual['results'][0]['checks']), blocked)
+
+    def test_partial_agent_keeps_an_observable_minimum_failure(self):
+        value = fixture()
+        value['definitions'][0].pop('payload')
+        value['relations'].append(copy.deepcopy(value['relations'][0]))
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/definitions/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-AGENT', 'fail')})
+        self.assertFalse(any(c['rule'] == 'D-AGENT' and c['state'] == 'blocked'
+                             and {'pointer': '/definitions/0'} in c['locations']
+                             for c in actual['results'][0]['checks']))
+
+    def test_reference_uses_readable_key_and_kind_from_partial_definition(self):
+        value = fixture()
+        value['definitions'][2].pop('payload')
+        actual = read('validateD', raw(value))['report']
+        self.assertFalse(any(c['rule'] == 'D-REFERENCE' and c['state'] == 'blocked'
+                             and {'pointer': '/relations/0'} in c['locations']
+                             for c in actual['results'][0]['checks']))
+
+    def test_dependency_extra_member_does_not_block_readable_rules(self):
+        value = fixture()
+        value['dependencies'] = [{
+            'id': 'a',
+            'rootKey': {'scope': 'dep', 'id': 'root', 'version': '1'},
+            'status': 'external',
+            'requiredFor': [],
+            'sha256': None,
+            'extra': True,
+        }]
+        actual = read('validateD', raw(value))['report']
+        checks = actual['results'][0]['checks']
+        for rule in ('D-DEPENDENCY', 'D-INTEGRITY'):
+            self.assertTrue(any(c['rule'] == rule and c['state'] == 'completed'
+                                for c in checks))
+            self.assertFalse(any(c['rule'] == rule and c['state'] == 'blocked'
+                                 and {'pointer': '/dependencies/0'} in c['locations']
+                                 for c in checks))
+
+    def test_missing_dependency_hash_blocks_integrity(self):
+        value = fixture()
+        value['dependencies'] = [{
+            'id': 'a',
+            'rootKey': {'scope': 'dep', 'id': 'root', 'version': '1'},
+            'status': 'external',
+            'requiredFor': [],
+        }]
+        actual = read('validateD', raw(value))['report']
+        self.assertTrue(any(c['rule'] == 'D-INTEGRITY' and c['state'] == 'blocked'
+                            and {'pointer': '/dependencies/0'} in c['locations']
+                            for c in actual['results'][0]['checks']))
+
+    def test_readable_definition_identity_and_owner(self):
+        value = fixture()
+        original = value['definitions'][0]
+        value['definitions'].append({'key': copy.deepcopy(original['key']),
+                                     'owner': dict(value['root']['key'], id='wrong')})
+        actual = read('validateD', raw(value))['report']
+        path = '/definitions/' + str(len(value['definitions']) - 1)
+        for rule in ('D-IDENTITY', 'D-OWNER'):
+            self.assertIn(path, {f['location']['pointer'] for f in findings(actual, rule, 'fail')})
+
+    def test_partial_dependency_ids_do_not_invent_undeclared_annexes(self):
+        for dependencies, duplicate in (([{'id': 'a'}], False),
+                                        ([{'id': 'a'}, {'id': 'a'}], True),
+                                        ([{}], False)):
+            with self.subTest(dependencies=dependencies):
+                value = fixture()
+                value['dependencies'] = dependencies
+                actual = read('validateD', raw(value), {'a': b'bytes'})['report']
+                failures = findings(actual, 'D-DEPENDENCY', 'fail')
+                self.assertFalse(any(f['location'] == {'pointer': ''} for f in failures))
+                self.assertEqual(any(f['location'] == {'pointer': '/dependencies/1'}
+                                     for f in failures), duplicate)
+
+    def test_partial_dependency_keeps_independent_checks(self):
+        dep = {'id': 'a', 'rootKey': {'scope': 'dep', 'id': 'root', 'version': '1'},
+               'status': 'included', 'requiredFor': ['validateD'], 'sha256': None}
+        for field in ('id', 'rootKey', 'requiredFor', 'status', 'sha256'):
+            with self.subTest(field=field):
+                value = fixture()
+                first = copy.deepcopy(dep)
+                later = copy.deepcopy(dep)
+                later['requiredFor'] = ['validateD', 'validateD', None]
+                later['status'] = 'external'
+                later.pop(field)
+                value['dependencies'] = [first, later]
+                actual = read('validateD', raw(value), {'a': b'bytes'})['report']
+                self.assertIn('/dependencies/1', {f['location']['pointer']
+                              for f in findings(actual, 'D-DEPENDENCY', 'fail')})
+                if field not in ('sha256', 'requiredFor'):
+                    self.assertIn('/dependencies/1', {f['location']['pointer']
+                                  for f in findings(actual, 'D-INTEGRITY', 'inconclusive')})
+        value = fixture()
+        value['dependencies'] = [dict(dep, sha256='0' * 64)]
+        value['dependencies'][0].pop('rootKey')
+        actual = read('validateD', raw(value), {'a': b'bytes'})['report']
+        self.assertTrue(findings(actual, 'D-INTEGRITY', 'fail'))
+
+    def test_agent_excess_survives_an_unreadable_relation(self):
+        value = fixture()
+        value['relations'].extend([copy.deepcopy(value['relations'][0]), {}])
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/definitions/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-AGENT', 'fail')})
+
 if __name__ == '__main__':
     unittest.main()

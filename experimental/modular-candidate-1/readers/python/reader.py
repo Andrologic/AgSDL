@@ -159,18 +159,26 @@ class Document:
         self.r_states = []
         self.selected_payloads = set()
 
-    def lookup(self, ref, kind, result, rule, path):
+    def lookup(self, ref, kind, result, rule, path, partial=False):
         identity = key(ref)
-        if identity in self.ambiguous or identity in self.invalid:
+        if identity in self.ambiguous or (identity in self.invalid and not partial):
             result.block(rule, path)
             return None
         found = self.index.get(identity)
         if found is None and not self.catalog_complete:
             result.block(rule, path)
             return None
-        if found is None or (kind is not None and found[0]['kind'] != kind):
+        if found is None:
             result.find(rule, path, 'missing or wrong-kind local target')
             return None
+        if kind is not None:
+            found_kind = found[0].get('kind') if isinstance(found[0], dict) else None
+            if not good('Kind', found_kind):
+                result.block(rule, path)
+                return None
+            if found_kind != kind:
+                result.find(rule, path, 'missing or wrong-kind local target')
+                return None
         result.complete(rule)
         return found
 
@@ -206,29 +214,40 @@ def validate_d(doc, annexes):
         return result
     root = doc.obj.get('root')
     root_ok = good('Root', root)
+    root_key_ok = isinstance(root, dict) and good('Key', root.get('key'))
     seen = set()
-    if root_ok:
+    if root_key_ok:
         seen.add(key(root['key'])[:2])
     definitions = items(doc.obj, 'definitions')
     for i, definition in enumerate(definitions):
         path = '/definitions/' + str(i)
         if not good('Definition', definition):
+            if not isinstance(definition, dict) or not good('Kind', definition.get('kind')):
+                result.block('D-REFERENCE', path)
+                result.block('D-AGENT', path)
+            elif definition['kind'] == 'Agent' and not good('Key', definition.get('key')):
+                result.block('D-AGENT', path)
+        if not isinstance(definition, dict):
             for rule in ('D-IDENTITY', 'D-OWNER', 'D-REFERENCE', 'D-AGENT'):
                 result.block(rule, path)
             continue
-        result.complete('D-IDENTITY')
-        identity = key(definition['key'])
-        if identity[:2] in seen:
-            result.find('D-IDENTITY', path, 'duplicate scope/id')
-        seen.add(identity[:2])
-        if root_ok:
-            result.complete('D-OWNER')
-            if identity[0] != root['key']['scope']:
+        if good('Key', definition.get('key')):
+            result.complete('D-IDENTITY')
+            identity = key(definition['key'])
+            if identity[:2] in seen:
+                result.find('D-IDENTITY', path, 'duplicate scope/id')
+            seen.add(identity[:2])
+            if root_key_ok and identity[0] != root['key']['scope']:
                 result.find('D-IDENTITY', path, 'definition scope differs from root')
+            elif not root_key_ok:
+                result.block('D-IDENTITY', path)
+        else:
+            result.block('D-IDENTITY', path)
+        if root_key_ok and good('Key', definition.get('owner')):
+            result.complete('D-OWNER')
             if definition['owner'] != root['key']:
                 result.find('D-OWNER', path, 'owner differs from root')
         else:
-            result.block('D-IDENTITY', path)
             result.block('D-OWNER', path)
     for name, rules in {'definitions': ('D-IDENTITY', 'D-OWNER', 'D-REFERENCE', 'D-AGENT'),
                         'relations': ('D-REFERENCE', 'D-RELATION', 'D-CYCLE'),
@@ -240,47 +259,112 @@ def validate_d(doc, annexes):
         elif not doc.obj[name]:
             for rule in rules:
                 result.complete(rule)
-    extension_ids = { (x['identity'], x['version']) for x in items(doc.obj, 'extensions') if good('Extension', x)}
+    extensions = items(doc.obj, 'extensions')
+    readable_extensions = [
+        (x['identity'], x['version'])
+        for x in extensions
+        if isinstance(x, dict)
+        and good('Edition', {'identity': x.get('identity'), 'version': x.get('version')})
+    ]
+    extension_ids = set(readable_extensions)
+    extension_catalog_complete = (
+        isinstance(doc.obj.get('extensions'), list)
+        and len(readable_extensions) == len(extensions)
+    )
     def custom(kind, path):
-        result.complete('D-REFERENCE')
-        if isinstance(kind, dict) and (kind['extension']['identity'], kind['extension']['version']) not in extension_ids:
+        if not isinstance(kind, dict):
+            result.complete('D-REFERENCE')
+            return
+        edition = (kind['extension']['identity'], kind['extension']['version'])
+        if edition in extension_ids:
+            result.complete('D-REFERENCE')
+        elif extension_catalog_complete:
             result.find('D-REFERENCE', path, 'custom Kind extension not declared')
+        else:
+            result.block('D-REFERENCE', path)
     for i, definition in enumerate(definitions):
-        if good('Definition', definition):
+        if isinstance(definition, dict) and good('Kind', definition.get('kind')):
             custom(definition['kind'], '/definitions/' + str(i))
     seen_rel, edges, counts = set(), defaultdict(list), defaultdict(lambda: defaultdict(list))
     incomplete_relations = not isinstance(doc.obj.get('relations'), list)
     incomplete_cycles = incomplete_relations
     for i, relation in enumerate(items(doc.obj, 'relations')):
         path = '/relations/' + str(i)
-        if not good('Relation', relation):
+        if not isinstance(relation, dict):
             incomplete_relations = True
             incomplete_cycles = True
             for rule in ('D-REFERENCE', 'D-RELATION', 'D-CYCLE'):
                 result.block(rule, path)
             continue
-        custom(relation['expectedKind'], path)
-        result.complete('D-RELATION')
-        token = frozen(relation)
-        if token in seen_rel:
-            result.find('D-RELATION', path, 'duplicate relation')
-        seen_rel.add(token)
-        source = doc.lookup(relation['source'], None, result, 'D-REFERENCE', path)
-        target = relation['target']
-        if 'dependency' in target:
-            doc.external_declaration(target, result, 'D-REFERENCE', path)
+        source_ok = good('Key', relation.get('source'))
+        relation_ok = good(('enum', ('actsAs', 'exposes', 'directedBy',
+                                     'uses', 'contains')), relation.get('relation'))
+        target_ok = good('Ref', relation.get('target'))
+        expected_ok = good('Kind', relation.get('expectedKind'))
+        relation_fields_ok = source_ok and relation_ok and target_ok and expected_ok
+        if not relation_fields_ok:
+            incomplete_relations = True
+
+        if expected_ok:
+            custom(relation['expectedKind'], path)
         else:
-            doc.lookup(target, relation['expectedKind'], result, 'D-REFERENCE', path)
-        relation_type = relation['relation']
-        if relation_type in ('actsAs', 'exposes', 'directedBy'):
+            result.block('D-REFERENCE', path)
+        source = None
+        if source_ok:
+            source = doc.lookup(relation['source'], None, result, 'D-REFERENCE', path,
+                                partial=True)
+        else:
+            result.block('D-REFERENCE', path)
+        if target_ok:
+            target = relation['target']
+            if 'dependency' in target:
+                doc.external_declaration(target, result, 'D-REFERENCE', path)
+            else:
+                doc.lookup(target, relation['expectedKind'] if expected_ok else None,
+                           result, 'D-REFERENCE', path, partial=True)
+                if not expected_ok:
+                    result.block('D-REFERENCE', path)
+        else:
+            result.block('D-REFERENCE', path)
+
+        if relation_fields_ok:
+            result.complete('D-RELATION')
+            token = frozen({name: relation[name] for name in
+                            ('source', 'relation', 'target', 'expectedKind')})
+            if token in seen_rel:
+                result.find('D-RELATION', path, 'duplicate relation')
+            seen_rel.add(token)
+        else:
+            result.block('D-RELATION', path)
+
+        relation_type = relation.get('relation') if relation_ok else None
+        if relation_type in ('actsAs', 'exposes', 'directedBy') and expected_ok:
             target_kinds = {'actsAs': ['Principal'], 'exposes': ['Interface'], 'directedBy': ['Instructions', 'Role', 'Skill', 'ControlFlow']}[relation_type]
-            if source is None:
+            source_kind = source[0].get('kind') if source else None
+            source_kind_readable = (good('Kind', source_kind)
+                                    or source_kind in ('System', 'Fragment', 'PackageVersion'))
+            if source is None or not source_kind_readable:
                 result.block('D-RELATION', path)
-            if source and (source[0]['kind'] != 'Agent' or relation['expectedKind'] not in target_kinds):
+            if (source and source_kind_readable
+                    and (source_kind != 'Agent' or relation['expectedKind'] not in target_kinds)):
                 result.find('D-RELATION', path, 'relation kinds not permitted')
-        if source:
+        elif not relation_ok or not source_ok or not expected_ok:
+            result.block('D-RELATION', path)
+        typed_minimum = relation_fields_ok and (
+            (relation_type == 'actsAs' and relation['expectedKind'] == 'Principal')
+            or (relation_type == 'exposes' and relation['expectedKind'] == 'Interface')
+            or (relation_type == 'directedBy'
+                and relation['expectedKind'] in ('Instructions', 'Role', 'Skill', 'ControlFlow'))
+        )
+        if typed_minimum:
             counts[key(relation['source'])][relation_type].append(relation)
-        if relation_type == 'contains' and 'dependency' not in target:
+        if not relation_ok:
+            incomplete_cycles = True
+            result.block('D-CYCLE', path)
+        elif relation_type == 'contains' and (not source_ok or not target_ok):
+            incomplete_cycles = True
+            result.block('D-CYCLE', path)
+        elif relation_type == 'contains' and 'dependency' not in target:
             if any(k in doc.ambiguous or k in doc.invalid for k in (key(relation['source']), key(target))):
                 incomplete_cycles = True
                 result.block('D-CYCLE', '/relations')
@@ -306,7 +390,7 @@ def validate_d(doc, annexes):
         ident = key(export)
         if ident in seen_exports or (root_ok and export == root['key']):
             result.find('D-EXPORT', path, 'duplicate or root export')
-        doc.lookup(export, None, result, 'D-EXPORT', path)
+        doc.lookup(export, None, result, 'D-EXPORT', path, partial=True)
         seen_exports.add(ident)
     deferral_counts = defaultdict(int)
     for entry in items(doc.obj, 'unresolved'):
@@ -318,7 +402,8 @@ def validate_d(doc, annexes):
         if not good('Deferral', entry):
             result.block('D-DEFERRAL', path)
             continue
-        subject = doc.lookup(entry['subject'], 'Agent', result, 'D-DEFERRAL', path)
+        subject = doc.lookup(entry['subject'], 'Agent', result, 'D-DEFERRAL', path,
+                             partial=True)
         c = counts[key(entry['subject'])]
         valid = root_ok and root['kind'] == 'Fragment' and subject and not c['exposes'] and len(c['actsAs']) == 1 and c['directedBy'] and deferral_counts[key(entry['subject'])] == 1
         if incomplete_relations or subject is None or not root_ok:
@@ -331,9 +416,12 @@ def validate_d(doc, annexes):
     if good(array('Definition'), doc.obj.get('definitions')) and not any(d['kind'] == 'Agent' for d in definitions):
         result.complete('D-AGENT')
     for i, definition in enumerate(definitions):
-        if good('Definition', definition) and definition['kind'] == 'Agent':
+        if (isinstance(definition, dict) and good('Key', definition.get('key'))
+                and definition.get('kind') == 'Agent'):
             path, identity = '/definitions/' + str(i), key(definition['key'])
             c = counts[identity]
+            if identity not in doc.ambiguous and len(c['actsAs']) > 1:
+                result.find('D-AGENT', path, 'Agent relation minimum not met')
             if identity in doc.ambiguous or incomplete_relations:
                 result.block('D-AGENT', path)
             else:
@@ -361,29 +449,53 @@ def dependency_checks(doc, annexes, result, exchange=False):
         result.complete(integrity)
     for i, dep in enumerate(items(doc.obj, 'dependencies')):
         path = '/dependencies/' + str(i)
-        if not good('Dependency', dep):
+        if not isinstance(dep, dict):
             result.block(rule, path)
             result.block(integrity, path)
             continue
-        result.complete(rule)
-        result.complete(integrity)
-        if dep['id'] in seen_ids or key(dep['rootKey']) in roots or len(dep['requiredFor']) != len(set(dep['requiredFor'])):
+        id_ok = good('text', dep.get('id'))
+        root_ok = good('Key', dep.get('rootKey'))
+        required_ok = good(array(('enum', ('validateD', 'resolveG', 'exchange'))),
+                           dep.get('requiredFor'))
+        required = items(dep, 'requiredFor')
+        readable_required = [v for v in required if v in ('validateD', 'resolveG', 'exchange')]
+        status_ok = good(('enum', ('included', 'external', 'omitted', 'unavailable')),
+                         dep.get('status'))
+        hash_ok = ('sha256' in dep
+                   and good(('union', ('hash', 'null')), dep['sha256']))
+        if id_ok and root_ok and required_ok and status_ok:
+            result.complete(rule)
+        else:
+            result.block(rule, path)
+        if id_ok and required_ok and hash_ok:
+            result.complete(integrity)
+        else:
+            result.block(integrity, path)
+        duplicate = len(readable_required) != len(set(readable_required))
+        if id_ok:
+            duplicate |= dep['id'] in seen_ids
+            seen_ids.add(dep['id'])
+        if root_ok:
+            duplicate |= key(dep['rootKey']) in roots
+            roots.add(key(dep['rootKey']))
+        if duplicate:
             result.find(rule, path if not exchange else '', 'duplicate dependency declaration')
-        seen_ids.add(dep['id'])
-        roots.add(key(dep['rootKey']))
-        supplied = dep['id'] in annexes
-        if (dep['status'] == 'included') != supplied:
+        supplied = id_ok and dep['id'] in annexes
+        if id_ok and status_ok and (dep['status'] == 'included') != supplied:
             result.find(rule, path if not exchange else '', 'delivery status mismatch')
-        if supplied and dep['sha256'] is not None and digest(annexes[dep['id']]) != dep['sha256']:
+        if supplied and good('hash', dep.get('sha256')) and digest(annexes[dep['id']]) != dep['sha256']:
             result.find(integrity, path, 'content hash mismatch')
         operation = 'exchange' if exchange else 'validateD'
-        if operation in dep['requiredFor']:
-            if exchange and not supplied:
+        if operation in readable_required:
+            if exchange and id_ok and not supplied:
                 result.find(rule, '', 'required exchange dependency absent')
-            if dep['sha256'] is None:
+            if 'sha256' in dep and dep['sha256'] is None:
                 result.find(integrity, path if not exchange else '', 'required hash unknown', 'inconclusive')
     if set(annexes) - seen_ids:
-        result.find(rule, '', 'undeclared annex id')
+        if doc.dependency_catalog_complete:
+            result.find(rule, '', 'undeclared annex id')
+        else:
+            result.block(rule, '')
 
 
 def extension_checks(doc, result, operation):
@@ -462,7 +574,7 @@ def validate_r(doc):
             if doc.external_declaration(ref, result, rule, path):
                 result.exclude(rule, excluded_path or path)
                 external_state_path = state_path or path
-                if not external_state_path.startswith('/relations/'):
+                if state_path is not False and not external_state_path.startswith('/relations/'):
                     state(external_state_path, 'unchecked', 'external target excluded')
                 return ('external', ref, path)
             return None
@@ -696,7 +808,8 @@ def validate_r(doc):
                     matches = [(binding, bp) for binding, bp in readable_bindings
                                if binding['agent'] == ref]
                     if len(matches) > 1:
-                        result.find('R-BINDING', path, 'missing or duplicate AgentBinding')
+                        for _, bp in matches[1:]:
+                            result.find('R-BINDING', bp, 'missing or duplicate AgentBinding')
                     elif not matches and not binding_catalog_complete:
                         result.block('R-BINDING', path)
                     elif not matches:
@@ -1016,7 +1129,7 @@ def validate_r(doc):
             return observed_tools[token]
 
         for ref in required_tools:
-            observe_tool(ref, bp, bp)
+            observe_tool(ref, bp, False)
 
         required_tool_tokens = {frozen(ref) for ref in required_tools}
         readable_tool_bindings = []
@@ -1034,7 +1147,8 @@ def validate_r(doc):
             matches = [(tool, tp) for tool, tp in readable_tool_bindings
                        if tool['tool'] == ref]
             if len(matches) > 1:
-                result.find('R-TOOL', bp, 'missing or duplicate required ToolBinding')
+                for _, tp in matches[1:]:
+                    result.find('R-TOOL', tp, 'missing or duplicate required ToolBinding')
             elif not matches and entry['tool_catalog_complete']:
                 result.find('R-TOOL', bp, 'missing or duplicate required ToolBinding')
             elif not matches:
