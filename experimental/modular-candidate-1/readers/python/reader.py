@@ -259,11 +259,29 @@ def validate_d(doc, annexes):
         elif not doc.obj[name]:
             for rule in rules:
                 result.complete(rule)
-    extension_ids = { (x['identity'], x['version']) for x in items(doc.obj, 'extensions') if good('Extension', x)}
+    extensions = items(doc.obj, 'extensions')
+    readable_extensions = [
+        (x['identity'], x['version'])
+        for x in extensions
+        if isinstance(x, dict)
+        and good('Edition', {'identity': x.get('identity'), 'version': x.get('version')})
+    ]
+    extension_ids = set(readable_extensions)
+    extension_catalog_complete = (
+        isinstance(doc.obj.get('extensions'), list)
+        and len(readable_extensions) == len(extensions)
+    )
     def custom(kind, path):
-        result.complete('D-REFERENCE')
-        if isinstance(kind, dict) and (kind['extension']['identity'], kind['extension']['version']) not in extension_ids:
+        if not isinstance(kind, dict):
+            result.complete('D-REFERENCE')
+            return
+        edition = (kind['extension']['identity'], kind['extension']['version'])
+        if edition in extension_ids:
+            result.complete('D-REFERENCE')
+        elif extension_catalog_complete:
             result.find('D-REFERENCE', path, 'custom Kind extension not declared')
+        else:
+            result.block('D-REFERENCE', path)
     for i, definition in enumerate(definitions):
         if isinstance(definition, dict) and good('Kind', definition.get('kind')):
             custom(definition['kind'], '/definitions/' + str(i))
@@ -272,35 +290,55 @@ def validate_d(doc, annexes):
     incomplete_cycles = incomplete_relations
     for i, relation in enumerate(items(doc.obj, 'relations')):
         path = '/relations/' + str(i)
-        relation_fields_ok = (isinstance(relation, dict)
-                              and good('Key', relation.get('source'))
-                              and good(('enum', ('actsAs', 'exposes', 'directedBy',
-                                                'uses', 'contains')),
-                                       relation.get('relation'))
-                              and good('Ref', relation.get('target'))
-                              and good('Kind', relation.get('expectedKind')))
-        if not relation_fields_ok:
+        if not isinstance(relation, dict):
             incomplete_relations = True
             incomplete_cycles = True
             for rule in ('D-REFERENCE', 'D-RELATION', 'D-CYCLE'):
                 result.block(rule, path)
             continue
-        custom(relation['expectedKind'], path)
-        result.complete('D-RELATION')
-        token = frozen(relation)
-        if token in seen_rel:
-            result.find('D-RELATION', path, 'duplicate relation')
-        seen_rel.add(token)
-        source = doc.lookup(relation['source'], None, result, 'D-REFERENCE', path,
-                            partial=True)
-        target = relation['target']
-        if 'dependency' in target:
-            doc.external_declaration(target, result, 'D-REFERENCE', path)
+        source_ok = good('Key', relation.get('source'))
+        relation_ok = good(('enum', ('actsAs', 'exposes', 'directedBy',
+                                     'uses', 'contains')), relation.get('relation'))
+        target_ok = good('Ref', relation.get('target'))
+        expected_ok = good('Kind', relation.get('expectedKind'))
+        relation_fields_ok = source_ok and relation_ok and target_ok and expected_ok
+        if not relation_fields_ok:
+            incomplete_relations = True
+
+        if expected_ok:
+            custom(relation['expectedKind'], path)
         else:
-            doc.lookup(target, relation['expectedKind'], result, 'D-REFERENCE', path,
-                       partial=True)
-        relation_type = relation['relation']
-        if relation_type in ('actsAs', 'exposes', 'directedBy'):
+            result.block('D-REFERENCE', path)
+        source = None
+        if source_ok:
+            source = doc.lookup(relation['source'], None, result, 'D-REFERENCE', path,
+                                partial=True)
+        else:
+            result.block('D-REFERENCE', path)
+        if target_ok:
+            target = relation['target']
+            if 'dependency' in target:
+                doc.external_declaration(target, result, 'D-REFERENCE', path)
+            else:
+                doc.lookup(target, relation['expectedKind'] if expected_ok else None,
+                           result, 'D-REFERENCE', path, partial=True)
+                if not expected_ok:
+                    result.block('D-REFERENCE', path)
+        else:
+            result.block('D-REFERENCE', path)
+
+        if relation_fields_ok:
+            result.complete('D-RELATION')
+            token = frozen({name: relation[name] for name in
+                            ('source', 'relation', 'target', 'expectedKind')})
+            if token in seen_rel:
+                result.find('D-RELATION', path, 'duplicate relation')
+            seen_rel.add(token)
+        else:
+            result.block('D-RELATION', path)
+
+        relation_type = relation.get('relation') if relation_ok else None
+        if relation_type in ('actsAs', 'exposes', 'directedBy') and expected_ok:
             target_kinds = {'actsAs': ['Principal'], 'exposes': ['Interface'], 'directedBy': ['Instructions', 'Role', 'Skill', 'ControlFlow']}[relation_type]
             source_kind = source[0].get('kind') if source else None
             source_kind_readable = (good('Kind', source_kind)
@@ -310,13 +348,23 @@ def validate_d(doc, annexes):
             if (source and source_kind_readable
                     and (source_kind != 'Agent' or relation['expectedKind'] not in target_kinds)):
                 result.find('D-RELATION', path, 'relation kinds not permitted')
-        typed_minimum = ((relation_type == 'actsAs' and relation['expectedKind'] == 'Principal')
-                         or (relation_type == 'exposes' and relation['expectedKind'] == 'Interface')
-                         or (relation_type == 'directedBy'
-                             and relation['expectedKind'] in ('Instructions', 'Role', 'Skill', 'ControlFlow')))
+        elif not relation_ok or not source_ok or not expected_ok:
+            result.block('D-RELATION', path)
+        typed_minimum = relation_fields_ok and (
+            (relation_type == 'actsAs' and relation['expectedKind'] == 'Principal')
+            or (relation_type == 'exposes' and relation['expectedKind'] == 'Interface')
+            or (relation_type == 'directedBy'
+                and relation['expectedKind'] in ('Instructions', 'Role', 'Skill', 'ControlFlow'))
+        )
         if typed_minimum:
             counts[key(relation['source'])][relation_type].append(relation)
-        if relation_type == 'contains' and 'dependency' not in target:
+        if not relation_ok:
+            incomplete_cycles = True
+            result.block('D-CYCLE', path)
+        elif relation_type == 'contains' and (not source_ok or not target_ok):
+            incomplete_cycles = True
+            result.block('D-CYCLE', path)
+        elif relation_type == 'contains' and 'dependency' not in target:
             if any(k in doc.ambiguous or k in doc.invalid for k in (key(relation['source']), key(target))):
                 incomplete_cycles = True
                 result.block('D-CYCLE', '/relations')
@@ -413,7 +461,8 @@ def dependency_checks(doc, annexes, result, exchange=False):
         readable_required = [v for v in required if v in ('validateD', 'resolveG', 'exchange')]
         status_ok = good(('enum', ('included', 'external', 'omitted', 'unavailable')),
                          dep.get('status'))
-        hash_ok = good(('union', ('hash', 'null')), dep.get('sha256'))
+        hash_ok = ('sha256' in dep
+                   and good(('union', ('hash', 'null')), dep['sha256']))
         if id_ok and root_ok and required_ok and status_ok:
             result.complete(rule)
         else:

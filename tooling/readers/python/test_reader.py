@@ -410,6 +410,57 @@ class PartialDocumentTests(unittest.TestCase):
         self.assertIn('/relations/0', {f['location']['pointer']
                       for f in findings(actual, 'D-REFERENCE', 'fail')})
 
+    def test_relation_reference_fields_are_observed_independently(self):
+        for missing in ('relation', 'target', 'expectedKind'):
+            with self.subTest(missing=missing):
+                value = official_fixture('modular-system.json')
+                value['relations'][0]['source']['id'] = 'missing-agent'
+                value['relations'][0].pop(missing)
+                actual = read('validateD', encode(value))['report']
+                self.assertIn('/relations/0', {f['location']['pointer']
+                              for f in findings(actual, 'D-REFERENCE', 'fail')})
+        value = official_fixture('modular-system.json')
+        value['relations'][0]['target']['id'] = 'missing-principal'
+        value['relations'][0].pop('source')
+        actual = read('validateD', encode(value))['report']
+        self.assertIn('/relations/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-REFERENCE', 'fail')})
+
+    def test_duplicate_relation_ignores_unknown_members(self):
+        value = official_fixture('modular-system.json')
+        duplicate = copy.deepcopy(value['relations'][0])
+        duplicate['extra'] = True
+        value['relations'].append(duplicate)
+        actual = read('validateD', encode(value))['report']
+        path = '/relations/' + str(len(value['relations']) - 1)
+        self.assertIn(path, {f['location']['pointer']
+                      for f in findings(actual, 'D-RELATION', 'fail')})
+
+    def test_custom_kind_uses_partial_extension_catalog_evidence(self):
+        custom_kind = {
+            'extension': {'identity': 'example/custom', 'version': '1'},
+            'name': 'Worker',
+        }
+        for extension, blocked in (({}, True), ({
+            'identity': 'example/custom', 'version': '1', 'operations': {},
+        }, False)):
+            with self.subTest(extension=extension):
+                value = official_fixture('modular-system.json')
+                value['definitions'].append({
+                    'key': {'scope': 'mvp', 'id': 'custom', 'version': '1'},
+                    'kind': custom_kind,
+                    'owner': copy.deepcopy(value['root']['key']),
+                    'payload': {},
+                })
+                value['extensions'] = [extension]
+                actual = read('validateD', encode(value))['report']
+                path = '/definitions/' + str(len(value['definitions']) - 1)
+                self.assertNotIn(path, {f['location']['pointer']
+                                 for f in findings(actual, 'D-REFERENCE', 'fail')})
+                self.assertEqual(any({'pointer': path} in c['locations']
+                                     for c in checks(actual, 'D-REFERENCE', 'blocked')),
+                                 blocked)
+
     def test_partial_agent_keeps_an_observable_minimum_failure(self):
         value = official_fixture('modular-system.json')
         value['definitions'][0].pop('payload')
@@ -442,6 +493,18 @@ class PartialDocumentTests(unittest.TestCase):
             self.assertTrue(checks(actual, rule, 'completed'))
             self.assertFalse(any({'pointer': '/dependencies/0'} in c['locations']
                                  for c in checks(actual, rule, 'blocked')))
+
+    def test_missing_dependency_hash_blocks_integrity(self):
+        value = official_fixture('modular-system.json')
+        value['dependencies'] = [{
+            'id': 'a',
+            'rootKey': {'scope': 'dep', 'id': 'root', 'version': '1'},
+            'status': 'external',
+            'requiredFor': [],
+        }]
+        actual = read('validateD', encode(value))['report']
+        self.assertTrue(any({'pointer': '/dependencies/0'} in c['locations']
+                            for c in checks(actual, 'D-INTEGRITY', 'blocked')))
 
     def test_readable_definition_identity_and_owner(self):
         value = official_fixture('modular-system.json')
