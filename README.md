@@ -77,8 +77,8 @@ See the [project scope](docs/scope.md) and
 ## Release status and history
 
 This section is the current publication-status reference. Version 0.1.0 is
-published as `v0.1.0`; 0.1.1 is in local preparation for documentation, corpus
-and reader maintenance. The contract marker remains `agsdl-0.1.0`. No new
+published as `v0.1.0`; 0.1.1 is prepared locally for documentation, corpus
+and reader maintenance, as described in the [local release notes](docs/releases/0.1.1.md). The contract marker remains `agsdl-0.1.0`. No new
 language syntax or execution feature is introduced by that maintenance scope.
 Historical decisions and reviews retain their status at the time of writing.
 
@@ -88,6 +88,7 @@ normative 0.1.0 subset was adopted separately by
 [Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md); material not adopted
 by that decision remains proposed or experimental.
 
+- [0.1.1 local maintenance notes](docs/releases/0.1.1.md)
 - [0.1.0 release notes](docs/releases/0.1.0.md)
 - [Delivery-readiness review](docs/reviews/0008-0.1.0-release-readiness.md)
 - [Roadmap](ROADMAP.md)
