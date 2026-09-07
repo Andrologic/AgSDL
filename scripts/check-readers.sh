@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   echo "Usage: $0 [--compare [candidate-2|modular|official|0.1.0] | --help]"
   echo "Default: run the Python and Node.js tests for both experimental editions and 0.1.0."
-  echo "--compare: compare all three corpora and remove temporary reports."
+  echo "--compare: compare all three corpora; AGSDL_REPORTS_DIR retains reports when set."
   echo "--compare candidate-2|modular|official|0.1.0: compare only the selected corpus."
 }
 
@@ -63,8 +63,17 @@ if ! python3 -c 'import sys; sys.exit(sys.version_info < (3, 9))'; then
   exit 2
 fi
 
-reader_reports=$(mktemp -d "${TMPDIR:-/tmp}/agsdl-reader-comparisons.XXXXXX")
-trap 'rm -rf -- "$reader_reports"' EXIT
+if [[ -n ${AGSDL_REPORTS_DIR:-} ]]; then
+  mkdir -p "$AGSDL_REPORTS_DIR"
+  reader_reports=$(cd "$AGSDL_REPORTS_DIR" && pwd)
+  if [[ -n $(ls -A "$reader_reports") ]]; then
+    echo "AGSDL_REPORTS_DIR must be empty: $reader_reports" >&2
+    exit 2
+  fi
+else
+  reader_reports=$(mktemp -d "${TMPDIR:-/tmp}/agsdl-reader-comparisons.XXXXXX")
+  trap 'rm -rf -- "$reader_reports"' EXIT
+fi
 trap 'exit 130' INT
 trap 'exit 143' TERM
 

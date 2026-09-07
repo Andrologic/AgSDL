@@ -3,6 +3,7 @@
 
 from copy import deepcopy
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import unittest
@@ -68,6 +69,45 @@ class CorpusCheckerTests(unittest.TestCase):
         case["expected"]["losses"][0]["information"] = "different"
         with self.assertRaisesRegex(ValueError, "requested losses differ"):
             checker.check_manifest(changed)
+
+    def test_distribution_check_never_calls_git(self):
+        with patch.object(checker.subprocess, "check_output",
+                          side_effect=AssertionError("Git called")):
+            checker.check_manifest(deepcopy(self.manifest))
+
+    def test_rejects_inconsistent_historical_provenance(self):
+        changed = deepcopy(self.manifest)
+        changed["cases"][0]["derivation"]["historicalCase"] = "invented"
+        with self.assertRaisesRegex(ValueError, "historical provenance"):
+            checker.check_manifest(changed)
+
+    def test_rejects_current_normative_hash_change(self):
+        changed = deepcopy(self.manifest)
+        changed["normativeSources"]["spec/README.md"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "normative source changed"):
+            checker.check_manifest(changed)
+
+    def test_rejects_missing_schema_pin(self):
+        changed = deepcopy(self.manifest)
+        changed["schemas"].pop(next(iter(changed["schemas"])))
+        with self.assertRaisesRegex(ValueError, "schema inventory"):
+            checker.check_manifest(changed)
+
+    def test_git_provenance_uses_historical_not_current_hashes(self):
+        changed = deepcopy(self.manifest)
+        changed["normativeSources"]["spec/README.md"] = "0" * 64
+        historical_bytes = {name: name.encode() for name in changed["historicalNormativeSources"]}
+        changed["historicalNormativeSources"] = {
+            name: hashlib.sha256(data).hexdigest() for name, data in historical_bytes.items()}
+        def git_output(command, **kwargs):
+            if command[1] == "rev-parse":
+                return changed["normativeBase"] + "\n"
+            return historical_bytes[command[2].split(":", 1)[1]]
+        with patch.object(checker.subprocess, "check_output", side_effect=git_output):
+            checker.check_git_provenance(changed)
+            changed["historicalNormativeSources"]["spec/README.md"] = "0" * 64
+            with self.assertRaisesRegex(ValueError, "normative base mismatch"):
+                checker.check_git_provenance(changed)
 
     def test_main_reports_invalid_manifest(self):
         class InvalidManifest:

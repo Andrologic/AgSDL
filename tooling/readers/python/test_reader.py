@@ -8,7 +8,7 @@ import subprocess
 import sys
 import unittest
 
-from reader import PROCESSOR, read
+from agsdl_reader import PROCESSOR, read
 
 
 REPOSITORY = Path(__file__).resolve().parents[3]

@@ -19,7 +19,7 @@ record its official identity and mechanical consequences.
 
 The final experimental integration is `0aa44c14825b03e52cbd5d588921929995ebc6fc`.
 The local closure record at
-`/Users/oscarlahaie/.codex/chantier-archives/agsdl-010-mvp-2026-09-07/cloture.md`
+`~/.codex/chantier-archives/agsdl-010-mvp-2026-09-07/cloture.md`
 records 190 passing reader tests and comparisons of 121 historical and 26 modular
 cases without difference or blockage. Retained reports are in its `preuves/`
 directory. These are experimental results, not official-edition conformance.

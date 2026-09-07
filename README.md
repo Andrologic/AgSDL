@@ -4,18 +4,21 @@ AgSDL is the Agentic Systems Definition Language, an open,
 implementation-independent specification for describing agentic systems in a
 form that people and software can read, validate, exchange and version.
 
-AgSDL 0.1.0 is published as a bounded first-draft MVP under `v0.1.0`. It is
+AgSDL 0.1.1 is published as a maintenance release of the bounded first-draft
+MVP under `v0.1.1`. Its specification contract remains `agsdl-0.1.0`. It is
 not a stable or universal language release.
 It defines a deterministic Document/Graph/Runtime declaration model and seven
 static reader operations. It does not define Agent execution, engine launch,
 hot reload, deployment or runtime interoperability.
 
 Start with the [0.1.0 specification](spec/README.md), then read the
-[official example](examples/0.1.0/README.md) and the
+[progressive examples](examples/0.1.0/README.md),
+[implementation walkthrough](docs/implementation-guide.md) and the
 [reader guide](tooling/README.md). The Python and JavaScript readers can inspect
-the example and validate its D, G and R units without installation. Their
-official 137-case comparison has no blocked case, failure or mismatch. Version
-0.1.0 is published for this bounded first-draft scope and remains unstable.
+the full example and validate its D, G and R units without installation. Their
+0.1.0 delivery comparison covered 137 cases without blocked cases, failures or
+mismatches. The [0.1.1 diagnostic dossier](docs/reviews/0009-0.1.1-diagnostic-expectations.md)
+records additional limits; this evidence does not establish universal agreement.
 
 ## What 0.1.0 describes
 
@@ -74,12 +77,20 @@ See the [project scope](docs/scope.md) and
 
 ## Release status and history
 
+This section is the current publication-status reference. Version 0.1.1 is
+published as [`v0.1.1`](https://github.com/Andrologic/AgSDL/releases/tag/v0.1.1)
+for documentation, corpus and reader maintenance, as described in the
+[release notes](docs/releases/0.1.1.md). The contract marker remains `agsdl-0.1.0`. No new
+language syntax or execution feature is introduced by that maintenance scope.
+Historical decisions and reviews retain their status at the time of writing.
+
 The published `v0.0.1` and `v0.0.2` tags remain conceptual pre-drafts. Their
 proposals and examples keep the status recorded at those releases. The current
 normative 0.1.0 subset was adopted separately by
 [Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md); material not adopted
 by that decision remains proposed or experimental.
 
+- [0.1.1 maintenance release notes](docs/releases/0.1.1.md)
 - [0.1.0 release notes](docs/releases/0.1.0.md)
 - [Delivery-readiness review](docs/reviews/0008-0.1.0-release-readiness.md)
 - [Roadmap](ROADMAP.md)

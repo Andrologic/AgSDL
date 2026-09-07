@@ -12,12 +12,13 @@ that any reader implements the specification.
 
 ## Contents
 
-- `fixtures/manifest.json` pins 137 cases and every input byte hash.
+- `fixtures/manifest.json` pins 148 cases: 137 historical derivations and 11
+  native official cases, with every input byte hash.
 - `fixtures/candidate2/` has 111 new official inputs derived from historical
   D, inspect, exchange, lossyExchange and still-applicable G mutations.
 - `fixtures/modular/` has 26 new official inputs derived from the modular cases.
 - `build-corpus.py` performs the recorded mechanical derivation without invoking
-  a reader. Run it with an already installed Draft 2020-12 `jsonschema` package.
+  a reader. It uses the Python standard library.
 - `check-corpus.py` checks provenance, hashes, normative citations, oracle
   structure and the rule matrix using the standard library. Its optional
   `--jsonschema` mode checks every recorded shape expectation.
@@ -80,7 +81,8 @@ unit/phase/verdict, Finding tuples, Check sets and locations, State sets includi
 the specified R assessment details, exact Slice byte ranges and bytes, Loss
 records, OutputRecord hashes and delivered artifact bytes.
 
-The final local delivery comparison covers all 137 cases with no blocked case,
+The initial 0.1.0 local delivery comparison covered all 137 historical-derived
+cases with no blocked case,
 failure or mismatch. Its 274 reports also satisfy `schemas/report.schema.json`.
 The comparator never chooses the correct semantic result. The manifest supplies
 the normative oracle, and full cross-reader agreement can still preserve a
@@ -108,3 +110,74 @@ assuming it.
 Candidate-2 validateR cases are excluded. Their Requirement/Selection grammar,
 R-REQUIREMENT rule and old runtime inventory do not exist in 0.1.0. No fixture,
 oracle or reader output under `experimental/` is changed or relabelled.
+
+## Native official cases and regeneration
+
+Add a case to a new `fixtures/official/<topic>.cases.json` file containing a JSON
+array of case records. Store its primary and annex bytes under
+`fixtures/official/`. Use a unique `official-` case name and
+`"derivation":{"family":"official","method":"normative-oracle"}`.
+There is no `historicalCase` for a native case. Paths remain relative to
+`fixtures/`; record their SHA-256 hashes explicitly.
+
+Write `expected`, `source`, `schemaAssertions` and `coverage` from the normative
+text before running readers. `source` names existing specification sections;
+coverage associations need corresponding oracle evidence. The minimal case in
+`fixtures/official/minimal.cases.json` illustrates this format: a System may
+have no Agent, so Agent minima have no subjects and D passes. It does not test
+partial diagnostics or Unicode ordering.
+
+Run `PYTHONDONTWRITEBYTECODE=1 python3 conformance/build-corpus.py`, then
+`./scripts/check.sh`. The builder derives the original 111 candidate-2 and 26
+modular cases, appends the native case files in filename order, rebuilds coverage
+and checks the resulting manifest. It copies native records unchanged and never
+rewrites native input bytes or derives an oracle from reader output. Invalid
+native hashes fail generation; they are not repaired automatically. Keep each
+new group in its own case file to allow independent additions.
+
+## Distribution integrity and historical Git evidence
+
+`check-corpus.py` checks distributed files without Git: complete current spec
+and schema hash inventories, fixture hashes, provenance structure, native case
+records, normative citations, oracle structure and coverage. Regeneration updates
+`normativeSources` and `schemas` to current file hashes, so reviewed changes can
+be verified before committing. Inspect these hash changes with the source diff.
+Hashes establish internal integrity, not authenticity against an outside trust
+anchor.
+
+`normativeBase` and `historicalNormativeSources` retain the initial normative
+revision and its original hashes. Regeneration preserves them even when current
+files change. Run `python3 conformance/check-corpus.py --git-provenance` to also
+verify those historical bytes with Git. An unavailable revision, including in a
+shallow clone, fails this explicitly requested check; fetch the history separately
+or run the distribution check without this option.
+
+`./scripts/check.sh` requests Git provenance when run in a Git checkout. In an
+archive, it explicitly reports the omitted Git checks and still runs distribution
+integrity and structural checks and regression suites. The modular historical
+checker is unchanged: `check-historical-distribution.py` supplies its three
+historical source reads from distributed files through a module-local adapter.
+Every original hash assertion still runs, but these reads provide no evidence
+about a Git revision. The adapter rejects unrecognized reads. The repository
+check exports `PYTHONDONTWRITEBYTECODE=1` for all Python commands.
+
+The official comparator and builder use the local `report_support.py` helpers.
+These were extracted unchanged from candidate-2; the current comparator does
+not load an experimental comparator. Comparison rules, including existing sort
+behavior, are unchanged.
+
+## Current maintenance verification
+
+The 0.1.1 candidate adds ten representative diagnostic cases to the existing
+native empty-System case. [Coverage](COVERAGE.md#native-maintenance-coverage)
+explains their normative basis. Historical cases and their identities remain
+unchanged. Current results and blockers belong to the [0.1.1 release
+notes](../docs/releases/0.1.1.md), separate from the historical 0.1.0 results above.
+
+The [full verification command](../CONTRIBUTING.md#full-local-and-ci-verification)
+retains all three comparisons and checks all official report files against
+Draft 2020-12. `scripts/check-report-schemas.py` requires a complete unblocked
+summary and the exact expected response file set, so missing reports cannot
+silently reduce the schema-check sample. It also checks reports from a completed
+comparison with semantic differences; the comparator separately keeps those
+differences fatal to the full check.
