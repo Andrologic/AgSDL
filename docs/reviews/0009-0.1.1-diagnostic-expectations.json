@@ -1,0 +1,690 @@
+{
+  "status": "non-normative evidence and case index; observed deltas are not expected output",
+  "base": "7a6ad32133cf52ba200ecb358d9c2723a9fcc052",
+  "contract": "agsdl-0.1.0",
+  "sourceDirectory": "/Users/oscarlahaie/.codex/reviews/agsdl-0.1.0-2026-09-07",
+  "sourceHashes": {
+    "revue.md": "9d57ee3bc121054471bfe4fb81df6ecf691a0cd2f692478a8cfb7c8fccab8226",
+    "deletion-differences.json": "9bf02a0848966021c7644e99b765f2915f011fb7196c114386edb28ecde5ff90",
+    "reproduce-deletions.py": "273012d006082c2d7084a3632c1dada3f659c7819c802a1912b80c65e00db89f",
+    "reproduce-unicode-order.py": "3112414194558af7082a8dbf01d0a91ffc090595b5dafec6761198d13b01966c"
+  },
+  "input": "examples/0.1.0/general-purpose-system.json",
+  "inputSha256": "7f008601aa76fa3cbbbed95d81582f048d413bd0c0206f7a326cecb3aa866301",
+  "requests": 55,
+  "differences": 24,
+  "cases": [
+    {
+      "remove": "/root/key",
+      "operation": "validateD",
+      "group": "A",
+      "shapeLocation": "/root",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "D",
+              "D-EXPORT",
+              "blocked",
+              "[{\"pointer\": \"/exports\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/root/kind",
+      "operation": "validateD",
+      "group": "A",
+      "shapeLocation": "/root",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "D",
+              "D-EXPORT",
+              "completed",
+              "[]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/runtime/configurations",
+      "operation": "validateR",
+      "group": "B",
+      "shapeLocation": "/runtime",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [],
+          "javascriptOnly": [
+            [
+              "primary",
+              "R",
+              "R-SELECTION",
+              "completed",
+              "[]"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "remove": "/runtime/configurations/0/id",
+      "operation": "validateR",
+      "group": "C",
+      "shapeLocation": "/runtime/configurations/0",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-SELECTION",
+              "blocked",
+              "[{\"pointer\": \"/runtime\"}, {\"pointer\": \"/runtime/configurations/0\"}]"
+            ]
+          ],
+          "javascriptOnly": [
+            [
+              "primary",
+              "R",
+              "R-SELECTION",
+              "blocked",
+              "[{\"pointer\": \"/runtime\"}]"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "remove": "/runtime/configurations/0/agents",
+      "operation": "validateR",
+      "group": "D",
+      "shapeLocation": "/runtime/configurations/0",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "completed",
+              "[]"
+            ]
+          ],
+          "javascriptOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0\"}]"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "remove": "/runtime/configurations/0/agents/0/agent",
+      "operation": "validateR",
+      "group": "E",
+      "shapeLocation": "/runtime/configurations/0/agents/0",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-BINDING",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/0\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/0/tools/0\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0/applications/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/0/applications/1\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-TOOL",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/0/tools/0\"}]"
+            ]
+          ],
+          "javascriptOnly": [
+            [
+              "primary",
+              "R",
+              "R-BINDING",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/0/tools/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1\"}, {\"pointer\": \"/runtime/configurations/0/agents/1/tools/0\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/0/applications/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/0/applications/1\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-TOOL",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}]"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "remove": "/runtime/configurations/0/agents/0/engine",
+      "operation": "validateR",
+      "group": "F",
+      "shapeLocation": "/runtime/configurations/0/agents/0",
+      "observedDelta": {
+        "findings": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "{\"pointer\": \"/runtime/configurations/0/agents/0\"}",
+              "inconclusive"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/runtime/configurations/0/agents/0/claims",
+      "operation": "validateR",
+      "group": "F",
+      "shapeLocation": "/runtime/configurations/0/agents/0",
+      "observedDelta": {
+        "findings": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "{\"pointer\": \"/runtime/configurations/0/agents/0\"}",
+              "inconclusive"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/graphs/0/steps/0/kind",
+      "operation": "validateG",
+      "group": "G",
+      "shapeLocation": "/graphs/0/steps/0",
+      "observedDelta": {
+        "findings": {
+          "pythonOnly": [],
+          "javascriptOnly": [
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/action\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/agent\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/bindings\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/context\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/failure\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/inputs\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/interface\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/operation\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/outputs\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/principal\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/resources\"}",
+              "fail"
+            ],
+            [
+              "primary",
+              "G",
+              "P-SHAPE",
+              "{\"pointer\": \"/graphs/0/steps/0/success\"}",
+              "fail"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "remove": "/graphs/0/steps/0/resources",
+      "operation": "validateG",
+      "group": "H",
+      "shapeLocation": "/graphs/0/steps/0",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [],
+          "javascriptOnly": [
+            [
+              "primary",
+              "G",
+              "G-TARGET",
+              "blocked",
+              "[{\"pointer\": \"/graphs/0/steps/0\"}]"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "remove": "/definitions/11/payload/target",
+      "operation": "validateR",
+      "group": "I",
+      "shapeLocation": "/definitions/11/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/definitions/11/payload\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/11/payload/at",
+      "operation": "validateR",
+      "group": "I",
+      "shapeLocation": "/definitions/11/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/definitions/11/payload\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/11/payload/format",
+      "operation": "validateR",
+      "group": "I",
+      "shapeLocation": "/definitions/11/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/definitions/11/payload\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/11/payload/body",
+      "operation": "validateR",
+      "group": "I",
+      "shapeLocation": "/definitions/11/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/definitions/11/payload\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/12/payload/inputs",
+      "operation": "validateR",
+      "group": "I",
+      "shapeLocation": "/definitions/12/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/definitions/12/payload\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/12/payload/outputs",
+      "operation": "validateR",
+      "group": "I",
+      "shapeLocation": "/definitions/12/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/definitions/12/payload\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/12/payload/preconditions",
+      "operation": "validateR",
+      "group": "I",
+      "shapeLocation": "/definitions/12/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/definitions/12/payload\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/12/payload/completion",
+      "operation": "validateR",
+      "group": "I",
+      "shapeLocation": "/definitions/12/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1\"}]"
+            ],
+            [
+              "primary",
+              "R",
+              "R-CONTENT",
+              "blocked",
+              "[{\"pointer\": \"/definitions/12/payload\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/12/payload/tools",
+      "operation": "validateR",
+      "group": "I",
+      "shapeLocation": "/definitions/12/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/9/payload/action",
+      "operation": "validateR",
+      "group": "J",
+      "shapeLocation": "/definitions/9/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [],
+          "javascriptOnly": [
+            [
+              "primary",
+              "R",
+              "R-TOOL",
+              "blocked",
+              "[{\"pointer\": \"/definitions/9/payload\"}]"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "remove": "/definitions/9/payload/inputs",
+      "operation": "validateR",
+      "group": "J",
+      "shapeLocation": "/definitions/9/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0/tools/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1/tools/0\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/9/payload/outputs",
+      "operation": "validateR",
+      "group": "J",
+      "shapeLocation": "/definitions/9/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [
+            [
+              "primary",
+              "R",
+              "R-COMPATIBILITY",
+              "blocked",
+              "[{\"pointer\": \"/runtime/configurations/0/agents/0/tools/0\"}, {\"pointer\": \"/runtime/configurations/0/agents/1/tools/0\"}]"
+            ]
+          ],
+          "javascriptOnly": []
+        }
+      }
+    },
+    {
+      "remove": "/definitions/9/payload/failures",
+      "operation": "validateR",
+      "group": "J",
+      "shapeLocation": "/definitions/9/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [],
+          "javascriptOnly": [
+            [
+              "primary",
+              "R",
+              "R-TOOL",
+              "blocked",
+              "[{\"pointer\": \"/definitions/9/payload\"}]"
+            ]
+          ]
+        }
+      }
+    },
+    {
+      "remove": "/definitions/9/payload/requires",
+      "operation": "validateR",
+      "group": "J",
+      "shapeLocation": "/definitions/9/payload",
+      "observedDelta": {
+        "checks": {
+          "pythonOnly": [],
+          "javascriptOnly": [
+            [
+              "primary",
+              "R",
+              "R-TOOL",
+              "blocked",
+              "[{\"pointer\": \"/definitions/9/payload\"}]"
+            ]
+          ]
+        }
+      }
+    }
+  ]
+}
