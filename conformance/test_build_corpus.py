@@ -3,6 +3,10 @@
 
 import importlib.util
 import json
+import shutil
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
 import unittest
 
@@ -14,6 +18,50 @@ SPEC.loader.exec_module(builder)
 
 
 class CorpusBuilderTests(unittest.TestCase):
+    def test_regeneration_preserves_native_oracle_bytes_and_historical_cases(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary) / "repository"
+            shutil.copytree(HERE.parent, repository,
+                            ignore=shutil.ignore_patterns(".git", ".venv", "__pycache__"))
+            fixtures = repository / "conformance/fixtures"
+            original = json.loads((fixtures / "manifest.json").read_text())
+            native_file = fixtures / "official/additional.cases.json"
+            native = json.loads((fixtures / "official/minimal.cases.json").read_text())
+            native_hash = native[0]["primary"]["sha256"]
+            native[0]["name"] = "official-additional-empty-system"
+            native_file.write_text(json.dumps(native, indent=4) + "\n")
+            before = {p.relative_to(fixtures): p.read_bytes()
+                      for p in fixtures.rglob("*") if p.is_file() and p.name != "manifest.json"}
+            current_spec = repository / "spec/README.md"
+            current_spec.write_text(current_spec.read_text() + "\n")
+            command = [sys.executable, "-B", "conformance/build-corpus.py"]
+            result = subprocess.run(command, cwd=repository, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            generated = json.loads((fixtures / "manifest.json").read_text())
+            self.assertEqual(generated["cases"][:137], original["cases"][:137])
+            self.assertIn(native[0], generated["cases"])
+            self.assertNotEqual(generated["normativeSources"]["spec/README.md"],
+                                original["normativeSources"]["spec/README.md"])
+            self.assertEqual(before, {p.relative_to(fixtures): p.read_bytes()
+                             for p in fixtures.rglob("*")
+                             if p.is_file() and p.name != "manifest.json"})
+            self.assertEqual(generated["historicalNormativeSources"],
+                             original["historicalNormativeSources"])
+            saved_manifest = (fixtures / "manifest.json").read_bytes()
+            native[0]["primary"]["sha256"] = "0" * 64
+            native_file.write_text(json.dumps(native))
+            result = subprocess.run(command, cwd=repository, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("fixture hash/path", result.stderr)
+            self.assertEqual((fixtures / "manifest.json").read_bytes(), saved_manifest)
+            native[0]["primary"]["sha256"] = native_hash
+            native[0]["derivation"]["historicalCase"] = "invented"
+            native_file.write_text(json.dumps(native))
+            result = subprocess.run(command, cwd=repository, capture_output=True, text=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("closed fields", result.stderr)
+            self.assertEqual((fixtures / "manifest.json").read_bytes(), saved_manifest)
+
     def test_syntax_failure_bytes_are_untouched(self):
         raw = b'{"contract":"proposal-0012-candidate-2","x":1,"x":2}'
         self.assertEqual(builder.convert_document(raw, "validateD", True), raw)

@@ -2,6 +2,15 @@
   "format": "agsdl-conformance-corpus-1",
   "contract": "agsdl-0.1.0",
   "normativeBase": "c273395b06dc51fdc130c6f9bb2d5d04cc6c8eef",
+  "historicalNormativeSources": {
+    "spec/README.md": "5a144b4a02dd53ad5167f640e0de2d04e4dae5daaf7dcde147d123df8bd76637",
+    "spec/document.md": "5ece82fb94908bb2240cb8d820d99e3c07808d42db765b083a763fba7b1ea5ea",
+    "spec/graph.md": "e52809ed4a118fd35d815defc5761aba0e6ee1aef7457ee9b89d063a7786848b",
+    "spec/model.md": "b0651ef46bc2f13c3ddca100b88ef88d38413df5c6f32fda52c4d8e5329d32e1",
+    "spec/reports.md": "5025b9f6972d4aab88a5041b94400f59e44e11d4a4321a7d3ddae4231e69d824",
+    "spec/runtime.md": "560627c02043aeda705e2f1a4c03127deb02424cb4ca259ac0d99b34141d2591",
+    "spec/serialization.md": "e11e95859765a116c3804264214fd13acf49339ecb45f48c74f9d3d3f824f215"
+  },
   "normativeSources": {
     "spec/README.md": "5a144b4a02dd53ad5167f640e0de2d04e4dae5daaf7dcde147d123df8bd76637",
     "spec/document.md": "5ece82fb94908bb2240cb8d820d99e3c07808d42db765b083a763fba7b1ea5ea",
@@ -29,7 +38,8 @@
   "coverage": {
     "D-AGENT": {
       "positive": [
-        "candidate2-d-local-agent"
+        "candidate2-d-local-agent",
+        "official-empty-system-validateD"
       ],
       "negative": [
         "candidate2-agent-missing-minima"
@@ -14511,6 +14521,75 @@
         "family": "modular",
         "historicalCase": "modular-exchange-accounting-refusal",
         "method": "marker-and-hash"
+      }
+    },
+    {
+      "name": "official-empty-system-validateD",
+      "status": "ready",
+      "primary": {
+        "path": "official/empty-system.json",
+        "sha256": "3180bedb2a2d03b9d246773f84fbe3375621d3537fcf97948b75d0a5ff8ac25f"
+      },
+      "annexes": {},
+      "operation": "validateD",
+      "source": [
+        {
+          "document": "../../spec/document.md",
+          "section": "D: document declarations"
+        },
+        {
+          "document": "../../spec/reports.md",
+          "section": "Rule execution and exact exclusion records"
+        }
+      ],
+      "coverage": [
+        "D-AGENT:positive"
+      ],
+      "scenarios": [
+        "empty-system-no-agent-minimum"
+      ],
+      "schemaAssertions": [
+        {
+          "entry": "Document",
+          "input": "primary",
+          "pointer": "",
+          "valid": true
+        }
+      ],
+      "expected": {
+        "results": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "phase": "unresolved-document",
+            "verdict": "pass"
+          }
+        ],
+        "findings": {
+          "mode": "exact",
+          "items": []
+        },
+        "checks": [],
+        "states": [
+          {
+            "input": "primary",
+            "pointer": "/graphs",
+            "state": "absent"
+          },
+          {
+            "input": "primary",
+            "pointer": "/runtime",
+            "state": "absent"
+          }
+        ],
+        "absentStates": [],
+        "opaque": [],
+        "absentOpaque": [],
+        "preservation": "no-output"
+      },
+      "derivation": {
+        "family": "official",
+        "method": "normative-oracle"
       }
     }
   ]

@@ -1,0 +1,71 @@
+[
+  {
+    "name": "official-empty-system-validateD",
+    "status": "ready",
+    "primary": {
+      "path": "official/empty-system.json",
+      "sha256": "3180bedb2a2d03b9d246773f84fbe3375621d3537fcf97948b75d0a5ff8ac25f"
+    },
+    "annexes": {},
+    "operation": "validateD",
+    "source": [
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      },
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      }
+    ],
+    "coverage": [
+      "D-AGENT:positive"
+    ],
+    "scenarios": [
+      "empty-system-no-agent-minimum"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "Document",
+        "input": "primary",
+        "pointer": "",
+        "valid": true
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "pass"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": []
+      },
+      "checks": [],
+      "states": [
+        {
+          "input": "primary",
+          "pointer": "/graphs",
+          "state": "absent"
+        },
+        {
+          "input": "primary",
+          "pointer": "/runtime",
+          "state": "absent"
+        }
+      ],
+      "absentStates": [],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  }
+]

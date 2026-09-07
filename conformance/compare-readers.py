@@ -12,9 +12,9 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parent
-LEGACY_PATH = ROOT.parent / "experimental" / "candidate-2" / "compare-readers.py"
+SUPPORT_PATH = ROOT / "report_support.py"
 sys.dont_write_bytecode = True
-SPEC = importlib.util.spec_from_file_location("agsdl_json_report_neutral", LEGACY_PATH)
+SPEC = importlib.util.spec_from_file_location("agsdl_json_report_neutral", SUPPORT_PATH)
 neutral = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(neutral)
 

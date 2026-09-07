@@ -20,7 +20,6 @@ REPOSITORY = ROOT.parent
 FIXTURES = ROOT / "fixtures"
 OFFICIAL = "agsdl-0.1.0"
 FORMAT = "agsdl-conformance-corpus-1"
-BASE = "c273395b06dc51fdc130c6f9bb2d5d04cc6c8eef"
 ALLOWED_CANDIDATE_OPERATIONS = {
     "inspect", "validateD", "validateG", "resolveG", "exchange", "lossyExchange"
 }
@@ -57,7 +56,7 @@ NORMATIVE_BY_RULE = {
     "X-EVIDENCE-ASSESSMENT": ("spec/reports.md", "Rule execution and exact exclusion records"),
 }
 
-NEUTRAL_PATH = REPOSITORY / "experimental/candidate-2/compare-readers.py"
+NEUTRAL_PATH = ROOT / "report_support.py"
 sys.dont_write_bytecode = True
 NEUTRAL_SPEC = importlib.util.spec_from_file_location("agsdl_corpus_json", NEUTRAL_PATH)
 neutral = importlib.util.module_from_spec(NEUTRAL_SPEC)
@@ -360,6 +359,10 @@ def prepare_case(case, family, source_root):
 
 
 def main():
+    native = []
+    for path in sorted((FIXTURES / "official").glob("*.cases.json")):
+        native.extend(load(path))
+    previous = load(FIXTURES / "manifest.json")
     candidate_root = REPOSITORY / "experimental/candidate-2/fixtures"
     modular_root = REPOSITORY / "experimental/modular-candidate-1/fixtures"
     candidate = load(candidate_root / "manifest.json")
@@ -369,6 +372,7 @@ def main():
              if case["status"] == "ready" and case["operation"] in ALLOWED_CANDIDATE_OPERATIONS]
     cases.extend(prepare_case(case, "modular", modular_root)
                  for case in modular["cases"] if case["status"] == "ready")
+    cases.extend(native)
     names = [case["name"] for case in cases]
     if len(names) != len(set(names)):
         raise RuntimeError("duplicate official case name")
@@ -386,7 +390,8 @@ def main():
     manifest = {
         "format": FORMAT,
         "contract": OFFICIAL,
-        "normativeBase": BASE,
+        "normativeBase": previous["normativeBase"],
+        "historicalNormativeSources": previous["historicalNormativeSources"],
         "normativeSources": spec,
         "schemas": schemas,
         "historicalDerivation": {
@@ -398,6 +403,11 @@ def main():
         "coverage": coverage,
         "cases": cases,
     }
+    checker_spec = importlib.util.spec_from_file_location(
+        "agsdl_builder_check", ROOT / "check-corpus.py")
+    checker = importlib.util.module_from_spec(checker_spec)
+    checker_spec.loader.exec_module(checker)
+    checker.check_manifest(manifest)
     (FIXTURES / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
     )
