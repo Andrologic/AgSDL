@@ -37,7 +37,11 @@ def exchange_fixture():
         "results": [{"input": "primary", "unit": "exchange", "phase": None, "verdict": "pass", "findings": [], "checks": [completed("E-PRESERVE")]}],
         "inventory": {
             "tree": json.loads(raw),
-            "states": [{"input": "primary", "pointer": "/dependencies", "state": "absent", "detail": "absent"}],
+            "states": [
+                {"input": "primary", "pointer": "/dependencies", "state": "absent", "detail": "absent"},
+                {"input": "primary", "pointer": "/graphs", "state": "absent", "detail": "absent"},
+                {"input": "primary", "pointer": "/runtime", "state": "absent", "detail": "absent"},
+            ],
             "opaque": [{"input": "primary", "pointer": "/annotations", "start": start, "end": end}],
         },
         "losses": [],
@@ -49,7 +53,11 @@ def exchange_fixture():
             "results": [{"input": "primary", "unit": "exchange", "phase": None, "verdict": "pass"}],
             "findings": {"mode": "exact", "items": []},
             "checks": [{"input": "primary", "unit": "exchange", "rule": "E-PRESERVE", "state": "completed", "locations": []}],
-            "states": [{"input": "primary", "pointer": "/dependencies", "state": "absent"}],
+            "states": [
+                {"input": "primary", "pointer": "/dependencies", "state": "absent"},
+                {"input": "primary", "pointer": "/graphs", "state": "absent"},
+                {"input": "primary", "pointer": "/runtime", "state": "absent"},
+            ],
             "absentStates": [], "opaque": [{"input": "primary", "pointer": "/annotations"}], "absentOpaque": [],
             "preservation": "exact-input-boundary",
         },
@@ -74,7 +82,11 @@ def validation_fixture():
         "operation": "validateR",
         "inputs": [{"id": "primary", "sha256": hashlib.sha256(raw).hexdigest()}],
         "results": results,
-        "inventory": {"tree": json.loads(raw), "states": [{"input": "primary", "pointer": "/runtime/selected", "state": "absent", "detail": "absent"}], "opaque": []},
+        "inventory": {"tree": json.loads(raw), "states": [
+            {"input": "primary", "pointer": "/graphs", "state": "absent", "detail": "absent"},
+            {"input": "primary", "pointer": "/runtime", "state": "declared", "detail": "declared"},
+            {"input": "primary", "pointer": "/runtime/selected", "state": "absent", "detail": "absent"},
+        ], "opaque": []},
         "losses": [], "outputs": [],
     }
     case = {
@@ -101,6 +113,10 @@ def selected_binding_fixture():
         "pointer": "/runtime/configurations/0/agents/0",
         "state": "unknown",
         "detail": "unknown",
+    }, {
+        "input": "primary", "pointer": "/graphs", "state": "absent", "detail": "absent",
+    }, {
+        "input": "primary", "pointer": "/runtime", "state": "declared", "detail": "declared",
     }]
     case["expected"]["states"] = []
     return case, response, {"primary": raw}
@@ -143,7 +159,12 @@ def resolve_fixture():
         "operation": "resolveG",
         "inputs": [{"id": name, "sha256": hashlib.sha256(source[name]).hexdigest()} for name in ("primary", "annex/a")],
         "results": results,
-        "inventory": {"tree": json.loads(primary), "states": [], "opaque": []},
+        "inventory": {"tree": json.loads(primary), "states": [
+            {"input": "primary", "pointer": "/graphs", "state": "declared", "detail": "declared"},
+            {"input": "primary", "pointer": "/runtime", "state": "absent", "detail": "absent"},
+            {"input": "annex/a", "pointer": "/graphs", "state": "absent", "detail": "absent"},
+            {"input": "annex/a", "pointer": "/runtime", "state": "absent", "detail": "absent"},
+        ], "opaque": []},
         "losses": [], "outputs": [],
     }, "artifacts": {}}
     case = {"operation": "resolveG", "expected": {
@@ -341,6 +362,31 @@ class ComparatorTests(unittest.TestCase):
         response["report"]["inventory"]["opaque"] = []
         self.assertTrue(compare.observe(case, response, source))
 
+    def test_primary_container_states_are_required(self):
+        case, response, source = exchange_fixture()
+        self.assertEqual(compare.observe(case, response, source), [])
+        response["report"]["inventory"]["states"] = [
+            state for state in response["report"]["inventory"]["states"]
+            if state["pointer"] == "/dependencies"
+        ]
+        self.assertTrue(compare.observe(case, response, source))
+
+    def test_virtual_state_pointers_are_closed(self):
+        case, response, source = exchange_fixture()
+        response["report"]["inventory"]["states"].append({
+            "input": "primary", "pointer": "/invented", "state": "absent",
+            "detail": "invented",
+        })
+        self.assertTrue(compare.observe(case, response, source))
+
+    def test_state_inside_opaque_slice_is_rejected(self):
+        case, response, source = exchange_fixture()
+        response["report"]["inventory"]["states"].append({
+            "input": "primary", "pointer": "/annotations/value", "state": "unchecked",
+            "detail": "invented inside opaque",
+        })
+        self.assertTrue(compare.observe(case, response, source))
+
     def test_assessment_detail_is_a_comparison_key(self):
         case, response, source = selected_binding_fixture()
         first = deepcopy(response)
@@ -423,7 +469,7 @@ class ComparatorTests(unittest.TestCase):
         state["pointer"] = "/runtime/configurations/0/agents/99"
         source = {"primary": raw}
         self.assertFalse(compare.assessment_state(state, tree))
-        self.assertEqual(compare.observe(case, response, source), [])
+        self.assertTrue(compare.observe(case, response, source))
         prose = deepcopy(response)
         prose["report"]["inventory"]["states"][0]["detail"] = "ordinary prose"
         self.assertEqual(compare.comparison(response)["states"], compare.comparison(prose)["states"])
@@ -435,7 +481,7 @@ class ComparatorTests(unittest.TestCase):
         state["pointer"] = "/runtime/configurations/0/agents/0/tools/99"
         source = {"primary": raw}
         self.assertFalse(compare.assessment_state(state, tree))
-        self.assertEqual(compare.observe(case, response, source), [])
+        self.assertTrue(compare.observe(case, response, source))
 
     def test_existing_tool_binding_is_an_assessment_location(self):
         tree = {"runtime": {"configurations": [{"id": "chosen", "agents": [{"tools": [{}]}]}], "selected": "chosen"}}

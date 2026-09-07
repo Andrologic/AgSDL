@@ -286,10 +286,14 @@ def validate_report(response, case, source):
     demand(isinstance(inventory["states"], list) and isinstance(inventory["opaque"], list), "inventory arrays")
     primary_tree = parsed["primary"].tree if parsed["primary"] else None
     demand(canonical(inventory["tree"]) == canonical(primary_tree), "inventory tree differs from source")
+    observed_inputs = {"primary"} | {
+        result["input"] for result in report["results"]
+        if operation == "resolveG" and result["unit"] == "D"
+    }
     assessment_keys = {}
     for state in inventory["states"]:
         record(state, "input pointer state detail")
-        demand(state["input"] in source and state["state"] in {"absent", "unknown", "declared", "unchecked"}, "State scope/domain")
+        demand(state["input"] in observed_inputs and state["state"] in {"absent", "unknown", "declared", "unchecked"}, "State scope/domain")
         neutral.pointer(state["pointer"])
         text(state["detail"])
         dependency_probe = (
@@ -299,11 +303,26 @@ def validate_report(response, case, source):
             and state["state"] == "unchecked"
             and (parsed["primary"] is None or not isinstance(primary_tree, dict))
         )
+        virtual_missing = (
+            state["state"] == "absent"
+            and (
+                (state["input"] in observed_inputs
+                    and state["pointer"] in {"/graphs", "/runtime"})
+                or (state["input"] == "primary"
+                    and operation in {"inspect", "exchange", "lossyExchange"}
+                    and state["pointer"] == "/dependencies")
+                or (state["input"] == "primary" and operation == "validateR"
+                    and state["pointer"] == "/runtime/selected")
+                or (state["input"] == "primary" and operation == "validateR" and re.fullmatch(
+                    r"/runtime/configurations/(0|[1-9][0-9]*)/agents/(0|[1-9][0-9]*)/tools/(0|[1-9][0-9]*)/selected",
+                    state["pointer"],
+                ) is not None)
+            )
+        )
         demand(
-            dependency_probe
+            dependency_probe or virtual_missing
             or (parsed[state["input"]] is not None and (
                 state["pointer"] in parsed[state["input"]].spans
-                or missing_child(state["pointer"], parsed[state["input"]])
             )),
             "State pointer is not observable",
         )
@@ -314,6 +333,23 @@ def validate_report(response, case, source):
             demand(assessment_key not in assessment_keys or assessment_keys[assessment_key] == key,
                    "conflicting aggregate assessment States")
             assessment_keys[assessment_key] = key
+    for input_id in observed_inputs:
+        tree = parsed[input_id].tree if parsed[input_id] else None
+        if isinstance(tree, dict):
+            for field in ("graphs", "runtime"):
+                selected = input_id == "primary" and (
+                    (field == "graphs" and unit == "G")
+                    or (field == "runtime" and unit == "R")
+                )
+                expected_state = "absent" if field not in tree else "declared" if selected else "unchecked"
+                entries = [
+                    state for state in inventory["states"]
+                    if state["input"] == input_id and state["pointer"] == "/" + field
+                ]
+                demand(
+                    len(entries) == 1 and entries[0]["state"] == expected_state,
+                    "container State missing or inconsistent",
+                )
     if operation in {"inspect", "exchange", "lossyExchange"}:
         dependencies = [
             state for state in inventory["states"]
@@ -330,7 +366,7 @@ def validate_report(response, case, source):
     slice_keys = set()
     for item in inventory["opaque"]:
         record(item, "input pointer start end")
-        demand(item["input"] in source and parsed[item["input"]] is not None, "Slice input")
+        demand(item["input"] in observed_inputs and parsed[item["input"]] is not None, "Slice input")
         neutral.pointer(item["pointer"])
         start, end = neutral.uint(item["start"]), neutral.uint(item["end"])
         demand(parsed[item["input"]].spans.get(item["pointer"]) == (start, end), "Slice is not exact source span")
@@ -341,6 +377,20 @@ def validate_report(response, case, source):
     for spans in slices_by_input.values():
         ordered = sorted(spans)
         demand(all(left[1] <= right[0] for left, right in zip(ordered, ordered[1:])), "overlapping Slices")
+    for state in inventory["states"]:
+        for item in inventory["opaque"]:
+            if item["pointer"] and state["input"] == item["input"]:
+                demand(
+                    not state["pointer"].startswith(item["pointer"] + "/"),
+                    "State discovered inside opaque Slice",
+                )
+        for parent in inventory["states"]:
+            if (parent["input"] == state["input"] and parent["state"] == "absent"
+                    and not assessment_state(parent, primary_tree)):
+                demand(
+                    not state["pointer"].startswith(parent["pointer"] + "/"),
+                    "State below absent parent",
+                )
     if operation in {"inspect", "exchange", "lossyExchange"}:
         neutral.validate_slices(inventory["opaque"], source, parsed, operation, {"primary"})
 
