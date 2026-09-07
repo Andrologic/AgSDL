@@ -2003,4 +2003,3 @@ def inventory(doc, operation, extra_states=(), primary=True):
     for item in states:
         unique[(item['input'], item['pointer'], item['state'], item['detail'])] = item
     return list(unique.values()), slices
-

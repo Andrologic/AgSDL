@@ -2,7 +2,7 @@
   "status": "non-normative evidence and case index; observed deltas are not expected output",
   "base": "7a6ad32133cf52ba200ecb358d9c2723a9fcc052",
   "contract": "agsdl-0.1.0",
-  "sourceDirectory": "/Users/oscarlahaie/.codex/reviews/agsdl-0.1.0-2026-09-07",
+  "sourceDirectory": "~/.codex/reviews/agsdl-0.1.0-2026-09-07",
   "sourceHashes": {
     "revue.md": "9d57ee3bc121054471bfe4fb81df6ecf691a0cd2f692478a8cfb7c8fccab8226",
     "deletion-differences.json": "9bf02a0848966021c7644e99b765f2915f011fb7196c114386edb28ecde5ff90",

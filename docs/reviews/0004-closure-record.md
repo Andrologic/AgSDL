@@ -3,7 +3,7 @@
 - Date: 2026-09-05
 - Status: closed; both production tasks audited, integrated, cleaned, and archived
 - Coordinator: `01a06e19-35e4-70f0-a295-1e7a26c5ed6a`
-- Repository: `/Users/oscarlahaie/github/AgSDL`, local host
+- Repository: `AgSDL` checkout, local host
 - Integrated state under examination: `6334bf305add5bebd9c8ba1f960a8e1b733fbd5c`
 
 ## Scope and authority
@@ -32,7 +32,7 @@ the coordinator's worktree are retained; no branch deletion is authorized here.
 
 - Task: `01a07041-028f-7023-8eac-b75d6c5b86bb`.
 - Title returned by Codex: "Réconcilier la composition et les autorisations…".
-- Native worktree: `/Users/oscarlahaie/.codex/worktrees/4b08/AgSDL`.
+- Native worktree: `~/.codex/worktrees/4b08/AgSDL`.
 - Branch: `feature/composition-authorization-reconciliation`.
 - Base: `a367a1b`; candidate and observed worktree HEAD:
   `504b1c8dafd51b0433f9dcf5e375180eecdea1cc`.
@@ -58,7 +58,7 @@ the coordinator's worktree are retained; no branch deletion is authorized here.
 
 - Task: `01a07041-0bfe-7640-b07e-b8643eeecab6`.
 - Title returned by Codex: "Réconcilier la conformité et les fragments…".
-- Native worktree: `/Users/oscarlahaie/.codex/worktrees/b476/AgSDL`.
+- Native worktree: `~/.codex/worktrees/b476/AgSDL`.
 - Current branch: `feature/first-exchange-contract`; B was developed on
   `feature/conformance-phase-reconciliation` in the same worktree.
 - B base: `a367a1b`; candidate:
@@ -166,8 +166,8 @@ verified child PIDs, rechecked immediately before use.
 
 | Lot | Process cleanup | Worktree removal | Archive result |
 | --- | --- | --- | --- |
-| A | Exact current directories rechecked; SIGTERM sent to 6951, 6952, 6956, and 6957; 6960 had exited. Subsequent `lsof +D` returned no holders. | `git worktree remove -- /Users/oscarlahaie/.codex/worktrees/4b08/AgSDL` succeeded without force. Filesystem absence and absence from the Git worktree inventory verified. | `set_thread_archived` returned `archived: true` for `01a07041-028f-7023-8eac-b75d6c5b86bb` on the local host. |
-| B/C | Exact current directories rechecked; SIGTERM sent to 7255, 7256, 7261, and 7263; 7309 had exited. Subsequent `lsof +D` returned no holders. | `git worktree remove -- /Users/oscarlahaie/.codex/worktrees/b476/AgSDL` succeeded without force. Filesystem absence and absence from the Git worktree inventory verified. | `set_thread_archived` returned `archived: true` for `01a07041-0bfe-7640-b07e-b8643eeecab6` on the local host. |
+| A | Exact current directories rechecked; SIGTERM sent to 6951, 6952, 6956, and 6957; 6960 had exited. Subsequent `lsof +D` returned no holders. | `git worktree remove -- ~/.codex/worktrees/4b08/AgSDL` succeeded without force. Filesystem absence and absence from the Git worktree inventory verified. | `set_thread_archived` returned `archived: true` for `01a07041-028f-7023-8eac-b75d6c5b86bb` on the local host. |
+| B/C | Exact current directories rechecked; SIGTERM sent to 7255, 7256, 7261, and 7263; 7309 had exited. Subsequent `lsof +D` returned no holders. | `git worktree remove -- ~/.codex/worktrees/b476/AgSDL` succeeded without force. Filesystem absence and absence from the Git worktree inventory verified. | `set_thread_archived` returned `archived: true` for `01a07041-0bfe-7640-b07e-b8643eeecab6` on the local host. |
 
 Before each removal, tracked, untracked, and ignored-file inventories remained
 empty and candidate ancestry in `develop` was reconfirmed. Integration and
