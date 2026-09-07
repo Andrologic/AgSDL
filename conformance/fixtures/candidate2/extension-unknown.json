@@ -1,0 +1,28 @@
+{
+  "contract": "agsdl-0.1.0",
+  "root": {
+    "key": {
+      "scope": "local",
+      "id": "root",
+      "version": "1"
+    },
+    "kind": "System"
+  },
+  "definitions": [],
+  "relations": [],
+  "exports": [],
+  "dependencies": [],
+  "unresolved": [],
+  "extensions": [
+    {
+      "identity": "custom/feature",
+      "version": "1",
+      "operations": {
+        "validateD": "unknown"
+      },
+      "payload": {
+        "any": true
+      }
+    }
+  ]
+}

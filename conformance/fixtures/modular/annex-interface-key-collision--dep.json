@@ -1,0 +1,111 @@
+{
+  "contract": "agsdl-0.1.0",
+  "root": {
+    "key": {
+      "scope": "mvp",
+      "id": "annex-root",
+      "version": "1"
+    },
+    "kind": "PackageVersion"
+  },
+  "definitions": [
+    {
+      "key": {
+        "scope": "mvp",
+        "id": "work-interface",
+        "version": "1"
+      },
+      "kind": "Interface",
+      "owner": {
+        "scope": "mvp",
+        "id": "annex-root",
+        "version": "1"
+      },
+      "payload": {
+        "operations": [
+          {
+            "id": "notify",
+            "direction": "outbound",
+            "mode": "request-response",
+            "action": {
+              "scope": "mvp",
+              "id": "notify-action",
+              "version": "1"
+            },
+            "inputs": {
+              "x": "string"
+            },
+            "outputs": {
+              "y": "string"
+            }
+          },
+          {
+            "id": "ask",
+            "direction": "inbound",
+            "mode": "request-response",
+            "action": {
+              "scope": "mvp",
+              "id": "ask-action",
+              "version": "1"
+            },
+            "inputs": {
+              "x": "string"
+            },
+            "outputs": {
+              "y": "string"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "key": {
+        "scope": "mvp",
+        "id": "ask-action",
+        "version": "1"
+      },
+      "kind": "Action",
+      "owner": {
+        "scope": "mvp",
+        "id": "annex-root",
+        "version": "1"
+      },
+      "payload": {}
+    },
+    {
+      "key": {
+        "scope": "mvp",
+        "id": "notify-action",
+        "version": "1"
+      },
+      "kind": "Action",
+      "owner": {
+        "scope": "mvp",
+        "id": "annex-root",
+        "version": "1"
+      },
+      "payload": {}
+    }
+  ],
+  "relations": [],
+  "exports": [
+    {
+      "scope": "mvp",
+      "id": "work-interface",
+      "version": "1"
+    },
+    {
+      "scope": "mvp",
+      "id": "ask-action",
+      "version": "1"
+    },
+    {
+      "scope": "mvp",
+      "id": "notify-action",
+      "version": "1"
+    }
+  ],
+  "dependencies": [],
+  "unresolved": [],
+  "extensions": []
+}

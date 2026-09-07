@@ -1,0 +1,49 @@
+{
+  "contract": "agsdl-0.1.0",
+  "root": {
+    "key": {
+      "scope": "local",
+      "id": "root",
+      "version": "1"
+    },
+    "kind": "System"
+  },
+  "definitions": [
+    {
+      "key": {
+        "scope": "local",
+        "id": "custom",
+        "version": "1"
+      },
+      "kind": {
+        "extension": {
+          "identity": "custom/feature",
+          "version": "1"
+        },
+        "name": "Thing"
+      },
+      "owner": {
+        "scope": "local",
+        "id": "root",
+        "version": "1"
+      },
+      "payload": {}
+    }
+  ],
+  "relations": [],
+  "exports": [],
+  "dependencies": [],
+  "unresolved": [],
+  "extensions": [
+    {
+      "identity": "custom/feature",
+      "version": "1",
+      "operations": {
+        "validateD": {
+          "ignoreRule": "annotation-only"
+        }
+      },
+      "payload": null
+    }
+  ]
+}

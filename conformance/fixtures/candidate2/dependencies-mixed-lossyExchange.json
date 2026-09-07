@@ -1,0 +1,16 @@
+{
+  "dependencies": [
+    {
+      "id": "dep",
+      "rootKey": {
+        "scope": "annex",
+        "id": "root",
+        "version": "1"
+      },
+      "status": "external",
+      "requiredFor": [],
+      "sha256": null
+    },
+    17
+  ]
+}

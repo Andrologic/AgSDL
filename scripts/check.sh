@@ -18,6 +18,11 @@ required_files=(
   scripts/test-verify-a2a-1.0.1-sources.sh
   scripts/check-markdown-links.py
   scripts/test-check-markdown-links.py
+  conformance/README.md
+  conformance/COVERAGE.md
+  conformance/fixtures/manifest.json
+  conformance/check-corpus.py
+  conformance/compare-readers.py
 )
 
 for file in "${required_files[@]}"; do
@@ -53,4 +58,8 @@ PYTHONDONTWRITEBYTECODE=1 python3 experimental/modular-candidate-1/test_check_fi
 PYTHONDONTWRITEBYTECODE=1 python3 experimental/modular-candidate-1/test_compare_readers.py
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experimental/readers/python -v
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experimental/modular-candidate-1/readers/python -v
+PYTHONDONTWRITEBYTECODE=1 python3 conformance/check-corpus.py
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
+  conformance/test_build_corpus.py conformance/test_check_corpus.py \
+  conformance/test_compare_readers.py -v
 echo "AgSDL repository checks passed."
