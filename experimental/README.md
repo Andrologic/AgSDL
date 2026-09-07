@@ -17,9 +17,9 @@ engine support, evidence authenticity or interoperability.
 
 `proposal-0012-candidate-2` is an implementable experiment described in
 [proposal 0012](../proposals/0012-minimal-0.1.0-contract.md), not an adopted
-AgSDL specification. Version 0.0.2 is the latest published conceptual pre-draft;
-0.1.0 is locally ready for its bounded first-draft scope but remains unpublished
-and unstable. The Python and JavaScript readers are implemented
+AgSDL specification. The [current release status](../README.md#release-status-and-history)
+records published 0.1.0 and local 0.1.1 preparation. The bounded first draft
+remains unstable. The Python and JavaScript readers are implemented
 and reviewed within their documented scope. Their full report comparison passes all 121 corpus cases at the
 [recorded source revision](../docs/reviews/0006-candidate-0.1.0-adoption.md#final-experimental-comparison),
 with no blocked cases or mismatches. That evidence does not adopt the candidate

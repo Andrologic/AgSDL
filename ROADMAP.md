@@ -30,7 +30,16 @@ universal or executable. Both readers agree on the pinned 137-case official
 corpus with no blocked case or failure, and the delivery review records the
 limits of that evidence. The maintainer authorized publication on 2026-09-07.
 
-## Current delivery sequence
+## Local preparation: 0.1.1
+
+Maintain documentation, examples, corpus provenance and reader diagnostics
+without changing the `agsdl-0.1.0` contract marker. The
+[diagnostic dossier](docs/reviews/0009-0.1.1-diagnostic-expectations.md) distinguishes
+determined corrections from unresolved diagnostic and Unicode-order questions.
+This work does not establish universal reader agreement or runtime support.
+See [release status](README.md#release-status-and-history) for publication status.
+
+## Completed 0.1.0 delivery sequence
 
 | Work | Status |
 | --- | --- |

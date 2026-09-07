@@ -1,7 +1,7 @@
-# Conceptual examples for AgSDL
+# AgSDL examples
 
-For the locally adopted 0.1.0 contract, start with the
-[official D/G/R example](0.1.0/README.md). It is non-normative, uses the official
+For the published 0.1.0 contract, start with the
+[progressive Document/G/R examples](0.1.0/README.md). It is non-normative, uses the official
 edition marker and can be checked with both official readers. The
 conceptual examples below preserve their earlier proposal-era status.
 

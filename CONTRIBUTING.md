@@ -1,6 +1,6 @@
 # Contributing to AgSDL
 
-AgSDL has a locally adopted, bounded 0.1.0 first-draft contract and continues to
+AgSDL has a published, bounded 0.1.0 first-draft contract and continues to
 define the broader problem and vocabulary. Contributions should reduce ambiguity
 and preserve the status of normative, proposed, experimental and illustrative
 material.
@@ -31,6 +31,15 @@ A proposal is required when a change:
 Create proposals under `proposals/` and use the next available four-digit
 identifier. A proposal must state its problem, scope, consequences, alternatives,
 and unresolved questions.
+
+For immutable proposal snapshots, record adoption in a separate decision and
+the [proposal register](proposals/README.md), as established by
+[Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md). Preserve the pinned
+proposal bytes and historical status. Apply adopted semantics separately in
+`spec/`; an adoption record does not itself publish a release.
+
+Current publication status is maintained in the
+[README](README.md#release-status-and-history).
 
 ## Git workflow
 

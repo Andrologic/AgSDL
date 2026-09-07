@@ -1,0 +1,117 @@
+{
+  "contract": "agsdl-0.1.0",
+  "root": {
+    "key": {
+      "scope": "mvp",
+      "id": "system",
+      "version": "1"
+    },
+    "kind": "System"
+  },
+  "definitions": [
+    {
+      "key": {
+        "scope": "mvp",
+        "id": "agent-a",
+        "version": "1"
+      },
+      "kind": "Agent",
+      "owner": {
+        "scope": "mvp",
+        "id": "system",
+        "version": "1"
+      },
+      "payload": {}
+    },
+    {
+      "key": {
+        "scope": "mvp",
+        "id": "principal-a",
+        "version": "1"
+      },
+      "kind": "Principal",
+      "owner": {
+        "scope": "mvp",
+        "id": "system",
+        "version": "1"
+      },
+      "payload": {}
+    },
+    {
+      "key": {
+        "scope": "mvp",
+        "id": "work-interface",
+        "version": "1"
+      },
+      "kind": "Interface",
+      "owner": {
+        "scope": "mvp",
+        "id": "system",
+        "version": "1"
+      },
+      "payload": {}
+    },
+    {
+      "key": {
+        "scope": "mvp",
+        "id": "direction",
+        "version": "1"
+      },
+      "kind": "Role",
+      "owner": {
+        "scope": "mvp",
+        "id": "system",
+        "version": "1"
+      },
+      "payload": {}
+    }
+  ],
+  "relations": [
+    {
+      "source": {
+        "scope": "mvp",
+        "id": "agent-a",
+        "version": "1"
+      },
+      "relation": "actsAs",
+      "target": {
+        "scope": "mvp",
+        "id": "principal-a",
+        "version": "1"
+      },
+      "expectedKind": "Principal"
+    },
+    {
+      "source": {
+        "scope": "mvp",
+        "id": "agent-a",
+        "version": "1"
+      },
+      "relation": "exposes",
+      "target": {
+        "scope": "mvp",
+        "id": "work-interface",
+        "version": "1"
+      },
+      "expectedKind": "Interface"
+    },
+    {
+      "source": {
+        "scope": "mvp",
+        "id": "agent-a",
+        "version": "1"
+      },
+      "relation": "directedBy",
+      "target": {
+        "scope": "mvp",
+        "id": "direction",
+        "version": "1"
+      },
+      "expectedKind": "Role"
+    }
+  ],
+  "exports": [],
+  "dependencies": [],
+  "unresolved": [],
+  "extensions": []
+}
