@@ -1,10 +1,39 @@
 # Candidate 0.1.0 adoption review dossier
 
 - Date: 2026-09-06.
-- Status: B46/B48 evidence for E47/E49 documentary preparation; no adoption decision.
+- Status: adoption recorded by Decision 0007; normative application prepared,
+  official-edition evidence and final delivery review pending.
 - Preparation base: `b5c97f692d3f9446988f0a79c07412c0b558e585`.
 - Integrated evidence base: `90997464428ce7c3072179e1053cf2934fb80fef`.
 - Current experimental edition: `proposal-0013-candidate-1`.
+
+## Current disposition, 2026-09-07
+
+[Decision 0007](../decisions/0007-adopt-0.1.0-contract.md) records the maintainer's
+readiness delegation following the explicit adoption/unchanged-actor question.
+It adopts the selected 0013 contract and unreplaced 0012 inheritance, retaining
+Agent Key, unique actsAs and invoke.principal equality. The
+[specification](../../spec/README.md) now applies that contract independently of
+historical proposals. [Traceability and reader adaptations](0007-0.1.0-contract-traceability.md)
+record its official identity and mechanical consequences.
+
+The final experimental integration is `0aa44c14825b03e52cbd5d588921929995ebc6fc`.
+The local closure record at
+`/Users/oscarlahaie/.codex/chantier-archives/agsdl-010-mvp-2026-09-07/cloture.md`
+records 190 passing reader tests and comparisons of 121 historical and 26 modular
+cases without difference or blockage. Retained reports are in its `preuves/`
+directory. These are experimental results, not official-edition conformance.
+This application does not rerun or relabel them.
+
+Reader/corpus adaptation and new official-edition evidence remain pending, as
+do final delivery review and publication authorization. Root README and release
+notes belong to the final integration lot. This dossier records no publication.
+
+## Historical dossier, 2026-09-06
+
+The remainder preserves the facts, recommendations and pending choices at that
+date. Its pending-adoption and Principal-choice language is historical; the
+current disposition above supersedes it for the adopted bounded scope.
 
 This dossier separates recorded facts, deductions, recommendations and pending
 choices. [Decision 0001](../decisions/0001-specification-before-syntax.md),
