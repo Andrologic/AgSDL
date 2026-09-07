@@ -4,7 +4,7 @@ from .lossless import integer
 from . import core as _core
 
 
-PROCESSOR = {"identity": "agsdl-reference/python-reader", "version": "0.1.0"}
+PROCESSOR = {"identity": "agsdl-reference/python-reader", "version": "0.1.1"}
 
 def _validate_losses(losses):
     if losses is None:
