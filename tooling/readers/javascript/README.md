@@ -52,8 +52,10 @@ identity.
 
 ## Boundaries and verification
 
-The implementation reuses the lossless JavaScript scanner and the final modular
-D/G/R implementation with an explicit official contract and Processor Edition.
+The implementation owns local copies of the lossless JavaScript scanner and
+D/G/R modules adopted from the retained readers. All runtime imports stay in
+this directory or use the Node.js standard library; `experimental/` is not
+needed to use the API or CLI. The historical readers remain separate.
 It does not import or execute a Python reader. It performs no network access,
 transitive resolution, Agent execution, engine invocation, approval intake or
 runtime action.
@@ -73,3 +75,21 @@ local comparison covers all 137 official cases without a blocked case, failure
 or mismatch. The focused and retained regression suites establish additional
 local boundaries, but none of these checks proves exhaustive correctness,
 execution support or interoperability.
+
+## Maintenance diagnostics
+
+The focused tests use the specification's independent-check and affected-record
+rules to cover missing root kind, configuration enumeration, configuration id
+and Agent identity. Empty exports retain a completed D-EXPORT portion. Missing
+configuration enumeration does not complete R-SELECTION. Missing configuration
+id blocks both its record and selected lookup. Missing Agent identity blocks
+configuration coverage and supplied Tool membership, including in unselected
+configurations. Readable sibling checks and capability findings still run.
+
+The [diagnostic dossier](../../../docs/reviews/0009-0.1.1-diagnostic-expectations.md)
+records the unresolved aggregate dependencies for missing Agent identity,
+Instructions target/application point and Skill Tool closure. Missing Step kind
+also leaves an unresolved choice of additional-field diagnostics. These choices
+are retained, not promoted to normative requirements. Unicode report ordering
+is unchanged; the known U+E000/U+10000 comparison disagreement remains outside
+this maintenance correction.
