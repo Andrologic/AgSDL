@@ -379,6 +379,23 @@ class ComparatorTests(unittest.TestCase):
         })
         self.assertTrue(compare.observe(case, response, source))
 
+    def test_virtual_state_requires_an_observable_parent(self):
+        case, response, source = validation_fixture()
+        response["report"]["inventory"]["states"].append({
+            "input": "primary",
+            "pointer": "/runtime/configurations/99/agents/99/tools/99/selected",
+            "state": "absent",
+            "detail": "invented below a missing parent",
+        })
+        self.assertTrue(compare.observe(case, response, source))
+
+        case, response, source = lossy_fixture()
+        response["report"]["inventory"]["states"].append({
+            "input": "primary", "pointer": "/graphs", "state": "absent",
+            "detail": "invented after syntax failure",
+        })
+        self.assertTrue(compare.observe(case, response, source))
+
     def test_state_inside_opaque_slice_is_rejected(self):
         case, response, source = exchange_fixture()
         response["report"]["inventory"]["states"].append({

@@ -305,6 +305,8 @@ def validate_report(response, case, source):
         )
         virtual_missing = (
             state["state"] == "absent"
+            and parsed[state["input"]] is not None
+            and missing_child(state["pointer"], parsed[state["input"]])
             and (
                 (state["input"] in observed_inputs
                     and state["pointer"] in {"/graphs", "/runtime"})
