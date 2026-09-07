@@ -587,5 +587,108 @@ class GraphTests(unittest.TestCase):
                                     for item in findings(actual, 'G-APPROVAL', 'fail')))
 
 
+
+class PartialDocumentTests(unittest.TestCase):
+    def test_relation_semantics_survive_an_extra_member(self):
+        value = fixture()
+        relation = value['relations'][0]
+        relation['target']['id'] = 'missing-principal'
+        relation['extra'] = True
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/relations/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-REFERENCE', 'fail')})
+
+    def test_partial_agent_keeps_an_observable_minimum_failure(self):
+        value = fixture()
+        value['definitions'][0].pop('payload')
+        value['relations'].append(copy.deepcopy(value['relations'][0]))
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/definitions/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-AGENT', 'fail')})
+        self.assertFalse(any(c['rule'] == 'D-AGENT' and c['state'] == 'blocked'
+                             and {'pointer': '/definitions/0'} in c['locations']
+                             for c in actual['results'][0]['checks']))
+
+    def test_reference_uses_readable_key_and_kind_from_partial_definition(self):
+        value = fixture()
+        value['definitions'][2].pop('payload')
+        actual = read('validateD', raw(value))['report']
+        self.assertFalse(any(c['rule'] == 'D-REFERENCE' and c['state'] == 'blocked'
+                             and {'pointer': '/relations/0'} in c['locations']
+                             for c in actual['results'][0]['checks']))
+
+    def test_dependency_extra_member_does_not_block_readable_rules(self):
+        value = fixture()
+        value['dependencies'] = [{
+            'id': 'a',
+            'rootKey': {'scope': 'dep', 'id': 'root', 'version': '1'},
+            'status': 'external',
+            'requiredFor': [],
+            'sha256': None,
+            'extra': True,
+        }]
+        actual = read('validateD', raw(value))['report']
+        checks = actual['results'][0]['checks']
+        for rule in ('D-DEPENDENCY', 'D-INTEGRITY'):
+            self.assertTrue(any(c['rule'] == rule and c['state'] == 'completed'
+                                for c in checks))
+            self.assertFalse(any(c['rule'] == rule and c['state'] == 'blocked'
+                                 and {'pointer': '/dependencies/0'} in c['locations']
+                                 for c in checks))
+
+    def test_readable_definition_identity_and_owner(self):
+        value = fixture()
+        original = value['definitions'][0]
+        value['definitions'].append({'key': copy.deepcopy(original['key']),
+                                     'owner': dict(value['root']['key'], id='wrong')})
+        actual = read('validateD', raw(value))['report']
+        path = '/definitions/' + str(len(value['definitions']) - 1)
+        for rule in ('D-IDENTITY', 'D-OWNER'):
+            self.assertIn(path, {f['location']['pointer'] for f in findings(actual, rule, 'fail')})
+
+    def test_partial_dependency_ids_do_not_invent_undeclared_annexes(self):
+        for dependencies, duplicate in (([{'id': 'a'}], False),
+                                        ([{'id': 'a'}, {'id': 'a'}], True),
+                                        ([{}], False)):
+            with self.subTest(dependencies=dependencies):
+                value = fixture()
+                value['dependencies'] = dependencies
+                actual = read('validateD', raw(value), {'a': b'bytes'})['report']
+                failures = findings(actual, 'D-DEPENDENCY', 'fail')
+                self.assertFalse(any(f['location'] == {'pointer': ''} for f in failures))
+                self.assertEqual(any(f['location'] == {'pointer': '/dependencies/1'}
+                                     for f in failures), duplicate)
+
+    def test_partial_dependency_keeps_independent_checks(self):
+        dep = {'id': 'a', 'rootKey': {'scope': 'dep', 'id': 'root', 'version': '1'},
+               'status': 'included', 'requiredFor': ['validateD'], 'sha256': None}
+        for field in ('id', 'rootKey', 'requiredFor', 'status', 'sha256'):
+            with self.subTest(field=field):
+                value = fixture()
+                first = copy.deepcopy(dep)
+                later = copy.deepcopy(dep)
+                later['requiredFor'] = ['validateD', 'validateD', None]
+                later['status'] = 'external'
+                later.pop(field)
+                value['dependencies'] = [first, later]
+                actual = read('validateD', raw(value), {'a': b'bytes'})['report']
+                self.assertIn('/dependencies/1', {f['location']['pointer']
+                              for f in findings(actual, 'D-DEPENDENCY', 'fail')})
+                if field not in ('sha256', 'requiredFor'):
+                    self.assertIn('/dependencies/1', {f['location']['pointer']
+                                  for f in findings(actual, 'D-INTEGRITY', 'inconclusive')})
+        value = fixture()
+        value['dependencies'] = [dict(dep, sha256='0' * 64)]
+        value['dependencies'][0].pop('rootKey')
+        actual = read('validateD', raw(value), {'a': b'bytes'})['report']
+        self.assertTrue(findings(actual, 'D-INTEGRITY', 'fail'))
+
+    def test_agent_excess_survives_an_unreadable_relation(self):
+        value = fixture()
+        value['relations'].extend([copy.deepcopy(value['relations'][0]), {}])
+        actual = read('validateD', raw(value))['report']
+        self.assertIn('/definitions/0', {f['location']['pointer']
+                      for f in findings(actual, 'D-AGENT', 'fail')})
+
 if __name__ == '__main__':
     unittest.main()
