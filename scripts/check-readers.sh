@@ -2,10 +2,10 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: $0 [--compare [candidate-2|modular] | --help]"
-  echo "Default: run the Python and Node.js tests for both experimental editions."
-  echo "--compare: compare both full corpora and remove temporary reports."
-  echo "--compare candidate-2|modular: compare only the selected corpus."
+  echo "Usage: $0 [--compare [candidate-2|modular|official|0.1.0] | --help]"
+  echo "Default: run the Python and Node.js tests for both experimental editions and 0.1.0."
+  echo "--compare: compare all three corpora and remove temporary reports."
+  echo "--compare candidate-2|modular|official|0.1.0: compare only the selected corpus."
 }
 
 if [[ $# -gt 2 ]]; then
@@ -25,7 +25,7 @@ case "${1:-}" in
     reader_mode=compare
     comparison_scope=${2:-all}
     case "$comparison_scope" in
-      all|candidate-2|modular) ;;
+      all|candidate-2|modular|official|0.1.0) ;;
       *) usage >&2; exit 2 ;;
     esac
     ;;
@@ -40,7 +40,7 @@ esac
 
 for reader_tool in python3 node; do
   if ! command -v "$reader_tool" >/dev/null 2>&1; then
-    echo "$reader_tool is required for experimental reader checks." >&2
+    echo "$reader_tool is required for reader checks." >&2
     exit 2
   fi
 done
@@ -51,8 +51,10 @@ export PYTHONDONTWRITEBYTECODE=1
 if [[ $reader_mode == tests ]]; then
   python3 -m unittest discover -s experimental/readers/python -v
   python3 -m unittest discover -s experimental/modular-candidate-1/readers/python -v
+  python3 -m unittest discover -s tooling/readers/python -v
   node --test experimental/readers/javascript/reader.test.mjs
   node --test experimental/modular-candidate-1/readers/javascript/reader.test.mjs
+  node --test tooling/readers/javascript/reader.test.mjs
   exit 0
 fi
 
@@ -92,6 +94,20 @@ if [[ $comparison_scope == all || $comparison_scope == modular ]]; then
     --reports "$modular_reports" || modular_exit=$?
   if [[ $modular_exit -ne 0 && $comparison_exit -eq 0 ]]; then
     comparison_exit=$modular_exit
+  fi
+fi
+
+if [[ $comparison_scope == all || $comparison_scope == official || $comparison_scope == 0.1.0 ]]; then
+  official_reports="$reader_reports/official-0.1.0"
+  mkdir "$official_reports"
+  echo "Comparing the official 0.1.0 corpus."
+  official_exit=0
+  python3 conformance/compare-readers.py \
+    --reader '["python", "python3", "tooling/readers/python/cli.py"]' \
+    --reader '["javascript", "node", "tooling/readers/javascript/cli.mjs"]' \
+    --reports "$official_reports" || official_exit=$?
+  if [[ $official_exit -ne 0 && $comparison_exit -eq 0 ]]; then
+    comparison_exit=$official_exit
   fi
 fi
 

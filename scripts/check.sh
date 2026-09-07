@@ -58,6 +58,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 experimental/modular-candidate-1/test_check_fi
 PYTHONDONTWRITEBYTECODE=1 python3 experimental/modular-candidate-1/test_compare_readers.py
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experimental/readers/python -v
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s experimental/modular-candidate-1/readers/python -v
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tooling/readers/python -v
 PYTHONDONTWRITEBYTECODE=1 python3 conformance/check-corpus.py
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
   conformance/test_build_corpus.py conformance/test_check_corpus.py \

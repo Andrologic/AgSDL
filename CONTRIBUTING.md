@@ -1,7 +1,9 @@
 # Contributing to AgSDL
 
-AgSDL is still defining its problem and vocabulary. Early contributions should
-reduce ambiguity rather than add syntax quickly.
+AgSDL has a locally adopted, bounded 0.1.0 first-draft contract and continues to
+define the broader problem and vocabulary. Contributions should reduce ambiguity
+and preserve the status of normative, proposed, experimental and illustrative
+material.
 
 ## Repository boundary
 
@@ -59,27 +61,40 @@ not check reference-style or HTML links, heading anchors, remote URLs, indented
 code blocks, multiline code spans, or destinations with nested parentheses.
 
 
-### Experimental reader commands
+### Reader commands
 
-`./scripts/check.sh` also runs the Python reader tests for candidate-2 and the
-modular candidate. Node.js is not required for that command. From the repository
-root, run all four Python and JavaScript reader suites with:
+`./scripts/check.sh` runs all three Python reader suites and the corpus checks.
+Node.js is not required for that command. From the repository root, run the six
+Python and JavaScript reader suites with:
 
 ```sh
 ./scripts/check-readers.sh
 ```
 
 This separate command requires Python 3 and Node.js with `node --test` support.
-It uses their standard libraries and installs no packages. For both full corpus
-comparisons, which additionally require Python 3.9 or newer, run:
+It uses their standard libraries and installs no packages. To compare all three
+corpora, which additionally requires Python 3.9 or newer, run:
 
 ```sh
 ./scripts/check-readers.sh --compare
 ```
 
-The comparison mode runs candidate-2 and modular candidate-1 in separate
-temporary report directories. Use `--compare candidate-2` or `--compare modular`
-to select one corpus. The command prints each summary, preserves a nonzero
-comparator exit and removes its temporary reports on exit. It does not run the
-reader test suites. To retain raw reports, use the explicit commands in the
-[experimental guide](experimental/README.md#retain-comparison-reports).
+The comparison mode covers candidate-2, modular candidate-1 and official 0.1.0
+in separate temporary report directories. Select one with `--compare
+candidate-2`, `--compare modular`, `--compare official` or `--compare 0.1.0`.
+The command prints each summary, preserves a nonzero comparator exit and removes
+its temporary reports on exit. It does not run the reader test suites. Use the
+[experimental guide](experimental/README.md#retain-comparison-reports) or
+[official corpus guide](conformance/README.md#reader-comparison) to retain raw
+reports.
+
+Run the official focused suites directly with:
+
+```sh
+node --test tooling/readers/javascript/reader.test.mjs
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover \
+  -s tooling/readers/python -v
+```
+
+See the [tooling guide](tooling/README.md) for request preparation and evidence
+limits.

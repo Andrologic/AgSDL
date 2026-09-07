@@ -7,16 +7,19 @@ integrated comparison at `90997464428ce7c3072179e1053cf2934fb80fef` has no
 blocked case or mismatch. The candidate-2 experiment below retains its own
 proposal 0012 marker, readers, 121-case corpus and comparison history.
 
-Neither edition is adopted AgSDL. A passing comparison shows agreement on its
-bounded corpus and report assertions. It does not prove runtime behavior,
+Neither experimental edition is the adopted AgSDL edition. The official,
+locally adopted 0.1.0 contract lives in [`spec/`](../spec/README.md) under the
+`agsdl-0.1.0` marker. A passing experimental comparison shows agreement only on
+its bounded corpus and report assertions. It does not prove runtime behavior,
 engine support, evidence authenticity or interoperability.
 
 ## Try candidate-2
 
 `proposal-0012-candidate-2` is an implementable experiment described in
 [proposal 0012](../proposals/0012-minimal-0.1.0-contract.md), not an adopted
-AgSDL specification. Version 0.0.2 is the published conceptual pre-draft;
-0.1.0 has not been delivered. The Python and JavaScript readers are implemented
+AgSDL specification. Version 0.0.2 is the latest published conceptual pre-draft;
+0.1.0 is locally ready for its bounded first-draft scope but remains unpublished
+and unstable. The Python and JavaScript readers are implemented
 and reviewed within their documented scope. Their full report comparison passes all 121 corpus cases at the
 [recorded source revision](../docs/reviews/0006-candidate-0.1.0-adoption.md#final-experimental-comparison),
 with no blocked cases or mismatches. That evidence does not adopt the candidate

@@ -10,6 +10,10 @@ const fixture = name => readFileSync(new URL(
   `../../../experimental/modular-candidate-1/fixtures/${name}`,
   import.meta.url,
 ));
+const conformanceFixture = name => readFileSync(new URL(
+  `../../../conformance/fixtures/candidate2/${name}`,
+  import.meta.url,
+));
 const officialDocument = (name = 'modular-system.json') => {
   const document = JSON.parse(fixture(name));
   document.contract = contract;
@@ -76,6 +80,33 @@ test('official validation rejects every foreign document marker', () => {
       if (operation !== 'validateD') assert.notEqual(result(outcome, operation === 'validateR' ? 'R' : 'G').verdict, 'pass');
     }
   }
+});
+
+test('definitive Agent cardinality failures survive an unreadable relation', () => {
+  for (const distinctTarget of [false, true]) {
+    const document = officialDocument();
+    const secondActsAs = structuredClone(document.relations[0]);
+    if (distinctTarget) secondActsAs.target = structuredClone(document.definitions[3].key);
+    document.relations.push(secondActsAs, {});
+
+    for (const operation of ['validateD', 'validateG', 'resolveG', 'validateR']) {
+      const outcome = execute(operation, document);
+      assert.ok(hasFinding(outcome, 'D', 'P-SHAPE', '/relations/9'));
+      assert.ok(hasFinding(outcome, 'D', 'D-AGENT', '/definitions/0'));
+      if (distinctTarget) {
+        assert.equal(hasFinding(outcome, 'D', 'D-RELATION', '/relations/8'), false);
+      } else {
+        assert.ok(hasFinding(outcome, 'D', 'D-RELATION', '/relations/8'));
+      }
+    }
+  }
+});
+
+test('only a typed Interface exposure satisfies the official Agent minimum', () => {
+  const outcome = execute('validateD', conformanceFixture('relation-kind-contract.json'));
+  assert.ok(hasFinding(outcome, 'D', 'D-REFERENCE', '/relations/1'));
+  assert.ok(hasFinding(outcome, 'D', 'D-RELATION', '/relations/1'));
+  assert.ok(hasFinding(outcome, 'D', 'D-AGENT', '/definitions/0'));
 });
 
 test('official exchange preserves foreign-edition bytes without relabelling them', () => {
