@@ -1,5 +1,6 @@
 """Focused tests for the official AgSDL 0.1.0 Python reader."""
 import base64
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -181,6 +182,26 @@ class ByteAndAnnexTests(unittest.TestCase):
             any(result["input"] == "annex/dep" for result in report["results"])
         )
 
+    def test_failed_annex_d_blocks_the_primary_g_prerequisite(self):
+        annex = json.loads(
+            (HISTORICAL_FIXTURES / "annex-interface-operation--dep.json").read_bytes()
+        )
+        annex_source = encode(annex)
+        primary = official_fixture("annex-interface-operation.json")
+        dependency = next(
+            item for item in primary["dependencies"] if item["id"] == "dep"
+        )
+        dependency["sha256"] = hashlib.sha256(annex_source).hexdigest()
+        report = read("resolveG", encode(primary), {"dep": annex_source})["report"]
+        primary_g = report["results"][-1]
+        self.assertEqual(primary_g["verdict"], "fail")
+        self.assertTrue(
+            any(
+                item["rule"] == "P-PREREQUISITE" and item["state"] == "blocked"
+                for item in primary_g["checks"]
+            )
+        )
+
     def test_exchange_preserves_primary_and_annex_bytes(self):
         annex = b"arbitrary annex bytes\x00\xff"
         primary = minimal_document()
@@ -202,6 +223,94 @@ class ByteAndAnnexTests(unittest.TestCase):
 
 
 class GraphAndRuntimeTests(unittest.TestCase):
+    def test_duplicate_binding_findings_point_to_the_later_binding(self):
+        document = official_fixture("modular-system.json")
+        bindings = document["runtime"]["configurations"][0]["agents"]
+        bindings.append(copy.deepcopy(bindings[0]))
+        report = read("validateR", encode(document))["report"]
+        locations = {
+            item["location"]["pointer"]
+            for item in findings(report, "R-BINDING", "fail")
+            if "missing or duplicate AgentBinding" in item["details"]
+        }
+        self.assertIn("/runtime/configurations/0/agents/2", locations)
+        self.assertNotIn("/runtime/configurations/0", locations)
+
+        document = official_fixture("modular-system.json")
+        tools = document["runtime"]["configurations"][0]["agents"][0]["tools"]
+        tools.append(copy.deepcopy(tools[0]))
+        report = read("validateR", encode(document))["report"]
+        locations = {
+            item["location"]["pointer"]
+            for item in findings(report, "R-TOOL", "fail")
+            if "missing or duplicate required ToolBinding" in item["details"]
+        }
+        self.assertIn("/runtime/configurations/0/agents/0/tools/1", locations)
+        self.assertNotIn("/runtime/configurations/0/agents/0", locations)
+
+    def test_missing_and_duplicate_agent_locations_are_both_retained(self):
+        document = official_fixture("modular-system.json")
+        bindings = document["runtime"]["configurations"][0]["agents"]
+        bindings.pop(1)
+        bindings.append(copy.deepcopy(bindings[0]))
+        report = read("validateR", encode(document))["report"]
+        locations = {
+            item["location"]["pointer"]
+            for item in findings(report, "R-BINDING", "fail")
+            if "missing or duplicate AgentBinding" in item["details"]
+        }
+        self.assertIn("/runtime/configurations/0", locations)
+        self.assertIn("/runtime/configurations/0/agents/1", locations)
+
+    def test_external_tool_states_stay_on_ref_fields(self):
+        document = official_fixture("modular-system.json")
+        tool_ref = {
+            "dependency": "external-tools",
+            "key": {"scope": "external", "id": "tool", "version": "1"},
+        }
+        document["dependencies"].append(
+            {
+                "id": "external-tools",
+                "rootKey": {"scope": "external", "id": "package", "version": "1"},
+                "status": "external",
+                "requiredFor": [],
+                "sha256": None,
+            }
+        )
+        document["relations"].append(
+            {
+                "source": copy.deepcopy(document["definitions"][0]["key"]),
+                "relation": "uses",
+                "target": copy.deepcopy(tool_ref),
+                "expectedKind": "Tool",
+            }
+        )
+        expected_ref_paths = set()
+        for configuration_index, configuration in enumerate(
+            document["runtime"]["configurations"]
+        ):
+            for binding_index, binding in enumerate(configuration["agents"]):
+                if binding["agent"]["id"] != "agent-a":
+                    continue
+                tool_index = len(binding["tools"])
+                binding["tools"].append(
+                    {"tool": copy.deepcopy(tool_ref), "choices": []}
+                )
+                expected_ref_paths.add(
+                    f"/runtime/configurations/{configuration_index}/agents/"
+                    f"{binding_index}/tools/{tool_index}/tool"
+                )
+        report = read("validateR", encode(document))["report"]
+        external_states = {
+            item["pointer"]
+            for item in report["inventory"]["states"]
+            if item["detail"] == "external target excluded"
+        }
+        self.assertTrue(expected_ref_paths <= external_states)
+        self.assertFalse(
+            any(path.rsplit("/tools/", 1)[0] in external_states for path in expected_ref_paths)
+        )
+
     def test_g_and_r_keep_their_interpretation_boundaries(self):
         graph_document = official_fixture("modular-system.json")
         graph_document["runtime"] = 17

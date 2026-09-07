@@ -12,6 +12,199 @@ _core = load("_agsdl_010_rule_engine", "reader.py")
 _core.Result.find.__defaults__ = ("", "official rule violation", "fail", None)
 
 
+def _remove_finding_detail(result, rule, path, detail, outcome="fail"):
+    identifier = (rule, ("pointer", path), outcome)
+    details = result.findings.get(identifier)
+    if not details or detail not in details:
+        return False
+    details.remove(detail)
+    if not details:
+        del result.findings[identifier]
+    return True
+
+
+def _relations(document, agent, relation_name, expected_kind):
+    value = document.obj.get("relations")
+    if not isinstance(value, list) or not good("Ref", agent):
+        return []
+    return [
+        relation["target"]
+        for relation in value
+        if good("Relation", relation)
+        and relation["source"] == agent
+        and relation["relation"] == relation_name
+        and relation["expectedKind"] == expected_kind
+    ]
+
+
+def _required_tools(document, agent):
+    required = list(_relations(document, agent, "uses", "Tool"))
+    queue = _relations(document, agent, "directedBy", "Instructions")
+    queue += _relations(document, agent, "directedBy", "Skill")
+    visited = set()
+    while queue:
+        ref = queue.pop(0)
+        token = _core.frozen(ref)
+        if token in visited:
+            continue
+        visited.add(token)
+        if not good("Ref", ref) or "dependency" in ref:
+            continue
+        identity = _core.key(ref)
+        if identity in document.ambiguous or identity in document.invalid:
+            continue
+        found = document.index.get(identity)
+        if found is None or found[0].get("kind") not in ("Instructions", "Skill"):
+            continue
+        definition = found[0]
+        if definition["kind"] != "Skill" or not isinstance(definition.get("payload"), dict):
+            continue
+        payload = definition["payload"]
+        dependencies = payload.get("dependencies")
+        if isinstance(dependencies, list):
+            queue.extend(item for item in dependencies if good("Ref", item))
+        tools = payload.get("tools")
+        if isinstance(tools, list):
+            required.extend(item for item in tools if good("Ref", item))
+    unique = {}
+    for ref in required:
+        unique[_core.frozen(ref)] = ref
+    return unique
+
+
+def _correct_binding_locations(document, result):
+    """Apply official R duplicate locations without changing the reused engine."""
+    runtime = document.obj.get("runtime")
+    graphs = document.obj.get("graphs")
+    if not isinstance(runtime, dict) or not isinstance(runtime.get("configurations"), list):
+        return
+    graph_records = graphs if isinstance(graphs, list) else []
+    for configuration_index, configuration in enumerate(runtime["configurations"]):
+        if not isinstance(configuration, dict):
+            continue
+        configuration_path = f"/runtime/configurations/{configuration_index}"
+        graph_key = configuration.get("graph")
+        matches = [
+            graph
+            for graph in graph_records
+            if isinstance(graph, dict)
+            and good("Key", graph.get("definition"))
+            and good("Key", graph_key)
+            and graph["definition"] == graph_key
+        ]
+        required_agents = {}
+        if len(matches) == 1 and isinstance(matches[0].get("steps"), list):
+            projection_readable = True
+            for step in matches[0]["steps"]:
+                if (
+                    not isinstance(step, dict)
+                    or step.get("kind") not in ("invoke", "condition", "approval", "end")
+                ):
+                    projection_readable = False
+                    break
+                if step["kind"] == "invoke":
+                    if not good("Ref", step.get("agent")):
+                        projection_readable = False
+                        break
+                    required_agents[_core.frozen(step["agent"])] = step["agent"]
+            if not projection_readable:
+                required_agents = {}
+
+        bindings = configuration.get("agents")
+        if not isinstance(bindings, list):
+            continue
+        binding_groups = {}
+        for binding_index, binding in enumerate(bindings):
+            if not isinstance(binding, dict) or not good("Ref", binding.get("agent")):
+                continue
+            token = _core.frozen(binding["agent"])
+            binding_groups.setdefault(token, []).append(
+                (binding, f"{configuration_path}/agents/{binding_index}")
+            )
+        duplicate_agent_groups = [
+            group
+            for token, group in binding_groups.items()
+            if token in required_agents and len(group) > 1
+        ]
+        parent_detail = "missing or duplicate AgentBinding"
+        parent_has_finding = any(
+            parent_detail in details
+            for (rule, location, outcome), details in result.findings.items()
+            if rule == "R-BINDING"
+            and location == ("pointer", configuration_path)
+            and outcome == "fail"
+        )
+        if parent_has_finding and duplicate_agent_groups:
+            for group in duplicate_agent_groups:
+                for _, binding_path in group[1:]:
+                    result.find("R-BINDING", binding_path, parent_detail)
+            missing_agent = any(token not in binding_groups for token in required_agents)
+            if not missing_agent:
+                _remove_finding_detail(
+                    result,
+                    "R-BINDING",
+                    configuration_path,
+                    parent_detail,
+                )
+
+        for binding, binding_path in [
+            item for group in binding_groups.values() for item in group
+        ]:
+            tools = binding.get("tools")
+            if not isinstance(tools, list):
+                continue
+            required_tools = _required_tools(document, binding["agent"])
+            tool_groups = {}
+            tool_catalog_complete = True
+            for tool_index, tool in enumerate(tools):
+                if not isinstance(tool, dict) or not good("Ref", tool.get("tool")):
+                    tool_catalog_complete = False
+                    continue
+                token = _core.frozen(tool["tool"])
+                tool_groups.setdefault(token, []).append(
+                    f"{binding_path}/tools/{tool_index}"
+                )
+            duplicate_tool_groups = [
+                group
+                for token, group in tool_groups.items()
+                if token in required_tools and len(group) > 1
+            ]
+            tool_detail = "missing or duplicate required ToolBinding"
+            parent_has_tool_finding = any(
+                tool_detail in details
+                for (rule, location, outcome), details in result.findings.items()
+                if rule == "R-TOOL"
+                and location == ("pointer", binding_path)
+                and outcome == "fail"
+            )
+            if parent_has_tool_finding and duplicate_tool_groups:
+                for group in duplicate_tool_groups:
+                    for tool_path in group[1:]:
+                        result.find("R-TOOL", tool_path, tool_detail)
+                missing_tool = tool_catalog_complete and any(
+                    token not in tool_groups for token in required_tools
+                )
+                if not missing_tool:
+                    _remove_finding_detail(
+                        result,
+                        "R-TOOL",
+                        binding_path,
+                        tool_detail,
+                    )
+
+
+def _agent_binding_paths(document):
+    runtime = document.obj.get("runtime")
+    if not isinstance(runtime, dict) or not isinstance(runtime.get("configurations"), list):
+        return set()
+    return {
+        f"/runtime/configurations/{configuration_index}/agents/{binding_index}"
+        for configuration_index, configuration in enumerate(runtime["configurations"])
+        if isinstance(configuration, dict) and isinstance(configuration.get("agents"), list)
+        for binding_index, _ in enumerate(configuration["agents"])
+    }
+
+
 def _validate_losses(losses):
     if losses is None:
         return
@@ -110,6 +303,7 @@ def read(operation, primary, annexes=None, losses=None):
         results.append(prerequisite)
         if operation == "validateR":
             result = _core.validate_r(document)
+            _correct_binding_locations(document, result)
             result.parents.append(prerequisite)
             if prerequisite.verdict() != "pass":
                 result.block("P-PREREQUISITE", whole=True)
@@ -128,12 +322,24 @@ def read(operation, primary, annexes=None, losses=None):
                 for _, value in sorted(graph.loaded.items())
                 if value is not None
             ]
+            if any(value.d.verdict() != "pass" for value in annex_documents):
+                result.block("P-PREREQUISITE", whole=True)
             results += [value.d for value in annex_documents]
             results += [value for _, value in sorted(graph.annex_results.items())]
             results.append(result)
             extra_states = graph.extra_states
 
     states, slices = _core.inventory(document, operation, extra_states)
+    if operation == "validateR":
+        binding_paths = _agent_binding_paths(document)
+        states = [
+            state
+            for state in states
+            if not (
+                state["pointer"] in binding_paths
+                and state["detail"] == "external target excluded"
+            )
+        ]
     for annex_document in annex_documents:
         annex_states, annex_slices = _core.inventory(
             annex_document,
