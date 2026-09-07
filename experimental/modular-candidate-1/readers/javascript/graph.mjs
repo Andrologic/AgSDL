@@ -2,7 +2,8 @@ import * as S from './shape.mjs';
 import {Result,context,validateD,rows,key,equal,ext,declaration,modes,lookup,localIndexComplete,cyclic,canonical,hash,contract} from './core.mjs';
 
 const RULES=['P-SHAPE','X-MODE','G-TARGET','G-PATH','G-DATA','G-APPROVAL'];
-export function validateG(primary,operation,inventory){
+export function validateG(primary,operation,inventory,edition={}){
+  const expectedContract=edition.contract??contract,validateDocument=edition.validateD??validateD;
   const resolve=operation==='resolveG',phase=resolve?'resolved-graph':'unresolved-document';
   const r=new Result(primary.id,'G',phase,[...RULES,...(resolve?['G-RESOLVE']:[])]);r.boundary();r.prerequisites=[primary.d];if(primary.d.verdict!=='pass')r.mark('P-PREREQUISITE','blocked','');
   const contexts=[],byId=new Map(),annexResults=new Map(),selected=new Set(),selections=[];
@@ -13,8 +14,8 @@ export function validateG(primary,operation,inventory){
     if(!S.valid(S.Dependency.fields.status,d.status)||!S.valid(S.Key,d.rootKey)){r.mark('G-RESOLVE','blocked',p);return null;}
     if(d.status!=='included'||!Object.hasOwn(primary.annexes,id)){r.find('G-RESOLVE',p,'Required annex bytes missing');return null;}
     if(!S.valid(S.Dependency.fields.sha256,d.sha256))r.mark('G-RESOLVE','blocked',p);else if(d.sha256===null)r.find('G-RESOLVE',p,'Required annex integrity unknown','inconclusive');else if(hash(primary.annexes[id])!==d.sha256)r.find('G-RESOLVE',p,'Required annex hash mismatch');
-    const ctx=context(`annex/${id}`,primary.annexes[id]);validateD(ctx);contexts.push(ctx);byId.set(id,ctx);r.prerequisites.push(ctx.d);
-    if(ctx.error||!S.valid(S.Root,ctx.tree?.root)||ctx.tree.contract!==contract||!equal(ctx.tree.root.key,d.rootKey))r.find('G-RESOLVE',p,'Invalid annex content or root key');if(ctx.d.verdict!=='pass')r.mark('P-PREREQUISITE','blocked','');return ctx;
+    const ctx=context(`annex/${id}`,primary.annexes[id]);validateDocument(ctx);contexts.push(ctx);byId.set(id,ctx);r.prerequisites.push(ctx.d);
+    if(ctx.error||!S.valid(S.Root,ctx.tree?.root)||ctx.tree.contract!==expectedContract||!equal(ctx.tree.root.key,d.rootKey))r.find('G-RESOLVE',p,'Invalid annex content or root key');if(ctx.d.verdict!=='pass')r.mark('P-PREREQUISITE','blocked','');return ctx;
   }
   if(resolve){
     if(Array.isArray(primary.tree?.dependencies)&&primary.tree.dependencies.every(d=>S.valid(S.Dependency.fields.requiredFor,d?.requiredFor)))r.mark('G-RESOLVE');else r.mark('G-RESOLVE','blocked',S.has(primary.tree,'dependencies')?'/dependencies':'');
