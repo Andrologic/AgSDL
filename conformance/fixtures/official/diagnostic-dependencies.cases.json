@@ -1,0 +1,1049 @@
+[
+  {
+    "name": "official-missing-root-key",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-root-key.json",
+      "sha256": "4add97921b050fb3c477366682b99d0ee367b27fbb26c2658dc691ded1948e88"
+    },
+    "annexes": {},
+    "operation": "validateD",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      }
+    ],
+    "coverage": [
+      "D-EXPORT:positive",
+      "P-SHAPE:negative"
+    ],
+    "scenarios": [
+      "missing-root-key"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "Document",
+        "input": "primary",
+        "pointer": "",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/root"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "rule": "D-EXPORT",
+          "state": "completed",
+          "locations": []
+        }
+      ],
+      "states": [],
+      "absentStates": [],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  },
+  {
+    "name": "official-missing-root-kind",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-root-kind.json",
+      "sha256": "c13bfafc72ef78083a26a2be7d6ee0b96a2ff3ec86ad59d7cf847a8f756fe680"
+    },
+    "annexes": {},
+    "operation": "validateD",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      }
+    ],
+    "coverage": [
+      "D-EXPORT:blocked",
+      "D-EXPORT:positive",
+      "P-SHAPE:negative"
+    ],
+    "scenarios": [
+      "missing-root-kind"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "Document",
+        "input": "primary",
+        "pointer": "",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "D",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/root"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "rule": "D-EXPORT",
+          "state": "completed",
+          "locations": []
+        },
+        {
+          "input": "primary",
+          "unit": "D",
+          "rule": "D-EXPORT",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/exports"
+            }
+          ]
+        }
+      ],
+      "states": [],
+      "absentStates": [],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  },
+  {
+    "name": "official-missing-configurations",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-configurations.json",
+      "sha256": "ff9d9fc0c9024d847fce70610938f98885834ddacdb54f8546d8f97d653a3126"
+    },
+    "annexes": {},
+    "operation": "validateR",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      },
+      {
+        "document": "../../spec/runtime.md",
+        "section": "Declared compatibility, not readiness"
+      },
+      {
+        "document": "../../spec/reports.md",
+        "section": "Runtime rule execution"
+      }
+    ],
+    "coverage": [
+      "P-SHAPE:negative",
+      "R-BINDING:blocked",
+      "R-COMPATIBILITY:blocked",
+      "R-CONTENT:blocked",
+      "R-SELECTION:blocked",
+      "R-TOOL:blocked"
+    ],
+    "scenarios": [
+      "missing-configurations"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "Document",
+        "input": "primary",
+        "pointer": "",
+        "valid": true
+      },
+      {
+        "entry": "RuntimeDeclaration",
+        "input": "primary",
+        "pointer": "/runtime",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "pass"
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/runtime"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-SELECTION",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/runtime"
+            }
+          ]
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-BINDING",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/runtime"
+            }
+          ]
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-TOOL",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/runtime"
+            }
+          ]
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-CONTENT",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/runtime"
+            }
+          ]
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-COMPATIBILITY",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/runtime"
+            }
+          ]
+        }
+      ],
+      "states": [],
+      "absentStates": [
+        {
+          "input": "primary",
+          "pointerPrefix": "/runtime/"
+        }
+      ],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  },
+  {
+    "name": "official-missing-configuration-id",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-configuration-id.json",
+      "sha256": "ceebdec4e487f96b3950353b6d277d6e4a5bdc9fd6e5d905e8137ec4dc84c4e1"
+    },
+    "annexes": {},
+    "operation": "validateR",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      },
+      {
+        "document": "../../spec/runtime.md",
+        "section": "Declared compatibility, not readiness"
+      },
+      {
+        "document": "../../spec/reports.md",
+        "section": "Runtime rule execution"
+      }
+    ],
+    "coverage": [
+      "P-SHAPE:negative",
+      "R-SELECTION:blocked",
+      "R-SELECTION:positive"
+    ],
+    "scenarios": [
+      "missing-configuration-id"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "RuntimeDeclaration",
+        "input": "primary",
+        "pointer": "/runtime",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "pass"
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/runtime/configurations/0"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-SELECTION",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/runtime"
+            },
+            {
+              "pointer": "/runtime/configurations/0"
+            }
+          ]
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-SELECTION",
+          "state": "completed",
+          "locations": []
+        }
+      ],
+      "states": [],
+      "absentStates": [],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  },
+  {
+    "name": "official-missing-agents",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-agents.json",
+      "sha256": "aefba6ab1361e3cfd1af79b5023682abd6960378b951dc952bbcfd6c02b04cba"
+    },
+    "annexes": {},
+    "operation": "validateR",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      },
+      {
+        "document": "../../spec/runtime.md",
+        "section": "Declared compatibility, not readiness"
+      },
+      {
+        "document": "../../spec/reports.md",
+        "section": "Runtime rule execution"
+      }
+    ],
+    "coverage": [
+      "P-SHAPE:negative",
+      "R-COMPATIBILITY:blocked"
+    ],
+    "scenarios": [
+      "missing-agents"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "RuntimeDeclaration",
+        "input": "primary",
+        "pointer": "/runtime",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "pass"
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/runtime/configurations/0"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-COMPATIBILITY",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/runtime/configurations/0"
+            }
+          ]
+        }
+      ],
+      "states": [],
+      "absentStates": [],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  },
+  {
+    "name": "official-missing-resources",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-resources.json",
+      "sha256": "409af3bb3c4ba30af87d6911e45a01dea709fc8dfa2eba2ff6ed1fe6dd75b0d6"
+    },
+    "annexes": {},
+    "operation": "validateG",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      },
+      {
+        "document": "../../spec/graph.md",
+        "section": "Targets, data and paths"
+      }
+    ],
+    "coverage": [
+      "G-TARGET:blocked",
+      "G-TARGET:positive",
+      "P-SHAPE:negative"
+    ],
+    "scenarios": [
+      "missing-resources"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "Graphs",
+        "input": "primary",
+        "pointer": "/graphs",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "pass"
+        },
+        {
+          "input": "primary",
+          "unit": "G",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "G",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/graphs/0/steps/0"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "G",
+          "rule": "G-TARGET",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/graphs/0/steps/0"
+            }
+          ]
+        },
+        {
+          "input": "primary",
+          "unit": "G",
+          "rule": "G-TARGET",
+          "state": "completed",
+          "locations": []
+        }
+      ],
+      "states": [],
+      "absentStates": [],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  },
+  {
+    "name": "official-missing-instructions-body",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-instructions-body.json",
+      "sha256": "44cd569578f27c2638ba9c164c43529cb43d5feb9305746488b476e744af3416"
+    },
+    "annexes": {},
+    "operation": "validateR",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      },
+      {
+        "document": "../../spec/runtime.md",
+        "section": "Declared compatibility, not readiness"
+      },
+      {
+        "document": "../../spec/reports.md",
+        "section": "Runtime rule execution"
+      }
+    ],
+    "coverage": [
+      "P-SHAPE:negative",
+      "R-COMPATIBILITY:positive",
+      "R-CONTENT:positive"
+    ],
+    "scenarios": [
+      "missing-instructions-body"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "InstructionsPayload",
+        "input": "primary",
+        "pointer": "/definitions/6/payload",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "pass"
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/definitions/6/payload"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-CONTENT",
+          "state": "completed",
+          "locations": []
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-COMPATIBILITY",
+          "state": "completed",
+          "locations": []
+        }
+      ],
+      "states": [
+        {
+          "input": "primary",
+          "pointer": "/runtime/configurations/0/agents/0",
+          "state": "unchecked",
+          "detail": "declared-supported"
+        }
+      ],
+      "absentStates": [],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  },
+  {
+    "name": "official-missing-tool-action",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-tool-action.json",
+      "sha256": "b2d8c0ec953a8bf5caaa17b2e5dc9cd551d1916c86153df05b749b3d113eeeda"
+    },
+    "annexes": {},
+    "operation": "validateR",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      },
+      {
+        "document": "../../spec/runtime.md",
+        "section": "Declared compatibility, not readiness"
+      },
+      {
+        "document": "../../spec/reports.md",
+        "section": "Runtime rule execution"
+      }
+    ],
+    "coverage": [
+      "P-SHAPE:negative",
+      "R-TOOL:blocked",
+      "R-TOOL:positive"
+    ],
+    "scenarios": [
+      "missing-tool-action"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "ToolPayload",
+        "input": "primary",
+        "pointer": "/definitions/7/payload",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "pass"
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/definitions/7/payload"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-TOOL",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/definitions/7/payload"
+            }
+          ]
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-TOOL",
+          "state": "completed",
+          "locations": []
+        }
+      ],
+      "states": [],
+      "absentStates": [],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  },
+  {
+    "name": "official-missing-tool-inputs",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-tool-inputs.json",
+      "sha256": "c6fa1b418bbd6403eeca247484e4c404d66f38700204e85e82525c48d15e05fe"
+    },
+    "annexes": {},
+    "operation": "validateR",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      },
+      {
+        "document": "../../spec/runtime.md",
+        "section": "Declared compatibility, not readiness"
+      },
+      {
+        "document": "../../spec/reports.md",
+        "section": "Runtime rule execution"
+      }
+    ],
+    "coverage": [
+      "P-SHAPE:negative",
+      "R-COMPATIBILITY:positive"
+    ],
+    "scenarios": [
+      "missing-tool-inputs"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "ToolPayload",
+        "input": "primary",
+        "pointer": "/definitions/7/payload",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "pass"
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/definitions/7/payload"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-COMPATIBILITY",
+          "state": "completed",
+          "locations": []
+        }
+      ],
+      "states": [
+        {
+          "input": "primary",
+          "pointer": "/runtime/configurations/0/agents/0/tools/0",
+          "state": "unchecked",
+          "detail": "declared-supported"
+        }
+      ],
+      "absentStates": [],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  },
+  {
+    "name": "official-missing-engine",
+    "status": "ready",
+    "primary": {
+      "path": "official/missing-engine.json",
+      "sha256": "b7bfd97f4fead7b7d08f384975f9162d1802e55acb555dbd57d0290ee78dd839"
+    },
+    "annexes": {},
+    "operation": "validateR",
+    "source": [
+      {
+        "document": "../../spec/reports.md",
+        "section": "Rule execution and exact exclusion records"
+      },
+      {
+        "document": "../../spec/document.md",
+        "section": "D: document declarations"
+      },
+      {
+        "document": "../../spec/runtime.md",
+        "section": "Declared compatibility, not readiness"
+      },
+      {
+        "document": "../../spec/reports.md",
+        "section": "Runtime rule execution"
+      }
+    ],
+    "coverage": [
+      "P-SHAPE:negative",
+      "R-COMPATIBILITY:blocked",
+      "R-COMPATIBILITY:positive"
+    ],
+    "scenarios": [
+      "missing-engine"
+    ],
+    "schemaAssertions": [
+      {
+        "entry": "RuntimeDeclaration",
+        "input": "primary",
+        "pointer": "/runtime",
+        "valid": false
+      }
+    ],
+    "expected": {
+      "results": [
+        {
+          "input": "primary",
+          "unit": "D",
+          "phase": "unresolved-document",
+          "verdict": "pass"
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "phase": "unresolved-document",
+          "verdict": "fail"
+        }
+      ],
+      "findings": {
+        "mode": "exact",
+        "items": [
+          {
+            "input": "primary",
+            "unit": "R",
+            "rule": "P-SHAPE",
+            "location": {
+              "pointer": "/runtime/configurations/0/agents/0"
+            },
+            "outcome": "fail"
+          }
+        ]
+      },
+      "checks": [
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-COMPATIBILITY",
+          "state": "blocked",
+          "locations": [
+            {
+              "pointer": "/runtime/configurations/0/agents/0"
+            }
+          ]
+        },
+        {
+          "input": "primary",
+          "unit": "R",
+          "rule": "R-COMPATIBILITY",
+          "state": "completed",
+          "locations": []
+        }
+      ],
+      "states": [
+        {
+          "input": "primary",
+          "pointer": "/runtime/configurations/0/agents/0/tools/0",
+          "state": "unchecked",
+          "detail": "declared-supported"
+        },
+        {
+          "input": "primary",
+          "pointer": "/runtime/configurations/0/agents/0/tools/0/selected",
+          "state": "declared"
+        }
+      ],
+      "absentStates": [
+        {
+          "input": "primary",
+          "pointerPrefix": "/runtime/configurations/0/agents/0/engine"
+        }
+      ],
+      "opaque": [],
+      "absentOpaque": [],
+      "preservation": "no-output"
+    },
+    "derivation": {
+      "family": "official",
+      "method": "normative-oracle"
+    }
+  }
+]
