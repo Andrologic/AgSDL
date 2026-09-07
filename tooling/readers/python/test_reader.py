@@ -275,6 +275,21 @@ class GraphAndRuntimeTests(unittest.TestCase):
         self.assertIn("/runtime/configurations/0", locations)
         self.assertIn("/runtime/configurations/0/agents/1", locations)
 
+    def test_unreadable_binding_does_not_invent_a_missing_agent(self):
+        document = official_fixture("modular-system.json")
+        bindings = document["runtime"]["configurations"][0]["agents"]
+        bindings[1] = {}
+        bindings.append(copy.deepcopy(bindings[0]))
+        report = read("validateR", encode(document))["report"]
+        locations = {
+            item["location"]["pointer"]
+            for item in findings(report, "R-BINDING", "fail")
+            if "missing or duplicate AgentBinding" in item["details"]
+        }
+        self.assertNotIn("/runtime/configurations/0", locations)
+        self.assertIn("/runtime/configurations/0/agents/2", locations)
+        self.assertTrue(checks(report, "R-BINDING", "blocked"))
+
     def test_external_tool_states_stay_on_ref_fields(self):
         document = official_fixture("modular-system.json")
         tool_ref = {

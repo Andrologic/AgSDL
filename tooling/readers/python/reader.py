@@ -114,8 +114,10 @@ def _correct_binding_locations(document, result):
         if not isinstance(bindings, list):
             continue
         binding_groups = {}
+        binding_catalog_complete = True
         for binding_index, binding in enumerate(bindings):
             if not isinstance(binding, dict) or not good("Ref", binding.get("agent")):
+                binding_catalog_complete = False
                 continue
             token = _core.frozen(binding["agent"])
             binding_groups.setdefault(token, []).append(
@@ -138,7 +140,9 @@ def _correct_binding_locations(document, result):
             for group in duplicate_agent_groups:
                 for _, binding_path in group[1:]:
                     result.find("R-BINDING", binding_path, parent_detail)
-            missing_agent = any(token not in binding_groups for token in required_agents)
+            missing_agent = binding_catalog_complete and any(
+                token not in binding_groups for token in required_agents
+            )
             if not missing_agent:
                 _remove_finding_detail(
                     result,
