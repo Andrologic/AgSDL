@@ -22,7 +22,7 @@ is not published or stable.
 
 The contract separates three declaration layers:
 
-- **Definition (D)** records the document boundary, definitions, typed
+- **Document (D)** records the document boundary, definitions, typed
   relations, dependencies, deferrals and extensions.
 - **Graph (G)** records a closed control flow of invocations, conditions,
   approval gates and terminal outcomes.
@@ -47,7 +47,7 @@ The adopted contract names seven independent operation contracts:
 | `resolveG` | Validate graph structure with directly supplied dependency annexes. |
 | `validateR` | Validate runtime declarations and declared compatibility. |
 | `exchange` | Preserve supplied bytes exactly when lossless exchange is available. |
-| `lossyExchange` | Refuse or report explicitly declared loss; this edition defines no silent conversion. |
+| `lossyExchange` | Refuse output unconditionally and inventory prospective declared losses. |
 
 Each operation emits a scoped report. A successful process exit only means that
 a response was produced. It is not a whole-document conformance, execution or
