@@ -1,9 +1,10 @@
 # Official-edition JavaScript reader
 
-This non-normative reference tool reads the adopted AgSDL 0.1.0 contract. It
-accepts documents and required `resolveG` annexes only when their marker is
-`agsdl-0.1.0`, and it emits new reports with the same official marker. Its
-Processor Edition is
+This non-normative reference tool reads the adopted AgSDL 0.1.0 contract.
+Validation operations require primary documents and required `resolveG` annexes
+to carry `agsdl-0.1.0`. `inspect` and `exchange` also accept other edition
+markers without relabelling the source bytes. All operations emit new reports
+with the official marker. The Processor Edition is
 `{"identity":"agsdl/reference-javascript-reader","version":"0.1.0"}`.
 
 The reader implements the seven operation entry points named by the
