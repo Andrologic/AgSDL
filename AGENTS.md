@@ -1,7 +1,9 @@
 # AgSDL agent instructions
 
-AgSDL has a locally ready, unpublished 0.1.0 first-draft contract. It is not a
-stable or universal release. Preserve the distinction between normative text,
+AgSDL 0.1.0 is published as a bounded first draft; 0.1.1 is in local
+preparation with contract marker `agsdl-0.1.0`. Neither is stable or universal.
+Read [release status](README.md#release-status-and-history) before stating
+publication status. Preserve the distinction between normative text,
 established decisions, proposals, examples, evidence, and open questions. Keep
 execution support outside claims made from static reader evidence.
 

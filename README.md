@@ -11,11 +11,13 @@ static reader operations. It does not define Agent execution, engine launch,
 hot reload, deployment or runtime interoperability.
 
 Start with the [0.1.0 specification](spec/README.md), then read the
-[official example](examples/0.1.0/README.md) and the
+[progressive examples](examples/0.1.0/README.md),
+[implementation walkthrough](docs/implementation-guide.md) and the
 [reader guide](tooling/README.md). The Python and JavaScript readers can inspect
-the example and validate its D, G and R units without installation. Their
-official 137-case comparison has no blocked case, failure or mismatch. Version
-0.1.0 is published for this bounded first-draft scope and remains unstable.
+the full example and validate its D, G and R units without installation. Their
+0.1.0 delivery comparison covered 137 cases without blocked cases, failures or
+mismatches. The [0.1.1 diagnostic dossier](docs/reviews/0009-0.1.1-diagnostic-expectations.md)
+records additional limits; this evidence does not establish universal agreement.
 
 ## What 0.1.0 describes
 
@@ -73,6 +75,12 @@ See the [project scope](docs/scope.md) and
 - `scripts/` contains repository and source-verification checks.
 
 ## Release status and history
+
+This section is the current publication-status reference. Version 0.1.0 is
+published as `v0.1.0`; 0.1.1 is in local preparation for documentation, corpus
+and reader maintenance. The contract marker remains `agsdl-0.1.0`. No new
+language syntax or execution feature is introduced by that maintenance scope.
+Historical decisions and reviews retain their status at the time of writing.
 
 The published `v0.0.1` and `v0.0.2` tags remain conceptual pre-drafts. Their
 proposals and examples keep the status recorded at those releases. The current

@@ -1,32 +1,58 @@
-# AgSDL 0.1.0 example
+# Progressive AgSDL examples
 
-[`general-purpose-system.json`](general-purpose-system.json) is an official,
-non-normative example of the locally adopted 0.1.0 contract. It was adapted
-from an existing conforming modular-candidate fixture instead of inventing a
-second model. The example illustrates the specification; it cannot override it.
+These complete JSON documents illustrate the published `agsdl-0.1.0` contract.
+They are non-normative. The smaller documents introduce one layer at a time;
+the existing full example supplies explicit configuration alternatives without
+copying its large runtime declaration into another file.
 
-The document contains all three declaration layers:
+| Step | Document | Relevant validation and expected Results |
+| --- | --- | --- |
+| 1 | [minimal-document.json](minimal-document.json) | `validateD`: D pass. A System root and required empty arrays; no Agent minimum applies. |
+| 2 | [single-agent.json](single-agent.json) | `validateD`: D pass. One Agent with actsAs Principal, directedBy Role and exposes Interface relations. Payloads remain opaque. |
+| 3 | [two-agent-sequence.json](two-agent-sequence.json) | `validateD`: D pass. `validateG`: D/G pass, unresolved-document. `resolveG`: D pass, G pass in resolved-graph, with no annexes. |
+| 4 | [general-purpose-system.json](general-purpose-system.json) | `validateD`: D pass. `validateG` and `resolveG`: D/G pass in their respective phases. `validateR`: D/R pass, unresolved-document. |
 
-- **Definition**: one System owns two Agents, their Principals, a multi-operation
-  Interface, Actions, a Resource, a ControlFlow, a Tool and reusable content.
-  Typed relations connect each Agent to its Principal, Interface, Tool and
-  direction.
-- **Graph**: one closed flow invokes the two Agents in sequence and routes every
-  failure to a failure terminal. The selected Interface operation, Action,
-  Principal, resources, ports and bindings are explicit at each invocation.
-- **Runtime declaration**: `portable` and `alternate` configure the same graph
-  and Agents with different explicit engine assignments. `portable` is selected.
-  Neither array order nor a single available choice acts as a default.
+For every document, `inspect` passes inventory production, `exchange` passes and
+returns the identical primary bytes, and `lossyExchange` fails with no artifacts.
+Request annexes are `{}`. D Results always use `unresolved-document`; inventory
+and exchange Results use phase null. Requesting G or R on an absent container
+also passes with the container checks excluded. This supplies no graph or runtime.
+R is absent in steps 1–3; G is absent in steps 1–2.
 
-The `example/*` engine, adapter, implementation and capability Editions are
-illustrative custom identities. Their names carry no built-in meaning or trust.
-The included claims describe declared support and use placeholder evidence
-hashes; they are not verified evidence that an engine or Tool works.
+The sequence passes `call-a.y` into `call-b.x` after `call-a` succeeds. Both
+invocations have explicit operation, Action, Principal, resources, ports and
+bindings; failures reach a failure terminal. Its Role payload supplies no
+portable executable instructions.
 
-No part of the example launches an engine, invokes a Tool, requests approval or
-executes the graph. An actual Execution would be an external occurrence pinned
-to the exact document bytes and one configuration id. The 0.1.0 contract defines
-no launch API, default engine or execution-readiness verdict.
+The full example preserves the existing two-Agent Document, sequence and reusable
+Tool/Instructions/Skill content. Unlike the smaller sequence, both calls receive
+the graph input `x`. It declares `portable` and `alternate` configurations for
+the same graph and Agents; `portable` is explicitly selected. Neither array order
+nor a single choice supplies a default. The `example/*` Editions and evidence
+hashes are illustrative assertions, not verified support. R pass excludes
+readiness and evidence assessment. The example does not execute anything.
 
-Use the [tooling guide](../../tooling/README.md) to prepare base64 requests and
-run both integrated readers.
+## Verify the examples
+
+From the repository root, run the lightweight check with Python 3 and Node.js:
+
+```sh
+python3 scripts/check-examples.py
+```
+
+It runs both existing reader CLIs on all seven operations for all four documents,
+checks Result units/phases/verdicts and exact exchanged bytes, and fails on a
+mismatched expectation. It is an example regression check, not a full-report
+comparison or semantic oracle. To also validate D, present G/R containers,
+interpreted payload shapes and emitted Reports, use an environment with
+Draft 2020-12 `jsonschema` installed:
+
+```sh
+python3 scripts/check-examples.py --jsonschema
+```
+
+No package is needed for the default check. Schemas add shape evidence only.
+The [implementation walkthrough](../../docs/implementation-guide.md) explains
+byte preservation, operation selection and diagnostics. The
+[tooling guide](../../tooling/README.md#prepare-a-request-without-installation)
+shows individual requests; replace its example path and operation as needed.
