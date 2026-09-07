@@ -12,8 +12,8 @@ that any reader implements the specification.
 
 ## Contents
 
-- `fixtures/manifest.json` pins the historical derivations, native official cases
-  and every input byte hash.
+- `fixtures/manifest.json` pins 148 cases: 137 historical derivations and 11
+  native official cases, with every input byte hash.
 - `fixtures/candidate2/` has 111 new official inputs derived from historical
   D, inspect, exchange, lossyExchange and still-applicable G mutations.
 - `fixtures/modular/` has 26 new official inputs derived from the modular cases.
@@ -165,3 +165,19 @@ The official comparator and builder use the local `report_support.py` helpers.
 These were extracted unchanged from candidate-2; the current comparator does
 not load an experimental comparator. Comparison rules, including existing sort
 behavior, are unchanged.
+
+## Current maintenance verification
+
+The 0.1.1 candidate adds ten representative diagnostic cases to the existing
+native empty-System case. [Coverage](COVERAGE.md#native-maintenance-coverage)
+explains their normative basis. Historical cases and their identities remain
+unchanged. Current results and blockers belong to the [0.1.1 release
+notes](../docs/releases/0.1.1.md), separate from the historical 0.1.0 results above.
+
+The [full verification command](../CONTRIBUTING.md#full-local-and-ci-verification)
+retains all three comparisons and checks all official report files against
+Draft 2020-12. `scripts/check-report-schemas.py` requires a complete unblocked
+summary and the exact expected response file set, so missing reports cannot
+silently reduce the schema-check sample. It also checks reports from a completed
+comparison with semantic differences; the comparator separately keeps those
+differences fatal to the full check.

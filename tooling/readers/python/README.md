@@ -3,7 +3,7 @@
 This directory implements the seven static operations defined by the adopted
 [AgSDL 0.1.0 specification](../../../spec/README.md). It emits reports with
 `contract:"agsdl-0.1.0"` and processor Edition
-`agsdl-reference/python-reader` version `0.1.0`.
+`agsdl-reference/python-reader` version `0.1.1`.
 
 The implemented feature Editions are:
 

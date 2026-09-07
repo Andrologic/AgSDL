@@ -5,7 +5,7 @@ Validation operations require primary documents and required `resolveG` annexes
 to carry `agsdl-0.1.0`. `inspect` and `exchange` also accept other edition
 markers without relabelling the source bytes. All operations emit new reports
 with the official marker. The Processor Edition is
-`{"identity":"agsdl/reference-javascript-reader","version":"0.1.0"}`.
+`{"identity":"agsdl/reference-javascript-reader","version":"0.1.1"}`.
 
 The reader implements the seven operation entry points named by the
 specification:
@@ -71,7 +71,7 @@ git diff --check
 ```
 
 The independent Python reader and official corpus are integrated. The final
-local comparison covers all 137 official cases without a blocked case, failure
+0.1.0 delivery comparison covered all 137 official cases without a blocked case, failure
 or mismatch. The focused and retained regression suites establish additional
 local boundaries, but none of these checks proves exhaustive correctness,
 execution support or interoperability.

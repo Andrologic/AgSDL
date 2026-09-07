@@ -698,5 +698,5 @@ export function cyclic(edges) {
 
 export const processor = Object.freeze({
   identity: 'agsdl/reference-javascript-reader',
-  version: '0.1.0',
+  version: '0.1.1',
 });
