@@ -53,6 +53,7 @@ if command -v git >/dev/null 2>&1 && [[ -e .git ]]; then
 else
   echo "Git checks omitted: distribution has no Git checkout or Git executable."
 fi
+bash -n scripts/check-full.sh
 bash -n scripts/check-readers.sh
 bash -n scripts/verify-a2a-1.0.1-sources.sh
 bash -n scripts/test-verify-a2a-1.0.1-sources.sh
