@@ -90,7 +90,7 @@ cannot carry over. No in-flight modification or resumption semantics follow.
 | ApprovalRequirement | Move with Action/Resource to `effect-scope`, dependent on flow for gates. | Preserve declared actors, context, scope, configuration pin and sequential approval meaning. No simplified approval syntax is adopted here. |
 | Dependencies, exports, Fragment, PackageVersion, deferrals | Move beyond the minimum, pending a separately specified direct-import module. | Do not replace missing interfaces by defaults. Existing imports, exports, hashes and deferrals cannot be flattened automatically or treated as local ownership. |
 | Model, Environment, Runtime, Deployment, Policy, Memory, Knowledge, State, Topology, Protocol | Move out of the core known-kind vocabulary; preserve descriptive material only when explicitly nonsemantic, otherwise require named semantics. | Current opaque payloads do not justify new behavior. No old record may be erased or reclassified by guesswork. |
-| Extensions, annotations, evidence | Keep opaque preservation and explicit semantic requirement declarations. | Annotation labels cannot hide behavior. Unsupported interpretation differs from invalid structure and from unknown engine capability. |
+| Extensions, annotations, evidence | Keep operation-scoped opaque-data preservation guarantees and explicit semantic requirement declarations. | Annotation labels cannot hide behavior. Unsupported interpretation differs from invalid structure and from unknown engine capability. |
 
 Nothing is removed from the adopted contract by this table. Conversion would
 require a separately reviewed mapping and retained source bytes. No automatic
@@ -115,7 +115,7 @@ PROPOSED dependency boundaries, with names provisional:
 
 | Semantic module | Minimum dependency | Owns |
 | --- | --- | --- |
-| Core | None | Boundary, local identity, references, Principal, Agent, Interface, Instructions, opaque preservation and module declarations. |
+| Core | None | Boundary, local identity, references, Principal, Agent, Interface, Instructions, operation-scoped opaque-data preservation guarantees and module declarations. |
 | `flow` | Core | Static call sites, typed data bindings, success/failure paths. |
 | `bindings` | Core + flow for graph configurations | Explicit configurations, complete settings/binding reuse, engines, Tool contracts, implementations, Applications and declared compatibility. |
 | `skills` | Core; bindings when engine application is assessed | Acyclic content prerequisites, explicit ordered applications and declared Tool requirements. Tool bindings use bindings semantics. |
@@ -129,10 +129,20 @@ insertion of missing declarations. There are no module version ranges or
 compatibility inference. Names and final partitioning remain proposed; a future
 module needs a complete contract and evidence before implementation claims.
 
-PROPOSED reader behavior: retain an unknown module's bytes and report its exact
-identity/version, location, required status and checks it prevents. A reader
-that does not understand required `flow` can inspect the core and preserve the
-document, but cannot claim to have validated the flow or the whole document.
+PROPOSED reader behavior: report an unknown required module's exact
+identity/version, location, required status and checks it prevents. A read-only
+validator need not produce a preservation output or opaque byte slices. It must
+report the unsupported required interpretation and cannot claim to have validated
+that content or the whole document. Core inspection remains possible within the
+reader's declared scope.
+
+Preserving unknown information and preserving exact source bytes are separate
+guarantees, attached only to operations that offer them. An operation offering
+unknown-data conservation must retain that information; an operation offering
+exact exchange must retain the original supplied bytes under its exchange
+contract. Neither guarantee follows from validation or is required merely to
+validate. This coordinates with [proposal 0015](0015-validation-reports-0.2.md#unknown-data-bytes-and-validity-are-separate);
+both remain proposed, not adopted or implemented.
 Missing a declared prerequisite is a declaration defect; lacking an interpreter
 is unsupported interpretation, not proof that the document is invalid. A known
 bad reference remains a defect even when an independent module is unsupported.
