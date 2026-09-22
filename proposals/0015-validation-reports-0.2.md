@@ -121,8 +121,10 @@ independent diagnostics and gaps even when a higher-precedence outcome wins.
 Only then choose `not-applicable` for observed optional absence, or `pass`.
 A present subject with a known empty check domain can pass. An absent subject
 cannot pass existence or cause a failed prerequisite to disappear.
-A cancelled or resource-limited validation is inconclusive with an explicit
-gap at the affected subject, never a complete pass. A transport failure that
+Cancellation or a resource limit adds an explicit gap at the affected subject
+and makes the result at least inconclusive. An already observed fail or
+unsupported outcome retains its higher precedence; all observed diagnostics
+remain. An interruption can never produce a complete pass. A transport failure that
 prevents producing a report is an API failure, not a validation result.
 
 Locations use an input-relative JSON Pointer for parsed values, with `~0` and
@@ -203,8 +205,9 @@ No report textual sort is a conformance condition. Optional inventories and
 traces likewise have no portable ordering requirement under this proposal.
 
 Witness: annex ids U+E000 and U+10000 containing the same `{}` bytes, following
-primary `{}`. Either report order is equivalent; both ids and hashes must be
-present and distinct. Unicode normalization, ASCII restrictions, locale
+primary `{}`. Either report order is equivalent. Both distinct ids must
+be present, each with the exact hash of its supplied bytes; the hashes in this
+witness are identical. Unicode normalization, ASCII restrictions, locale
 collation and UTF-16 order are unnecessary. Pointer strings compare exactly as
 decoded scalar sequences, with no normalization. Source array ordering and
 array-index pointers remain significant; this is not permission to sort input.
