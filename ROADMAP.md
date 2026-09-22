@@ -45,8 +45,11 @@ verification scope, retained evidence and publication record.
 
 ## Proposed preparation: 0.2
 
+[Proposal 0014](proposals/0014-minimal-core-0.2.md) explores a smaller composable
+core through [candidate examples](docs/research/0.2-design-examples.md).
 [Proposal 0015](proposals/0015-validation-reports-0.2.md) explores lightweight
-validation reports and diagnostic agreement. It is not adopted or implemented.
+validation reports and diagnostic agreement. Both are proposed, not adopted or
+implemented.
 A 0.2 guide, migration and reader changes await contract arbitration; no 0.2
 model or release readiness is established.
 
