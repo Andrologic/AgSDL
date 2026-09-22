@@ -180,8 +180,10 @@ It is neither adopted functionality nor a delivery promise.
 
 1. Is the explicit actor + direction + Interface minimum the right tradeoff?
    Recommendation: keep these facts, shorten their references. The single-Agent
-   sketch shows its cost; removing Principal would require deciding what an
-   unaccountable Agent means, which this proposal does not do.
+   sketch shows its cost. Making Principal optional would leave the actor
+   undeclared in some documents, without implying an absence of responsibility.
+   Readers could not identify that actor from those documents; migration and
+   governed-call requirements would need an explicit rule for that absence.
 2. May basic flow omit Action/Resource/context while governed calls require the
    `effect-scope` module? Recommendation: yes only as an explicit new contract
    boundary, with no automatic conversion of existing scopes. The two-Agent
