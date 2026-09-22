@@ -50,6 +50,9 @@ core through [candidate examples](docs/research/0.2-design-examples.md).
 [Proposal 0015](proposals/0015-validation-reports-0.2.md) explores lightweight
 validation reports and diagnostic agreement. Both are proposed, not adopted or
 implemented.
+[Proposal 0016](proposals/0016-kiss-experiment-0.2.md) and its
+[experimental examples](experimental/kiss-0.2/README.md) make the authorized
+prototype directions precise; no candidate readers or normative adoption yet.
 A 0.2 guide, migration and reader changes await contract arbitration; no 0.2
 model or release readiness is established.
 

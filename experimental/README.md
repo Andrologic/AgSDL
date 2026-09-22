@@ -1,13 +1,15 @@
 # Experimental candidates
 
-This directory keeps two separate experimental editions. The
+This directory keeps separate experimental editions. The
+[bounded KISS 0.2 candidate](kiss-0.2/README.md) specifies a new prototype and
+examples under proposal 0016, with no readers or adoption yet. The
 [modular candidate-1 guide](modular-candidate-1/README.md) covers proposal 0013,
 its 26-case corpus and its independent Python and JavaScript readers. Their
 integrated comparison at `90997464428ce7c3072179e1053cf2934fb80fef` has no
 blocked case or mismatch. The candidate-2 experiment below retains its own
 proposal 0012 marker, readers, 121-case corpus and comparison history.
 
-Neither experimental edition is the adopted AgSDL edition. The official,
+None of these experimental editions is the adopted AgSDL edition. The official,
 locally adopted 0.1.0 contract lives in [`spec/`](../spec/README.md) under the
 `agsdl-0.1.0` marker. A passing experimental comparison shows agreement only on
 its bounded corpus and report assertions. It does not prove runtime behavior,
@@ -18,7 +20,7 @@ engine support, evidence authenticity or interoperability.
 `proposal-0012-candidate-2` is an implementable experiment described in
 [proposal 0012](../proposals/0012-minimal-0.1.0-contract.md), not an adopted
 AgSDL specification. The [current release status](../README.md#release-status-and-history)
-records published 0.1.0 and local 0.1.1 preparation. The bounded first draft
+records published 0.1.1 with the unchanged `agsdl-0.1.0` contract. The bounded first draft
 remains unstable. The Python and JavaScript readers are implemented
 and reviewed within their documented scope. Their full report comparison passes all 121 corpus cases at the
 [recorded source revision](../docs/reviews/0006-candidate-0.1.0-adoption.md#final-experimental-comparison),
