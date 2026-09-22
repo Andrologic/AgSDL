@@ -30,17 +30,25 @@ universal or executable. Both readers agree on the pinned 137-case official
 corpus with no blocked case or failure, and the delivery review records the
 limits of that evidence. The maintainer authorized publication on 2026-09-07.
 
-## Local maintenance candidate: 0.1.1
+## Published maintenance: 0.1.1
 
-Maintain documentation, examples, corpus provenance and reader diagnostics
-without changing the `agsdl-0.1.0` contract marker. The
+Version 0.1.1 is published under `v0.1.1` with documentation, examples, corpus
+provenance and reader diagnostic maintenance. The `agsdl-0.1.0` contract marker
+is unchanged. The
 [diagnostic dossier](docs/reviews/0009-0.1.1-diagnostic-expectations.md) distinguishes
 determined corrections from unresolved diagnostic and Unicode-order questions.
 This work does not establish universal reader agreement or runtime support.
 See [release status](README.md#release-status-and-history) for publication status.
 
-See the [0.1.1 local release notes](docs/releases/0.1.1.md) for the current
-verification scope, retained evidence requirements and publication steps.
+See the [0.1.1 release notes](docs/releases/0.1.1.md) for the bounded
+verification scope, retained evidence and publication record.
+
+## Proposed preparation: 0.2
+
+[Proposal 0015](proposals/0015-validation-reports-0.2.md) explores lightweight
+validation reports and diagnostic agreement. It is not adopted or implemented.
+A 0.2 guide, migration and reader changes await contract arbitration; no 0.2
+model or release readiness is established.
 
 ## Completed 0.1.0 delivery sequence
 

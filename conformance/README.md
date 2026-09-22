@@ -168,7 +168,7 @@ behavior, are unchanged.
 
 ## Current maintenance verification
 
-The 0.1.1 candidate adds ten representative diagnostic cases to the existing
+The published 0.1.1 maintenance release added ten representative diagnostic cases to the existing
 native empty-System case. [Coverage](COVERAGE.md#native-maintenance-coverage)
 explains their normative basis. Historical cases and their identities remain
 unchanged. Current results and blockers belong to the [0.1.1 release

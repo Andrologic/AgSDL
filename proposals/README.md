@@ -21,6 +21,7 @@ The [specification](../spec/README.md) is the normative source, not these files.
 | 0002, 0003 and 0011 | Remain conceptual proposals. Only the concrete bounded contract selected through 0012/0013 is adopted, not their full model or conformance rules. |
 | 0012 | Limited adoption of candidate-2 rules expressly inherited by 0013; replaced G/R rules, alternatives and experiment instructions are excluded. File remains the byte-identical historical snapshot at `009a51eb301688f06d29bb7e2f1784e3c4a4cc98`. |
 | 0013 | Selected modular contract adopted with its retained Principal restriction, applied in spec with official marker `agsdl-0.1.0`. File remains the byte-identical historical snapshot at `280347eec4e2e051d296f9271bfccc86c98d4d40`. |
+| [0015](0015-validation-reports-0.2.md) | Proposed lightweight validation reports and diagnostic agreement for 0.2; not adopted or implemented. The current contract remains `agsdl-0.1.0`. |
 
 The proposed-status statements inside 0012/0013 describe their historical
 preparation dates. This register records the later limited adoption without
@@ -44,3 +45,4 @@ state publication or implementation conformance.
 - [`0011: first reading, inspection, and exchange contract`](0011-first-exchange-contract.md)
 - [`0012: minimal candidate contract for 0.1.0`](0012-minimal-0.1.0-contract.md)
 - [`0013: modular MVP contract`](0013-modular-mvp-contract.md)
+- [`0015: lightweight validation reports for 0.2`](0015-validation-reports-0.2.md)
