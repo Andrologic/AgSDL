@@ -1,4 +1,4 @@
-"""Static validator for agsdl-exp-0016-c1; no execution or transformation."""
+"""Static validator for agsdl-exp-0016-c2; no execution or transformation."""
 import hashlib
 import importlib.util
 from pathlib import Path
@@ -13,8 +13,8 @@ lexical = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = lexical
 _spec.loader.exec_module(lexical)
 
-EDITION = 'agsdl-exp-0016-c1'
-PROCESSOR = {'identity': 'agsdl-experimental/python-kiss', 'version': '1'}
+EDITION = 'agsdl-exp-0016-c2'
+PROCESSOR = {'identity': 'agsdl-experimental/python-kiss', 'version': '2'}
 UNITS = ('syntax', 'core', 'flow', 'configuration', 'compatibility', 'external')
 SUBJECTS = ('', '', '/graphs', '/configurations', '/selected', '/extensions')
 CATALOGS = ('principals', 'instructions', 'interfaces', 'agents', 'tools', 'graphs')
@@ -672,28 +672,26 @@ class GraphChecks:
             if step_kind(step) != 'approval':
                 continue
             p = self.sp(i)
+            call = field(step, 'call')
+            target, ti, cause = self.find_step(call)
+            missing = cause and is_id(call) and self.complete_ids and call not in self.index
+            wrong_kind = not cause and step_kind(target) in ('approval', 'end')
+            if missing or wrong_kind:
+                self.fail('APPROVAL', p)
+                self.gap('APPROVAL-DATA', p, 'reference')
+                continue
             approvers = field(step, 'approvers')
             if shaped(approvers, array(REF, 1)):
                 if len({ref_id(x) for x in approvers}) != len(approvers):
                     self.fail('APPROVAL', p)
             else:
                 self.gap('APPROVAL', p)
-            call = field(step, 'call')
-            target, ti, cause = self.find_step(call)
             if cause:
-                missing = is_id(call) and self.complete_ids and call not in self.index
-                if missing:
-                    self.fail('APPROVAL', p)
-                else:
-                    self.gap('APPROVAL', p, cause)
-                self.gap('APPROVAL-DATA', p, 'reference' if missing else cause)
+                self.gap('APPROVAL', p, cause)
+                self.gap('APPROVAL-DATA', p, cause)
                 continue
             if step_kind(target) is None:
                 self.gap('APPROVAL', p)
-                self.gap('APPROVAL-DATA', p, 'reference')
-                continue
-            if step_kind(target) != 'invoke':
-                self.fail('APPROVAL', p)
                 self.gap('APPROVAL-DATA', p, 'reference')
                 continue
             groups[call].append(i)
@@ -776,8 +774,12 @@ class GraphChecks:
                 if 'scope' in step:
                     scope = step['scope']
                     resources = field(scope, 'resources')
-                    loc = ptr(ptr(p, 'scope'), 'resources') if isinstance(scope, dict) and 'resources' in scope else ptr(p, 'scope')
-                    self.v.unique('flow', resources, 'text', loc)
+                    if not isinstance(resources, list):
+                        self.gap('UNIQUE', ptr(p, 'scope'))
+                    elif not shaped(resources, array('text', 1)):
+                        self.gap('UNIQUE', ptr(ptr(p, 'scope'), 'resources'))
+                    else:
+                        self.v.unique('flow', resources, 'text', ptr(ptr(p, 'scope'), 'resources'))
             elif kind == 'approval':
                 loc = ptr(p, 'approvers') if 'approvers' in step else p
                 self.v.refs('flow', field(step, 'approvers'), 'principals', loc)

@@ -2,8 +2,10 @@
 
 This standard-library-only reader implements the static `validate` operation
 of [candidate 0016](../../../../proposals/0016-kiss-experiment-0.2.md), marker
-`agsdl-exp-0016-c1`. It reports the six candidate units independently. It does
+`agsdl-exp-0016-c2`. It reports the six candidate units independently. It does
 not execute graphs, discover services, or verify capability evidence.
+Reports identify processor `agsdl-experimental/python-kiss`, version `2`.
+This version targets c2; it does not accept c1 as that edition.
 
 From the repository root:
 
@@ -25,7 +27,7 @@ JSON. Diagnostics and gaps are separate; their array order is not meaningful.
 The reader imports only the existing lossless lexical parser from
 `tooling/readers/python/agsdl_reader/lossless.py`. Keep the repository layout
 when running it. Candidate semantics are implemented locally, independently of
-other readers. Tests record contract expectations for all 14 examples and
+other readers. Tests record contract expectations for all 15 examples and
 adversarial inputs. This experimental implementation does not change the
 published AgSDL 0.1 contract or establish runtime support.
 
@@ -33,3 +35,6 @@ Claims are consulted only for observable requirements. A supplied implementation
 with a known empty requirement set needs no claim lookup, as specified in
 candidate section 4. Malformed claims still receive configuration SHAPE and
 UNIQUE observations. Unreadable requirement subsets retain compatibility gaps.
+ASSIGN projects step kinds and invoke Agent refs independently of step ids.
+The `duplicate-step-assign` example therefore fails flow while configuration
+passes; missing ids alone also leave the assignment projection readable.
