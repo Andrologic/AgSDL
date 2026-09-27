@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -120,11 +121,47 @@ class ReaderTests(unittest.TestCase):
         gaps += [G('flow', 'PATH', '/graphs/pipeline'), G('flow', 'DATA', p + '1', 'reference', 'path'), G('flow', 'DATA', p + '2', 'path'), G('flow', 'ACTOR', p + '1')]
         self.assert_observations(d, [D('flow', 'SHAPE', p + '0')], gaps)
 
+    def test_missing_required_agent_catalog_blocks_lookups(self):
+        d = document('two-agent-sequence')
+        del d['agents']
+        p = '/graphs/pipeline/steps/'
+        gs = [G('core', code, '') for code in ('ID', 'REF', 'SLOT-ID', 'UNIQUE')]
+        for i in (0, 1):
+            gs.append(G('flow', 'REF', p + str(i) + '/agent', 'reference'))
+            gs.extend(G('flow', code, p + str(i), 'reference') for code in ('OPERATION', 'DATA', 'ACTOR'))
+        gs.append(G('flow', 'DATA', p + '2', 'reference'))
+        self.assert_observations(d, [D('core', 'SHAPE', '')], gs)
+
     def test_missing_gate_target_witness(self):
         d = document('governed-call')
         d['graphs']['release']['steps'][0]['call'] = 'missing'
         p = '/graphs/release/steps/'
         self.assert_observations(d, [D('flow', 'APPROVAL', p + '0'), D('flow', 'APPROVAL', p + '1')], [G('flow', 'APPROVAL-DATA', p + '0', 'reference')])
+
+    def test_unreadable_incoming_approval_call(self):
+        p = '/graphs/release/steps/'
+        for absent in (True, False):
+            with self.subTest(absent=absent):
+                d = document('governed-call')
+                if absent:
+                    del d['graphs']['release']['steps'][0]['call']
+                else:
+                    d['graphs']['release']['steps'][0]['call'] = None
+                ds = [D('flow', 'SHAPE', p + ('0' if absent else '0/call'))]
+                gs = [G('flow', 'APPROVAL', p + '0'), G('flow', 'APPROVAL-DATA', p + '0'), G('flow', 'APPROVAL', p + '1')]
+                self.assert_observations(d, ds, gs)
+                with tempfile.NamedTemporaryFile(suffix='.json') as artifact:
+                    artifact.write(json.dumps(d).encode())
+                    artifact.flush()
+                    result = subprocess.run([sys.executable, str(HERE / 'cli.py'), artifact.name], capture_output=True)
+                self.assertEqual(result.returncode, 0)
+                self.assertEqual(result.stderr, b'')
+                self.assertEqual(observations(json.loads(result.stdout)), (set(ds), set(gs)))
+
+        # An independent known violation survives the blocked incoming link.
+        d['graphs']['release']['steps'][1]['approvers'] *= 2
+        ds.append(D('flow', 'APPROVAL', p + '1'))
+        self.assert_observations(d, ds, gs)
 
     def test_independent_binding_identity_witness(self):
         d = document('two-configurations')
@@ -142,6 +179,19 @@ class ReaderTests(unittest.TestCase):
         claims[1]['status'] = 17
         p = '/configurations/primary/agents/0'
         self.assert_observations(d, [D('configuration', 'SHAPE', p + '/claims/1/status'), D('compatibility', 'ENGINE', p)], [G('configuration', 'UNIQUE', p + '/claims'), G('compatibility', 'ENGINE', p)])
+
+    def test_empty_requirements_need_no_claim_lookup(self):
+        d = document('tool-incompatible')
+        d['tools']['lookup']['requires'] = []
+        d['configurations']['primary']['agents'][0]['tools'][0]['claims'] = [{}]
+        p = '/configurations/primary/agents/0/tools/0'
+        ds = [D('configuration', 'SHAPE', p + '/claims/0')]
+        gs = [G('configuration', 'UNIQUE', p + '/claims')]
+        self.assert_observations(d, ds, gs)
+        self.assertEqual(unit(read(d), 'compatibility')['outcome'], 'pass')
+        d['tools']['lookup']['requires'] = [{}]
+        self.assert_observations(d, ds + [D('core', 'SHAPE', '/tools/lookup/requires/0')],
+                                 gs + [G('core', 'UNIQUE', '/tools/lookup/requires'), G('compatibility', 'TOOL', p)])
 
     def test_omission_witnesses_and_null_choices(self):
         d = document('two-configurations')

@@ -28,3 +28,8 @@ when running it. Candidate semantics are implemented locally, independently of
 other readers. Tests record contract expectations for all 14 examples and
 adversarial inputs. This experimental implementation does not change the
 published AgSDL 0.1 contract or establish runtime support.
+
+Claims are consulted only for observable requirements. A supplied implementation
+with a known empty requirement set needs no claim lookup, as specified in
+candidate section 4. Malformed claims still receive configuration SHAPE and
+UNIQUE observations. Unreadable requirement subsets retain compatibility gaps.

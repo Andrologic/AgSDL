@@ -256,10 +256,10 @@ class Validator:
         d = self.doc
         self.shape('core', d, record(CORE_FIELDS, CORE_OPTIONAL), '')
         for cat in CATALOGS:
-            values = d.get(cat, {})
+            values = d.get(cat, MISSING if cat == 'agents' else {})
             if not isinstance(values, dict):
                 self.catalog_complete = False
-                self.gap('core', 'ID', ptr('', cat))
+                self.gap('core', 'ID', ptr('', cat) if cat in d else '')
                 continue
             for name, value in values.items():
                 path = ptr(ptr('', cat), name)
@@ -729,8 +729,13 @@ class GraphChecks:
                     if pos == 0:
                         for source, label in incoming[name]:
                             source_step = self.steps[self.index[source][0]]
-                            if step_kind(source_step) == 'approval' and label == 'approved' and source_step['call'] != call:
-                                bad = True
+                            if step_kind(source_step) == 'approval' and label == 'approved':
+                                source_call = field(source_step, 'call')
+                                if not is_id(source_call):
+                                    for i in indices:
+                                        self.gap('APPROVAL', self.sp(i))
+                                elif source_call != call:
+                                    bad = True
                     gate = self.steps[self.index[name][0]]
                     forbidden = set(chain[pos + 1:]) | {call}
                     if any(self.reachable(gate[label]) & forbidden for label in ('denied', 'failure')):
@@ -867,6 +872,10 @@ class ConfigurationChecks:
             return
         if not edition(selection):
             self.gap(code, path, unit='compatibility')
+            return
+        # Claims are a lookup prerequisite, not an independent assessment.
+        # Callers retain gaps for any unreadable requirement subsets.
+        if not requirements:
             return
         if not isinstance(claims, list) or not all(edition(field(x, 'capability')) for x in claims):
             self.gap(code, path, unit='compatibility')
