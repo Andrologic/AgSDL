@@ -1,11 +1,21 @@
 # Bounded KISS 0.2 experiment
 
 Status: **experimental candidate, not normative, not adopted, not published**.
-The marker is `agsdl-exp-0016-c1`, not a delivered AgSDL version. The only rule
+The marker is `agsdl-exp-0016-c2`, not a delivered AgSDL version. The only rule
 source is [proposal 0016](../../proposals/0016-kiss-experiment-0.2.md), under the
 [prototype mandate](../../docs/decisions/0008-0.2-experiment-directions.md).
 No reader, runtime, schema or conformance implementation is supplied here yet.
 The current published contract remains `agsdl-0.1.0` in release 0.1.1.
+
+## Changes from c1
+
+Candidate c2 clarifies that ASSIGN projects step kinds and invoke Agent refs
+without depending on step ids. It also makes explicit that a complete empty
+requirement set with a supplied readable choice needs no claim lookup; malformed
+claims remain configuration defects. Incomplete requirements, coverage and
+effects retain their independent checks. These clarifications change the marker
+after the c1 reader baseline was frozen. Reader updates and independent review
+against c2 are still required; c1 evidence does not establish c2 agreement.
 
 ## Exact example inputs
 
@@ -31,6 +41,19 @@ not present are not-applicable as specified there; syntax passes for every file.
 | [independent-errors](examples/independent-errors.json) | Missing instruction reference and invalid operation mode both fail in core; required external interpretation remains separately unsupported. One error does not conceal another. |
 | [application-order-conflict](examples/application-order-conflict.json) | Reversing two Agent instruction slots in Applications gives CONTENT fail and ENGINE reference gap at `/configurations/ordered/agents/0`. The declared behavior cannot be reordered by engine selection. |
 | [unknown-support](examples/unknown-support.json) | Empty writer claims produce compatibility ENGINE inconclusive at `/configurations/primary/agents/0`; structure still passes. Missing evidence is not a structural violation. |
+| [duplicate-step-assign](examples/duplicate-step-assign.json) | Exactly D(flow,STEP-ID,/graphs/g/steps,fail) and G(flow,PATH,/graphs/g,{shape}). Configuration passes with no ASSIGN gap; all other diagnostic/gap arrays are empty. Syntax/core pass; compatibility/external are absent/not-applicable. |
+
+The duplicate-step witness has two failure terminals named `e`, no invoke and
+an empty configuration AgentBinding array. Its invalid graph does not obscure
+the known empty assignment set. Proposal 0016 includes the complete witness.
+
+For the empty-requirement witness, start from `tool-incompatible`, set
+`tools.lookup.requires` to `[]` and the selected writer ToolBinding's `claims`
+to `[{}]`. The exact observations are
+D(configuration,SHAPE,/configurations/primary/agents/0/tools/0/claims/0,fail) and
+G(configuration,UNIQUE,/configurations/primary/agents/0/tools/0/claims,{shape}).
+All other diagnostic/gap arrays are empty; compatibility passes. This case
+does not stand for incomplete requirements or suppress coverage/effects checks.
 
 Applications preserve the Agent's declared slot order and select stable slot ids,
 such as `task`, whether the slot's

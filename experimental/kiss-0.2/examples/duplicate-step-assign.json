@@ -1,0 +1,1 @@
+{"edition":"agsdl-exp-0016-c2","agents":{},"graphs":{"g":{"entry":"e","inputs":{},"outputs":{},"steps":[{"id":"e","kind":"end","outcome":"failure","reason":"x"},{"id":"e","kind":"end","outcome":"failure","reason":"x"}]}},"configurations":{"c":{"graph":{"ref":"g"},"agents":[]}}}
