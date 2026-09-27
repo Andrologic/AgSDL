@@ -241,3 +241,39 @@ test('Tool null implementation and unknown effects contribute distinct scoped un
   const v = example('tool-incompatible'); v.configurations.primary.agents[0].tools[0].implementation = null;
   exact(v, [D('compatibility', 'TOOL', `${B}/tools/0`, 'inconclusive')]);
 });
+test('absent call terminates APPROVAL even with malformed approvers', () => {
+  const v = example('governed-call'); v.graphs.release.steps[0].call = 'missing'; v.graphs.release.steps[0].approvers = null;
+  exact(v, [D('flow', 'SHAPE', '/graphs/release/steps/0/approvers'), G('flow', 'REF', '/graphs/release/steps/0/approvers'), D('flow', 'APPROVAL', '/graphs/release/steps/0'), G('flow', 'APPROVAL-DATA', '/graphs/release/steps/0', 'reference'), D('flow', 'APPROVAL', '/graphs/release/steps/1')]);
+});
+test('unreadable resources locate UNIQUE gap at scope, SHAPE at value', () => {
+  const v = example('governed-call'); v.graphs.release.steps[2].scope.resources = 17;
+  exact(v, [D('flow', 'SHAPE', '/graphs/release/steps/2/scope/resources'), G('flow', 'UNIQUE', '/graphs/release/steps/2/scope'), G('flow', 'ACTOR', '/graphs/release/steps/2')]);
+});
+test('extra Edition member never hides readable instruction format incompatibility', () => {
+  const v = example('two-configurations'); v.instructions.draft.format.extra = true; v.configurations.primary.agents[0].claims[0].status = 'unsupported';
+  exact(v, [D('core', 'SHAPE', '/instructions/draft/format/extra'), D('compatibility', 'ENGINE', B)]);
+});
+test('all engine Edition identity projections ignore extras, shape and UNIQUE stay strict', () => {
+  const cases = [
+    ['engine', b => { b.engine.extra = true; }, `${B}/engine/extra`, false],
+    ['requires', b => { b.requires = [{ ...b.claims[0].capability, extra: true }]; }, `${B}/requires/0/extra`, true],
+    ['adapter', b => { b.applications[0].adapter.extra = true; }, `${B}/applications/0/adapter/extra`, false],
+    ['settings', b => { b.settings.format.extra = true; }, `${B}/settings/format/extra`, false],
+    ['claim', b => { b.claims[0].capability.extra = true; }, `${B}/claims/0/capability/extra`, true],
+  ];
+  for (const [name, mutate, p, uniqueness] of cases) {
+    const v = example('two-configurations'), b = v.configurations.primary.agents[0]; b.claims[0].status = 'unsupported'; mutate(b);
+    exact(v, [D('configuration', 'SHAPE', p), D('compatibility', 'ENGINE', B), ...(uniqueness ? [G('configuration', 'UNIQUE', `${B}/${name === 'requires' ? 'requires' : 'claims'}`)] : [])]);
+  }
+});
+test('Tool implementation and requirement Edition projections retain incompatibility', () => {
+  const v = example('tool-incompatible'), b = v.configurations.primary.agents[0].tools[0];
+  b.implementation.extra = true;
+  exact(v, [D('configuration', 'SHAPE', `${B}/tools/0/implementation/extra`), D('compatibility', 'TOOL', `${B}/tools/0`)]);
+  const tool = v.tools[b.tool.ref]; tool.requires[0].extra = true;
+  includes(report(v), D('compatibility', 'TOOL', `${B}/tools/0`), G('core', 'UNIQUE', `/tools/${b.tool.ref}/requires`));
+});
+test('external Edition extra fails shape without hiding required interpretation', () => {
+  const v = { ...minimal(), extensions: [{ edition: { ...E, extra: true }, use: 'required', payload: null }] };
+  exact(v, [D('external', 'SHAPE', '/extensions/0/edition/extra'), D('external', 'REQUIRED', '/extensions/0', 'unsupported'), G('external', 'REQUIRED', '/extensions/0', 'unsupported')]);
+});

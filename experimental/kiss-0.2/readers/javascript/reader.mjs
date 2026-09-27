@@ -6,6 +6,8 @@ import { checkConfigurations } from './configuration.mjs';
 export const EDITION = 'agsdl-exp-0016-c1';
 export const PROCESSOR = Object.freeze({ identity: 'agsdl-experimental/javascript-kiss-reader', version: '0016-c1' });
 export const editionKey = v => JSON.stringify([v.identity, v.version]);
+// Semantic identity projection: extra fields still fail SHAPE at their source.
+export const readableEdition = v => S.object(v) && typeof v.identity === 'string' && v.identity.length > 0 && typeof v.version === 'string' && v.version.length > 0;
 export const readableRef = v => S.object(v) && S.id(v.ref);
 export const fieldLocation = (v, p, k) => S.has(v, k) ? pointer(p, k) : p;
 export const duplicate = xs => new Set(xs).size !== xs.length;
@@ -128,7 +130,7 @@ export function validate(bytes) {
     else {
       const ids = [];
       root.extensions.forEach((e, i) => {
-        const p = pointer('/extensions', i), goodEdition = S.object(e) && S.shape(e.edition, S.edition);
+        const p = pointer('/extensions', i), goodEdition = S.object(e) && readableEdition(e.edition);
         if (goodEdition) ids.push(editionKey(e.edition)); else gap('external', 'UNIQUE', '/extensions');
         if (!goodEdition || !['annotation', 'required'].includes(e.use)) gap('external', 'REQUIRED', p);
         else if (e.use === 'required') { d('external', 'REQUIRED', p, 'unsupported'); gap('external', 'REQUIRED', p, 'unsupported'); }

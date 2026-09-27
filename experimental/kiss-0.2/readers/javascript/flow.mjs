@@ -97,7 +97,10 @@ export function checkFlow(c) {
         refField('flow', s, p, 'agent', 'agents'); selectedOperation(i);
         if (S.has(s, 'scope')) {
           const q = pointer(p, 'scope');
-          unique('flow', S.object(s.scope) ? s.scope.resources : undefined, fieldLocation(s.scope, q, 'resources'), x => typeof x === 'string' && x.length > 0);
+          const resources = S.object(s.scope) ? s.scope.resources : undefined;
+          const resourceText = x => typeof x === 'string' && x.length > 0;
+          if (!S.shape(resources, S.array(resourceText, 1))) gap('flow', 'UNIQUE', q);
+          else unique('flow', resources, pointer(q, 'resources'), resourceText);
         }
       } else if (s.kind === 'approval') {
         const q = fieldLocation(s, p, 'approvers');
@@ -199,15 +202,15 @@ export function checkFlow(c) {
     steps.forEach((s, i) => {
       if (!kind(s) || s.kind !== 'approval') return;
       const p = pointer(sp, i), call = stepLookup(s.call);
-      const approversOK = S.shape(s.approvers, S.array(S.ref, 1));
-      if (!approversOK) gap('flow', 'APPROVAL', p);
-      else if (duplicate(s.approvers.map(r => r.ref))) d('flow', 'APPROVAL', p);
       if (call.cause || !kind(call.value) || call.value.kind !== 'invoke') {
         if (call.missing || (!call.cause && kind(call.value) && call.value.kind !== 'invoke')) d('flow', 'APPROVAL', p);
         else gap('flow', 'APPROVAL', p, call.cause ?? 'reference');
         gap('flow', 'APPROVAL-DATA', p, call.cause === 'shape' ? 'shape' : 'reference');
         return;
       }
+      const approversOK = S.shape(s.approvers, S.array(S.ref, 1));
+      if (!approversOK) gap('flow', 'APPROVAL', p);
+      else if (duplicate(s.approvers.map(r => r.ref))) d('flow', 'APPROVAL', p);
       data(call.i, i, 'APPROVAL-DATA', p, true);
       const group = chains.get(call.i) ?? []; group.push(i); chains.set(call.i, group);
       if (!S.shape(s, S.step)) gap('flow', 'APPROVAL', p);

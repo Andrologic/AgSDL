@@ -1,6 +1,6 @@
 import { pointer } from '../../../../tooling/readers/javascript/json.mjs';
 import * as S from './shape.mjs';
-import { duplicate, editionKey, fieldLocation, mapReadable, readableRef } from './reader.mjs';
+import { duplicate, editionKey, fieldLocation, mapReadable, readableEdition, readableRef } from './reader.mjs';
 
 export function checkConfigurations(c) {
   const { root, d, gap, gaps, lookup, refCheck, refField, choice, unique, slotIds } = c;
@@ -45,9 +45,9 @@ export function checkConfigurations(c) {
     if (isSelected && (result.cause || result.mismatch)) gap('compatibility', code === 'CONTENT' ? 'ENGINE' : 'TOOL', p, result.cause ?? 'reference');
   }
   function assess(requirements, selection, claims, code, p) {
-    if (selection !== null && !S.shape(selection, S.edition)) { gap('compatibility', code, p); return; }
+    if (selection !== null && !readableEdition(selection)) { gap('compatibility', code, p); return; }
     if (selection === null) { d('compatibility', code, p, 'inconclusive'); return; }
-    const indexComplete = Array.isArray(claims) && claims.every(x => S.object(x) && S.shape(x.capability, S.edition));
+    const indexComplete = Array.isArray(claims) && claims.every(x => S.object(x) && readableEdition(x.capability));
     const required = new Map(requirements.map(e => [editionKey(e), e]));
     for (const key of required.keys()) {
       if (!indexComplete) { gap('compatibility', code, p); continue; }
@@ -64,18 +64,18 @@ export function checkConfigurations(c) {
   function requirementsArray(v, code, p) {
     const req = [];
     if (!Array.isArray(v)) gap('compatibility', code, p);
-    else for (const x of v) { if (S.shape(x, S.edition)) req.push(x); else gap('compatibility', code, p); }
+    else for (const x of v) { if (readableEdition(x)) req.push(x); else gap('compatibility', code, p); }
     return req;
   }
   function engine(b, p, ar) {
     const req = requirementsArray(b.requires, 'ENGINE', p);
     if (!Array.isArray(b.applications)) gap('compatibility', 'ENGINE', p);
     else for (const a of b.applications) {
-      if (S.object(a) && S.shape(a.adapter, S.edition)) req.push(a.adapter);
+      if (S.object(a) && readableEdition(a.adapter)) req.push(a.adapter);
       else gap('compatibility', 'ENGINE', p);
     }
     if (S.has(b, 'settings')) {
-      if (S.object(b.settings) && S.shape(b.settings.format, S.edition)) req.push(b.settings.format);
+      if (S.object(b.settings) && readableEdition(b.settings.format)) req.push(b.settings.format);
       else gap('compatibility', 'ENGINE', p);
     }
     if (!S.object(ar.value) || !Array.isArray(ar.value.instructions)) gap('compatibility', 'ENGINE', p);
@@ -83,7 +83,7 @@ export function checkConfigurations(c) {
       const q = pointer(pointer(ar.p, 'instructions'), i);
       const r = choice(S.object(s) ? s.content : undefined, fieldLocation(s, q, 'content'), 'instructions');
       if (r.cause) gap('compatibility', 'ENGINE', p, r.cause);
-      else if (!S.object(r.value) || !S.shape(r.value.format, S.edition)) gap('compatibility', 'ENGINE', p);
+      else if (!S.object(r.value) || !readableEdition(r.value.format)) gap('compatibility', 'ENGINE', p);
       else req.push(r.value.format);
     });
     assess(req, b.engine, b.claims, 'ENGINE', p);

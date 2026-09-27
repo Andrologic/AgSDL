@@ -51,3 +51,14 @@ a shared cross-reader corpus or establish Python/JavaScript agreement. The
 repository's `check.sh` does not run this new suite; run both commands explicitly
 when changing this reader. Resource exhaustion may throw before a report is
 available; there is no partial-success or interruption result in this edition.
+
+One candidate question remains from independent review: whether duplicate step
+ids also block configuration ASSIGN. Its table names only known step kinds and
+readable invoke Agent refs, and excludes PATH as a prerequisite; the later text
+says duplicate ids block "full step enumeration". This implementation follows
+the table's narrower projection. That choice is provisional evidence, not an
+oracle resolving the wording. A graph with two failure ends both named `e`,
+no invokes and a configuration with no Agent bindings exposes the difference:
+ASSIGN can complete the known empty Agent set, or receive a reference gap if
+full enumeration includes this projection. Resolve this candidate question
+before claiming complete cross-reader agreement.
