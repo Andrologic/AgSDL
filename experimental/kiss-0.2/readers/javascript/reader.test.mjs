@@ -277,3 +277,17 @@ test('external Edition extra fails shape without hiding required interpretation'
   const v = { ...minimal(), extensions: [{ edition: { ...E, extra: true }, use: 'required', payload: null }] };
   exact(v, [D('external', 'SHAPE', '/extensions/0/edition/extra'), D('external', 'REQUIRED', '/extensions/0', 'unsupported'), G('external', 'REQUIRED', '/extensions/0', 'unsupported')]);
 });
+test('ambiguous or malformed call preserves independent duplicate approvers', () => {
+  const v = {
+    ...minimal(), principals: { p: { description: 'p' } },
+    graphs: { g: { entry: 'a', inputs: {}, outputs: {}, steps: [
+      { id: 'a', kind: 'approval', call: 'e', approvers: [{ ref: 'p' }, { ref: 'p' }], validForMs: 1, timeoutMs: 1, approved: 'e', denied: 'e', failure: 'e' },
+      { id: 'e', kind: 'end', outcome: 'failure', reason: 'x' },
+      { id: 'e', kind: 'end', outcome: 'failure', reason: 'x' },
+    ] } },
+  };
+  const common = [D('flow', 'STEP-ID', '/graphs/g/steps'), G('flow', 'PATH', '/graphs/g'), D('flow', 'APPROVAL', '/graphs/g/steps/0')];
+  exact(v, [...common, G('flow', 'APPROVAL', '/graphs/g/steps/0', 'reference'), G('flow', 'APPROVAL-DATA', '/graphs/g/steps/0', 'reference')]);
+  v.graphs.g.steps[0].call = 17;
+  exact(v, [...common, D('flow', 'SHAPE', '/graphs/g/steps/0/call'), G('flow', 'APPROVAL', '/graphs/g/steps/0'), G('flow', 'APPROVAL-DATA', '/graphs/g/steps/0')]);
+});

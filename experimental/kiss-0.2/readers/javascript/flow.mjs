@@ -202,15 +202,20 @@ export function checkFlow(c) {
     steps.forEach((s, i) => {
       if (!kind(s) || s.kind !== 'approval') return;
       const p = pointer(sp, i), call = stepLookup(s.call);
+      const terminalCall = call.missing || (!call.cause && kind(call.value) && call.value.kind !== 'invoke');
+      // Only a known absent/wrong-kind call completes APPROVAL immediately.
+      // Unavailable call data does not hide the independent approver clause.
+      if (!terminalCall) {
+        const approversOK = S.shape(s.approvers, S.array(S.ref, 1));
+        if (!approversOK) gap('flow', 'APPROVAL', p);
+        else if (duplicate(s.approvers.map(r => r.ref))) d('flow', 'APPROVAL', p);
+      }
       if (call.cause || !kind(call.value) || call.value.kind !== 'invoke') {
         if (call.missing || (!call.cause && kind(call.value) && call.value.kind !== 'invoke')) d('flow', 'APPROVAL', p);
         else gap('flow', 'APPROVAL', p, call.cause ?? 'reference');
         gap('flow', 'APPROVAL-DATA', p, call.cause === 'shape' ? 'shape' : 'reference');
         return;
       }
-      const approversOK = S.shape(s.approvers, S.array(S.ref, 1));
-      if (!approversOK) gap('flow', 'APPROVAL', p);
-      else if (duplicate(s.approvers.map(r => r.ref))) d('flow', 'APPROVAL', p);
       data(call.i, i, 'APPROVAL-DATA', p, true);
       const group = chains.get(call.i) ?? []; group.push(i); chains.set(call.i, group);
       if (!S.shape(s, S.step)) gap('flow', 'APPROVAL', p);
