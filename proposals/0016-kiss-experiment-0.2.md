@@ -1,7 +1,7 @@
 # Proposal 0016: bounded KISS experiment for 0.2
 
 Status: **EXPERIMENTAL PROPOSAL, not normative, not adopted, not published.**
-Candidate edition: `agsdl-exp-0016-c1`. This is not an AgSDL 0.2 release.
+Candidate edition: `agsdl-exp-0016-c2`. This is not an AgSDL 0.2 release.
 [Decision 0008](../docs/decisions/0008-0.2-experiment-directions.md) authorizes
 prototyping the direction, not normative adoption. The published release remains
 0.1.1, contract `agsdl-0.1.0`; see [release status](../README.md#release-status-and-history).
@@ -11,6 +11,11 @@ below bind only an implementation claiming this experimental edition. Examples
 illustrate them and create no additional rules. Changes after a reader baseline
 is frozen require a new candidate marker and independent review, not silent
 reinterpretation of old evidence.
+
+Candidate c2 clarifies two dependencies from c1: ASSIGN enumerates Agent refs
+without step-id lookup, and a complete empty requirement set needs no claim
+lookup. The grammar and bounded model are otherwise unchanged. Evidence for c1
+does not establish agreement on c2; readers need review against this edition.
 
 ## Purpose and boundary
 
@@ -103,7 +108,7 @@ approvals cannot be reused; there is no hot modification or resumption contract.
 
 | Record | Fields |
 | --- | --- |
-| Document | `edition:"agsdl-exp-0016-c1"`, `agents:map<Agent>`, `principals?:map<Principal>`, `instructions?:map<Instructions>`, `interfaces?:map<Interface>`, `tools?:map<Tool>`, `graphs?:map<Graph>`, `configurations?:map<Configuration>`, `selected?:id`, `extensions?:Extension[]`, `annotations?:JSON` |
+| Document | `edition:"agsdl-exp-0016-c2"`, `agents:map<Agent>`, `principals?:map<Principal>`, `instructions?:map<Instructions>`, `interfaces?:map<Interface>`, `tools?:map<Tool>`, `graphs?:map<Graph>`, `configurations?:map<Configuration>`, `selected?:id`, `extensions?:Extension[]`, `annotations?:JSON` |
 | Principal | `description:text` |
 | Instructions | `target:"Agent"`, `at:"before-invoke"`, `format:Edition`, `body:text` |
 | Interface | `operations:map<Operation>` nonempty |
@@ -260,8 +265,12 @@ from an engine name. For each required Edition assess:
    inconclusive, support unknown.
 4. Otherwise supported with a non-null hash: no finding, declared support only.
 
-An empty requirement set with a supplied engine/implementation produces no
-compatibility finding. Tool effects unknown additionally produce inconclusive.
+An empty requirement set that is completely known, with a supplied readable
+engine/implementation, performs no claim lookup and produces no finding from
+claim assessment. Malformed claims still receive configuration SHAPE/UNIQUE
+observations. An incomplete or unreadable requirement set retains its gap;
+readable subsets are still assessed. Independent coverage and effects checks
+remain applicable. Tool effects unknown additionally produce inconclusive.
 Evidence hashes identify assertions, not verified evidence. Missing Applications
 or ToolBindings are structural defects; they do not erase observable intrinsic
 requirements. Known incompatibilities survive independent unknowns or gaps.
@@ -374,9 +383,12 @@ Agent.principal referenced by ACTOR receives core REF at its declaration; ACTOR
 blocks on its failed resolution, rather than duplicating REF at the invoke.
 Named Interface/Instructions targets similarly receive shape errors at their
 source. Wrong/missing selected operation prevents downstream port/effect checks,
-with gap cause reference. Duplicate step ids block that id's lookup; PATH and
-full step enumeration are blocked, while unrelated known-id lookup remains
-possible when all step ids are readable. Duplicate AgentBinding.agent blocks
+with gap cause reference. Duplicate step ids block that id's lookup and PATH,
+while unrelated known-id lookup remains possible when all step ids are readable.
+ASSIGN enumerates the steps array using known kinds and readable invoke Agent
+refs; it does not look up steps by id. A missing or duplicate step id alone adds
+no ASSIGN gap. STEP-ID and PATH retain their own findings or gaps. An unreadable
+kind or invoke Agent ref still blocks ASSIGN's projection. Duplicate AgentBinding.agent blocks
 CONTENT/TOOLS/ENGINE and child TOOL for those bindings only, not sibling Agents.
 
 For ENGINE/TOOL, unreadable engine/implementation field blocks assessment (shape).
@@ -432,7 +444,7 @@ with cause shape/reference, respectively. Definition lookup still uses the
 complete global catalog rule above; these are different identity projections.
 
 Claims have a capability-identity index separate from their value checks. The
-index requires an array of objects with fully readable capability Editions;
+index, when a claim lookup is needed, requires an array of objects with fully readable capability Editions;
 it does not require status or evidence. If an element cannot supply its capability,
 all claim lookups for that binding are blocked with cause shape. If identities
 are complete, duplicate capability Editions block only that capability with
@@ -490,6 +502,20 @@ subject. Presence and outcomes follow sections 6 and 7.
 | In two-configurations, writer applications becomes empty. | D(configuration,CONTENT,/configurations/primary/agents/0,fail); G(compatibility,ENGINE,/configurations/primary/agents/0,{reference}). Intrinsic format requirements are still assessed and declared supported here. |
 | In tool-incompatible, selected writer tools becomes empty. | D(configuration,TOOLS,/configurations/primary/agents/0,fail); G(compatibility,TOOL,/configurations/primary/agents/0,{reference}). No child TOOL fail survives, because no implementation is selected there; the required Tool remains in Agent.tools. |
 | In application-order-conflict, use the supplied reversed Applications. | D(configuration,CONTENT,/configurations/ordered/agents/0,fail); G(compatibility,ENGINE,/configurations/ordered/agents/0,{reference}). The Agent's instruction order is unchanged; no sorting or repair is allowed. |
+| In tool-incompatible, set tools.lookup.requires to [] and the selected writer ToolBinding claims to [{}]. | D(configuration,SHAPE,/configurations/primary/agents/0/tools/0/claims/0,fail); G(configuration,UNIQUE,/configurations/primary/agents/0/tools/0/claims,{shape}). Compatibility passes: the complete empty requirement set needs no claim lookup, the implementation is supplied and effects are none. |
+
+The complete [duplicate-step assignment witness](../experimental/kiss-0.2/examples/duplicate-step-assign.json)
+is:
+
+```json
+{"edition":"agsdl-exp-0016-c2","agents":{},"graphs":{"g":{"entry":"e","inputs":{},"outputs":{},"steps":[{"id":"e","kind":"end","outcome":"failure","reason":"x"},{"id":"e","kind":"end","outcome":"failure","reason":"x"}]}},"configurations":{"c":{"graph":{"ref":"g"},"agents":[]}}}
+```
+
+Its exact observations are D(flow,STEP-ID,/graphs/g/steps,fail) and
+G(flow,PATH,/graphs/g,{shape}). Configuration passes without an ASSIGN gap:
+the known kinds establish an empty invoke Agent set despite duplicate step ids.
+All other diagnostic and gap arrays are empty. Syntax and core pass;
+compatibility and external are absent/not-applicable. Flow fails.
 
 For a missing kind on sequence step 0, the exact flow observations are:
 SHAPE fail at step 0; REF, OPERATION, DATA, ACTOR, APPROVAL, APPROVAL-DATA and
@@ -512,7 +538,7 @@ without inferring which call was intended.
 
 ## 6. Unit boundaries and absence
 
-Each result has fixed scope edition `agsdl-exp-0016-c1`, phase `local`, input
+Each result has fixed scope edition `agsdl-exp-0016-c2`, phase `local`, input
 `primary`, and the following unit/subject. Presence concerns its container, not
 its validity. A present malformed container is present. If parsing failed or
 root is not an object, presence is undetermined except syntax, which is present.
@@ -546,7 +572,7 @@ pass alongside external unsupported never means the whole document passed.
 
 | Record | Fields |
 | --- | --- |
-| Report | `edition:"agsdl-exp-0016-c1"`, `processor:Edition`, `operation:"validate"`, `input:Input`, `results:Result[]` exactly the six units |
+| Report | `edition:"agsdl-exp-0016-c2"`, `processor:Edition`, `operation:"validate"`, `input:Input`, `results:Result[]` exactly the six units |
 | Input | `id:"primary"`, `sha256:Hash` |
 | Result | `unit:"syntax" or "core" or "flow" or "configuration" or "compatibility" or "external"`, `phase:"local"`, `subject:text or empty string`, `presence:"present" or "absent" or "undetermined"`, `outcome:Outcome`, `diagnostics:Diagnostic[]`, `incomplete:Gap[]` |
 | Outcome | `"pass"`, `"fail"`, `"unsupported"`, `"inconclusive"`, `"not-applicable"` |
