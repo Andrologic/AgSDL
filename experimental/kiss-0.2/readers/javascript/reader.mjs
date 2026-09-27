@@ -88,11 +88,11 @@ export function validate(bytes) {
   };
   const slotIds = (a, p, report = false) => {
     const q = fieldLocation(a, p, 'instructions'), slots = S.object(a) ? a.instructions : undefined;
-    if (!Array.isArray(slots)) { if (report) gap('core', 'SLOT-ID', q); return { cause: 'shape' }; }
+    if (!Array.isArray(slots)) { if (report) gap('core', 'SLOT-ID', q); return { causes: ['shape'] }; }
     const ids = slots.filter(x => S.object(x) && S.id(x.id)).map(x => x.id);
     const dup = duplicate(ids), bad = ids.length !== slots.length;
     if (report) { if (bad) gap('core', 'SLOT-ID', q); if (dup) d('core', 'SLOT-ID', q); }
-    return bad ? { cause: 'shape' } : dup ? { cause: 'reference' } : { ids };
+    return { ids, causes: [...(bad ? ['shape'] : []), ...(dup ? ['reference'] : [])] };
   };
   const coreAgent = (a, p) => {
     if (!S.object(a)) { gaps('core', ['REF', 'SLOT-ID', 'UNIQUE'], p); return; }

@@ -29,8 +29,9 @@ export function checkConfigurations(c) {
   function content(a, ap, b) {
     if (!S.object(a)) return { cause: 'shape' };
     const slots = slotIds(a, ap);
-    if (slots.cause) return slots;
-    if (!Array.isArray(b.applications) || b.applications.some(x => !S.object(x) || !S.id(x.slot))) return { cause: 'shape' };
+    const causes = new Set(slots.causes);
+    if (!Array.isArray(b.applications) || b.applications.some(x => !S.object(x) || !S.id(x.slot))) causes.add('shape');
+    if (causes.size) return { causes: [...causes] };
     return { mismatch: JSON.stringify(slots.ids) !== JSON.stringify(b.applications.map(x => x.slot)) };
   }
   function tools(a, b) {
@@ -40,9 +41,10 @@ export function checkConfigurations(c) {
     return { mismatch: !compareRefs(new Set(needed.map(x => x.ref)), b.tools.map(x => x.tool.ref)) };
   }
   function coverage(code, result, p, isSelected) {
-    if (result.cause) gap('configuration', code, p, result.cause);
-    else if (result.mismatch) d('configuration', code, p);
-    if (isSelected && (result.cause || result.mismatch)) gap('compatibility', code === 'CONTENT' ? 'ENGINE' : 'TOOL', p, result.cause ?? 'reference');
+    const causes = result.causes ?? (result.cause ? [result.cause] : []);
+    for (const cause of causes) gap('configuration', code, p, cause);
+    if (result.mismatch) d('configuration', code, p);
+    if (isSelected) for (const cause of [...causes, ...(result.mismatch ? ['reference'] : [])]) gap('compatibility', code === 'CONTENT' ? 'ENGINE' : 'TOOL', p, cause);
   }
   function assess(requirements, selection, claims, code, p) {
     if (selection !== null && !readableEdition(selection)) { gap('compatibility', code, p); return; }

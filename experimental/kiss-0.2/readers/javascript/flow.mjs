@@ -99,7 +99,7 @@ export function checkFlow(c) {
           const q = pointer(p, 'scope');
           const resources = S.object(s.scope) ? s.scope.resources : undefined;
           const resourceText = x => typeof x === 'string' && x.length > 0;
-          if (!S.shape(resources, S.array(resourceText, 1))) gap('flow', 'UNIQUE', q);
+          if (!S.shape(resources, S.array(resourceText, 1))) gap('flow', 'UNIQUE', Array.isArray(resources) ? pointer(q, 'resources') : q);
           else unique('flow', resources, pointer(q, 'resources'), resourceText);
         }
       } else if (s.kind === 'approval') {

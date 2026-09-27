@@ -336,3 +336,26 @@ test('invalid port keys stay unreadable, valid sibling type checks survive', () 
   // The invalid key cannot supply an additional binding-name obligation.
   assert.ok(result(report(v), 'flow').incomplete.length > 0);
 });
+test('duplicate and unreadable slot identities union independent coverage causes', () => {
+  const v = example('two-configurations');
+  v.agents.writer.instructions.push(structuredClone(v.agents.writer.instructions[0]), { ...structuredClone(v.agents.writer.instructions[0]), id: null });
+  const expected = [D('core', 'SHAPE', '/agents/writer/instructions/2/id'), D('core', 'SLOT-ID', '/agents/writer/instructions'), G('core', 'SLOT-ID', '/agents/writer/instructions'), ...['primary', 'alternate'].map(c => G('configuration', 'CONTENT', `/configurations/${c}/agents/0`, 'shape,reference')), G('compatibility', 'ENGINE', B, 'shape,reference')];
+  exact(v, expected);
+  // Removing only the unreadable id retains the duplicate's reference cause.
+  v.agents.writer.instructions.pop();
+  exact(v, [D('core', 'SLOT-ID', '/agents/writer/instructions'), ...['primary', 'alternate'].map(c => G('configuration', 'CONTENT', `/configurations/${c}/agents/0`, 'reference')), G('compatibility', 'ENGINE', B, 'reference')]);
+  // Removing only the duplication from the combined witness retains shape.
+  v.agents.writer.instructions[1].id = null;
+  exact(v, [D('core', 'SHAPE', '/agents/writer/instructions/1/id'), G('core', 'SLOT-ID', '/agents/writer/instructions'), ...['primary', 'alternate'].map(c => G('configuration', 'CONTENT', `/configurations/${c}/agents/0`)), G('compatibility', 'ENGINE', B)]);
+});
+test('duplicate slots and unreadable Applications keep both independent causes', () => {
+  const v = example('two-configurations'); v.agents.writer.instructions.push(structuredClone(v.agents.writer.instructions[0]));
+  v.configurations.primary.agents[0].applications = null;
+  includes(report(v), G('compatibility', 'ENGINE', B, 'shape,reference'));
+});
+test('inspectable but invalid resources arrays locate UNIQUE at the array', () => {
+  for (const [resources, badPointer] of [[[], ''], [[null], '/0'], [['r', null], '/1']]) {
+    const v = example('governed-call'); v.graphs.release.steps[2].scope.resources = resources;
+    exact(v, [D('flow', 'SHAPE', `/graphs/release/steps/2/scope/resources${badPointer}`), G('flow', 'UNIQUE', '/graphs/release/steps/2/scope/resources'), G('flow', 'ACTOR', '/graphs/release/steps/2')]);
+  }
+});
