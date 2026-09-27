@@ -25,13 +25,15 @@ not present are not-applicable as specified there; syntax passes for every file.
 | [governed-call](examples/governed-call.json) | Explicit actor, action/resource/context scope, two ordered human gates and configuration pin. All present units pass statically; no authority, timing or execution proof. |
 | [governed-missing-actor](examples/governed-missing-actor.json) | Principal removal produces flow ACTOR fail at `/graphs/release/steps/2`, even though a descriptive Agent may omit it. |
 | [required-extension](examples/required-extension.json) | External REQUIRED unsupported plus a gap with cause unsupported at `/extensions/0`; core still passes within its scope. |
-| [missing-reference](examples/missing-reference.json) | Core REF fail at `/agents/writer/instructions/task`. No fallback content. |
+| [missing-reference](examples/missing-reference.json) | Core REF fail at `/agents/writer/instructions/0/content`. No fallback content. |
 | [ambiguous-reference](examples/ambiguous-reference.json) | Core ID fails at both `/instructions/draft` and `/principals/draft`; REF gap at the consuming slot, no first/last winner. |
 | [conflicting-bindings](examples/conflicting-bindings.json) | Configuration ASSIGN fails at `/configurations/primary`; duplicate writer bindings cannot receive complete dependent content/Tool/compatibility checks. The independent reviewer remains checkable. |
 | [independent-errors](examples/independent-errors.json) | Missing instruction reference and invalid operation mode both fail in core; required external interpretation remains separately unsupported. One error does not conceal another. |
+| [application-order-conflict](examples/application-order-conflict.json) | Reversing two Agent instruction slots in Applications gives CONTENT fail and ENGINE reference gap at `/configurations/ordered/agents/0`. The declared behavior cannot be reordered by engine selection. |
 | [unknown-support](examples/unknown-support.json) | Empty writer claims produce compatibility ENGINE inconclusive at `/configurations/primary/agents/0`; structure still passes. Missing evidence is not a structural violation. |
 
-Applications always select an Agent instruction slot, here `task`, whether its
+Applications preserve the Agent's declared slot order and select stable slot ids,
+such as `task`, whether the slot's
 value is named or embedded. Invoke always selects `rewrite` in that Agent's
 explicit Interface choice. The configuration examples copy complete settings
 values to both engines; they do not imply inheritance or native-option translation.

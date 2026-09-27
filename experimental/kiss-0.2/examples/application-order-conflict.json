@@ -4,7 +4,7 @@
     "writer": {
       "instructions": [
         {
-          "id": "task",
+          "id": "draft",
           "content": {
             "value": {
               "target": "Agent",
@@ -13,7 +13,21 @@
                 "identity": "example/plain-text",
                 "version": "1"
               },
-              "body": "Rewrite the input concisely without adding facts."
+              "body": "Draft a concise answer."
+            }
+          }
+        },
+        {
+          "id": "review",
+          "content": {
+            "value": {
+              "target": "Agent",
+              "at": "before-invoke",
+              "format": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "body": "Review the draft for unsupported claims."
             }
           }
         }
@@ -30,65 +44,23 @@
               "outputs": {
                 "text": "string"
               },
-              "effects": "external"
+              "effects": "none"
             }
           }
         }
-      },
-      "principal": {
-        "ref": "operator"
       }
     }
   },
-  "principals": {
-    "operator": {
-      "description": "Accountable document operator"
-    },
-    "human": {
-      "description": "Human reviewer"
-    }
-  },
   "graphs": {
-    "release": {
-      "entry": "approve-1",
+    "single": {
+      "entry": "send",
       "inputs": {
-        "text": "string",
-        "context": "json"
+        "text": "string"
       },
       "outputs": {
         "text": "string"
       },
       "steps": [
-        {
-          "id": "approve-1",
-          "kind": "approval",
-          "call": "send",
-          "approvers": [
-            {
-              "ref": "human"
-            }
-          ],
-          "validForMs": 120000,
-          "timeoutMs": 60000,
-          "approved": "approve-2",
-          "denied": "denied",
-          "failure": "failed"
-        },
-        {
-          "id": "approve-2",
-          "kind": "approval",
-          "call": "send",
-          "approvers": [
-            {
-              "ref": "human"
-            }
-          ],
-          "validForMs": 120000,
-          "timeoutMs": 60000,
-          "approved": "send",
-          "denied": "denied",
-          "failure": "failed"
-        },
         {
           "id": "send",
           "kind": "invoke",
@@ -96,15 +68,6 @@
             "ref": "writer"
           },
           "operation": "rewrite",
-          "scope": {
-            "action": "Send the reviewed text",
-            "resources": [
-              "Declared message destination"
-            ],
-            "context": {
-              "input": "context"
-            }
-          },
           "bindings": {
             "text": {
               "input": "text"
@@ -125,12 +88,6 @@
           }
         },
         {
-          "id": "denied",
-          "kind": "end",
-          "outcome": "denied",
-          "reason": "Human declined"
-        },
-        {
           "id": "failed",
           "kind": "end",
           "outcome": "failure",
@@ -140,9 +97,9 @@
     }
   },
   "configurations": {
-    "explicit": {
+    "ordered": {
       "graph": {
-        "ref": "release"
+        "ref": "single"
       },
       "agents": [
         {
@@ -183,7 +140,15 @@
           ],
           "applications": [
             {
-              "slot": "task",
+              "slot": "review",
+              "adapter": {
+                "identity": "example/content-custom",
+                "version": "1"
+              },
+              "parameters": {}
+            },
+            {
+              "slot": "draft",
               "adapter": {
                 "identity": "example/content-custom",
                 "version": "1"
@@ -205,5 +170,5 @@
       ]
     }
   },
-  "selected": "explicit"
+  "selected": "ordered"
 }

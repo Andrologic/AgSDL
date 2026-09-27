@@ -2,11 +2,14 @@
   "edition": "agsdl-exp-0016-c1",
   "agents": {
     "writer": {
-      "instructions": {
-        "task": {
-          "ref": "missing"
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "ref": "missing"
+          }
         }
-      },
+      ],
       "interface": {
         "ref": "text"
       }

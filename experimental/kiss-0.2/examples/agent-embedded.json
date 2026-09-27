@@ -2,19 +2,22 @@
   "edition": "agsdl-exp-0016-c1",
   "agents": {
     "writer": {
-      "instructions": {
-        "task": {
-          "value": {
-            "target": "Agent",
-            "at": "before-invoke",
-            "format": {
-              "identity": "example/plain-text",
-              "version": "1"
-            },
-            "body": "Rewrite the input concisely without adding facts."
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "value": {
+              "target": "Agent",
+              "at": "before-invoke",
+              "format": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "body": "Rewrite the input concisely without adding facts."
+            }
           }
         }
-      },
+      ],
       "interface": {
         "value": {
           "operations": {

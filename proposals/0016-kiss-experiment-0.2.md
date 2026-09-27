@@ -108,7 +108,8 @@ approvals cannot be reused; there is no hot modification or resumption contract.
 | Instructions | `target:"Agent"`, `at:"before-invoke"`, `format:Edition`, `body:text` |
 | Interface | `operations:map<Operation>` nonempty |
 | Operation | `direction:"inbound" or "outbound" or "bidirectional"`, `mode:"request-response"`, `inputs:Ports`, `outputs:Ports`, `effects:"none" or "external" or "unknown"` |
-| Agent | `instructions:map<InstructionsChoice>` nonempty, `interface:InterfaceChoice`, `principal?:Ref`, `tools?:Ref[]` |
+| InstructionSlot | `id:id`, `content:InstructionsChoice` |
+| Agent | `instructions:InstructionSlot[]+`, `interface:InterfaceChoice`, `principal?:Ref`, `tools?:Ref[]` |
 | Tool | `inputs:Ports`, `outputs:Ports`, `effects:"none" or "external" or "unknown"`, `failures:text[]`, `requires:Edition[]` |
 | Extension | `edition:Edition`, `use:"required" or "annotation"`, `payload:JSON` |
 
@@ -119,19 +120,21 @@ Empty agents is legal but does not describe an Agent. Every supplied Instruction
 Interface and Tool is shape-checked even if unused. Unknown members outside
 annotations, parameters, settings.value and extension payloads fail shape.
 
-An Agent has one Interface choice and named instruction slots. An embedded
+An Agent has one Interface choice and an ordered array of named instruction slots. An embedded
 Interface has exactly the same shape and semantics as a named Interface. Every
 invoke names an operation id in the selected Agent Interface's operations map,
 including embedded Interfaces. There is no operation selected by order or by
 being the only one. Multiple Interfaces per Agent are outside this experiment.
 
-Each instruction slot holds one whole Instructions value or one reference to
-one named Instructions Definition. A mixture, override, inherited body or merge
-is invalid shape. Slots have no execution order. The ordered Applications array
-in a binding determines the requested application order. Every slot is applied
-once, including two slots referencing identical Instructions. No deduplication,
-implicit prompt channel or priority follows. The `slot` id addresses the Agent's
-slot, so Application identification is identical for embedded and named content.
+Each instruction slot has a unique id within its Agent and holds one whole
+Instructions value or one reference to one named Instructions Definition. A
+mixture, override, inherited body or merge is invalid shape. Array order on the
+Agent is the requested behavioral content order. A binding's Applications must
+name every slot once in exactly that order; changing engines cannot reorder it.
+This uses one ordered slot declaration, not a second ordering list or alphabetic
+rule. Two slots may reference identical Instructions and both are applied. No
+deduplication, implicit prompt channel or runtime priority is inferred. The
+Application.slot id addresses the Agent's slot in either content form.
 
 A present Agent principal resolves to a Principal. Absence means actor not
 declared, not lack of responsibility. No engine identity or permission is inferred.
@@ -229,8 +232,8 @@ within one configuration require different Agent Definitions. Different
 configurations can select different engines for the same unchanged Agent
 record. They never change its principal or direction.
 
-Each binding's Applications name every instruction slot exactly once, in explicit
-application order. Each required Agent Tool has exactly one ToolBinding, with
+Each binding's Applications name every instruction slot exactly once and in the
+order declared by the Agent. Each required Agent Tool has exactly one ToolBinding, with
 no undeclared substitution. `requires`, Agent.tools, Tool.requires and Tool.failures
 have no duplicates. Claims have unique capability Editions per claim array.
 The candidate offers one explicit implementation per ToolBinding, not ordered
@@ -286,6 +289,13 @@ SHAPE at the step, checks only common id, and does not infer a variant or report
 variant fields as extra. End.outcome is a second discriminator with the same
 rule, retaining id/kind checks. Choice objects must contain exactly one of ref
 and value; otherwise emit SHAPE at the choice and inspect neither branch.
+Binding branch selection uses member presence: exactly one of input and step
+selects its branch, even when that member's value is malformed. Both or neither
+(including an empty object or port-only object) emits one SHAPE at the Binding,
+with no descent. In a selected branch, ordinary closed-record checking applies: a
+missing port locates the Binding, a malformed input/step/port locates that field,
+and extra members locate themselves. Any such defect blocks that Binding's DATA
+clause with cause shape, without blocking readable sibling Bindings.
 Malformed Ref emits SHAPE at its bad ref field or at the object for missing ref.
 No extra-key failure suppresses an otherwise readable field.
 
@@ -335,6 +345,7 @@ array, not multiple gap records. Rules not enumerated here do not exist.
 | core / SHAPE | Root fields other than graphs/configurations/selected/extensions; envelope field names and edition; all principal/instruction/interface/Agent/Tool contents. Extra root fields belong here. |
 | core / ID | Each entry in the six Definition maps. Catalog keys suffice; every entry whose id occurs more than once gets fail at that entry. Graph content shape is not required. Malformed catalog/key prevents the complete duplicate check: gap at each malformed catalog or entry. Observed duplicates still fail. |
 | core / REF | Each Ref within core-owned records. Depends on identity catalog and readable ref. Missing/wrong-kind target fails at Ref object; ambiguous target or incomplete catalog gives gap there. |
+| core / SLOT-ID | Each Agent.instructions array. Readable slot ids suffice: duplicates fail once at array. Missing/malformed slot id adds a shape gap at array without hiding observed duplicates. |
 | core / UNIQUE | Each Agent.tools array, Tool.requires and Tool.failures array. Readable array and complete element shapes required. Duplicate exact Ref/Edition/string fails once at array. |
 | flow / SHAPE | All graph contents, including scope and approval records. |
 | flow / REF | Each invoke.agent and approval approver Ref; ordinary REF rules and locations. |
@@ -343,18 +354,18 @@ array, not multiple gap records. Rules not enumerated here do not exist.
 | flow / PATH | Each Graph at its entry in graphs. Depends on readable entry, unique complete step ids, known kinds/outcomes and all successor ids. Absent successor/entry, cycle, unreachable step or unterminated maximal path fails once at Graph. Wrong-shape projection or duplicate ids gives gap at Graph. Port, binding and Agent validity do not gate PATH. |
 | flow / DATA | Each invoke or success-end step. Depends on its bindings map, readable target port map, readable graph inputs, producer step lookup and producer operation output maps. Check exact binding-name set; each readable binding selects a known input or invoke output of equal type. Missing input/producer/port, wrong producer kind/type, or name mismatch fails once at consumer. Malformed binding/port or failed producer operation blocks the affected clauses. Availability clause also requires PATH success; violation fails at consumer, unavailable PATH gives gap with cause path. Scope.context is checked here as another binding with required type json. |
 | flow / ACTOR | Each invoke. Governing trigger is the disjunction defined in section 3. Resolve operation effects, Agent Tool effects and readable approval.call links; scope presence is observable even if malformed. If any trigger is true, require scope presence and Agent.principal presence/resolution, failing at invoke if absent. Present malformed scope/principal gives gap. If no trigger is true but a trigger is unreadable, give gap, never infer ungoverned. Known triggers still enforce requirements despite another unreadable trigger. Principal absence otherwise passes. |
-| flow / APPROVAL | Each approval step. Readable call id and complete unique step catalog needed to check it names an invoke; absent/wrong-kind call fails at gate, ambiguous gives gap. Readable approvers array checks duplicate refs at gate; each approver also receives REF. Whole readable gate fields and PATH success are required for chain and timing-declaration clauses. Violations of the chain rules fail at each gate of the affected call; unavailable PATH gives gap at each gate. No comparison between timeout and validity is required. |
-| flow / APPROVAL-DATA | Each approval step with valid call lookup. Check the call's bindings and scope.context as DATA would, using the gate as availability consumer and diagnosing at the gate. Depends on DATA's field prerequisites and PATH. Missing scope required by governance yields gap reference to unavailable call scope, cause shape; ACTOR owns the failure. |
+| flow / APPROVAL | Each approval step. Readable call id and complete unique step catalog needed to check it names an invoke; absent/wrong-kind call completes this rule with fail at gate and has no chain subject or extra APPROVAL gap; ambiguous gives gap. Readable approvers array checks duplicate refs at gate; each approver also receives REF. Whole readable gate fields and PATH success are required for chain and timing-declaration clauses. Violations of the chain rules fail at each gate of the affected call; unavailable PATH gives gap at each gate. No comparison between timeout and validity is required. |
+| flow / APPROVAL-DATA | Every approval step; call lookup is a prerequisite, not subject discovery. Missing/wrong-kind/ambiguous call gives a reference gap at gate; malformed call gives shape gap. Check the call's bindings and scope.context as DATA would, using the gate as availability consumer and diagnosing at the gate. Depends on DATA's field prerequisites and PATH. Missing scope required by governance yields gap reference to unavailable call scope, cause shape; ACTOR owns the failure. |
 | flow / UNIQUE | Each supplied scope.resources array. Fully shaped array required; duplicates fail at array. |
 | configuration / SHAPE | configurations contents and selected when present. |
 | configuration / REF | Each Configuration.graph, AgentBinding.agent and ToolBinding.tool. Ordinary REF rules. |
 | configuration / SELECTION | selected when present. Readable id and configurations keys needed; absent named configuration fails at /selected, malformed/missing configurations gives gap there. Missing configurations counts as known empty for a present selected and therefore fails. |
 | configuration / ASSIGN | Each Configuration at its entry. Depends on resolved graph and its steps' known kinds plus readable invoke Agent refs; binding array and every binding.agent Ref must be readable. Compare exact distinct Agent ref sets and exactly one binding per Agent. Missing, extra or duplicate binding fails at Configuration. Graph PATH is not a dependency. Malformed projection gives gap; no missing Agent inferred. |
-| configuration / CONTENT | Each AgentBinding. Requires unique binding Agent within its Configuration, resolved Agent instruction slot keys and Applications array with readable slot ids. Slots must be exactly those of the Agent, each once. Missing/extra/duplicate slots fail at binding; malformed enumeration gives gap. Application adapters/parameters do not gate slot enumeration. |
+| configuration / CONTENT | Each AgentBinding. Requires unique binding Agent within its Configuration, resolved Agent instruction slot ids and Applications array with readable slot ids. Agent slot ids must be complete and unique. Application slot sequence must equal the Agent slot sequence, not merely its set. Missing/extra/duplicate/reordered slots fail at binding; malformed enumeration gives gap. Application adapters/parameters do not gate slot enumeration. |
 | configuration / TOOLS | Each AgentBinding. Requires unique binding Agent, resolved Agent.tools and complete ToolBinding.tool refs. Missing/extra/duplicate Tool binding fails at binding; malformed enumeration gives gap. Absent Agent.tools means known empty. |
 | configuration / UNIQUE | Every binding.requires and every engine/Tool claims array. Fully shaped array required; duplicate Editions or Claim.capability Editions fail once at array. |
-| compatibility / ENGINE | Each AgentBinding in selected configuration. Requires selected lookup, unique binding Agent, resolved Agent; check requirements and engine/claims using section 4. Each readable requirement subset is assessed independently. Malformed requires, settings format, Application adapter or slot format adds gap at binding, without hiding other known requirements. Missing Application does not hide instruction format requirements. Slot format recognition does not depend on target/at/body shape. Duplicate Claim.capability blocks only that capability; malformed claims enumeration blocks all claim lookup. Fail/inconclusive coalesce at binding. |
-| compatibility / TOOL | Each ToolBinding in selected configuration. Requires unique parent binding Agent and unique Tool binding in that parent, resolved Tool. Assess readable Tool.requires against implementation/claims using section 4. Duplicate claims block only their capability; malformed enumeration blocks lookup. Unknown Tool.effects contributes inconclusive; malformed effects contributes gap. Diagnostics/gaps at ToolBinding. |
+| compatibility / ENGINE | Each AgentBinding in selected configuration. Requires selected lookup, unique binding Agent, resolved Agent; check requirements and engine/claims using section 4. Each readable requirement subset is assessed independently. Malformed requires, settings format, Application adapter or slot format adds gap at binding, without hiding other known requirements. Missing Application does not hide instruction format requirements. Slot format recognition does not depend on target/at/body shape. Duplicate Claim.capability blocks only that capability; an incomplete capability-identity index blocks all claim lookup, as defined below. Fail/inconclusive coalesce at binding. |
+| compatibility / TOOL | Each ToolBinding in selected configuration. Requires unique parent binding Agent and unique Tool binding in that parent, resolved Tool. Assess readable Tool.requires against implementation/claims using section 4. Duplicate claims block only their capability; an incomplete capability-identity index blocks lookup. Unknown Tool.effects contributes inconclusive; malformed effects contributes gap. Diagnostics/gaps at ToolBinding. |
 | external / SHAPE | extensions array and entries. Payloads opaque. |
 | external / UNIQUE | extensions array. Readable entries' Edition fields suffice; duplicates fail at array; unreadable identities add gap at array without hiding observed duplicates. |
 | external / REQUIRED | Each extension with readable use and Edition. Required emits unsupported at extension and gap there with cause unsupported; annotation emits nothing. Malformed use/Edition gives gap. Payload shape has no extra constraints. |
@@ -373,10 +384,131 @@ Null selection produces inconclusive regardless of claims, without claiming an
 incompatibility that would require a supplied choice. With a supplied choice,
 unknown or missing claim emits inconclusive even when another requirement fails.
 If all requirements cannot be enumerated, inspect the readable subsets but add
-a gap. Missing slot/application/Tool enumeration cannot yield complete support.
+a gap. Unreadable or structurally incomplete Application/Tool coverage produces the
+explicit compatibility gaps below; a pass never silently drops that coverage.
 A malformed optional selected yields one compatibility CHECKS gap at /selected;
 a known missing selection target does too with cause reference. If no configuration
 is selected, compatibility is absent: no ENGINE/TOOL subjects or gaps.
+
+
+### Subject discovery, local identity projections and omissions
+
+These rules make the table's prerequisites precise; they add no new syntax.
+Subjects are discovered before testing their prerequisites. Semantic REF checks
+exist for each declared Ref field; a missing required Ref creates a gap at its
+parent with cause shape. An optional absent Ref has no subject. SHAPE owns the
+missing-field finding. For a malformed containing record or owner collection,
+use the nearest existing malformed value and one gap per affected code there;
+never invent child subjects below it. Once the whole-unit CHECKS gate applies,
+this discovery stops for that unit.
+
+For flow, a nonobject step or unknown/missing/malformed kind creates gaps at that
+step for REF, OPERATION, DATA, ACTOR, APPROVAL, APPROVAL-DATA and UNIQUE, all cause
+shape. This states unknown applicability without inventing a variant. SHAPE and
+STEP-ID/PATH still follow their own rules. For a known end with unreadable
+outcome, only DATA needs that local applicability gap; no invoke/approval rule
+is invented. A known failure/denied end has no DATA subject. For a known invoke,
+missing/malformed bindings does not remove the DATA subject; for a known gate,
+failed call lookup does not remove APPROVAL-DATA. Optional scope absent has no
+resource-UNIQUE subject. A present malformed scope gives a UNIQUE shape gap at
+scope if resources cannot be inspected. A known invoke has no APPROVAL subject;
+a known gate has no OPERATION or ACTOR subject. A malformed graph/steps container
+collapses REF, STEP-ID, PATH, OPERATION, DATA, ACTOR, APPROVAL, APPROVAL-DATA and
+UNIQUE gaps to that malformed value; a missing steps field uses the Graph.
+
+AgentBinding identity projection reads only binding.agent.ref. ToolBinding
+identity projection reads only binding.tool.ref. For local evaluation, only an
+observed duplicate of the same readable identity blocks that binding. A sibling
+with an unreadable identity does not block a readable sibling's CONTENT, TOOLS,
+ENGINE or TOOL. Exact collection coverage (ASSIGN or TOOLS) remains blocked when
+its identity enumeration is incomplete. An unreadable AgentBinding identity
+produces CONTENT and TOOLS shape gaps at that binding, and ENGINE plus parent TOOL shape gaps there
+when selected. Its existing child ToolBindings each receive TOOL shape gaps;
+an empty tools array has no children. A malformed tools container instead gets
+one TOOL shape gap at that container. Observed duplicate parent identities give
+those same dependent gaps with cause reference, without blocking sibling Agents.
+A ToolBinding with unreadable/duplicate own identity receives TOOL gap at itself
+with cause shape/reference, respectively. Definition lookup still uses the
+complete global catalog rule above; these are different identity projections.
+
+Claims have a capability-identity index separate from their value checks. The
+index requires an array of objects with fully readable capability Editions;
+it does not require status or evidence. If an element cannot supply its capability,
+all claim lookups for that binding are blocked with cause shape. If identities
+are complete, duplicate capability Editions block only that capability with
+cause reference. For a unique matching capability, malformed/missing status
+blocks only its assessment (shape). A supported status additionally needs readable
+evidence; malformed/missing evidence blocks that assessment (shape), null means
+inconclusive. Unsupported and unknown statuses do not depend on evidence, though
+configuration SHAPE still checks it. An invalid status/evidence on another
+capability cannot suppress an observable incompatibility. A capability not required
+is not assessed. UNIQUE retains its separate whole-array shape prerequisite.
+
+For selected bindings, ENGINE also checks Application coverage using CONTENT's
+projection. A readable missing/extra/duplicate/reordered Application sequence
+contributes an ENGINE gap at the AgentBinding with cause reference; an unreadable
+sequence contributes cause shape. Duplicate Agent slot ids contribute reference;
+unreadable Agent slot ids contribute shape. Still assess every observable
+intrinsic instruction format and declared adapter. Missing Applications supply
+no invented adapter requirement. A null engine contributes inconclusive and does
+not erase these coverage gaps.
+
+TOOL has a parent coverage subject at every selected AgentBinding, in addition
+to each ToolBinding assessment. Its parent projection is the same as TOOLS.
+A readable missing/extra/duplicate Tool binding gives TOOL gap at AgentBinding,
+cause reference; unreadable enumeration gives cause shape. This parent subject
+emits gaps only, never compatibility diagnostics. It does not depend on engine
+Application order or engine claims. Absent Agent.tools and an empty ToolBindings
+array is complete empty coverage. A missing ToolBinding has no invented child
+subject, implementation or claim; the parent gap prevents a complete compatibility
+pass. A present ToolBinding with null implementation is a child TOOL inconclusive,
+not a coverage omission. Known child incompatibilities remain observable beside
+parent gaps. Unreadable parent Agent identity blocks this parent coverage with
+cause shape; observed duplicate parent identity uses reference.
+
+A duplicate application slot or reordering does not change the declared requirement
+union; it causes the specified coverage gap. Tool/Agent reference resolution
+failures add reference gaps at their consuming table subjects. Multiple independent
+causes at one subject are unioned. Do not add downstream causes merely because
+one necessary prerequisite is already blocked: unavailable PATH contributes path,
+failed lookups contribute reference, malformed facts contribute shape, exactly
+for the clauses described above.
+
+### Adversarial witnesses with exact observations
+
+These witnesses modify the named example only for explanation. They are rules
+of this candidate, not implementation-derived expectations. D means Diagnostic,
+G means Gap; tuples omit unchanged empty result arrays. Every unlisted diagnostic
+or gap array is empty unless the row expressly scopes its observation to one
+subject. Presence and outcomes follow sections 6 and 7.
+
+| Mutation | Exact diagnostics and gaps |
+| --- | --- |
+| In two-agent-sequence, replace step 1 bindings.text by an object containing input, step and port. | D(flow,SHAPE,/graphs/pipeline/steps/1/bindings/text,fail); G(flow,DATA,/graphs/pipeline/steps/1,{shape}). |
+| In two-configurations, delete agents/0/agent of primary; set reviewer's plain-text claim to unsupported. | D(configuration,SHAPE,/configurations/primary/agents/0,fail); G(configuration,REF,/configurations/primary/agents/0,{shape}); G(configuration,ASSIGN,/configurations/primary,{shape}); G(configuration,CONTENT,/configurations/primary/agents/0,{shape}); G(configuration,TOOLS,/configurations/primary/agents/0,{shape}); G(compatibility,ENGINE,/configurations/primary/agents/0,{shape}); G(compatibility,TOOL,/configurations/primary/agents/0,{shape}); D(compatibility,ENGINE,/configurations/primary/agents/1,fail). No child TOOL subject exists in the empty tools array. |
+| In two-configurations, writer claim 0 becomes unsupported and claim 1 status becomes 17. | D(configuration,SHAPE,/configurations/primary/agents/0/claims/1/status,fail); G(configuration,UNIQUE,/configurations/primary/agents/0/claims,{shape}); D(compatibility,ENGINE,/configurations/primary/agents/0,fail); G(compatibility,ENGINE,/configurations/primary/agents/0,{shape}). |
+| In two-configurations, writer applications becomes empty. | D(configuration,CONTENT,/configurations/primary/agents/0,fail); G(compatibility,ENGINE,/configurations/primary/agents/0,{reference}). Intrinsic format requirements are still assessed and declared supported here. |
+| In tool-incompatible, selected writer tools becomes empty. | D(configuration,TOOLS,/configurations/primary/agents/0,fail); G(compatibility,TOOL,/configurations/primary/agents/0,{reference}). No child TOOL fail survives, because no implementation is selected there; the required Tool remains in Agent.tools. |
+| In application-order-conflict, use the supplied reversed Applications. | D(configuration,CONTENT,/configurations/ordered/agents/0,fail); G(compatibility,ENGINE,/configurations/ordered/agents/0,{reference}). The Agent's instruction order is unchanged; no sorting or repair is allowed. |
+
+For a missing kind on sequence step 0, the exact flow observations are:
+SHAPE fail at step 0; REF, OPERATION, DATA, ACTOR, APPROVAL, APPROVAL-DATA and
+UNIQUE shape gaps at step 0; PATH shape gap at /graphs/pipeline; DATA gap
+{reference,path} at step 1 because its producer's kind is unknown; DATA gap
+{path} at step 2. STEP-ID can still check all ids. ACTOR at step 1 has a shape
+gap because step 0 might be an approval governing it. There are no other findings
+or gaps in this witness. The absent configuration/compatibility/external units
+remain not-applicable. This does not infer step 0's variant from its other fields.
+
+For a missing approval target (governed-call step 0 call becomes missing), the
+exact flow observations are APPROVAL fail and APPROVAL-DATA reference gap at
+step 0, plus APPROVAL fail at step 1: step 0 is no longer a gate for send and
+its approved edge illegally reaches the internal chain's only gate. To avoid
+an arbitrary chain interpretation, the chain rules also require every incoming
+approved edge from an approval to a first gate to name that same call; an ordinary
+incoming edge excludes an approval's approved edge for another call. All other
+findings/gaps are empty. PATH still passes. This closes a mismatched-call chain
+without inferring which call was intended.
 
 ## 6. Unit boundaries and absence
 
