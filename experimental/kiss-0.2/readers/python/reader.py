@@ -597,8 +597,10 @@ class GraphChecks:
             self.fail(code, p)
         if isinstance(bindings, dict):
             for name, binding in bindings.items():
-                expected = ports.get(name) if keys_readable else None
-                if expected is not None and expected not in ('string', 'boolean', 'json'):
+                expected = ports.get(name, MISSING) if keys_readable else MISSING
+                if expected is MISSING:
+                    expected = None
+                elif expected not in ('string', 'boolean', 'json'):
                     self.gap(code, p)
                     expected = None
                 self.data_binding(binding, expected, consumer, p, code)

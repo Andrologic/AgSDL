@@ -232,6 +232,26 @@ class ReaderTests(unittest.TestCase):
         self.assertIn(D('flow', 'OPERATION', '/graphs/pipeline/steps/1'), ds)
         self.assertIn(G('flow', 'DATA', '/graphs/pipeline/steps/2', 'reference'), gs)
 
+    def test_null_target_port_types_block_only_type_comparison(self):
+        d = document('two-agent-sequence')
+        d['interfaces']['text']['operations']['rewrite']['inputs']['text'] = None
+        ds = [D('core', 'SHAPE', '/interfaces/text/operations/rewrite/inputs/text')]
+        gs = [G('flow', 'DATA', '/graphs/pipeline/steps/' + str(i)) for i in (0, 1)]
+        self.assert_observations(d, ds, gs)
+        d['graphs']['pipeline']['steps'][0]['bindings']['text'] = {'input': 'missing'}
+        self.assert_observations(d, ds + [D('flow', 'DATA', '/graphs/pipeline/steps/0')], gs)
+
+        d = document('two-agent-sequence')
+        d['graphs']['pipeline']['outputs']['text'] = None
+        self.assert_observations(d, [D('flow', 'SHAPE', '/graphs/pipeline/outputs/text')],
+                                 [G('flow', 'DATA', '/graphs/pipeline/steps/2')])
+
+        d = document('governed-call')
+        d['agents']['writer']['interface']['value']['operations']['rewrite']['inputs']['text'] = None
+        self.assert_observations(d, [D('core', 'SHAPE', '/agents/writer/interface/value/operations/rewrite/inputs/text')],
+                                 [G('flow', 'APPROVAL-DATA', '/graphs/release/steps/' + str(i)) for i in (0, 1)]
+                                 + [G('flow', 'DATA', '/graphs/release/steps/2')])
+
     def test_cli_exit_codes(self):
         cmd = [sys.executable, str(HERE / 'cli.py')]
         for args in ([], ['missing-file-that-does-not-exist'], ['a', 'b']):
