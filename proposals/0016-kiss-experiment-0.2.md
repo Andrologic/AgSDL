@@ -516,7 +516,14 @@ Each result has fixed scope edition `agsdl-exp-0016-c1`, phase `local`, input
 `primary`, and the following unit/subject. Presence concerns its container, not
 its validity. A present malformed container is present. If parsing failed or
 root is not an object, presence is undetermined except syntax, which is present.
-Root nonobject gives core SHAPE fail at root and other units CHECKS shape gaps.
+For any parsed nonobject root (null, array, string, number or Boolean), syntax
+is present/pass with empty diagnostics and gaps. Core is undetermined/fail with
+exactly one SHAPE fail at root and one CHECKS gap at root, causes [shape]. Flow,
+configuration, compatibility and external are each undetermined/inconclusive,
+with no diagnostics and exactly one CHECKS gap at root, causes [shape]. Their
+fixed result subjects remain those in the table below. No child subjects,
+individual rule gaps or edition-field findings are discovered for this case.
+This explicit whole-unit gate takes precedence over generic subject discovery.
 
 | Unit | Subject | Presence and absence |
 | --- | --- | --- |
