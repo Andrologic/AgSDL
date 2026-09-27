@@ -23,6 +23,7 @@ The [specification](../spec/README.md) is the normative source, not these files.
 | 0013 | Selected modular contract adopted with its retained Principal restriction, applied in spec with official marker `agsdl-0.1.0`. File remains the byte-identical historical snapshot at `280347eec4e2e051d296f9271bfccc86c98d4d40`. |
 | [0014](0014-minimal-core-0.2.md) | Proposed smaller core and composable format for 0.2, with [candidate examples](../docs/research/0.2-design-examples.md); not adopted or implemented. The current contract remains `agsdl-0.1.0`. |
 | [0015](0015-validation-reports-0.2.md) | Proposed lightweight validation reports and diagnostic agreement for 0.2; not adopted or implemented. The current contract remains `agsdl-0.1.0`. |
+| [0016](0016-kiss-experiment-0.2.md) | Bounded experimental candidate under [Decision 0008](../docs/decisions/0008-0.2-experiment-directions.md); prototype directions authorized, not normative adoption or publication. No candidate readers yet. |
 
 The proposed-status statements inside 0012/0013 describe their historical
 preparation dates. This register records the later limited adoption without
@@ -48,3 +49,4 @@ state publication or implementation conformance.
 - [`0013: modular MVP contract`](0013-modular-mvp-contract.md)
 - [`0014: a smaller core for 0.2 discussion`](0014-minimal-core-0.2.md), with [candidate examples](../docs/research/0.2-design-examples.md)
 - [`0015: lightweight validation reports for 0.2`](0015-validation-reports-0.2.md)
+- [`0016: bounded KISS experiment for 0.2`](0016-kiss-experiment-0.2.md)

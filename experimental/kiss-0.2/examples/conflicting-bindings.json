@@ -1,0 +1,430 @@
+{
+  "edition": "agsdl-exp-0016-c1",
+  "agents": {
+    "writer": {
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "ref": "draft"
+          }
+        }
+      ],
+      "interface": {
+        "ref": "text"
+      }
+    },
+    "reviewer": {
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "value": {
+              "target": "Agent",
+              "at": "before-invoke",
+              "format": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "body": "Correct unsupported claims in the draft."
+            }
+          }
+        }
+      ],
+      "interface": {
+        "ref": "text"
+      }
+    }
+  },
+  "instructions": {
+    "draft": {
+      "target": "Agent",
+      "at": "before-invoke",
+      "format": {
+        "identity": "example/plain-text",
+        "version": "1"
+      },
+      "body": "Rewrite the input concisely without adding facts."
+    }
+  },
+  "interfaces": {
+    "text": {
+      "operations": {
+        "rewrite": {
+          "direction": "inbound",
+          "mode": "request-response",
+          "inputs": {
+            "text": "string"
+          },
+          "outputs": {
+            "text": "string"
+          },
+          "effects": "none"
+        }
+      }
+    }
+  },
+  "graphs": {
+    "pipeline": {
+      "entry": "draft-call",
+      "inputs": {
+        "text": "string"
+      },
+      "outputs": {
+        "text": "string"
+      },
+      "steps": [
+        {
+          "id": "draft-call",
+          "kind": "invoke",
+          "agent": {
+            "ref": "writer"
+          },
+          "operation": "rewrite",
+          "bindings": {
+            "text": {
+              "input": "text"
+            }
+          },
+          "success": "review-call",
+          "failure": "failed"
+        },
+        {
+          "id": "review-call",
+          "kind": "invoke",
+          "agent": {
+            "ref": "reviewer"
+          },
+          "operation": "rewrite",
+          "bindings": {
+            "text": {
+              "step": "draft-call",
+              "port": "text"
+            }
+          },
+          "success": "done",
+          "failure": "failed"
+        },
+        {
+          "id": "done",
+          "kind": "end",
+          "outcome": "success",
+          "bindings": {
+            "text": {
+              "step": "review-call",
+              "port": "text"
+            }
+          }
+        },
+        {
+          "id": "failed",
+          "kind": "end",
+          "outcome": "failure",
+          "reason": "Call failed"
+        }
+      ]
+    }
+  },
+  "configurations": {
+    "primary": {
+      "graph": {
+        "ref": "pipeline"
+      },
+      "agents": [
+        {
+          "agent": {
+            "ref": "writer"
+          },
+          "engine": {
+            "identity": "example/engine-a",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [
+            {
+              "capability": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/content-a",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/text-settings",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/content-a",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": [],
+          "settings": {
+            "format": {
+              "identity": "example/text-settings",
+              "version": "1"
+            },
+            "value": {
+              "output": "plain-text"
+            }
+          }
+        },
+        {
+          "agent": {
+            "ref": "reviewer"
+          },
+          "engine": {
+            "identity": "example/engine-b",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [
+            {
+              "capability": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/content-b",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/text-settings",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/content-b",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": [],
+          "settings": {
+            "format": {
+              "identity": "example/text-settings",
+              "version": "1"
+            },
+            "value": {
+              "output": "plain-text"
+            }
+          }
+        },
+        {
+          "agent": {
+            "ref": "writer"
+          },
+          "engine": {
+            "identity": "example/engine-a",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [
+            {
+              "capability": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/content-a",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/text-settings",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/content-a",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": [],
+          "settings": {
+            "format": {
+              "identity": "example/text-settings",
+              "version": "1"
+            },
+            "value": {
+              "output": "plain-text"
+            }
+          }
+        }
+      ]
+    },
+    "alternate": {
+      "graph": {
+        "ref": "pipeline"
+      },
+      "agents": [
+        {
+          "agent": {
+            "ref": "writer"
+          },
+          "engine": {
+            "identity": "example/engine-b",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [
+            {
+              "capability": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/content-b",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/text-settings",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/content-b",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": [],
+          "settings": {
+            "format": {
+              "identity": "example/text-settings",
+              "version": "1"
+            },
+            "value": {
+              "output": "plain-text"
+            }
+          }
+        },
+        {
+          "agent": {
+            "ref": "reviewer"
+          },
+          "engine": {
+            "identity": "example/engine-a",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [
+            {
+              "capability": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/content-a",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/text-settings",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/content-a",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": [],
+          "settings": {
+            "format": {
+              "identity": "example/text-settings",
+              "version": "1"
+            },
+            "value": {
+              "output": "plain-text"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "selected": "primary"
+}

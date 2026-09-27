@@ -1,0 +1,174 @@
+{
+  "edition": "agsdl-exp-0016-c1",
+  "agents": {
+    "writer": {
+      "instructions": [
+        {
+          "id": "draft",
+          "content": {
+            "value": {
+              "target": "Agent",
+              "at": "before-invoke",
+              "format": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "body": "Draft a concise answer."
+            }
+          }
+        },
+        {
+          "id": "review",
+          "content": {
+            "value": {
+              "target": "Agent",
+              "at": "before-invoke",
+              "format": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "body": "Review the draft for unsupported claims."
+            }
+          }
+        }
+      ],
+      "interface": {
+        "value": {
+          "operations": {
+            "rewrite": {
+              "direction": "inbound",
+              "mode": "request-response",
+              "inputs": {
+                "text": "string"
+              },
+              "outputs": {
+                "text": "string"
+              },
+              "effects": "none"
+            }
+          }
+        }
+      }
+    }
+  },
+  "graphs": {
+    "single": {
+      "entry": "send",
+      "inputs": {
+        "text": "string"
+      },
+      "outputs": {
+        "text": "string"
+      },
+      "steps": [
+        {
+          "id": "send",
+          "kind": "invoke",
+          "agent": {
+            "ref": "writer"
+          },
+          "operation": "rewrite",
+          "bindings": {
+            "text": {
+              "input": "text"
+            }
+          },
+          "success": "done",
+          "failure": "failed"
+        },
+        {
+          "id": "done",
+          "kind": "end",
+          "outcome": "success",
+          "bindings": {
+            "text": {
+              "step": "send",
+              "port": "text"
+            }
+          }
+        },
+        {
+          "id": "failed",
+          "kind": "end",
+          "outcome": "failure",
+          "reason": "Call or approval failed"
+        }
+      ]
+    }
+  },
+  "configurations": {
+    "ordered": {
+      "graph": {
+        "ref": "single"
+      },
+      "agents": [
+        {
+          "agent": {
+            "ref": "writer"
+          },
+          "engine": {
+            "identity": "example/engine-custom",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [
+            {
+              "capability": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/content-custom",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/text-settings",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "applications": [
+            {
+              "slot": "review",
+              "adapter": {
+                "identity": "example/content-custom",
+                "version": "1"
+              },
+              "parameters": {}
+            },
+            {
+              "slot": "draft",
+              "adapter": {
+                "identity": "example/content-custom",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": [],
+          "settings": {
+            "format": {
+              "identity": "example/text-settings",
+              "version": "1"
+            },
+            "value": {
+              "output": "plain-text"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "selected": "ordered"
+}

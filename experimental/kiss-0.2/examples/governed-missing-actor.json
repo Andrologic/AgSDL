@@ -1,0 +1,206 @@
+{
+  "edition": "agsdl-exp-0016-c1",
+  "agents": {
+    "writer": {
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "value": {
+              "target": "Agent",
+              "at": "before-invoke",
+              "format": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "body": "Rewrite the input concisely without adding facts."
+            }
+          }
+        }
+      ],
+      "interface": {
+        "value": {
+          "operations": {
+            "rewrite": {
+              "direction": "inbound",
+              "mode": "request-response",
+              "inputs": {
+                "text": "string"
+              },
+              "outputs": {
+                "text": "string"
+              },
+              "effects": "external"
+            }
+          }
+        }
+      }
+    }
+  },
+  "principals": {
+    "operator": {
+      "description": "Accountable document operator"
+    },
+    "human": {
+      "description": "Human reviewer"
+    }
+  },
+  "graphs": {
+    "release": {
+      "entry": "approve-1",
+      "inputs": {
+        "text": "string",
+        "context": "json"
+      },
+      "outputs": {
+        "text": "string"
+      },
+      "steps": [
+        {
+          "id": "approve-1",
+          "kind": "approval",
+          "call": "send",
+          "approvers": [
+            {
+              "ref": "human"
+            }
+          ],
+          "validForMs": 120000,
+          "timeoutMs": 60000,
+          "approved": "approve-2",
+          "denied": "denied",
+          "failure": "failed"
+        },
+        {
+          "id": "approve-2",
+          "kind": "approval",
+          "call": "send",
+          "approvers": [
+            {
+              "ref": "human"
+            }
+          ],
+          "validForMs": 120000,
+          "timeoutMs": 60000,
+          "approved": "send",
+          "denied": "denied",
+          "failure": "failed"
+        },
+        {
+          "id": "send",
+          "kind": "invoke",
+          "agent": {
+            "ref": "writer"
+          },
+          "operation": "rewrite",
+          "scope": {
+            "action": "Send the reviewed text",
+            "resources": [
+              "Declared message destination"
+            ],
+            "context": {
+              "input": "context"
+            }
+          },
+          "bindings": {
+            "text": {
+              "input": "text"
+            }
+          },
+          "success": "done",
+          "failure": "failed"
+        },
+        {
+          "id": "done",
+          "kind": "end",
+          "outcome": "success",
+          "bindings": {
+            "text": {
+              "step": "send",
+              "port": "text"
+            }
+          }
+        },
+        {
+          "id": "denied",
+          "kind": "end",
+          "outcome": "denied",
+          "reason": "Human declined"
+        },
+        {
+          "id": "failed",
+          "kind": "end",
+          "outcome": "failure",
+          "reason": "Call or approval failed"
+        }
+      ]
+    }
+  },
+  "configurations": {
+    "explicit": {
+      "graph": {
+        "ref": "release"
+      },
+      "agents": [
+        {
+          "agent": {
+            "ref": "writer"
+          },
+          "engine": {
+            "identity": "example/engine-custom",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [
+            {
+              "capability": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/content-custom",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "capability": {
+                "identity": "example/text-settings",
+                "version": "1"
+              },
+              "status": "supported",
+              "evidence": "1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/content-custom",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": [],
+          "settings": {
+            "format": {
+              "identity": "example/text-settings",
+              "version": "1"
+            },
+            "value": {
+              "output": "plain-text"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "selected": "explicit"
+}
