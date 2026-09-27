@@ -291,3 +291,48 @@ test('ambiguous or malformed call preserves independent duplicate approvers', ()
   v.graphs.g.steps[0].call = 17;
   exact(v, [...common, D('flow', 'SHAPE', '/graphs/g/steps/0/call'), G('flow', 'APPROVAL', '/graphs/g/steps/0'), G('flow', 'APPROVAL-DATA', '/graphs/g/steps/0')]);
 });
+test('c2 exact duplicate-step ASSIGN witness: no step-id lookup is needed', () => {
+  const v = example('duplicate-step-assign');
+  exact(v, [D('flow', 'STEP-ID', '/graphs/g/steps'), G('flow', 'PATH', '/graphs/g')]);
+  assert.equal(result(report(v), 'configuration').outcome, 'pass');
+});
+test('c2 exact empty Tool requirements: malformed claims do not require lookup', () => {
+  const v = example('tool-incompatible'); v.tools.lookup.requires = []; v.configurations.primary.agents[0].tools[0].claims = [{}];
+  exact(v, [D('configuration', 'SHAPE', `${B}/tools/0/claims/0`), G('configuration', 'UNIQUE', `${B}/tools/0/claims`)]);
+  assert.equal(result(report(v), 'compatibility').outcome, 'pass');
+});
+test('c2 marker is mandatory; old edition cannot silently validate as c2', () => {
+  const v = minimal(); v.edition = 'agsdl-exp-0016-c1';
+  exact(v, [D('core', 'SHAPE', '/edition'), ...['flow', 'configuration', 'compatibility', 'external'].map(u => G(u, 'CHECKS', ''))]);
+  assert.equal(report(minimal()).processor.version, '0016-c2');
+});
+test('malformed target port does not hide readable type and name failures', () => {
+  const v = example('two-agent-sequence'); v.interfaces.text.operations.rewrite.inputs = { text: 'boolean', broken: null };
+  exact(v, [D('core', 'SHAPE', '/interfaces/text/operations/rewrite/inputs/broken'), ...[0, 1].flatMap(i => [D('flow', 'DATA', `${P}/steps/${i}`), G('flow', 'DATA', `${P}/steps/${i}`)])]);
+  // Supply the missing name: the independent text type mismatch still fails.
+  v.graphs.pipeline.steps[0].bindings.broken = { input: 'text' };
+  includes(report(v), D('flow', 'DATA', `${P}/steps/0`), G('flow', 'DATA', `${P}/steps/0`));
+  // Repair the type instead: the independent name mismatch still fails.
+  v.interfaces.text.operations.rewrite.inputs.text = 'string';
+  includes(report(v), D('flow', 'DATA', `${P}/steps/1`), G('flow', 'DATA', `${P}/steps/1`));
+});
+test('graph input port projection keeps known type and missing-input failures', () => {
+  const v = example('two-agent-sequence'); v.graphs.pipeline.inputs = { text: 'boolean', broken: null };
+  includes(report(v), D('flow', 'SHAPE', `${P}/inputs/broken`), D('flow', 'DATA', `${P}/steps/0`), G('flow', 'DATA', `${P}/steps/0`));
+  v.graphs.pipeline.steps[0].bindings.text = { input: 'absent' };
+  includes(report(v), D('flow', 'DATA', `${P}/steps/0`));
+});
+test('producer output projection keeps known type and missing-port failures', () => {
+  const v = example('two-agent-sequence'); v.interfaces.text.operations.rewrite.outputs = { text: 'boolean', broken: null };
+  includes(report(v), D('core', 'SHAPE', '/interfaces/text/operations/rewrite/outputs/broken'), ...[1, 2].flatMap(i => [D('flow', 'DATA', `${P}/steps/${i}`), G('flow', 'DATA', `${P}/steps/${i}`)]));
+  v.graphs.pipeline.steps[1].bindings.text = { step: 'draft-call', port: 'absent' };
+  includes(report(v), D('flow', 'DATA', `${P}/steps/1`));
+});
+test('invalid port keys stay unreadable, valid sibling type checks survive', () => {
+  const v = example('two-agent-sequence'); v.interfaces.text.operations.rewrite.inputs = { text: 'boolean', 'invalid/key': 'string' };
+  includes(report(v), D('core', 'SHAPE', '/interfaces/text/operations/rewrite/inputs/invalid~1key'), D('flow', 'DATA', `${P}/steps/0`), G('flow', 'DATA', `${P}/steps/0`));
+  v.interfaces.text.operations.rewrite.inputs.text = 'string';
+  assert.equal(result(report(v), 'flow').diagnostics.length, 0);
+  // The invalid key cannot supply an additional binding-name obligation.
+  assert.ok(result(report(v), 'flow').incomplete.length > 0);
+});

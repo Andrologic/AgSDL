@@ -118,27 +118,36 @@ export function checkFlow(c) {
         const op = selectedOperation(callIndex);
         if (op.cause) { bad(op.cause); targetUnavailable = true; } else targets = op.value.inputs;
       }
-      const targetReady = S.shape(targets, S.ports);
-      if (!targetUnavailable && !targetReady) bad('shape');
-      const inputsReady = S.shape(g.inputs, S.ports);
-      if (!inputsReady) bad('shape');
+      const targetKeysReady = mapReadable(targets);
+      if (!targetUnavailable && !S.shape(targets, S.ports)) bad('shape');
+      if (!S.shape(g.inputs, S.ports)) bad('shape');
       if (!pathOK) bad('path');
       if (!S.object(s.bindings)) bad('shape');
       else {
         if (!mapReadable(s.bindings)) bad('shape');
-        if (targetReady && mapReadable(s.bindings) && (Object.keys(s.bindings).length !== Object.keys(targets).length || Object.keys(s.bindings).some(k => !S.has(targets, k)))) d('flow', code, p);
-        for (const [key, b] of Object.entries(s.bindings)) checkBinding(b, targetReady ? targets[key] : undefined);
+        if (targetKeysReady && mapReadable(s.bindings) && (Object.keys(s.bindings).length !== Object.keys(targets).length || Object.keys(s.bindings).some(k => !S.has(targets, k)))) d('flow', code, p);
+        for (const [key, b] of Object.entries(s.bindings)) {
+          if (!S.id(key)) continue;
+          const target = S.has(targets, key) && portType(targets[key]) ? targets[key] : undefined;
+          checkBinding(b, target);
+        }
       }
       if (S.has(s, 'scope')) {
         if (!S.object(s.scope)) bad('shape');
         else checkBinding(s.scope.context, 'json');
       } else if (requireScope) bad('shape');
+      function portType(value) { return ['string', 'boolean', 'json'].includes(value); }
+      function sourcePort(ports, key) {
+        if (!S.shape(ports, S.ports)) bad('shape');
+        if (!S.object(ports)) return;
+        if (S.has(ports, key)) return portType(ports[key]) ? ports[key] : undefined;
+        if (mapReadable(ports)) d('flow', code, p);
+      }
       function checkBinding(b, target) {
         if (!S.shape(b, S.binding)) { bad('shape'); return; }
         let actual;
         if (S.has(b, 'input')) {
-          if (!inputsReady) return;
-          if (!S.has(g.inputs, b.input)) d('flow', code, p); else actual = g.inputs[b.input];
+          actual = sourcePort(g.inputs, b.input);
         } else {
           const producer = stepLookup(b.step);
           if (producer.cause) { if (producer.missing) d('flow', code, p); else bad(producer.cause); return; }
@@ -146,9 +155,7 @@ export function checkFlow(c) {
           if (producer.value.kind !== 'invoke') { d('flow', code, p); return; }
           const op = selectedOperation(producer.i);
           if (op.cause) bad(op.cause === 'shape' ? 'shape' : 'reference');
-          else if (!S.shape(op.value.outputs, S.ports)) bad('shape');
-          else if (!S.has(op.value.outputs, b.port)) d('flow', code, p);
-          else actual = op.value.outputs[b.port];
+          else actual = sourcePort(op.value.outputs, b.port);
           if (pathOK) {
             const edge = edges.find(e => e.from === producer.i && e.label === 'success');
             if (reachable(entry, consumer, edge)) d('flow', code, p);

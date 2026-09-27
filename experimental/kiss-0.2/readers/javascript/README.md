@@ -2,10 +2,10 @@
 
 This independent reader implements the six static units of
 [proposal 0016](../../../../proposals/0016-kiss-experiment-0.2.md), marker
-`agsdl-exp-0016-c1`, frozen at base
-`ac974f4ffc185d3ffd44955be0b5a18ff44422e0`. It is experimental, not a normative
+`agsdl-exp-0016-c2`, frozen at base
+`2d79f4d6a7999feb41742705e0abc78377dbe337`. It is experimental, not a normative
 0.2 implementation or execution engine. Its processor identity is
-`agsdl-experimental/javascript-kiss-reader`, version `0016-c1`.
+`agsdl-experimental/javascript-kiss-reader`, version `0016-c2`.
 
 From the repository root, with Node.js supporting `node --test`:
 
@@ -52,13 +52,7 @@ repository's `check.sh` does not run this new suite; run both commands explicitl
 when changing this reader. Resource exhaustion may throw before a report is
 available; there is no partial-success or interruption result in this edition.
 
-One candidate question remains from independent review: whether duplicate step
-ids also block configuration ASSIGN. Its table names only known step kinds and
-readable invoke Agent refs, and excludes PATH as a prerequisite; the later text
-says duplicate ids block "full step enumeration". This implementation follows
-the table's narrower projection. That choice is provisional evidence, not an
-oracle resolving the wording. A graph with two failure ends both named `e`,
-no invokes and a configuration with no Agent bindings exposes the difference:
-ASSIGN can complete the known empty Agent set, or receive a reference gap if
-full enumeration includes this projection. Resolve this candidate question
-before claiming complete cross-reader agreement.
+Candidate c2 explicitly keeps ASSIGN independent of step-id lookup and skips
+claim lookup for a completely known empty requirement set. Exact tests cover
+both witnesses. DATA projects port names and individual types separately, so
+a malformed sibling port does not hide a readable type or binding-name error.

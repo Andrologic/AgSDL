@@ -3,8 +3,8 @@ import { parse, pointer } from '../../../../tooling/readers/javascript/json.mjs'
 import * as S from './shape.mjs';
 import { checkFlow } from './flow.mjs';
 import { checkConfigurations } from './configuration.mjs';
-export const EDITION = 'agsdl-exp-0016-c1';
-export const PROCESSOR = Object.freeze({ identity: 'agsdl-experimental/javascript-kiss-reader', version: '0016-c1' });
+export const EDITION = 'agsdl-exp-0016-c2';
+export const PROCESSOR = Object.freeze({ identity: 'agsdl-experimental/javascript-kiss-reader', version: '0016-c2' });
 export const editionKey = v => JSON.stringify([v.identity, v.version]);
 // Semantic identity projection: extra fields still fail SHAPE at their source.
 export const readableEdition = v => S.object(v) && typeof v.identity === 'string' && v.identity.length > 0 && typeof v.version === 'string' && v.version.length > 0;

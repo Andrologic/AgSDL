@@ -39,7 +39,7 @@ export const agentBinding = record({ agent: ref, engine: nullable(edition), para
 export const configuration = record({ graph: ref, agents: array(agentBinding) });
 export const extension = record({ edition, use: one('required', 'annotation'), payload: json });
 export const catalogs = { principals: record({ description: text }), instructions, interfaces: iface, agents: agent, tools: tool, graphs: graph };
-export const documentCore = record({ edition: one('agsdl-exp-0016-c1'), agents: map(agent), principals: optional(map(catalogs.principals)), instructions: optional(map(instructions)), interfaces: optional(map(iface)), tools: optional(map(tool)), graphs: optional(json), configurations: optional(json), selected: optional(json), extensions: optional(json), annotations: optional(json) });
+export const documentCore = record({ edition: one('agsdl-exp-0016-c2'), agents: map(agent), principals: optional(map(catalogs.principals)), instructions: optional(map(instructions)), interfaces: optional(map(iface)), tools: optional(map(tool)), graphs: optional(json), configurations: optional(json), selected: optional(json), extensions: optional(json), annotations: optional(json) });
 export { array, map, nullable };
 
 // Returns complete shape validity; callers can separately project readable fields.
