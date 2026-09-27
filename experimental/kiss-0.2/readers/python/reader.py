@@ -816,25 +816,30 @@ class ConfigurationChecks:
     def slot_projection(self, agent):
         slots = field(agent, 'instructions')
         if not isinstance(slots, list):
-            return [], 'shape'
+            return [], {'shape'}
         names = [field(x, 'id') for x in slots]
-        if not all(is_id(x) for x in names):
-            return [], 'shape'
-        if len(set(names)) != len(names):
-            return names, 'reference'
-        return names, None
+        readable = [x for x in names if is_id(x)]
+        causes = set()
+        if len(readable) != len(names):
+            causes.add('shape')
+        if len(set(readable)) != len(readable):
+            causes.add('reference')
+        return names, causes
 
     def content(self, binding, agent, path, parent_cause, selected):
-        names, cause = self.slot_projection(agent)
-        cause = parent_cause or cause
+        names, causes = self.slot_projection(agent)
+        if parent_cause:
+            causes = {parent_cause}
         applications = field(binding, 'applications')
         supplied = [field(x, 'slot') for x in applications] if isinstance(applications, list) else []
         if not isinstance(applications, list) or not all(is_id(x) for x in supplied):
-            cause = cause or 'shape'
-        if cause:
-            self.gap('CONTENT', path, cause)
-            if selected:
-                self.gap('ENGINE', path, cause, 'compatibility')
+            if not parent_cause:
+                causes.add('shape')
+        if causes:
+            for cause in causes:
+                self.gap('CONTENT', path, cause)
+                if selected:
+                    self.gap('ENGINE', path, cause, 'compatibility')
         elif names != supplied:
             self.fail('CONTENT', path)
             if selected:

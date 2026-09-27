@@ -44,6 +44,22 @@ def G(u, c, p, *causes):
 
 
 class ReaderTests(unittest.TestCase):
+    def test_duplicate_and_unreadable_slot_ids_union_causes(self):
+        for malformed in (None, {}, [], 17):
+            d = document('two-configurations')
+            slots = d['agents']['writer']['instructions']
+            slots.extend([copy.deepcopy(slots[0]), copy.deepcopy(slots[0])])
+            slots[2]['id'] = malformed
+            ds = [D('core', 'SHAPE', '/agents/writer/instructions/2/id'),
+                  D('core', 'SLOT-ID', '/agents/writer/instructions')]
+            gs = [G('core', 'SLOT-ID', '/agents/writer/instructions')]
+            gs += [G('configuration', 'CONTENT', '/configurations/' + c + '/agents/0', 'reference', 'shape')
+                   for c in ('primary', 'alternate')]
+            gs += [G('compatibility', 'ENGINE', '/configurations/primary/agents/0', 'reference', 'shape')]
+            self.assert_observations(d, ds, gs)
+            d['configurations']['primary']['agents'][0]['claims'][0]['status'] = 'unsupported'
+            self.assert_observations(d, ds + [D('compatibility', 'ENGINE', '/configurations/primary/agents/0')], gs)
+
     def test_c2_assignment_without_step_id_lookup(self):
         d = document('duplicate-step-assign')
         self.assert_observations(d, [D('flow', 'STEP-ID', '/graphs/g/steps')], [G('flow', 'PATH', '/graphs/g')])
