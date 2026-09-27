@@ -4,7 +4,10 @@ Status: **experimental candidate, not normative, not adopted, not published**.
 The marker is `agsdl-exp-0016-c2`, not a delivered AgSDL version. The only rule
 source is [proposal 0016](../../proposals/0016-kiss-experiment-0.2.md), under the
 [prototype mandate](../../docs/decisions/0008-0.2-experiment-directions.md).
-No reader, runtime, schema or conformance implementation is supplied here yet.
+[Python](readers/python/README.md) and [JavaScript](readers/javascript/README.md)
+readers implement static validation. The [comparison corpus](corpus/README.md)
+and [KISS assessment](ASSESSMENT.md) record the bounded c2 evidence.
+No runtime or normative conformance implementation is supplied here.
 The current published contract remains `agsdl-0.1.0` in release 0.1.1.
 
 ## Changes from c1
@@ -14,8 +17,9 @@ without depending on step ids. It also makes explicit that a complete empty
 requirement set with a supplied readable choice needs no claim lookup; malformed
 claims remain configuration defects. Incomplete requirements, coverage and
 effects retain their independent checks. These clarifications change the marker
-after the c1 reader baseline was frozen. Reader updates and independent review
-against c2 are still required; c1 evidence does not establish c2 agreement.
+after the c1 reader baseline was frozen. Both readers now target c2, with
+[separate c2 comparison evidence](ASSESSMENT.md). Historical c1 evidence does
+not establish c2 agreement.
 
 ## Exact example inputs
 
@@ -77,14 +81,12 @@ These are obligation and coverage comparisons, not line-count claims. The old
 examples and 0014/0015 are unchanged. The examples intentionally include failures
 and unknowns; being readable JSON is not a positive validation result.
 
-## Next evidence stage
+## Comparison evidence
 
-Implement the one candidate operation independently twice, then compare reports
-for the same exact bytes, including missing and ambiguous references, malformed
-siblings, governed actor omissions and explicit incompatibility. No generated
-output from an existing reader is an oracle for this new candidate. Candidate
-changes need review and a new marker once a reader baseline is frozen.
-
-The existing repository check still applies to this documentary lot. JSON syntax
-and hand-checked references/paths are useful authoring checks but cannot establish
-independent semantic agreement. No runtime or engine tests are implied.
+The [dedicated comparison command](corpus/README.md) checks 38 exact inputs
+against hand-authored expectations and both independent c2 readers. It retains
+raw reports and source metadata outside the checkout. The [assessment](ASSESSMENT.md)
+separates observed agreement, declaration measurements and recommendations.
+No reader output supplies the oracle. Candidate changes still need review and a
+new marker once a reader baseline is frozen. Runtime and engine support remain
+outside this evidence.

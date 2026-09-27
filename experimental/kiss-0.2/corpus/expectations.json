@@ -1,0 +1,2113 @@
+{
+  "edition": "agsdl-exp-0016-c2",
+  "candidateSha256": "c7fc7329ffd577d02b810351a85bf656b3ad3740fb597ed70d672b8756a35773",
+  "expectationMode": "Exact diagnostic and gap sets; all unlisted observations absent; outcomes derived only by proposal 0016 section 7.",
+  "draftSha256": "39de1c470ba3ddb548aa462c51836dd8e740df0b67f922e984d816f20af000b1",
+  "cases": [
+    {
+      "name": "agent-embedded",
+      "input": "examples/agent-embedded.json",
+      "sha256": "7d7ffde951629f918582a0ba7ac7b9d7dc30b9575194f8ff12b655a5960e63d3",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "absent",
+        "configuration": "absent",
+        "compatibility": "absent",
+        "external": "absent"
+      },
+      "diagnostics": [],
+      "gaps": [],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "agent-named",
+      "input": "examples/agent-named.json",
+      "sha256": "25958c92047ee4054ab7146ec5869098edce1a2cbfcbc9194a7480171f19678b",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "absent",
+        "configuration": "absent",
+        "compatibility": "absent",
+        "external": "absent"
+      },
+      "diagnostics": [],
+      "gaps": [],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "two-agent-sequence",
+      "input": "examples/two-agent-sequence.json",
+      "sha256": "9cc03b37b51290208684d408279414d265739b383fe061d2fd72c5a5fde78b40",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "absent",
+        "compatibility": "absent",
+        "external": "absent"
+      },
+      "diagnostics": [],
+      "gaps": [],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "two-configurations",
+      "input": "examples/two-configurations.json",
+      "sha256": "c95cfb1f42e9ace3279e6ce9d17bfada6ce49b3729408cb0633c32411524bf7a",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [],
+      "gaps": [],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "governed-call",
+      "input": "examples/governed-call.json",
+      "sha256": "d61b2123b9c5367b037bcaa7b9d0fc416ace3f4ecc1ac8e7207b8412a0400e49",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [],
+      "gaps": [],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "tool-incompatible",
+      "input": "examples/tool-incompatible.json",
+      "sha256": "e87183257d5a6685cefea8c18d089c6957abd9262d32d040364a5baf2859952f",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "compatibility",
+          "TOOL",
+          "/configurations/primary/agents/0/tools/0",
+          "fail"
+        ]
+      ],
+      "gaps": [],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "governed-missing-actor",
+      "input": "examples/governed-missing-actor.json",
+      "sha256": "f62f4a2ef985e9f42a04bb9a16438fe54ada4e0b4368943fc63b2ab5e019812b",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "flow",
+          "ACTOR",
+          "/graphs/release/steps/2",
+          "fail"
+        ]
+      ],
+      "gaps": [],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "required-extension",
+      "input": "examples/required-extension.json",
+      "sha256": "09cd3b148faa0a0f4fc9abe73bea8ccb5770dcd5a03c801a7e2c73c693a17053",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "absent",
+        "configuration": "absent",
+        "compatibility": "absent",
+        "external": "present"
+      },
+      "diagnostics": [
+        [
+          "external",
+          "REQUIRED",
+          "/extensions/0",
+          "unsupported"
+        ]
+      ],
+      "gaps": [
+        [
+          "external",
+          "REQUIRED",
+          "/extensions/0",
+          [
+            "unsupported"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "missing-reference",
+      "input": "examples/missing-reference.json",
+      "sha256": "1bb47f6838639d09c391d770f268c63cd4be83b27c06b752ba8d57e3ecc82d97",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "absent",
+        "configuration": "absent",
+        "compatibility": "absent",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "core",
+          "REF",
+          "/agents/writer/instructions/0/content",
+          "fail"
+        ]
+      ],
+      "gaps": [],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "ambiguous-reference",
+      "input": "examples/ambiguous-reference.json",
+      "sha256": "935b60deb08880d77332fca41d91db2a91434f067353aa8ca318b626f2498797",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "absent",
+        "configuration": "absent",
+        "compatibility": "absent",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "core",
+          "ID",
+          "/instructions/draft",
+          "fail"
+        ],
+        [
+          "core",
+          "ID",
+          "/principals/draft",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "REF",
+          "/agents/writer/instructions/0/content",
+          [
+            "reference"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "conflicting-bindings",
+      "input": "examples/conflicting-bindings.json",
+      "sha256": "07158d9f6418592c1e93ff119bf983a6c25b2141ad0e26a3376b7ef582096ad1",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "configuration",
+          "ASSIGN",
+          "/configurations/primary",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "configuration",
+          "CONTENT",
+          "/configurations/primary/agents/0",
+          [
+            "reference"
+          ]
+        ],
+        [
+          "configuration",
+          "TOOLS",
+          "/configurations/primary/agents/0",
+          [
+            "reference"
+          ]
+        ],
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/0",
+          [
+            "reference"
+          ]
+        ],
+        [
+          "compatibility",
+          "TOOL",
+          "/configurations/primary/agents/0",
+          [
+            "reference"
+          ]
+        ],
+        [
+          "configuration",
+          "CONTENT",
+          "/configurations/primary/agents/2",
+          [
+            "reference"
+          ]
+        ],
+        [
+          "configuration",
+          "TOOLS",
+          "/configurations/primary/agents/2",
+          [
+            "reference"
+          ]
+        ],
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/2",
+          [
+            "reference"
+          ]
+        ],
+        [
+          "compatibility",
+          "TOOL",
+          "/configurations/primary/agents/2",
+          [
+            "reference"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "independent-errors",
+      "input": "examples/independent-errors.json",
+      "sha256": "3d3ea7fb7aa44d0998c612580f7b2ccc1dbd006f51e67c57797c840c6dadb54f",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "absent",
+        "configuration": "absent",
+        "compatibility": "absent",
+        "external": "present"
+      },
+      "diagnostics": [
+        [
+          "core",
+          "REF",
+          "/agents/writer/instructions/0/content",
+          "fail"
+        ],
+        [
+          "core",
+          "SHAPE",
+          "/interfaces/text/operations/rewrite/mode",
+          "fail"
+        ],
+        [
+          "external",
+          "REQUIRED",
+          "/extensions/0",
+          "unsupported"
+        ]
+      ],
+      "gaps": [
+        [
+          "external",
+          "REQUIRED",
+          "/extensions/0",
+          [
+            "unsupported"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "application-order-conflict",
+      "input": "examples/application-order-conflict.json",
+      "sha256": "54c65e88ae6cbe55f88b0c15ef1a018e4ea43fe694accc481600b4f78c162f31",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "configuration",
+          "CONTENT",
+          "/configurations/ordered/agents/0",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/ordered/agents/0",
+          [
+            "reference"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "unknown-support",
+      "input": "examples/unknown-support.json",
+      "sha256": "fd482c4c813bce0aef9617b5c22553a1d7246c4aab188bf60f069d12e2e56f2c",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/0",
+          "inconclusive"
+        ]
+      ],
+      "gaps": [],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections 5-7"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "duplicate-step-assign",
+      "input": "examples/duplicate-step-assign.json",
+      "sha256": "fe31e8f524051325f10480181fc2d5d120e98c49ac6960eac9b94a0e1231ee07",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "absent",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "flow",
+          "STEP-ID",
+          "/graphs/g/steps",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "flow",
+          "PATH",
+          "/graphs/g",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section5 c2 duplicate-step witness"
+      ],
+      "provenance": {
+        "kind": "existing example"
+      }
+    },
+    {
+      "name": "binding-ambiguous",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "absent",
+        "compatibility": "absent",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "flow",
+          "SHAPE",
+          "/graphs/pipeline/steps/1/bindings/text",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "flow",
+          "DATA",
+          "/graphs/pipeline/steps/1",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section 5 Adversarial witnesses with exact observations"
+      ],
+      "input": "corpus/inputs/binding-ambiguous.input",
+      "sha256": "4bfca1551fb1a62f900c7063e7e0c20aaf3793e5e47ce05f1c74332c0ac8d0ce",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/two-agent-sequence.json",
+        "baseSha256": "9cc03b37b51290208684d408279414d265739b383fe061d2fd72c5a5fde78b40",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/graphs/pipeline/steps/1/bindings/text",
+            "value": {
+              "input": "text",
+              "step": "draft-call",
+              "port": "text"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "unreadable-binding-keeps-sibling-failure",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "configuration",
+          "SHAPE",
+          "/configurations/primary/agents/0",
+          "fail"
+        ],
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/1",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "configuration",
+          "REF",
+          "/configurations/primary/agents/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "ASSIGN",
+          "/configurations/primary",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CONTENT",
+          "/configurations/primary/agents/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "TOOLS",
+          "/configurations/primary/agents/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "TOOL",
+          "/configurations/primary/agents/0",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section 5 Adversarial witnesses with exact observations"
+      ],
+      "input": "corpus/inputs/unreadable-binding-keeps-sibling-failure.input",
+      "sha256": "73484f1f71df05c06db3aaef5f075fb58931c46fb2e3ece546268179445ff8c3",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/two-configurations.json",
+        "baseSha256": "c95cfb1f42e9ace3279e6ce9d17bfada6ce49b3729408cb0633c32411524bf7a",
+        "mutations": [
+          {
+            "op": "remove",
+            "path": "/configurations/primary/agents/0/agent"
+          },
+          {
+            "op": "replace",
+            "path": "/configurations/primary/agents/1/claims/0/status",
+            "value": "unsupported"
+          }
+        ]
+      }
+    },
+    {
+      "name": "malformed-claim-keeps-known-failure",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "configuration",
+          "SHAPE",
+          "/configurations/primary/agents/0/claims/1/status",
+          "fail"
+        ],
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/0",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "configuration",
+          "UNIQUE",
+          "/configurations/primary/agents/0/claims",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/0",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section 5 Adversarial witnesses with exact observations"
+      ],
+      "input": "corpus/inputs/malformed-claim-keeps-known-failure.input",
+      "sha256": "3ddf080c11c6c12131b8c02d71e9c74c853a185cbda9214065ce1e3a3bdbc86e",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/two-configurations.json",
+        "baseSha256": "c95cfb1f42e9ace3279e6ce9d17bfada6ce49b3729408cb0633c32411524bf7a",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/configurations/primary/agents/0/claims/0/status",
+            "value": "unsupported"
+          },
+          {
+            "op": "replace",
+            "path": "/configurations/primary/agents/0/claims/1/status",
+            "value": 17
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-applications-coverage",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "configuration",
+          "CONTENT",
+          "/configurations/primary/agents/0",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/0",
+          [
+            "reference"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section 5 Adversarial witnesses with exact observations"
+      ],
+      "input": "corpus/inputs/missing-applications-coverage.input",
+      "sha256": "174ed657296ab4fc8aa56ec5239436fe06fc1d65bd99a6fbbd49247d7f7dda5d",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/two-configurations.json",
+        "baseSha256": "c95cfb1f42e9ace3279e6ce9d17bfada6ce49b3729408cb0633c32411524bf7a",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/configurations/primary/agents/0/applications",
+            "value": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-tool-coverage",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "configuration",
+          "TOOLS",
+          "/configurations/primary/agents/0",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "compatibility",
+          "TOOL",
+          "/configurations/primary/agents/0",
+          [
+            "reference"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section 5 Adversarial witnesses with exact observations"
+      ],
+      "input": "corpus/inputs/missing-tool-coverage.input",
+      "sha256": "bfc931fa2367cf4b0a186b681ff87926bee7d12fc5c4c8f2f68c0cfc59af2750",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/tool-incompatible.json",
+        "baseSha256": "e87183257d5a6685cefea8c18d089c6957abd9262d32d040364a5baf2859952f",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/configurations/primary/agents/0/tools",
+            "value": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-step-kind",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "absent",
+        "compatibility": "absent",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "flow",
+          "SHAPE",
+          "/graphs/pipeline/steps/0",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "flow",
+          "REF",
+          "/graphs/pipeline/steps/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "OPERATION",
+          "/graphs/pipeline/steps/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "DATA",
+          "/graphs/pipeline/steps/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "ACTOR",
+          "/graphs/pipeline/steps/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "APPROVAL",
+          "/graphs/pipeline/steps/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "APPROVAL-DATA",
+          "/graphs/pipeline/steps/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "UNIQUE",
+          "/graphs/pipeline/steps/0",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "PATH",
+          "/graphs/pipeline",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "DATA",
+          "/graphs/pipeline/steps/1",
+          [
+            "reference",
+            "path"
+          ]
+        ],
+        [
+          "flow",
+          "DATA",
+          "/graphs/pipeline/steps/2",
+          [
+            "path"
+          ]
+        ],
+        [
+          "flow",
+          "ACTOR",
+          "/graphs/pipeline/steps/1",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section 5 Adversarial witnesses with exact observations"
+      ],
+      "input": "corpus/inputs/missing-step-kind.input",
+      "sha256": "217cfd35c9dffcbca21b6c1249a1dc3216885dcc89c1c8e8998fc76bfd1d1c83",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/two-agent-sequence.json",
+        "baseSha256": "9cc03b37b51290208684d408279414d265739b383fe061d2fd72c5a5fde78b40",
+        "mutations": [
+          {
+            "op": "remove",
+            "path": "/graphs/pipeline/steps/0/kind"
+          }
+        ]
+      }
+    },
+    {
+      "name": "approval-target-missing",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "flow",
+          "APPROVAL",
+          "/graphs/release/steps/0",
+          "fail"
+        ],
+        [
+          "flow",
+          "APPROVAL",
+          "/graphs/release/steps/1",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "flow",
+          "APPROVAL-DATA",
+          "/graphs/release/steps/0",
+          [
+            "reference"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section 5 Adversarial witnesses with exact observations"
+      ],
+      "input": "corpus/inputs/approval-target-missing.input",
+      "sha256": "147e89bd1f58cc1236cd78e45c253e00129c6d27996071a906b4aadfee944e17",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/governed-call.json",
+        "baseSha256": "d61b2123b9c5367b037bcaa7b9d0fc416ace3f4ecc1ac8e7207b8412a0400e49",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/graphs/release/steps/0/call",
+            "value": "missing"
+          }
+        ]
+      }
+    },
+    {
+      "name": "root-null",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "core",
+          "SHAPE",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section6 parsed nonobject root"
+      ],
+      "input": "corpus/inputs/root-null.input",
+      "sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "6e756c6c"
+      }
+    },
+    {
+      "name": "root-array",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "core",
+          "SHAPE",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section6 parsed nonobject root"
+      ],
+      "input": "corpus/inputs/root-array.input",
+      "sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "5b5d"
+      }
+    },
+    {
+      "name": "root-string",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "core",
+          "SHAPE",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section6 parsed nonobject root"
+      ],
+      "input": "corpus/inputs/root-string.input",
+      "sha256": "5aa762ae383fbb727af3c7a36d4940a5b8c40a989452d2304fc958ff3f354e7a",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "2268656c6c6f22"
+      }
+    },
+    {
+      "name": "root-number",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "core",
+          "SHAPE",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section6 parsed nonobject root"
+      ],
+      "input": "corpus/inputs/root-number.input",
+      "sha256": "4523540f1504cd17100c4835e85b7eefd49911580f8efff0599a8f283be6b9e3",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "3137"
+      }
+    },
+    {
+      "name": "root-boolean",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "core",
+          "SHAPE",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section6 parsed nonobject root"
+      ],
+      "input": "corpus/inputs/root-boolean.input",
+      "sha256": "b5bea41b6c623f7c09f1bf24dcae58ebab3c0cdd90ad966bc43a45b44867e12b",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "74727565"
+      }
+    },
+    {
+      "name": "syntax-empty",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "syntax",
+          "SYNTAX",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections1,5,6 syntax failure"
+      ],
+      "input": "corpus/inputs/syntax-empty.input",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": ""
+      }
+    },
+    {
+      "name": "syntax-duplicate",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "syntax",
+          "SYNTAX",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections1,5,6 syntax failure"
+      ],
+      "input": "corpus/inputs/syntax-duplicate.input",
+      "sha256": "1c53ee0df7b12fd4d65b976120c7fa6b847dc41dffd7f0331c3237a1ceab1756",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "7b2261223a312c2261223a327d"
+      }
+    },
+    {
+      "name": "syntax-bom",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "syntax",
+          "SYNTAX",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections1,5,6 syntax failure"
+      ],
+      "input": "corpus/inputs/syntax-bom.input",
+      "sha256": "aa25e978046d680ef8740d837e6de5bc1e2a2dc6089dbda1012544b538d53f65",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "efbbbf7b7d"
+      }
+    },
+    {
+      "name": "syntax-surrogate",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "syntax",
+          "SYNTAX",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections1,5,6 syntax failure"
+      ],
+      "input": "corpus/inputs/syntax-surrogate.input",
+      "sha256": "8c0c59dd0d275aadcd462a5fe12eb352cbdfeaf961eae4f85a4660521df7d2f5",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "225c756438303022"
+      }
+    },
+    {
+      "name": "syntax-utf8",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "syntax",
+          "SYNTAX",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections1,5,6 syntax failure"
+      ],
+      "input": "corpus/inputs/syntax-utf8.input",
+      "sha256": "2c1ba6ac713bfc21e74f3429be952fca3e7a796734394fd18a48eb6713880d89",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "22ff22"
+      }
+    },
+    {
+      "name": "syntax-trailing",
+      "presence": {
+        "syntax": "present",
+        "core": "undetermined",
+        "flow": "undetermined",
+        "configuration": "undetermined",
+        "compatibility": "undetermined",
+        "external": "undetermined"
+      },
+      "diagnostics": [
+        [
+          "syntax",
+          "SYNTAX",
+          "",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "external",
+          "CHECKS",
+          "",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md sections1,5,6 syntax failure"
+      ],
+      "input": "corpus/inputs/syntax-trailing.input",
+      "sha256": "b0cac530e06f43067ef26fbb201dc931829e7f5a2dacfb91eae4f98465eb0463",
+      "provenance": {
+        "kind": "exact bytes",
+        "hex": "7b7d2074727565"
+      }
+    },
+    {
+      "name": "empty-requirements-malformed-claims",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "configuration",
+          "SHAPE",
+          "/configurations/primary/agents/0/tools/0/claims/0",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "configuration",
+          "UNIQUE",
+          "/configurations/primary/agents/0/tools/0/claims",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section5 c2 empty requirement witness"
+      ],
+      "input": "corpus/inputs/empty-requirements-malformed-claims.input",
+      "sha256": "e36a77d1511feb776749746fda34880ea176b5ea16a046afa177808971d449d3",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/tool-incompatible.json",
+        "baseSha256": "e87183257d5a6685cefea8c18d089c6957abd9262d32d040364a5baf2859952f",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/tools/lookup/requires",
+            "value": []
+          },
+          {
+            "op": "replace",
+            "path": "/configurations/primary/agents/0/tools/0/claims",
+            "value": [
+              {}
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "scope-resources-unreadable",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "flow",
+          "SHAPE",
+          "/graphs/release/steps/2/scope/resources",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "flow",
+          "UNIQUE",
+          "/graphs/release/steps/2/scope",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "ACTOR",
+          "/graphs/release/steps/2",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section5 subject discovery and ACTOR"
+      ],
+      "input": "corpus/inputs/scope-resources-unreadable.input",
+      "sha256": "bfe8016116d89a43fd091eb47171b106cab111adc002d9b5147d2c062a3c136e",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/governed-call.json",
+        "baseSha256": "d61b2123b9c5367b037bcaa7b9d0fc416ace3f4ecc1ac8e7207b8412a0400e49",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/graphs/release/steps/2/scope/resources",
+            "value": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing-call-unreadable-approvers",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "flow",
+          "SHAPE",
+          "/graphs/release/steps/0/approvers",
+          "fail"
+        ],
+        [
+          "flow",
+          "APPROVAL",
+          "/graphs/release/steps/0",
+          "fail"
+        ],
+        [
+          "flow",
+          "APPROVAL",
+          "/graphs/release/steps/1",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "flow",
+          "REF",
+          "/graphs/release/steps/0/approvers",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "APPROVAL-DATA",
+          "/graphs/release/steps/0",
+          [
+            "reference"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section5 APPROVAL terminal missing-call rule plus REF/SHAPE"
+      ],
+      "input": "corpus/inputs/missing-call-unreadable-approvers.input",
+      "sha256": "97824275dce137cabfd606291b632ac8ac1478ed27cfbe50b2e9aae283742394",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/governed-call.json",
+        "baseSha256": "d61b2123b9c5367b037bcaa7b9d0fc416ace3f4ecc1ac8e7207b8412a0400e49",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/graphs/release/steps/0/call",
+            "value": "missing"
+          },
+          {
+            "op": "replace",
+            "path": "/graphs/release/steps/0/approvers",
+            "value": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "scope-resources-empty",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "flow",
+          "SHAPE",
+          "/graphs/release/steps/2/scope/resources",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "flow",
+          "UNIQUE",
+          "/graphs/release/steps/2/scope/resources",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "flow",
+          "ACTOR",
+          "/graphs/release/steps/2",
+          [
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section3 Scope.resources text[]+ and section5 UNIQUE fully shaped array prerequisite"
+      ],
+      "input": "corpus/inputs/scope-resources-empty.input",
+      "sha256": "16bcfc1a0e0a809fcd3c02460c09d7dba731b0f98d389de856f3c91bf36aec40",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/governed-call.json",
+        "baseSha256": "d61b2123b9c5367b037bcaa7b9d0fc416ace3f4ecc1ac8e7207b8412a0400e49",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/graphs/release/steps/2/scope/resources",
+            "value": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate-and-unreadable-slots",
+      "presence": {
+        "syntax": "present",
+        "core": "present",
+        "flow": "present",
+        "configuration": "present",
+        "compatibility": "present",
+        "external": "absent"
+      },
+      "diagnostics": [
+        [
+          "core",
+          "SHAPE",
+          "/agents/writer/instructions/2/id",
+          "fail"
+        ],
+        [
+          "core",
+          "SLOT-ID",
+          "/agents/writer/instructions",
+          "fail"
+        ],
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/0",
+          "fail"
+        ]
+      ],
+      "gaps": [
+        [
+          "core",
+          "SLOT-ID",
+          "/agents/writer/instructions",
+          [
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CONTENT",
+          "/configurations/primary/agents/0",
+          [
+            "reference",
+            "shape"
+          ]
+        ],
+        [
+          "configuration",
+          "CONTENT",
+          "/configurations/alternate/agents/0",
+          [
+            "reference",
+            "shape"
+          ]
+        ],
+        [
+          "compatibility",
+          "ENGINE",
+          "/configurations/primary/agents/0",
+          [
+            "reference",
+            "shape"
+          ]
+        ]
+      ],
+      "source": [
+        "proposals/0016-kiss-experiment-0.2.md section5 SLOT-ID, CONTENT, ENGINE, independent gap causes"
+      ],
+      "input": "corpus/inputs/duplicate-and-unreadable-slots.input",
+      "sha256": "684e8d42ccf21eb9430040df3f176bc7e5e6759b5345597fb909a4c825bd7cbd",
+      "provenance": {
+        "kind": "materialized mutation",
+        "baseInput": "examples/two-configurations.json",
+        "baseSha256": "c95cfb1f42e9ace3279e6ce9d17bfada6ce49b3729408cb0633c32411524bf7a",
+        "mutations": [
+          {
+            "op": "replace",
+            "path": "/agents/writer/instructions",
+            "value": [
+              {
+                "id": "task",
+                "content": {
+                  "ref": "draft"
+                }
+              },
+              {
+                "id": "task",
+                "content": {
+                  "ref": "draft"
+                }
+              },
+              {
+                "id": null,
+                "content": {
+                  "ref": "draft"
+                }
+              }
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "/configurations/primary/agents/0/claims/0/status",
+            "value": "unsupported"
+          }
+        ]
+      }
+    }
+  ]
+}

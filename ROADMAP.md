@@ -52,7 +52,9 @@ validation reports and diagnostic agreement. Both are proposed, not adopted or
 implemented.
 [Proposal 0016](proposals/0016-kiss-experiment-0.2.md) and its
 [experimental examples](experimental/kiss-0.2/README.md) make the authorized
-prototype directions precise; no candidate readers or normative adoption yet.
+prototype directions precise. Two independent static readers now agree on the
+[38-case c2 corpus](experimental/kiss-0.2/ASSESSMENT.md); this experimental
+evidence does not establish normative adoption or execution support.
 A 0.2 guide, migration and reader changes await contract arbitration; no 0.2
 model or release readiness is established.
 
