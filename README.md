@@ -20,16 +20,13 @@ the full example and validate its D, G and R units without installation. Their
 mismatches. The [0.1.1 diagnostic dossier](docs/reviews/0009-0.1.1-diagnostic-expectations.md)
 records additional limits; this evidence does not establish universal agreement.
 
-## Preparing 0.2
+## 0.2 experiment
 
-Start with the [0.2 preparation guide](docs/0.2-preparation.md) to
-understand the proposed concepts, follow the examples and review the remaining
-scope decisions. The [KISS experiment](experimental/kiss-0.2/README.md) has two
-independent static readers and a [38-case assessment](experimental/kiss-0.2/ASSESSMENT.md).
-Its marker is `agsdl-exp-0016-c2`; it is not an adopted or published 0.2 contract.
-The [roadmap](ROADMAP.md#proposed-preparation-02) separates this completed
-experiment from the work needed for adoption and release. The official
-specification above remains the reference for current implementations.
+The [KISS experiment](experimental/kiss-0.2/README.md) explores a smaller
+modular format. Its [candidate contract](proposals/0016-kiss-experiment-0.2.md)
+and [assessment](experimental/kiss-0.2/ASSESSMENT.md) describe the rules,
+evidence and limits. It remains experimental; the official specification
+above continues to apply.
 
 ## What 0.1.0 describes
 

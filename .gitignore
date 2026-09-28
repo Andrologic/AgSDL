@@ -3,3 +3,6 @@
 .vscode/
 *.swp
 *.tmp
+
+# Local Codex configuration
+/.codex/

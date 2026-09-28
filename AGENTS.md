@@ -35,7 +35,10 @@ execution support outside claims made from static reader evidence.
 
 ## Working rules
 
-- Write normative specification text in English.
+- Write repository documentation in English.
+- Keep session-specific reading guides, task plans, orchestration records and
+  raw logs outside the checkout. Commit maintained project documentation,
+  decisions and reproducible evidence.
 - Define a term once and reuse that exact term.
 - Label unresolved design questions explicitly. Do not turn assumptions into
   requirements.
