@@ -45,6 +45,9 @@ verification scope, retained evidence and publication record.
 
 ## Proposed preparation: 0.2
 
+The [preparation guide, in French](docs/0.2-preparation.md) brings together the
+concepts, reading path, evidence and scope decisions for the next version.
+
 [Proposal 0014](proposals/0014-minimal-core-0.2.md) explores a smaller composable
 core through [candidate examples](docs/research/0.2-design-examples.md).
 [Proposal 0015](proposals/0015-validation-reports-0.2.md) explores lightweight
@@ -55,8 +58,15 @@ implemented.
 prototype directions precise. Two independent static readers now agree on the
 [38-case c2 corpus](experimental/kiss-0.2/ASSESSMENT.md); this experimental
 evidence does not establish normative adoption or execution support.
-A 0.2 guide, migration and reader changes await contract arbitration; no 0.2
-model or release readiness is established.
+
+| Work | Status and completion condition |
+| --- | --- |
+| Test the bounded KISS candidate | Complete for c2: two readers, 38-case comparison and assessment. Evidence remains experimental. |
+| Make the direction reviewable | Preparation guide and progressive examples available. |
+| Decide the first 0.2 scope | Pending maintainer decision, including differences from 0.1 and deferred capabilities. |
+| Adopt and document the chosen contract | After the scope decision: record adoption and apply the agreed rules in spec, with derived schemas and a migration guide. Preserve frozen candidate evidence. |
+| Align readers and conformance evidence | After adoption: target the agreed edition, cover adopted behavior and obtain independent review. Experimental reports cannot be relabelled as official results. |
+| Prepare publication | After integrated checks and review: release notes, exact source revision and explicit publication authorization. No 0.2 release is ready or published. |
 
 ## Completed 0.1.0 delivery sequence
 
