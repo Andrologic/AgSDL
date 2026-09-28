@@ -10,9 +10,6 @@ and [KISS assessment](ASSESSMENT.md) record the bounded c2 evidence.
 No runtime or normative conformance implementation is supplied here.
 The current published contract remains `agsdl-0.1.0` in release 0.1.1.
 
-For a conceptual introduction and the steps toward an adopted version, read the
-[0.2 preparation guide](../../docs/0.2-preparation.md).
-
 ## Changes from c1
 
 Candidate c2 clarifies that ASSIGN projects step kinds and invoke Agent refs
