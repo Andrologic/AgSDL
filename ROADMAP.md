@@ -45,7 +45,7 @@ verification scope, retained evidence and publication record.
 
 ## Proposed preparation: 0.2
 
-The [preparation guide, in French](docs/0.2-preparation.md) brings together the
+The [preparation guide](docs/0.2-preparation.md) brings together the
 concepts, reading path, evidence and scope decisions for the next version.
 
 [Proposal 0014](proposals/0014-minimal-core-0.2.md) explores a smaller composable

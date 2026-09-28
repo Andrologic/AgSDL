@@ -22,7 +22,7 @@ records additional limits; this evidence does not establish universal agreement.
 
 ## Preparing 0.2
 
-Start with the [0.2 preparation guide, in French](docs/0.2-preparation.md) to
+Start with the [0.2 preparation guide](docs/0.2-preparation.md) to
 understand the proposed concepts, follow the examples and review the remaining
 scope decisions. The [KISS experiment](experimental/kiss-0.2/README.md) has two
 independent static readers and a [38-case assessment](experimental/kiss-0.2/ASSESSMENT.md).

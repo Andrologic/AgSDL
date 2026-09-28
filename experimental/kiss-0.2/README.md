@@ -11,7 +11,7 @@ No runtime or normative conformance implementation is supplied here.
 The current published contract remains `agsdl-0.1.0` in release 0.1.1.
 
 For a conceptual introduction and the steps toward an adopted version, read the
-[0.2 preparation guide, in French](../../docs/0.2-preparation.md).
+[0.2 preparation guide](../../docs/0.2-preparation.md).
 
 ## Changes from c1
 
