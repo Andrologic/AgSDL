@@ -1,13 +1,13 @@
 import { pointer } from '../../../../tooling/readers/javascript/json.mjs';
 import * as S from './shape.mjs';
-import { duplicate, fieldLocation, mapReadable, readableRef } from './reader.mjs';
-const semantic = ['REF', 'STEP-ID', 'PATH', 'OPERATION', 'DATA', 'ACTOR', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'];
-const unknownStep = ['REF', 'OPERATION', 'DATA', 'ACTOR', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'];
+import { fieldLocation, mapReadable } from './reader.mjs';
+const semantic = ['REF', 'STEP-ID', 'PATH', 'OPERATION', 'DATA', 'SCOPE', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'];
+const unknownStep = ['REF', 'OPERATION', 'DATA', 'SCOPE', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'];
 const kind = s => S.object(s) && ['invoke', 'approval', 'end'].includes(s.kind);
 const successors = s => s.kind === 'invoke' ? ['success', 'failure'] : s.kind === 'approval' ? ['approved', 'denied', 'failure'] : [];
 
 export function checkFlow(c) {
-  const { root, d, gap, gaps, lookup, refField, refCheck, choice, unique } = c;
+  const { root, d, gap, gaps, lookup, refField, choice, unique } = c;
   if (!S.has(root, 'graphs')) return;
   S.shape(root.graphs, S.map(S.graph), '/graphs', p => d('flow', 'SHAPE', p));
   if (!S.object(root.graphs)) { gaps('flow', semantic, '/graphs'); return; }
@@ -102,11 +102,7 @@ export function checkFlow(c) {
           if (!S.shape(resources, S.array(resourceText, 1))) gap('flow', 'UNIQUE', Array.isArray(resources) ? pointer(q, 'resources') : q);
           else unique('flow', resources, pointer(q, 'resources'), resourceText);
         }
-      } else if (s.kind === 'approval') {
-        const q = fieldLocation(s, p, 'approvers');
-        if (!Array.isArray(s.approvers)) gap('flow', 'REF', q);
-        else s.approvers.forEach((r, j) => refCheck('flow', r, pointer(q, j), 'principals'));
-      } else if (!['success', 'failure', 'denied'].includes(s.outcome)) gap('flow', 'DATA', p);
+      } else if (s.kind === 'end' && !['success', 'failure', 'denied'].includes(s.outcome)) gap('flow', 'DATA', p);
     });
 
     function data(callIndex, consumer, code, p, requireScope = false) {
@@ -196,27 +192,15 @@ export function checkFlow(c) {
         }
       }
       if (governed) {
-        if (!S.has(s, 'scope')) d('flow', 'ACTOR', p);
-        else if (!S.shape(s.scope, S.scope)) gap('flow', 'ACTOR', p);
-        if (a.cause) gap('flow', 'ACTOR', p, a.cause);
-        else if (!S.object(a.value)) gap('flow', 'ACTOR', p);
-        else if (!S.has(a.value, 'principal')) d('flow', 'ACTOR', p);
-        else { const pr = lookup(a.value.principal, 'principals'); if (pr.cause) gap('flow', 'ACTOR', p, pr.cause); }
-      } else unavailable.forEach(cause => gap('flow', 'ACTOR', p, cause));
+        if (!S.has(s, 'scope')) d('flow', 'SCOPE', p);
+        else if (!S.shape(s.scope, S.scope)) gap('flow', 'SCOPE', p);
+      } else unavailable.forEach(cause => gap('flow', 'SCOPE', p, cause));
     });
 
     const chains = new Map();
     steps.forEach((s, i) => {
       if (!kind(s) || s.kind !== 'approval') return;
       const p = pointer(sp, i), call = stepLookup(s.call);
-      const terminalCall = call.missing || (!call.cause && kind(call.value) && call.value.kind !== 'invoke');
-      // Only a known absent/wrong-kind call completes APPROVAL immediately.
-      // Unavailable call data does not hide the independent approver clause.
-      if (!terminalCall) {
-        const approversOK = S.shape(s.approvers, S.array(S.ref, 1));
-        if (!approversOK) gap('flow', 'APPROVAL', p);
-        else if (duplicate(s.approvers.map(r => r.ref))) d('flow', 'APPROVAL', p);
-      }
       if (call.cause || !kind(call.value) || call.value.kind !== 'invoke') {
         if (call.missing || (!call.cause && kind(call.value) && call.value.kind !== 'invoke')) d('flow', 'APPROVAL', p);
         else gap('flow', 'APPROVAL', p, call.cause ?? 'reference');

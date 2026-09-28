@@ -30,7 +30,7 @@ class ComparisonTests(unittest.TestCase):
             owner[path[-1]] = value
             return result
         variants = [
-            (['edition'], 'agsdl-exp-0016-c1'), (['operation'], 'inspect'),
+            (['edition'], 'agsdl-exp-0016-c2'), (['operation'], 'inspect'),
             (['processor'], {'identity': '', 'version': 'v'}),
             (['processor'], {'identity': 'p', 'version': 'v', 'extra': 0}),
             (['processor', 'version'], 1), (['input', 'id'], 'other'),
@@ -75,8 +75,8 @@ class ComparisonTests(unittest.TestCase):
         raw = compare.encoded(report)
         for bad in (b'log\n' + raw, raw + b'{}', b'\xef\xbb\xbf' + raw,
                     raw.replace(b'"operation": "validate"', b'"operation":"validate","operation":"validate"'),
-                    raw.replace(b'"version": "agsdl-exp-0016-c2"', b'"version":NaN'),
-                    raw.replace(b'"version": "agsdl-exp-0016-c2"', b'"version":"\xff"')):
+                    raw.replace(b'"version": "agsdl-exp-0017-c1"', b'"version":NaN'),
+                    raw.replace(b'"version": "agsdl-exp-0017-c1"', b'"version":"\xff"')):
             with self.subTest(raw=bad[:30]), self.assertRaises(ValueError):
                 compare.normalize(bad, case['sha256'])
 

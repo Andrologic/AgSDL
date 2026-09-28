@@ -1,11 +1,12 @@
 # Experimental Python reader
 
 This standard-library-only reader implements the static `validate` operation
-of [candidate 0016](../../../../proposals/0016-kiss-experiment-0.2.md), marker
-`agsdl-exp-0016-c2`. It reports the six candidate units independently. It does
+of [candidate 0017](../../../../proposals/0017-agent-only-kiss-0.2.md), marker
+`agsdl-exp-0017-c1`. It reports the six candidate units independently. It does
 not execute graphs, discover services, or verify capability evidence.
-Reports identify processor `agsdl-experimental/python-kiss`, version `2`.
-This version targets c2; it does not accept c1 as that edition.
+Reports identify processor `agsdl-experimental/python-kiss`, version `3`.
+This version targets 0017; it rejects the previous 0016 c2 marker. Actor and
+approval recipient fields are no longer part of the grammar.
 
 From the repository root:
 

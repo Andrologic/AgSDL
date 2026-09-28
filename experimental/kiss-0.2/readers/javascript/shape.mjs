@@ -23,12 +23,12 @@ export const iface = record({ operations: map(operation, 1) });
 export const instructionChoice = { choice: instructions };
 export const interfaceChoice = { choice: iface };
 export const slot = record({ id, content: instructionChoice });
-export const agent = record({ instructions: array(slot, 1), interface: interfaceChoice, principal: optional(ref), tools: optional(array(ref)) });
+export const agent = record({ instructions: array(slot, 1), interface: interfaceChoice, tools: optional(array(ref)) });
 export const tool = record({ inputs: ports, outputs: ports, effects, failures: array(text), requires: array(edition) });
 export const claim = record({ capability: edition, status: one('supported', 'unsupported', 'unknown'), evidence: nullable(hash) });
 export const scope = record({ action: text, resources: array(text, 1), context: binding });
 const invoke = record({ id, kind: one('invoke'), agent: ref, operation: id, bindings: map(binding), success: id, failure: id, scope: optional(scope) });
-const approval = record({ id, kind: one('approval'), call: id, approvers: array(ref, 1), validForMs: v => uint(v, true), timeoutMs: v => uint(v, true), approved: id, denied: id, failure: id });
+const approval = record({ id, kind: one('approval'), call: id, validForMs: v => uint(v, true), timeoutMs: v => uint(v, true), approved: id, denied: id, failure: id });
 const endSuccess = record({ id, kind: one('end'), outcome: one('success'), bindings: map(binding) });
 const endOther = record({ id, kind: one('end'), outcome: one('failure', 'denied'), reason: text });
 export const step = { branch: 'step' };
@@ -38,8 +38,8 @@ export const toolBinding = record({ tool: ref, implementation: nullable(edition)
 export const agentBinding = record({ agent: ref, engine: nullable(edition), parameters: json, requires: array(edition), claims: array(claim), applications: array(application), tools: array(toolBinding), settings: optional(record({ format: edition, value: json })) });
 export const configuration = record({ graph: ref, agents: array(agentBinding) });
 export const extension = record({ edition, use: one('required', 'annotation'), payload: json });
-export const catalogs = { principals: record({ description: text }), instructions, interfaces: iface, agents: agent, tools: tool, graphs: graph };
-export const documentCore = record({ edition: one('agsdl-exp-0016-c2'), agents: map(agent), principals: optional(map(catalogs.principals)), instructions: optional(map(instructions)), interfaces: optional(map(iface)), tools: optional(map(tool)), graphs: optional(json), configurations: optional(json), selected: optional(json), extensions: optional(json), annotations: optional(json) });
+export const catalogs = { instructions, interfaces: iface, agents: agent, tools: tool, graphs: graph };
+export const documentCore = record({ edition: one('agsdl-exp-0017-c1'), agents: map(agent), instructions: optional(map(instructions)), interfaces: optional(map(iface)), tools: optional(map(tool)), graphs: optional(json), configurations: optional(json), selected: optional(json), extensions: optional(json), annotations: optional(json) });
 export { array, map, nullable };
 
 // Returns complete shape validity; callers can separately project readable fields.

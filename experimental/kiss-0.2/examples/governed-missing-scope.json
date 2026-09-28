@@ -75,13 +75,6 @@
             "ref": "writer"
           },
           "operation": "rewrite",
-          "scope": {
-            "action": "Send the reviewed text",
-            "resources": null,
-            "context": {
-              "input": "context"
-            }
-          },
           "bindings": {
             "text": {
               "input": "text"

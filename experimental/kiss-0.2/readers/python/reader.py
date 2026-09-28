@@ -1,4 +1,4 @@
-"""Static validator for agsdl-exp-0016-c2; no execution or transformation."""
+"""Static validator for agsdl-exp-0017-c1; no execution or transformation."""
 import hashlib
 import importlib.util
 from pathlib import Path
@@ -13,11 +13,11 @@ lexical = importlib.util.module_from_spec(_spec)
 sys.modules[_spec.name] = lexical
 _spec.loader.exec_module(lexical)
 
-EDITION = 'agsdl-exp-0016-c2'
-PROCESSOR = {'identity': 'agsdl-experimental/python-kiss', 'version': '2'}
+EDITION = 'agsdl-exp-0017-c1'
+PROCESSOR = {'identity': 'agsdl-experimental/python-kiss', 'version': '3'}
 UNITS = ('syntax', 'core', 'flow', 'configuration', 'compatibility', 'external')
 SUBJECTS = ('', '', '/graphs', '/configurations', '/selected', '/extensions')
-CATALOGS = ('principals', 'instructions', 'interfaces', 'agents', 'tools', 'graphs')
+CATALOGS = ('instructions', 'interfaces', 'agents', 'tools', 'graphs')
 MISSING = object()
 ptr = lexical.pointer
 
@@ -76,7 +76,7 @@ OPERATION = record({'direction': enum('inbound', 'outbound', 'bidirectional'),
                     'effects': enum('none', 'external', 'unknown')})
 INTERFACE = record({'operations': mapping(OPERATION, 1)})
 AGENT = record({'instructions': array(record({'id': 'id', 'content': ('choice', INSTRUCTIONS)}), 1),
-                'interface': ('choice', INTERFACE)}, {'principal': REF, 'tools': array(REF)})
+                'interface': ('choice', INTERFACE)}, {'tools': array(REF)})
 TOOL = record({'inputs': PORTS, 'outputs': PORTS, 'effects': enum('none', 'external', 'unknown'),
                'failures': array('text'), 'requires': array(E)})
 CLAIM = record({'capability': E, 'status': enum('supported', 'unsupported', 'unknown'),
@@ -84,7 +84,7 @@ CLAIM = record({'capability': E, 'status': enum('supported', 'unsupported', 'unk
 SCOPE = record({'action': 'text', 'resources': array('text', 1), 'context': 'binding'})
 INVOKE = record({'id': 'id', 'kind': enum('invoke'), 'agent': REF, 'operation': 'id',
                  'bindings': mapping('binding'), 'success': 'id', 'failure': 'id'}, {'scope': SCOPE})
-APPROVAL = record({'id': 'id', 'kind': enum('approval'), 'call': 'id', 'approvers': array(REF, 1),
+APPROVAL = record({'id': 'id', 'kind': enum('approval'), 'call': 'id',
                    'validForMs': 'positive', 'timeoutMs': 'positive', 'approved': 'id',
                    'denied': 'id', 'failure': 'id'})
 SUCCESS = record({'id': 'id', 'kind': enum('end'), 'outcome': enum('success'),
@@ -101,8 +101,7 @@ AGENT_BINDING = record({'agent': REF, 'engine': ('nullable', E), 'parameters': '
 CONFIGURATION = record({'graph': REF, 'agents': array(AGENT_BINDING)})
 EXTENSION = record({'edition': E, 'use': enum('required', 'annotation'), 'payload': 'json'})
 CORE_FIELDS = {'edition': enum(EDITION), 'agents': mapping(AGENT)}
-CORE_OPTIONAL = {'principals': mapping(record({'description': 'text'})),
-                 'instructions': mapping(INSTRUCTIONS), 'interfaces': mapping(INTERFACE),
+CORE_OPTIONAL = {'instructions': mapping(INSTRUCTIONS), 'interfaces': mapping(INTERFACE),
                  'tools': mapping(TOOL), 'annotations': 'json', 'graphs': 'json',
                  'configurations': 'json', 'selected': 'json', 'extensions': 'json'}
 
@@ -301,8 +300,6 @@ class Validator:
                         self.choice_ref(field(slot, 'content'), 'instructions', cp)
                 ip = ptr(p, 'interface') if 'interface' in agent else p
                 self.choice_ref(agent.get('interface', MISSING), 'interfaces', ip)
-                if 'principal' in agent:
-                    self.check_ref('core', agent['principal'], 'principals', ptr(p, 'principal'))
                 if 'tools' in agent:
                     self.refs('core', agent['tools'], 'tools', ptr(p, 'tools'))
                     self.unique('core', agent['tools'], REF, ptr(p, 'tools'), ref_id)
@@ -410,7 +407,7 @@ class Validator:
             GraphChecks(self, graph, p).run()
 
     def flow_container_gaps(self, path):
-        for code in ('REF', 'STEP-ID', 'PATH', 'OPERATION', 'DATA', 'ACTOR', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'):
+        for code in ('REF', 'STEP-ID', 'PATH', 'OPERATION', 'DATA', 'SCOPE', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'):
             self.gap('flow', code, path)
 
     def run(self):
@@ -611,7 +608,7 @@ class GraphChecks:
         elif code == 'APPROVAL-DATA':
             self.gap(code, p)
 
-    def actor(self, i):
+    def scope_check(self, i):
         step, p = self.steps[i], self.sp(i)
         op, agent, cause = self.operations[i]
         triggers = ['scope' in step]
@@ -651,20 +648,12 @@ class GraphChecks:
                     triggers.append(True)
         if any(triggers):
             if 'scope' not in step:
-                self.fail('ACTOR', p)
+                self.fail('SCOPE', p)
             elif not shaped(step['scope'], SCOPE):
-                self.gap('ACTOR', p)
-            if not isinstance(agent, dict):
-                self.gap('ACTOR', p, cause or 'shape')
-            elif 'principal' not in agent:
-                self.fail('ACTOR', p)
-            else:
-                _, _, pc = self.v.lookup(agent['principal'], 'principals')
-                if pc:
-                    self.gap('ACTOR', p, pc)
+                self.gap('SCOPE', p)
         elif unavailable:
             for c in unavailable:
-                self.gap('ACTOR', p, c)
+                self.gap('SCOPE', p, c)
 
     def approvals(self):
         groups = defaultdict(list)
@@ -680,12 +669,6 @@ class GraphChecks:
                 self.fail('APPROVAL', p)
                 self.gap('APPROVAL-DATA', p, 'reference')
                 continue
-            approvers = field(step, 'approvers')
-            if shaped(approvers, array(REF, 1)):
-                if len({ref_id(x) for x in approvers}) != len(approvers):
-                    self.fail('APPROVAL', p)
-            else:
-                self.gap('APPROVAL', p)
             if cause:
                 self.gap('APPROVAL', p, cause)
                 self.gap('APPROVAL-DATA', p, cause)
@@ -765,7 +748,7 @@ class GraphChecks:
         for i, step in enumerate(self.steps):
             p, kind = self.sp(i), step_kind(step)
             if kind is None:
-                for code in ('REF', 'OPERATION', 'DATA', 'ACTOR', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'):
+                for code in ('REF', 'OPERATION', 'DATA', 'SCOPE', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'):
                     self.gap(code, p)
             elif kind == 'invoke':
                 rp = ptr(p, 'agent') if 'agent' in step else p
@@ -780,16 +763,13 @@ class GraphChecks:
                         self.gap('UNIQUE', ptr(ptr(p, 'scope'), 'resources'))
                     else:
                         self.v.unique('flow', resources, 'text', ptr(ptr(p, 'scope'), 'resources'))
-            elif kind == 'approval':
-                loc = ptr(p, 'approvers') if 'approvers' in step else p
-                self.v.refs('flow', field(step, 'approvers'), 'principals', loc)
-            elif field(step, 'outcome') not in ('success', 'failure', 'denied'):
+            elif kind == 'end' and field(step, 'outcome') not in ('success', 'failure', 'denied'):
                 self.gap('DATA', p)
         for i, step in enumerate(self.steps):
             kind = step_kind(step)
             if kind == 'invoke':
                 self.data(i)
-                self.actor(i)
+                self.scope_check(i)
             elif kind == 'end' and field(step, 'outcome') == 'success':
                 self.data(i)
         self.approvals()
