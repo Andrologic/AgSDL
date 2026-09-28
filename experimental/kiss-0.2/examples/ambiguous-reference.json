@@ -1,5 +1,5 @@
 {
-  "edition": "agsdl-exp-0016-c2",
+  "edition": "agsdl-exp-0017-c1",
   "agents": {
     "writer": {
       "instructions": [
@@ -41,11 +41,21 @@
           "effects": "none"
         }
       }
-    }
-  },
-  "principals": {
+    },
     "draft": {
-      "description": "Conflicting local id"
+      "operations": {
+        "rewrite": {
+          "direction": "inbound",
+          "mode": "request-response",
+          "inputs": {
+            "text": "string"
+          },
+          "outputs": {
+            "text": "string"
+          },
+          "effects": "none"
+        }
+      }
     }
   }
 }

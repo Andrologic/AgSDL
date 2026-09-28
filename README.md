@@ -23,7 +23,7 @@ records additional limits; this evidence does not establish universal agreement.
 ## 0.2 experiment
 
 The [KISS experiment](experimental/kiss-0.2/README.md) explores a smaller
-modular format. Its [candidate contract](proposals/0016-kiss-experiment-0.2.md)
+modular format. Its [candidate contract](proposals/0017-agent-only-kiss-0.2.md)
 and [assessment](experimental/kiss-0.2/ASSESSMENT.md) describe the rules,
 evidence and limits. It remains experimental; the official specification
 above continues to apply.

@@ -50,10 +50,11 @@ core through [candidate examples](docs/research/0.2-design-examples.md).
 [Proposal 0015](proposals/0015-validation-reports-0.2.md) explores lightweight
 validation reports and diagnostic agreement. Both are proposed, not adopted or
 implemented.
-[Proposal 0016](proposals/0016-kiss-experiment-0.2.md) and its
-[experimental examples](experimental/kiss-0.2/README.md) make the authorized
-prototype directions precise. Two independent static readers now agree on the
-[38-case c2 corpus](experimental/kiss-0.2/ASSESSMENT.md); this experimental
+[Proposal 0016](proposals/0016-kiss-experiment-0.2.md) records the initial bounded
+prototype. [Proposal 0017](proposals/0017-agent-only-kiss-0.2.md) removes its
+Principal model under [Decision 0009](docs/decisions/0009-agent-only-experiment.md).
+The updated Python and JavaScript readers agree on the
+[42-case corpus](experimental/kiss-0.2/ASSESSMENT.md). This experimental
 evidence does not establish normative adoption or execution support.
 
 The first 0.2 scope remains undecided. Official documentation, migration guidance

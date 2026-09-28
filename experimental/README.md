@@ -2,8 +2,8 @@
 
 This directory keeps separate experimental editions. The
 [bounded KISS 0.2 candidate](kiss-0.2/README.md) specifies a new prototype and
-examples under proposal 0016, with two independent static readers and a
-[38-case comparison and assessment](kiss-0.2/ASSESSMENT.md), without adoption. The
+examples under proposal 0017, with Python and JavaScript static readers and a
+[42-case comparison and assessment](kiss-0.2/ASSESSMENT.md), without adoption. The
 [modular candidate-1 guide](modular-candidate-1/README.md) covers proposal 0013,
 its 26-case corpus and its independent Python and JavaScript readers. Their
 integrated comparison at `90997464428ce7c3072179e1053cf2934fb80fef` has no

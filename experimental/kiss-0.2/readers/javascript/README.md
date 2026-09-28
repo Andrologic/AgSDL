@@ -1,11 +1,10 @@
 # Experimental JavaScript KISS reader
 
 This independent reader implements the six static units of
-[proposal 0016](../../../../proposals/0016-kiss-experiment-0.2.md), marker
-`agsdl-exp-0016-c2`, frozen at base
-`2d79f4d6a7999feb41742705e0abc78377dbe337`. It is experimental, not a normative
+[proposal 0017](../../../../proposals/0017-agent-only-kiss-0.2.md), marker
+`agsdl-exp-0017-c1`. It is experimental, not a normative
 0.2 implementation or execution engine. Its processor identity is
-`agsdl-experimental/javascript-kiss-reader`, version `0016-c2`.
+`agsdl-experimental/javascript-kiss-reader`, version `0017-c1`.
 
 From the repository root, with Node.js supporting `node --test`:
 
@@ -52,7 +51,7 @@ repository's `check.sh` does not run this new suite; run both commands explicitl
 when changing this reader. Resource exhaustion may throw before a report is
 available; there is no partial-success or interruption result in this edition.
 
-Candidate c2 explicitly keeps ASSIGN independent of step-id lookup and skips
+The candidate retains the c2 rule that keeps ASSIGN independent of step-id lookup and skips
 claim lookup for a completely known empty requirement set. Exact tests cover
 both witnesses. DATA projects port names and individual types separately, so
 a malformed sibling port does not hide a readable type or binding-name error.

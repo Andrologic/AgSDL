@@ -21,7 +21,7 @@ const exact = (v, expected) => assert.deepEqual(observations(report(v)), expecte
 const includes = (r, ...items) => items.forEach(x => assert.ok(observations(r).includes(x), x));
 const C = '/configurations/primary', B = `${C}/agents/0`, P = '/graphs/pipeline', E = { identity: 'test/unknown', version: '1' };
 
-// Expectations below are authored from proposal 0016 sections 1–7, not a reader.
+// Expectations below are authored from proposal 0017 sections 1–7, not a reader.
 for (const name of ['agent-embedded', 'agent-named', 'two-agent-sequence', 'two-configurations', 'governed-call']) {
   test(`positive ${name}: all present units pass`, () => {
     const r = report(example(name)); assert.equal(r.results.length, 6); assert.deepEqual(observations(r), []);
@@ -30,10 +30,10 @@ for (const name of ['agent-embedded', 'agent-named', 'two-agent-sequence', 'two-
 }
 test('all deliberate example findings and gaps', () => {
   exact(example('tool-incompatible'), [D('compatibility', 'TOOL', `${B}/tools/0`)]);
-  exact(example('governed-missing-actor'), [D('flow', 'ACTOR', '/graphs/release/steps/2')]);
+  exact(example('governed-missing-scope'), [D('flow', 'SCOPE', '/graphs/release/steps/2'), ...[0, 1].map(i => G('flow', 'APPROVAL-DATA', `/graphs/release/steps/${i}`))]);
   exact(example('required-extension'), [D('external', 'REQUIRED', '/extensions/0', 'unsupported'), G('external', 'REQUIRED', '/extensions/0', 'unsupported')]);
   exact(example('missing-reference'), [D('core', 'REF', '/agents/writer/instructions/0/content')]);
-  exact(example('ambiguous-reference'), [D('core', 'ID', '/instructions/draft'), D('core', 'ID', '/principals/draft'), G('core', 'REF', '/agents/writer/instructions/0/content', 'reference')]);
+  exact(example('ambiguous-reference'), [D('core', 'ID', '/instructions/draft'), D('core', 'ID', '/interfaces/draft'), G('core', 'REF', '/agents/writer/instructions/0/content', 'reference')]);
   exact(example('unknown-support'), [D('compatibility', 'ENGINE', B, 'inconclusive')]);
   exact(example('application-order-conflict'), [D('configuration', 'CONTENT', '/configurations/ordered/agents/0'), G('compatibility', 'ENGINE', '/configurations/ordered/agents/0', 'reference')]);
   exact(example('conflicting-bindings'), [D('configuration', 'ASSIGN', C), ...[0, 2].flatMap(i => [G('configuration', 'CONTENT', `${C}/agents/${i}`, 'reference'), G('configuration', 'TOOLS', `${C}/agents/${i}`, 'reference'), G('compatibility', 'ENGINE', `${C}/agents/${i}`, 'reference'), G('compatibility', 'TOOL', `${C}/agents/${i}`, 'reference')])]);
@@ -64,7 +64,7 @@ test('section 5 missing ToolBinding creates parent coverage, no fabricated child
 });
 test('section 5 missing kind exact observations', () => {
   const v = example('two-agent-sequence'); delete v.graphs.pipeline.steps[0].kind;
-  exact(v, [D('flow', 'SHAPE', `${P}/steps/0`), ...['REF', 'OPERATION', 'DATA', 'ACTOR', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'].map(c => G('flow', c, `${P}/steps/0`)), G('flow', 'PATH', P), G('flow', 'DATA', `${P}/steps/1`, 'reference,path'), G('flow', 'DATA', `${P}/steps/2`, 'path'), G('flow', 'ACTOR', `${P}/steps/1`)]);
+  exact(v, [D('flow', 'SHAPE', `${P}/steps/0`), ...['REF', 'OPERATION', 'DATA', 'SCOPE', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'].map(c => G('flow', c, `${P}/steps/0`)), G('flow', 'PATH', P), G('flow', 'DATA', `${P}/steps/1`, 'reference,path'), G('flow', 'DATA', `${P}/steps/2`, 'path'), G('flow', 'SCOPE', `${P}/steps/1`)]);
 });
 test('section 5 missing approval call exact observations', () => {
   const v = example('governed-call'); v.graphs.release.steps[0].call = 'missing';
@@ -118,8 +118,8 @@ test('extra Ref member fails shape but does not hide readable target', () => {
   exact(v, [D('core', 'SHAPE', '/agents/writer/interface/extra')]);
 });
 test('invalid catalog key blocks complete lookup without accepting numeric wrapper', () => {
-  const v = example('agent-named'); v.principals = { 'bad/key': { description: 'x' } };
-  includes(report(v), D('core', 'SHAPE', '/principals/bad~1key'), G('core', 'ID', '/principals/bad~1key'), G('core', 'REF', '/agents/writer/interface', 'reference'));
+  const v = example('agent-named'); v.instructions['bad/key'] = structuredClone(v.instructions.draft);
+  includes(report(v), D('core', 'SHAPE', '/instructions/bad~1key'), G('core', 'ID', '/instructions/bad~1key'), G('core', 'REF', '/agents/writer/interface', 'reference'));
 });
 test('slot and uniqueness clauses keep independent observations', () => {
   const v = example('agent-embedded'); v.agents.writer.instructions.push(structuredClone(v.agents.writer.instructions[0]), { content: v.agents.writer.instructions[0].content });
@@ -148,13 +148,13 @@ test('unselected malformed operation does not suppress selected operation', () =
   const v = example('two-agent-sequence'); v.interfaces.text.operations.other = { direction: 'outbound' };
   exact(v, [D('core', 'SHAPE', '/interfaces/text/operations/other')]);
 });
-test('governance triggered by effects needs actor and scope, never an inferred gate', () => {
+test('governance triggered by effects needs scope, never an inferred gate', () => {
   const v = example('two-agent-sequence'); v.interfaces.text.operations.rewrite.effects = 'external';
-  exact(v, [D('flow', 'ACTOR', `${P}/steps/0`), D('flow', 'ACTOR', `${P}/steps/1`)]);
+  exact(v, [D('flow', 'SCOPE', `${P}/steps/0`), D('flow', 'SCOPE', `${P}/steps/1`)]);
 });
-test('known governance trigger enforces actor despite unavailable other trigger', () => {
-  const v = example('governed-call'); delete v.agents.writer.principal; v.agents.writer.tools = [{ ref: 'missing' }];
-  includes(report(v), D('core', 'REF', '/agents/writer/tools/0'), D('flow', 'ACTOR', '/graphs/release/steps/2'));
+test('known governance trigger enforces scope despite unavailable other trigger', () => {
+  const v = example('governed-call'); delete v.graphs.release.steps[2].scope; v.agents.writer.tools = [{ ref: 'missing' }];
+  includes(report(v), D('core', 'REF', '/agents/writer/tools/0'), D('flow', 'SCOPE', '/graphs/release/steps/2'));
 });
 test('approval entry cannot bypass earlier gate', () => {
   const v = example('governed-call'); v.graphs.release.entry = 'approve-2';
@@ -224,7 +224,7 @@ test('missing input/output port maps leave DATA gaps at existing consumers', () 
 test('malformed graph and owner arrays collapse subjects without fabricated children', () => {
   const v = { ...minimal(), graphs: { broken: { steps: 17 } } };
   const r = report(v);
-  for (const code of ['REF', 'STEP-ID', 'PATH', 'OPERATION', 'DATA', 'ACTOR', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE']) includes(r, G('flow', code, '/graphs/broken/steps'));
+  for (const code of ['REF', 'STEP-ID', 'PATH', 'OPERATION', 'DATA', 'SCOPE', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE']) includes(r, G('flow', code, '/graphs/broken/steps'));
   assert.ok(!observations(r).some(x => x.includes('/steps/0')));
 });
 test('end discriminator missing checks common fields without fallback extras', () => {
@@ -241,13 +241,13 @@ test('Tool null implementation and unknown effects contribute distinct scoped un
   const v = example('tool-incompatible'); v.configurations.primary.agents[0].tools[0].implementation = null;
   exact(v, [D('compatibility', 'TOOL', `${B}/tools/0`, 'inconclusive')]);
 });
-test('absent call terminates APPROVAL even with malformed approvers', () => {
-  const v = example('governed-call'); v.graphs.release.steps[0].call = 'missing'; v.graphs.release.steps[0].approvers = null;
-  exact(v, [D('flow', 'SHAPE', '/graphs/release/steps/0/approvers'), G('flow', 'REF', '/graphs/release/steps/0/approvers'), D('flow', 'APPROVAL', '/graphs/release/steps/0'), G('flow', 'APPROVAL-DATA', '/graphs/release/steps/0', 'reference'), D('flow', 'APPROVAL', '/graphs/release/steps/1')]);
+test('absent call terminates APPROVAL even with malformed timeout', () => {
+  const v = example('governed-call'); v.graphs.release.steps[0].call = 'missing'; v.graphs.release.steps[0].timeoutMs = null;
+  exact(v, [D('flow', 'SHAPE', '/graphs/release/steps/0/timeoutMs'), D('flow', 'APPROVAL', '/graphs/release/steps/0'), G('flow', 'APPROVAL-DATA', '/graphs/release/steps/0', 'reference'), D('flow', 'APPROVAL', '/graphs/release/steps/1')]);
 });
 test('unreadable resources locate UNIQUE gap at scope, SHAPE at value', () => {
   const v = example('governed-call'); v.graphs.release.steps[2].scope.resources = 17;
-  exact(v, [D('flow', 'SHAPE', '/graphs/release/steps/2/scope/resources'), G('flow', 'UNIQUE', '/graphs/release/steps/2/scope'), G('flow', 'ACTOR', '/graphs/release/steps/2')]);
+  exact(v, [D('flow', 'SHAPE', '/graphs/release/steps/2/scope/resources'), G('flow', 'UNIQUE', '/graphs/release/steps/2/scope'), G('flow', 'SCOPE', '/graphs/release/steps/2')]);
 });
 test('extra Edition member never hides readable instruction format incompatibility', () => {
   const v = example('two-configurations'); v.instructions.draft.format.extra = true; v.configurations.primary.agents[0].claims[0].status = 'unsupported';
@@ -277,16 +277,16 @@ test('external Edition extra fails shape without hiding required interpretation'
   const v = { ...minimal(), extensions: [{ edition: { ...E, extra: true }, use: 'required', payload: null }] };
   exact(v, [D('external', 'SHAPE', '/extensions/0/edition/extra'), D('external', 'REQUIRED', '/extensions/0', 'unsupported'), G('external', 'REQUIRED', '/extensions/0', 'unsupported')]);
 });
-test('ambiguous or malformed call preserves independent duplicate approvers', () => {
+test('ambiguous or malformed call preserves independent timing shape', () => {
   const v = {
-    ...minimal(), principals: { p: { description: 'p' } },
+    ...minimal(),
     graphs: { g: { entry: 'a', inputs: {}, outputs: {}, steps: [
-      { id: 'a', kind: 'approval', call: 'e', approvers: [{ ref: 'p' }, { ref: 'p' }], validForMs: 1, timeoutMs: 1, approved: 'e', denied: 'e', failure: 'e' },
+      { id: 'a', kind: 'approval', call: 'e', validForMs: 1, timeoutMs: null, approved: 'e', denied: 'e', failure: 'e' },
       { id: 'e', kind: 'end', outcome: 'failure', reason: 'x' },
       { id: 'e', kind: 'end', outcome: 'failure', reason: 'x' },
     ] } },
   };
-  const common = [D('flow', 'STEP-ID', '/graphs/g/steps'), G('flow', 'PATH', '/graphs/g'), D('flow', 'APPROVAL', '/graphs/g/steps/0')];
+  const common = [D('flow', 'STEP-ID', '/graphs/g/steps'), G('flow', 'PATH', '/graphs/g'), D('flow', 'SHAPE', '/graphs/g/steps/0/timeoutMs')];
   exact(v, [...common, G('flow', 'APPROVAL', '/graphs/g/steps/0', 'reference'), G('flow', 'APPROVAL-DATA', '/graphs/g/steps/0', 'reference')]);
   v.graphs.g.steps[0].call = 17;
   exact(v, [...common, D('flow', 'SHAPE', '/graphs/g/steps/0/call'), G('flow', 'APPROVAL', '/graphs/g/steps/0'), G('flow', 'APPROVAL-DATA', '/graphs/g/steps/0')]);
@@ -301,10 +301,10 @@ test('c2 exact empty Tool requirements: malformed claims do not require lookup',
   exact(v, [D('configuration', 'SHAPE', `${B}/tools/0/claims/0`), G('configuration', 'UNIQUE', `${B}/tools/0/claims`)]);
   assert.equal(result(report(v), 'compatibility').outcome, 'pass');
 });
-test('c2 marker is mandatory; old edition cannot silently validate as c2', () => {
-  const v = minimal(); v.edition = 'agsdl-exp-0016-c1';
+test('0017 marker is mandatory; c2 cannot silently validate as the new edition', () => {
+  const v = minimal(); v.edition = 'agsdl-exp-0016-c2';
   exact(v, [D('core', 'SHAPE', '/edition'), ...['flow', 'configuration', 'compatibility', 'external'].map(u => G(u, 'CHECKS', ''))]);
-  assert.equal(report(minimal()).processor.version, '0016-c2');
+  assert.equal(report(minimal()).processor.version, '0017-c1');
 });
 test('malformed target port does not hide readable type and name failures', () => {
   const v = example('two-agent-sequence'); v.interfaces.text.operations.rewrite.inputs = { text: 'boolean', broken: null };
@@ -356,6 +356,20 @@ test('duplicate slots and unreadable Applications keep both independent causes',
 test('inspectable but invalid resources arrays locate UNIQUE at the array', () => {
   for (const [resources, badPointer] of [[[], ''], [[null], '/0'], [['r', null], '/1']]) {
     const v = example('governed-call'); v.graphs.release.steps[2].scope.resources = resources;
-    exact(v, [D('flow', 'SHAPE', `/graphs/release/steps/2/scope/resources${badPointer}`), G('flow', 'UNIQUE', '/graphs/release/steps/2/scope/resources'), G('flow', 'ACTOR', '/graphs/release/steps/2')]);
+    exact(v, [D('flow', 'SHAPE', `/graphs/release/steps/2/scope/resources${badPointer}`), G('flow', 'UNIQUE', '/graphs/release/steps/2/scope/resources'), G('flow', 'SCOPE', '/graphs/release/steps/2')]);
   }
+});
+
+test('removed actor fields fail shape without catalog or recipient lookup', () => {
+  let v = example('agent-embedded'); v.principals = {};
+  exact(v, [D('core', 'SHAPE', '/principals')]);
+  v = example('agent-embedded'); v.agents.writer.principal = { ref: 'missing' };
+  exact(v, [D('core', 'SHAPE', '/agents/writer/principal')]);
+  v = example('governed-call'); v.graphs.release.steps[0].approvers = [{ ref: 'missing' }];
+  exact(v, [D('flow', 'SHAPE', '/graphs/release/steps/0/approvers'), ...[0, 1].map(i => G('flow', 'APPROVAL', `/graphs/release/steps/${i}`))]);
+});
+test('explicit scope is checked without actor lookup or a complete trigger set', () => {
+  const v = example('governed-call'); v.agents.writer.tools = [{ ref: 'missing' }];
+  const r = report(v); includes(r, D('core', 'REF', '/agents/writer/tools/0'));
+  assert.ok(![...result(r, 'flow').diagnostics, ...result(r, 'flow').incomplete].some(x => x.code === 'SCOPE'));
 });

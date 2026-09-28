@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded c2 comparison. No reader code supplies expectations or validation."""
+"""Bounded 0017-c1 comparison. No reader code supplies expectations or validation."""
 import argparse
 import hashlib
 import json
@@ -10,13 +10,13 @@ import sys
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-EDITION = 'agsdl-exp-0016-c2'
+EDITION = 'agsdl-exp-0017-c1'
 SUBJECTS = dict(syntax='', core='', flow='/graphs', configuration='/configurations',
                 compatibility='/selected', external='/extensions')
 CODES = {
     'syntax': {'SYNTAX'},
     'core': {'SHAPE', 'ID', 'REF', 'SLOT-ID', 'UNIQUE'},
-    'flow': {'SHAPE', 'REF', 'OPERATION', 'STEP-ID', 'PATH', 'DATA', 'ACTOR',
+    'flow': {'SHAPE', 'REF', 'OPERATION', 'STEP-ID', 'PATH', 'DATA', 'SCOPE',
              'APPROVAL', 'APPROVAL-DATA', 'UNIQUE'},
     'configuration': {'SHAPE', 'REF', 'SELECTION', 'ASSIGN', 'CONTENT', 'TOOLS', 'UNIQUE'},
     'compatibility': {'ENGINE', 'TOOL'},
@@ -26,8 +26,6 @@ READERS = {
     'python': [sys.executable, str(HERE / 'readers/python/cli.py')],
     'javascript': ['node', str(HERE / 'readers/javascript/cli.mjs')],
 }
-READER_COMMITS = {'python': '04bd276dd75470a05761496b5dc45932e3437873',
-                  'javascript': 'ffc81611a76284dd3fcce05496de3671dc04a197'}
 
 
 def require(condition, reason):
@@ -193,10 +191,10 @@ def load_cases():
     raw = (HERE / 'corpus/expectations.json').read_bytes()
     manifest = strict_json(raw)
     require(manifest['edition'] == EDITION, 'wrong corpus edition')
-    candidate = ROOT / 'proposals/0016-kiss-experiment-0.2.md'
+    candidate = ROOT / 'proposals/0017-agent-only-kiss-0.2.md'
     require(digest(candidate.read_bytes()) == manifest['candidateSha256'], 'candidate changed')
     cases = manifest['cases']
-    require(len(cases) == 38, 'expected the reviewed 38-case corpus')
+    require(len(cases) == 42, 'expected the reviewed 42-case corpus')
     names = set()
     for case in cases:
         require(re.fullmatch('[a-z0-9-]+', case['name']) and case['name'] not in names,
@@ -267,7 +265,7 @@ def compare(output):
     (output / 'expectations.json').write_bytes(raw)
     metadata = dict(commit=git('rev-parse', 'HEAD'), dirty=git('status', '--porcelain'),
                     candidateSha256=manifest['candidateSha256'], oracleSha256=digest(raw),
-                    reviewedReaderCommits=READER_COMMITS, python=sys.version, node=None,
+                    python=sys.version, node=None,
                     sourceSha256={})
     source_paths = list(HERE.rglob('*')) + [
         ROOT / 'tooling/readers/python/agsdl_reader/lossless.py',

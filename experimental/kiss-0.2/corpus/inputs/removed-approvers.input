@@ -1,5 +1,5 @@
 {
-  "edition": "agsdl-exp-0016-c2",
+  "edition": "agsdl-exp-0017-c1",
   "agents": {
     "writer": {
       "instructions": [
@@ -37,14 +37,6 @@
       }
     }
   },
-  "principals": {
-    "operator": {
-      "description": "Accountable document operator"
-    },
-    "human": {
-      "description": "Human reviewer"
-    }
-  },
   "graphs": {
     "release": {
       "entry": "approve-1",
@@ -60,26 +52,17 @@
           "id": "approve-1",
           "kind": "approval",
           "call": "send",
-          "approvers": [
-            {
-              "ref": "human"
-            }
-          ],
           "validForMs": 120000,
           "timeoutMs": 60000,
           "approved": "approve-2",
           "denied": "denied",
-          "failure": "failed"
+          "failure": "failed",
+          "approvers": []
         },
         {
           "id": "approve-2",
           "kind": "approval",
           "call": "send",
-          "approvers": [
-            {
-              "ref": "human"
-            }
-          ],
           "validForMs": 120000,
           "timeoutMs": 60000,
           "approved": "send",

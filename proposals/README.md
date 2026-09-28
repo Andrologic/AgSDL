@@ -23,7 +23,8 @@ The [specification](../spec/README.md) is the normative source, not these files.
 | 0013 | Selected modular contract adopted with its retained Principal restriction, applied in spec with official marker `agsdl-0.1.0`. File remains the byte-identical historical snapshot at `280347eec4e2e051d296f9271bfccc86c98d4d40`. |
 | [0014](0014-minimal-core-0.2.md) | Proposed smaller core and composable format for 0.2, with [candidate examples](../docs/research/0.2-design-examples.md); not adopted or implemented. The current contract remains `agsdl-0.1.0`. |
 | [0015](0015-validation-reports-0.2.md) | Proposed lightweight validation reports and diagnostic agreement for 0.2; not adopted or implemented. The current contract remains `agsdl-0.1.0`. |
-| [0016](0016-kiss-experiment-0.2.md) | Bounded experimental candidate under [Decision 0008](../docs/decisions/0008-0.2-experiment-directions.md); prototype directions authorized, not normative adoption or publication. Two independent static readers and a [38-case c2 comparison](../experimental/kiss-0.2/ASSESSMENT.md) provide bounded experimental evidence, not execution support. |
+| [0016](0016-kiss-experiment-0.2.md) | Historical bounded candidate under [Decision 0008](../docs/decisions/0008-0.2-experiment-directions.md). Its c2 readers, examples and 38-case assessment remain in Git at `f2a20f28f8d03baa1f7cb1bb4f477ea4dd3706b0`. Not normatively adopted or published; superseded for the active experiment by 0017. |
+| [0017](0017-agent-only-kiss-0.2.md) | Current experimental candidate under [Decision 0009](../docs/decisions/0009-agent-only-experiment.md), removing Principal and approval recipient lists. The [42-case comparison](../experimental/kiss-0.2/ASSESSMENT.md) covers the updated static readers. Not normative adoption, publication or execution support. |
 
 The proposed-status statements inside 0012/0013 describe their historical
 preparation dates. This register records the later limited adoption without
@@ -50,3 +51,4 @@ state publication or implementation conformance.
 - [`0014: a smaller core for 0.2 discussion`](0014-minimal-core-0.2.md), with [candidate examples](../docs/research/0.2-design-examples.md)
 - [`0015: lightweight validation reports for 0.2`](0015-validation-reports-0.2.md)
 - [`0016: bounded KISS experiment for 0.2`](0016-kiss-experiment-0.2.md)
+- [`0017: agents without Principal identities`](0017-agent-only-kiss-0.2.md)

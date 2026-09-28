@@ -1,4 +1,4 @@
-"""Expectations transcribed from proposal 0016, not another reader's output."""
+"""Expectations transcribed from proposal 0017, not another reader's output."""
 import copy
 import hashlib
 import json
@@ -78,7 +78,7 @@ class ReaderTests(unittest.TestCase):
             location = p + '/scope/resources'
             shape = location + '/0' if resources == [None] else location
             gap = location if isinstance(resources, list) else p + '/scope'
-            self.assert_observations(d, [D('flow', 'SHAPE', shape)], [G('flow', 'ACTOR', p), G('flow', 'UNIQUE', gap)])
+            self.assert_observations(d, [D('flow', 'SHAPE', shape)], [G('flow', 'SCOPE', p), G('flow', 'UNIQUE', gap)])
         d['graphs']['release']['steps'][2]['scope']['resources'] = ['x', 'x']
         self.assert_observations(d, [D('flow', 'UNIQUE', location)])
 
@@ -89,22 +89,10 @@ class ReaderTests(unittest.TestCase):
             # Select an existing end for the wrong-kind branch.
             if call != 'missing':
                 call = next(s['id'] for s in d['graphs']['release']['steps'] if s['kind'] == 'end')
-            d['graphs']['release']['steps'][0].update(call=call, approvers=None)
+            d['graphs']['release']['steps'][0].update(call=call, timeoutMs=None)
             self.assert_observations(d,
-                [D('flow', 'SHAPE', p + '0/approvers'), D('flow', 'APPROVAL', p + '0'), D('flow', 'APPROVAL', p + '1')],
-                [G('flow', 'REF', p + '0/approvers'), G('flow', 'APPROVAL-DATA', p + '0', 'reference')])
-        for ambiguous in (False, True):
-            d = document('governed-call')
-            gate = d['graphs']['release']['steps'][0]
-            gate['approvers'] *= 2
-            if ambiguous:
-                duplicate = copy.deepcopy(d['graphs']['release']['steps'][2])
-                d['graphs']['release']['steps'].append(duplicate)
-            else:
-                gate['call'] = None
-            ds, gs = observations(read(d))
-            self.assertIn(D('flow', 'APPROVAL', p + '0'), ds)
-            self.assertIn(G('flow', 'APPROVAL', p + '0', 'reference' if ambiguous else 'shape'), gs)
+                [D('flow', 'SHAPE', p + '0/timeoutMs'), D('flow', 'APPROVAL', p + '0'), D('flow', 'APPROVAL', p + '1')],
+                [G('flow', 'APPROVAL-DATA', p + '0', 'reference')])
 
     def test_graph_input_binding_has_no_producer_availability_clause(self):
         d = document('duplicate-step-assign')
@@ -131,25 +119,44 @@ class ReaderTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assert_observations(document(name))
         self.assert_observations(document('tool-incompatible'), [D('compatibility', 'TOOL', '/configurations/primary/agents/0/tools/0')])
-        self.assert_observations(document('governed-missing-actor'), [D('flow', 'ACTOR', '/graphs/release/steps/2')])
+        self.assert_observations(document('governed-missing-scope'), [D('flow', 'SCOPE', '/graphs/release/steps/2')], [G('flow', 'APPROVAL-DATA', '/graphs/release/steps/' + str(i)) for i in (0, 1)])
         self.assert_observations(document('required-extension'), [D('external', 'REQUIRED', '/extensions/0', 'unsupported')], [G('external', 'REQUIRED', '/extensions/0', 'unsupported')])
         self.assert_observations(document('missing-reference'), [D('core', 'REF', '/agents/writer/instructions/0/content')])
-        self.assert_observations(document('ambiguous-reference'), [D('core', 'ID', '/instructions/draft'), D('core', 'ID', '/principals/draft')], [G('core', 'REF', '/agents/writer/instructions/0/content', 'reference')])
+        self.assert_observations(document('ambiguous-reference'), [D('core', 'ID', '/instructions/draft'), D('core', 'ID', '/interfaces/draft')], [G('core', 'REF', '/agents/writer/instructions/0/content', 'reference')])
         self.assert_observations(document('independent-errors'), [D('core', 'REF', '/agents/writer/instructions/0/content'), D('core', 'SHAPE', '/interfaces/text/operations/rewrite/mode'), D('external', 'REQUIRED', '/extensions/0', 'unsupported')], [G('external', 'REQUIRED', '/extensions/0', 'unsupported')])
         self.assert_observations(document('unknown-support'), [D('compatibility', 'ENGINE', '/configurations/primary/agents/0', 'inconclusive')])
         self.assert_observations(document('application-order-conflict'), [D('configuration', 'CONTENT', '/configurations/ordered/agents/0')], [G('compatibility', 'ENGINE', '/configurations/ordered/agents/0', 'reference')])
         p = '/configurations/primary/agents/'
         self.assert_observations(document('conflicting-bindings'), [D('configuration', 'ASSIGN', '/configurations/primary')], [G(u, c, p + str(i), 'reference') for i in (0, 2) for u, c in (('configuration', 'CONTENT'), ('configuration', 'TOOLS'), ('compatibility', 'ENGINE'), ('compatibility', 'TOOL'))])
 
+    def test_removed_actor_fields_are_rejected_without_lookup(self):
+        d = document('agent-embedded')
+        d['principals'] = {}
+        self.assert_observations(d, [D('core', 'SHAPE', '/principals')])
+        del d['principals']
+        d['agents']['writer']['principal'] = {'ref': 'missing'}
+        self.assert_observations(d, [D('core', 'SHAPE', '/agents/writer/principal')])
+        d = document('governed-call')
+        d['graphs']['release']['steps'][0]['approvers'] = [{'ref': 'missing'}]
+        self.assert_observations(d, [D('flow', 'SHAPE', '/graphs/release/steps/0/approvers')],
+                                 [G('flow', 'APPROVAL', '/graphs/release/steps/' + str(i)) for i in (0, 1)])
+
+    def test_explicit_scope_does_not_require_actor_or_readable_other_trigger(self):
+        d = document('governed-call')
+        d['agents']['writer']['tools'] = [{'ref': 'missing'}]
+        ds, gs = observations(read(d))
+        self.assertIn(D('core', 'REF', '/agents/writer/tools/0'), ds)
+        self.assertFalse(any(x[1] == 'SCOPE' for x in ds | gs))
+
     def test_report_and_absence(self):
-        raw = b'{"edition":"agsdl-exp-0016-c2","agents":{}}\n'
+        raw = b'{"edition":"agsdl-exp-0017-c1","agents":{}}\n'
         result = validate(raw)
         self.assertEqual(result['input']['sha256'], hashlib.sha256(raw).hexdigest())
         self.assertEqual(set(result), {'edition', 'processor', 'operation', 'input', 'results'})
-        self.assertEqual(result['edition'], 'agsdl-exp-0016-c2')
-        self.assertEqual(result['processor'], {'identity': 'agsdl-experimental/python-kiss', 'version': '2'})
+        self.assertEqual(result['edition'], 'agsdl-exp-0017-c1')
+        self.assertEqual(result['processor'], {'identity': 'agsdl-experimental/python-kiss', 'version': '3'})
         old = json.loads(raw)
-        old['edition'] = 'agsdl-exp-0016-c1'
+        old['edition'] = 'agsdl-exp-0016-c2'
         self.assert_observations(old, [D('core', 'SHAPE', '/edition')],
                                  [G(u, 'CHECKS', '') for u in ('flow', 'configuration', 'compatibility', 'external')])
         self.assertEqual(len(result['results']), 6)
@@ -171,7 +178,7 @@ class ReaderTests(unittest.TestCase):
         for raw in (b'\xef\xbb\xbf{}', b'{"x":1,"x":2}', b'{"x":1,"\\u0078":2}', b'"\\ud800"', b'"\xed\xa0\x80"', b'NaN', b'{}{}', b'{"x":01}', b'[1,]', b'"\xe2X"'):
             with self.subTest(raw=raw):
                 self.assertEqual(observations(validate(raw)), ({D('syntax', 'SYNTAX', '')}, {G(u, 'CHECKS', '') for u in ('core', 'flow', 'configuration', 'compatibility', 'external')}))
-        raw = b'{"edition":"agsdl-exp-0016-c2","agents":{},"annotations":1e999999999999999999999999}'
+        raw = b'{"edition":"agsdl-exp-0017-c1","agents":{},"annotations":1e999999999999999999999999}'
         self.assertEqual(unit(validate(raw), 'core')['outcome'], 'pass')
         value = lexical.Parser(b'9007199254740993').parse()
         self.assertIsNone(lexical.integer(value))
@@ -193,8 +200,8 @@ class ReaderTests(unittest.TestCase):
         d = document('two-agent-sequence')
         del d['graphs']['pipeline']['steps'][0]['kind']
         p = '/graphs/pipeline/steps/'
-        gaps = [G('flow', c, p + '0') for c in ('REF', 'OPERATION', 'DATA', 'ACTOR', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE')]
-        gaps += [G('flow', 'PATH', '/graphs/pipeline'), G('flow', 'DATA', p + '1', 'reference', 'path'), G('flow', 'DATA', p + '2', 'path'), G('flow', 'ACTOR', p + '1')]
+        gaps = [G('flow', c, p + '0') for c in ('REF', 'OPERATION', 'DATA', 'SCOPE', 'APPROVAL', 'APPROVAL-DATA', 'UNIQUE')]
+        gaps += [G('flow', 'PATH', '/graphs/pipeline'), G('flow', 'DATA', p + '1', 'reference', 'path'), G('flow', 'DATA', p + '2', 'path'), G('flow', 'SCOPE', p + '1')]
         self.assert_observations(d, [D('flow', 'SHAPE', p + '0')], gaps)
 
     def test_missing_required_agent_catalog_blocks_lookups(self):
@@ -204,7 +211,7 @@ class ReaderTests(unittest.TestCase):
         gs = [G('core', code, '') for code in ('ID', 'REF', 'SLOT-ID', 'UNIQUE')]
         for i in (0, 1):
             gs.append(G('flow', 'REF', p + str(i) + '/agent', 'reference'))
-            gs.extend(G('flow', code, p + str(i), 'reference') for code in ('OPERATION', 'DATA', 'ACTOR'))
+            gs.extend(G('flow', code, p + str(i), 'reference') for code in ('OPERATION', 'DATA', 'SCOPE'))
         gs.append(G('flow', 'DATA', p + '2', 'reference'))
         self.assert_observations(d, [D('core', 'SHAPE', '')], gs)
 
@@ -235,8 +242,8 @@ class ReaderTests(unittest.TestCase):
                 self.assertEqual(observations(json.loads(result.stdout)), (set(ds), set(gs)))
 
         # An independent known violation survives the blocked incoming link.
-        d['graphs']['release']['steps'][1]['approvers'] *= 2
-        ds.append(D('flow', 'APPROVAL', p + '1'))
+        d['graphs']['release']['steps'][2]['scope']['resources'] *= 2
+        ds.append(D('flow', 'UNIQUE', p + '2/scope/resources'))
         self.assert_observations(d, ds, gs)
 
     def test_independent_binding_identity_witness(self):
@@ -293,7 +300,7 @@ class ReaderTests(unittest.TestCase):
         self.assertIn(G('flow', 'APPROVAL', '/graphs/release/steps/0', 'path'), observations(r)[1])
         d = document('two-agent-sequence')
         d['interfaces']['text']['operations']['rewrite']['effects'] = 'unknown'
-        self.assert_observations(d, [D('flow', 'ACTOR', '/graphs/pipeline/steps/' + str(i)) for i in (0, 1)])
+        self.assert_observations(d, [D('flow', 'SCOPE', '/graphs/pipeline/steps/' + str(i)) for i in (0, 1)])
         d = document('governed-call')
         d['graphs']['release']['steps'][0]['timeoutMs'] = True
         self.assertIn(D('flow', 'SHAPE', '/graphs/release/steps/0/timeoutMs'), observations(read(d))[0])

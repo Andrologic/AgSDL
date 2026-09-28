@@ -34,6 +34,9 @@
             }
           }
         }
+      },
+      "principal": {
+        "ref": "writer"
       }
     }
   }
