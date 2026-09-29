@@ -26,7 +26,8 @@ The [KISS experiment](experimental/kiss-0.2/README.md) explores a smaller
 modular format. Its [candidate contract](proposals/0017-agent-only-kiss-0.2.md)
 and [assessment](experimental/kiss-0.2/ASSESSMENT.md) describe the rules,
 evidence and limits. It remains experimental; the official specification
-above continues to apply.
+above continues to apply. The [human and software Agent direction](proposals/0018-human-and-software-agents.md)
+adds two static feasibility examples without changing that candidate grammar.
 
 ## What 0.1.0 describes
 

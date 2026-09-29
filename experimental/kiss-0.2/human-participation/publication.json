@@ -1,0 +1,218 @@
+{
+  "edition": "agsdl-exp-0017-c1",
+  "agents": {
+    "reviewer": {
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "value": {
+              "target": "Agent",
+              "at": "before-invoke",
+              "format": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "body": "Correct spelling without changing meaning. Return the corrected text."
+            }
+          }
+        }
+      ],
+      "interface": {
+        "value": {
+          "operations": {
+            "review": {
+              "direction": "inbound",
+              "mode": "request-response",
+              "inputs": {
+                "text": "string"
+              },
+              "outputs": {
+                "text": "string"
+              },
+              "effects": "none"
+            }
+          }
+        }
+      }
+    },
+    "publisher": {
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "value": {
+              "target": "Agent",
+              "at": "before-invoke",
+              "format": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "body": "Publish the supplied text only after the surrounding approval gate allows this call."
+            }
+          }
+        }
+      ],
+      "interface": {
+        "value": {
+          "operations": {
+            "publish": {
+              "direction": "inbound",
+              "mode": "request-response",
+              "inputs": {
+                "text": "string"
+              },
+              "outputs": {
+                "receipt": "string"
+              },
+              "effects": "external"
+            }
+          }
+        }
+      }
+    }
+  },
+  "graphs": {
+    "publication": {
+      "entry": "review",
+      "inputs": {
+        "text": "string",
+        "context": "json"
+      },
+      "outputs": {
+        "receipt": "string"
+      },
+      "steps": [
+        {
+          "id": "review",
+          "kind": "invoke",
+          "agent": {
+            "ref": "reviewer"
+          },
+          "operation": "review",
+          "bindings": {
+            "text": {
+              "input": "text"
+            }
+          },
+          "success": "approve",
+          "failure": "failed"
+        },
+        {
+          "id": "approve",
+          "kind": "approval",
+          "call": "publish",
+          "validForMs": 300000,
+          "timeoutMs": 300000,
+          "approved": "publish",
+          "denied": "denied",
+          "failure": "failed"
+        },
+        {
+          "id": "publish",
+          "kind": "invoke",
+          "agent": {
+            "ref": "publisher"
+          },
+          "operation": "publish",
+          "bindings": {
+            "text": {
+              "step": "review",
+              "port": "text"
+            }
+          },
+          "scope": {
+            "action": "Publish the reviewed text",
+            "resources": [
+              "Declared publication destination"
+            ],
+            "context": {
+              "input": "context"
+            }
+          },
+          "success": "done",
+          "failure": "failed"
+        },
+        {
+          "id": "done",
+          "kind": "end",
+          "outcome": "success",
+          "bindings": {
+            "receipt": {
+              "step": "publish",
+              "port": "receipt"
+            }
+          }
+        },
+        {
+          "id": "denied",
+          "kind": "end",
+          "outcome": "denied",
+          "reason": "Human approval was denied"
+        },
+        {
+          "id": "failed",
+          "kind": "end",
+          "outcome": "failure",
+          "reason": "Review, approval or publication failed"
+        }
+      ]
+    }
+  },
+  "configurations": {
+    "human-review": {
+      "graph": {
+        "ref": "publication"
+      },
+      "agents": [
+        {
+          "agent": {
+            "ref": "reviewer"
+          },
+          "engine": {
+            "identity": "example/human-task-broker",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/display-instructions",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": []
+        },
+        {
+          "agent": {
+            "ref": "publisher"
+          },
+          "engine": {
+            "identity": "example/software-agent-engine",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/prompt-content",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": []
+        }
+      ]
+    }
+  },
+  "selected": "human-review"
+}
