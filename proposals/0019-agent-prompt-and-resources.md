@@ -1,9 +1,11 @@
 # Proposal 0019: persistent Agents, prompt and resources
 
-Status: **draft 0.2 model proposal; not an adopted contract or candidate edition.**
-The maintainer requested persistent Agents, a separation between their prompt
-and accessible information, and support for multimodal inputs and outputs.
-The concrete model below is proposed for review.
+Status: **0.2 design directions accepted under
+[Decision 0011](../docs/decisions/0011-message-based-agent-model.md); not an
+adopted contract or candidate edition.**
+The directions cover persistent Agents, distinct prompt and resources,
+multimodal messages, optional output constraints and configured workspace access.
+Concrete shapes and binding rules below remain proposed for the next candidate.
 [0017](0017-agent-only-kiss-0.2.md) remains the implemented experimental contract;
 [release status](../README.md#release-status-and-history) remains authoritative.
 
@@ -51,9 +53,28 @@ silent replacement by an empty session does not satisfy continuity.
 Durable recovery after a process restart is not promised here.
 
 This revises the definition-oriented wording in [0018](0018-human-and-software-agents.md)
-and [Decision 0010](../docs/decisions/0010-human-and-software-agents.md) if adopted.
-It retains their common Agent concept. Those historical texts and the existing
-candidate are not rewritten by this draft.
+and [Decision 0010](../docs/decisions/0010-human-and-software-agents.md) for the
+next 0.2 model, as recorded in Decision 0011. It retains their common Agent
+concept. The historical definitions and the existing candidate are not rewritten.
+
+## Messages are the basic interaction
+
+A Message is the unit exchanged with an Agent. It may carry a request and
+supporting resources, or a result, using the content model below. A Message
+addressed to an Agent targets its existing instance; receiving another Message
+continues that Agent's context.
+Keep instruction and information roles explicit within a Message, regardless of
+media type. Sending information alone does not turn it into an instruction.
+
+A basic exchange does not require a named Operation. Use Interface constraints
+when software needs a more precise contract. Named Operations may be a later
+specialization; the message model does not require an operation catalog for
+every Agent. This changes the proposed authoring baseline, not the semantics
+of existing 0017 `invoke` records.
+
+A Message is an exchange description, not a new transport, queue or runtime API.
+This step does not standardize scheduling, concurrent delivery, exactly-once
+processing, response correlation or a mandatory one-request/one-response pattern.
 
 ## Minimum content model
 
@@ -63,7 +84,7 @@ They describe the content part of an Agent, not its complete declaration.
 | Element | Shape and meaning |
 | --- | --- |
 | Initial prompt | A nonempty ordered sequence of content sources carrying requests or instructions. It establishes the Agent's initial direction. |
-| Accessible resources | A collection of content sources with names local to the Agent. It may be empty. Names let a prompt or later request identify a resource without embedding its location. Collection order carries no meaning. |
+| Accessible resources | A collection of explicitly supplied content sources with names local to the Agent. It may be empty. Names let a prompt or later request identify a resource without embedding its location. Collection order carries no meaning; this is not an exhaustive workspace inventory. |
 | Content source | Exactly one inline value or one URI reference, with an optional media type describing the intended representation. Either role may use text, structured data or other media, including images, audio and video. |
 
 One source rule serves both roles. A source is either supplied content or a
@@ -96,13 +117,11 @@ resources do not merge Agent contexts. Reading a resource does not give its text
 instruction authority. An author deliberately assigns content to the prompt
 when the Agent is meant to follow it as instructions.
 
-Later interactions can bring further requests and resources to the same Agent.
-They do not replace the initial prompt or erase earlier context. This describes
-continuity, not a standardized messaging API or automatic catalog-update rule.
-Changing the declared initial prompt, resource collection or Engine selection
-still requires stopping, modifying and starting the system. Continuity concerns
-the Agent context; it does not guarantee continued availability or unchanged
-content of referenced resources. Those depend on the source and integration.
+Later Messages can bring further requests and resources to the same Agent. They
+do not replace the initial prompt or erase earlier context. Editing the declared
+initial setup or Engine selection still requires stopping, modifying and
+starting the system. Reading or editing workspace files and exchanging Messages
+are ordinary activity within the selected configuration, not such a reconfiguration.
 
 ## Declared access and delivery limits
 
@@ -134,8 +153,31 @@ can offer additional documented capabilities without making them universal.
 A URI declares a location, not permission, verified availability or an immutable
 version. A relative URI needs an explicit source base supplied with the artifact;
 without that base it remains unresolved, rather than using the reader's working
-directory. Resource access grants no write or execution permission. Credentials
-and access enforcement stay with the consuming application.
+directory. A resource reference alone grants no write or execution permission.
+AgSDL configuration declares the access made available through the selected
+Engine and Tools; the consuming implementation enforces it. Credentials remain
+external to content declarations.
+
+## Workspace access belongs to configuration
+
+The AgSDL configuration describes the workspace exposed to the Agent, its access
+rules and the Tools available there, through the Engine settings and Tool
+bindings. Their concrete contracts can be integration-specific; a static reader
+must not infer their behavior from opaque parameters. No additional Workspace
+entity or universal filesystem-permission schema is introduced here.
+
+An Agent with a writable coding workspace can inspect and edit files using its
+configured Tools. A read-only configuration permits inspection, not editing.
+Accessible files need not each appear in the resource collection, and ordinary
+file changes do not require new resource declarations or a fresh Agent.
+
+The core imposes no general frozen/live resource switch, automatic snapshot or
+refresh policy. File persistence, shared access and version pinning, when needed,
+follow the configured Engine and Tool contracts. A reference does not itself
+make a copy or pin a version. Changed files are observed through access Tools;
+they do not automatically rewrite the Agent's existing context or initial prompt.
+This resolves the resource-lifetime question at the configuration boundary
+rather than making it another required Agent choice.
 
 ## Multimodal input and output
 
@@ -144,7 +186,17 @@ its selected Model supports when it uses one, and what the selected Engine can
 actually deliver. Engine includes the harness and its integration here; this
 proposal adds no separate Harness entity or mandatory Model for every Agent.
 
-Use the existing Interface concept for input and output requirements. Describe
+Use the existing Interface concept for declared input and output constraints.
+Output constraints are optional. Without a declared output contract, replies
+remain free within the requested instructions and configured capabilities; no
+fixed output format, object shape or result set is inferred. When constraints
+are declared, they must be explicit and checked against the produced result.
+
+Distinguish permitted formats from required results. Allowing text or audio does
+not require both. Requiring a JSON report and an audio file requires both; an
+optional audio result must be declared optional. A failed constraint is reported,
+not presented as a conforming result or used to silently replace the Agent.
+The exact syntax for these constraints remains to be specified. Describe
 the concrete format with an open media type, such as `text/plain`, `image/png`,
 `audio/wav`, `video/mp4` or `application/json`. These are examples, not a closed
 format list. Accepting audio input says nothing about producing audio output.
@@ -206,7 +258,7 @@ against the requested contract; a support claim does not guarantee every result.
 These are hypothetical configurations, not claims about named products. Streaming,
 synchronization protocols and codec registries are outside this proposal.
 
-## Worked example
+## Worked examples
 
 An Agent called `reviewer` is initialized with:
 
@@ -225,6 +277,15 @@ and resources with an independent context. Changing Engine bindings changes how
 content is delivered, not whether it is an instruction or a resource. Declared
 content roles alone do not prove equivalent behavior across Engines.
 
+For a coding Agent, configuration can expose a writable project directory with
+file-editing and test-running Tools. A Message says "Fix the failing test" and
+may name the relevant files. The Agent reads and edits those files without
+listing the whole directory as resources or restarting after each correction.
+A later Message, "Also test negative inputs", continues the same Agent. Its
+explanation can remain free text, or an optional declared output contract can
+require a report with specified fields. The file edits are Tool effects;
+reporting them in a Message does not replace their access and effect controls.
+
 ## Alternatives and impact
 
 | Alternative | Reason not to use it as the core model |
@@ -241,22 +302,26 @@ replace Tool contracts, access controls, or the effect scopes of governed calls.
 In particular, 0017 `scope.resources` describes the targets of effects; it is not
 the accessible-information collection defined here.
 
-## Decisions still needed before a new executable candidate
+## Work remaining before a new executable candidate
 
 - Set the exact serialization and relationship with existing Instructions,
   slots, Applications, Interface media requirements and Definition identity. This
   draft does not authorize a silent reinterpretation of `before-invoke` or of
   existing `invoke` semantics.
-- Specify how later exchanges target an existing Agent and carry multiple
-  content items; keep initial setup distinct from a new request. Concurrency,
-  dynamic Agent creation and durable resumption are outside this content model.
-- Specify resource version expectations where reproducibility is required.
-  Referenced content may change independently of the AgSDL artifact. Neither
-  snapshotting nor live-refresh semantics can be inferred from this draft.
+- Specify the Message envelope, how it targets an existing Agent and carries
+  multiple content items, and how optional output constraints are declared. Keep
+  initial setup distinct from later Messages. Concurrency, dynamic Agent creation
+  and durable resumption are outside this content model.
+- Specify how Engine settings and Tool contracts expose declared workspace access
+  for compatibility assessment, without a universal permission vocabulary or
+  resource snapshot policy.
 
 A new candidate must test at least mixed resource types, inline versus referenced
 content, unresolved access, instruction/resource role separation, a multimodal
 prompt, distinct input/output support, a Model/harness mismatch, an explicit
 conversion, combined media, output-format validation, and two successive
-interactions with one Agent versus two independently initialized Agents. Static comparison can establish declaration agreement; context continuity
-and actual access need runtime evidence from consuming implementations.
+interactions with one Agent versus two independently initialized Agents. Include
+a free reply, a constrained reply, and writable versus read-only workspace
+configurations without per-file resource declarations. Static comparison can
+establish declaration agreement; context continuity and actual access need
+runtime evidence from consuming implementations.

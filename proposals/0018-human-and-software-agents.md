@@ -4,6 +4,10 @@ Status: accepted 0.2 design direction under
 [Decision 0010](../docs/decisions/0010-human-and-software-agents.md).
 This is a conceptual proposal with static feasibility examples, not a new
 candidate edition, normative adoption, runtime contract or published release.
+The common participation direction remains. For the next 0.2 model,
+[Decision 0011](../docs/decisions/0011-message-based-agent-model.md) supersedes
+the reusable-definition framing below with persistent Agents and Messages in
+[0019](0019-agent-prompt-and-resources.md).
 The complete static rule source remains [0017](0017-agent-only-kiss-0.2.md),
 marker `agsdl-exp-0017-c1`. Its bytes and reader behavior are unchanged.
 

@@ -28,6 +28,10 @@ and [assessment](experimental/kiss-0.2/ASSESSMENT.md) describe the rules,
 evidence and limits. It remains experimental; the official specification
 above continues to apply. The [human and software Agent direction](proposals/0018-human-and-software-agents.md)
 adds two static feasibility examples without changing that candidate grammar.
+The [next model directions](proposals/0019-agent-prompt-and-resources.md), accepted
+under [Decision 0011](docs/decisions/0011-message-based-agent-model.md), use
+persistent Agents and multimodal Messages with optional output constraints and
+configured workspace access. Their concrete grammar is not implemented.
 
 ## What 0.1.0 describes
 
