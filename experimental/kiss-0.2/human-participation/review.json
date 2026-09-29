@@ -1,0 +1,148 @@
+{
+  "edition": "agsdl-exp-0017-c1",
+  "agents": {
+    "reviewer": {
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "value": {
+              "target": "Agent",
+              "at": "before-invoke",
+              "format": {
+                "identity": "example/plain-text",
+                "version": "1"
+              },
+              "body": "Correct spelling without changing meaning. Return the corrected text."
+            }
+          }
+        }
+      ],
+      "interface": {
+        "value": {
+          "operations": {
+            "review": {
+              "direction": "inbound",
+              "mode": "request-response",
+              "inputs": {
+                "text": "string"
+              },
+              "outputs": {
+                "text": "string"
+              },
+              "effects": "none"
+            }
+          }
+        }
+      }
+    }
+  },
+  "graphs": {
+    "review-flow": {
+      "entry": "review",
+      "inputs": {
+        "text": "string"
+      },
+      "outputs": {
+        "text": "string"
+      },
+      "steps": [
+        {
+          "id": "review",
+          "kind": "invoke",
+          "agent": {
+            "ref": "reviewer"
+          },
+          "operation": "review",
+          "bindings": {
+            "text": {
+              "input": "text"
+            }
+          },
+          "success": "done",
+          "failure": "failed"
+        },
+        {
+          "id": "done",
+          "kind": "end",
+          "outcome": "success",
+          "bindings": {
+            "text": {
+              "step": "review",
+              "port": "text"
+            }
+          }
+        },
+        {
+          "id": "failed",
+          "kind": "end",
+          "outcome": "failure",
+          "reason": "Review could not produce the required result"
+        }
+      ]
+    }
+  },
+  "configurations": {
+    "automated": {
+      "graph": {
+        "ref": "review-flow"
+      },
+      "agents": [
+        {
+          "agent": {
+            "ref": "reviewer"
+          },
+          "engine": {
+            "identity": "example/software-agent-engine",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/prompt-content",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": []
+        }
+      ]
+    },
+    "human-assisted": {
+      "graph": {
+        "ref": "review-flow"
+      },
+      "agents": [
+        {
+          "agent": {
+            "ref": "reviewer"
+          },
+          "engine": {
+            "identity": "example/human-task-broker",
+            "version": "1"
+          },
+          "parameters": {},
+          "requires": [],
+          "claims": [],
+          "applications": [
+            {
+              "slot": "task",
+              "adapter": {
+                "identity": "example/display-instructions",
+                "version": "1"
+              },
+              "parameters": {}
+            }
+          ],
+          "tools": []
+        }
+      ]
+    }
+  },
+  "selected": "automated"
+}

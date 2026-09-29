@@ -25,6 +25,7 @@ The [specification](../spec/README.md) is the normative source, not these files.
 | [0015](0015-validation-reports-0.2.md) | Proposed lightweight validation reports and diagnostic agreement for 0.2; not adopted or implemented. The current contract remains `agsdl-0.1.0`. |
 | [0016](0016-kiss-experiment-0.2.md) | Historical bounded candidate under [Decision 0008](../docs/decisions/0008-0.2-experiment-directions.md). Its c2 readers, examples and 38-case assessment remain in Git at `f2a20f28f8d03baa1f7cb1bb4f477ea4dd3706b0`. Not normatively adopted or published; superseded for the active experiment by 0017. |
 | [0017](0017-agent-only-kiss-0.2.md) | Current experimental candidate under [Decision 0009](../docs/decisions/0009-agent-only-experiment.md), removing Principal and approval recipient lists. The [42-case comparison](../experimental/kiss-0.2/ASSESSMENT.md) covers the updated static readers. Not normative adoption, publication or execution support. |
+| [0018](0018-human-and-software-agents.md) | Accepted 0.2 design direction under [Decision 0010](../docs/decisions/0010-human-and-software-agents.md): common Agent definition for software and human work, with [static feasibility examples](../experimental/kiss-0.2/human-participation/README.md). No new grammar, candidate edition, normative adoption or execution support. |
 
 The proposed-status statements inside 0012/0013 describe their historical
 preparation dates. This register records the later limited adoption without
@@ -52,3 +53,4 @@ state publication or implementation conformance.
 - [`0015: lightweight validation reports for 0.2`](0015-validation-reports-0.2.md)
 - [`0016: bounded KISS experiment for 0.2`](0016-kiss-experiment-0.2.md)
 - [`0017: agents without Principal identities`](0017-agent-only-kiss-0.2.md)
+- [`0018: human and software participation through Agent`](0018-human-and-software-agents.md)

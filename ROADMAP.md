@@ -57,6 +57,12 @@ The updated Python and JavaScript readers agree on the
 [42-case corpus](experimental/kiss-0.2/ASSESSMENT.md). This experimental
 evidence does not establish normative adoption or execution support.
 
+[Proposal 0018](proposals/0018-human-and-software-agents.md) records the accepted
+direction of one Agent concept for human and software work. Its
+[feasibility examples](experimental/kiss-0.2/human-participation/README.md) use
+the unchanged candidate grammar; human execution and a gate-to-Agent binding
+remain outside their evidence.
+
 The first 0.2 scope remains undecided. Official documentation, migration guidance
 and reader updates depend on that decision; no 0.2 release is ready or published.
 

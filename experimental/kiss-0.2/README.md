@@ -10,6 +10,15 @@ and [KISS assessment](ASSESSMENT.md) record the bounded evidence for this marker
 No runtime or normative conformance implementation is supplied here.
 The current published contract remains `agsdl-0.1.0` in release 0.1.1.
 
+## Human and software participation direction
+
+[Proposal 0018](../../proposals/0018-human-and-software-agents.md), under
+[Decision 0010](../../docs/decisions/0010-human-and-software-agents.md), accepts
+a common Agent concept for human and software work in the next 0.2 model. Its
+[two feasibility examples](human-participation/README.md) reuse this grammar
+and keep ordinary task results distinct from human approval. They neither
+change the frozen candidate nor establish human execution support.
+
 ## Changes from 0016 c2
 
 This candidate removes the `principals` catalog, `Agent.principal` and approval
