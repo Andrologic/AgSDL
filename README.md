@@ -31,7 +31,10 @@ adds two static feasibility examples without changing that candidate grammar.
 The [next model directions](proposals/0019-agent-prompt-and-resources.md), accepted
 under [Decision 0011](docs/decisions/0011-message-based-agent-model.md), use
 persistent Agents and multimodal Messages with optional output constraints and
-configured workspace access. Their concrete grammar is not implemented.
+configured workspace access. [Flow directions](proposals/0020-blueprint-flow-0.2.md)
+under [Decision 0012](docs/decisions/0012-blueprint-flow-directions.md) add declared
+sequencing, configuration selection, recovery, loops and parallel work. The
+concrete grammar for these directions is not implemented.
 
 ## What 0.1.0 describes
 

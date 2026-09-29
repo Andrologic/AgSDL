@@ -72,9 +72,11 @@ specialization; the message model does not require an operation catalog for
 every Agent. This changes the proposed authoring baseline, not the semantics
 of existing 0017 `invoke` records.
 
-A Message is an exchange description, not a new transport, queue or runtime API.
-This step does not standardize scheduling, concurrent delivery, exactly-once
-processing, response correlation or a mandatory one-request/one-response pattern.
+A Message is an exchange description, not a new transport or runtime API.
+[Proposal 0020](0020-blueprint-flow-0.2.md) supplies the accepted directions for
+completion, result transfer, queueing or steering, loops and parallel flow.
+Its candidate work includes correlation and delivery rules. Neither proposal
+imposes exactly-once processing or a mandatory one-request/one-response pattern.
 
 ## Minimum content model
 
@@ -310,8 +312,9 @@ the accessible-information collection defined here.
   existing `invoke` semantics.
 - Specify the Message envelope, how it targets an existing Agent and carries
   multiple content items, and how optional output constraints are declared. Keep
-  initial setup distinct from later Messages. Concurrency, dynamic Agent creation
-  and durable resumption are outside this content model.
+  initial setup distinct from later Messages. Coordinate flow and concurrent
+  delivery with 0020. Arbitrary dynamic Agent creation and durable resumption
+  remain outside this content model.
 - Specify how Engine settings and Tool contracts expose declared workspace access
   for compatibility assessment, without a universal permission vocabulary or
   resource snapshot policy.
