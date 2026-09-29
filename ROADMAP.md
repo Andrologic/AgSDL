@@ -63,6 +63,12 @@ direction of one Agent concept for human and software work. Its
 the unchanged candidate grammar; human execution and a gate-to-Agent binding
 remain outside their evidence.
 
+[Decision 0011](docs/decisions/0011-message-based-agent-model.md) accepts the
+[0019 model directions](proposals/0019-agent-prompt-and-resources.md), including
+Messages as the basic interaction and workspace access through configuration.
+The next candidate must specify their grammar and validation rules before reader
+implementation; the existing comparison evidence does not cover this model.
+
 The first 0.2 scope remains undecided. Official documentation, migration guidance
 and reader updates depend on that decision; no 0.2 release is ready or published.
 
