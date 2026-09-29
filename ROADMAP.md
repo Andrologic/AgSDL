@@ -66,11 +66,16 @@ remain outside their evidence.
 [Decision 0011](docs/decisions/0011-message-based-agent-model.md) accepts the
 [0019 model directions](proposals/0019-agent-prompt-and-resources.md), including
 Messages as the basic interaction and workspace access through configuration.
-The next candidate must specify their grammar and validation rules before reader
-implementation; the existing comparison evidence does not cover this model.
+[Decision 0012](docs/decisions/0012-blueprint-flow-directions.md) accepts the
+[0020 flow directions](proposals/0020-blueprint-flow-0.2.md) for those Agents.
+Its small scenarios cover correction loops, configuration choice, parallel joins,
+queueing, steering and recovery.
 
-The first 0.2 scope remains undecided. Official documentation, migration guidance
-and reader updates depend on that decision; no 0.2 release is ready or published.
+Next, specify a new candidate's grammar and validation rules for these accepted
+directions, then derive examples and independent reader checks. The open details
+are listed in 0019 and 0020; existing comparison evidence does not cover them.
+The final release scope, normative adoption and migration guidance still need
+review. No 0.2 release is ready or published.
 
 ## Completed 0.1.0 delivery sequence
 
