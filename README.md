@@ -33,11 +33,8 @@ under [Decision 0011](docs/decisions/0011-message-based-agent-model.md), use
 persistent Agents and multimodal Messages with optional output constraints and
 configured workspace access. [Flow directions](proposals/0020-blueprint-flow-0.2.md)
 under [Decision 0012](docs/decisions/0012-blueprint-flow-directions.md) add declared
-sequencing, configuration selection, recovery, loops and parallel work.
-[Decision 0013](docs/decisions/0013-named-outcomes.md) refines step choices through
-named outcomes, with transmission configured by the Engine integration and
-separate from report content. The concrete grammar for these directions is not
-implemented.
+sequencing, configuration selection, recovery, loops and parallel work. The
+concrete grammar for these directions is not implemented.
 
 ## What 0.1.0 describes
 
