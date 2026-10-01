@@ -69,7 +69,10 @@ Messages as the basic interaction and workspace access through configuration.
 [Decision 0012](docs/decisions/0012-blueprint-flow-directions.md) accepts the
 [0020 flow directions](proposals/0020-blueprint-flow-0.2.md) for those Agents.
 Its small scenarios cover correction loops, configuration choice, parallel joins,
-queueing, steering and recovery.
+queueing, steering and recovery. [Decision 0013](docs/decisions/0013-named-outcomes.md)
+adds named outcomes for step choices, with configurable transmission through the
+Engine integration. The examples distinguish the choice from report content and
+cover missing, ambiguous, stale and unsupported selections.
 
 Next, specify a new candidate's grammar and validation rules for these accepted
 directions, then derive examples and independent reader checks. The open details
