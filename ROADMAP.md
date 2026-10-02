@@ -43,39 +43,34 @@ See [release status](README.md#release-status-and-history) for publication statu
 See the [0.1.1 release notes](docs/releases/0.1.1.md) for the bounded
 verification scope, retained evidence and publication record.
 
-## Proposed preparation: 0.2
+## Preparing 0.2
 
-[Proposal 0014](proposals/0014-minimal-core-0.2.md) explores a smaller composable
-core through [candidate examples](docs/research/0.2-design-examples.md).
-[Proposal 0015](proposals/0015-validation-reports-0.2.md) explores lightweight
-validation reports and diagnostic agreement. Both are proposed, not adopted or
-implemented.
-[Proposal 0016](proposals/0016-kiss-experiment-0.2.md) records the initial bounded
-prototype. [Proposal 0017](proposals/0017-agent-only-kiss-0.2.md) removes its
-Principal model under [Decision 0009](docs/decisions/0009-agent-only-experiment.md).
-The updated Python and JavaScript readers agree on the
-[42-case corpus](experimental/kiss-0.2/ASSESSMENT.md). This experimental
-evidence does not establish normative adoption or execution support.
+The [preparation index](docs/0.2/README.md) is the current entry point and readiness
+reference. [0019](proposals/0019-agent-prompt-and-resources.md) and
+[0020](proposals/0020-blueprint-flow-0.2.md), under Decisions
+[0011](docs/decisions/0011-message-based-agent-model.md) and
+[0012](docs/decisions/0012-blueprint-flow-directions.md), record accepted Agent,
+Message and flow directions. [0021](proposals/0021-logic-block-contract-0.2.md)
+proposes the shared contract for a small set of logic blocks, local compositions
+and custom implementations.
 
-[Proposal 0018](proposals/0018-human-and-software-agents.md) records the accepted
-direction of one Agent concept for human and software work. Its
-[feasibility examples](experimental/kiss-0.2/human-participation/README.md) use
-the unchanged candidate grammar; human execution and a gate-to-Agent binding
-remain outside their evidence.
+Preparation now proceeds through these dependencies:
 
-[Decision 0011](docs/decisions/0011-message-based-agent-model.md) accepts the
-[0019 model directions](proposals/0019-agent-prompt-and-resources.md), including
-Messages as the basic interaction and workspace access through configuration.
-[Decision 0012](docs/decisions/0012-blueprint-flow-directions.md) accepts the
-[0020 flow directions](proposals/0020-blueprint-flow-0.2.md) for those Agents.
-Its small scenarios cover correction loops, configuration choice, parallel joins,
-queueing, steering and recovery.
+1. Review the block contract and settle its identified semantic questions,
+   including result association, message-handling boundaries and binding limits.
+2. Define and freeze a new candidate's grammar and validation rules. Do not
+   reinterpret the official or frozen experimental editions.
+3. Derive examples, schema, reader implementations and a comparison corpus from
+   that candidate. Exercise its own normal and adverse cases.
+4. Review migration and release scope. Add execution evidence from consuming
+   implementations for any claimed runtime behavior, then decide adoption and
+   publication separately.
 
-Next, specify a new candidate's grammar and validation rules for these accepted
-directions, then derive examples and independent reader checks. The open details
-are listed in 0019 and 0020; existing comparison evidence does not cover them.
-The final release scope, normative adoption and migration guidance still need
-review. No 0.2 release is ready or published.
+Earlier [0014 sketches](docs/research/0.2-design-examples.md) and
+[0015 report proposals](proposals/0015-validation-reports-0.2.md) remain discussion
+inputs. The [0017 experiment](experimental/kiss-0.2/README.md) preserves its
+42-case static comparison; it does not implement the newer flow or block model.
+No 0.2 release is ready or published.
 
 ## Completed 0.1.0 delivery sequence
 

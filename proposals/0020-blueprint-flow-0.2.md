@@ -44,8 +44,8 @@ a completion signal or forward it before the step completes.
 A routing decision explicitly identified by the integration selects the
 outgoing connections to follow without altering the default transferred text.
 If that decision appears in the user-visible response, preserve it with the rest
-of the text. If it is supplied
-only through a Tool invocation or result, it is excluded under the rule above;
+of the text. If it is supplied only through a Tool invocation or result, it is
+excluded under the rule above;
 routing does not automatically insert it into the transferred text. This does
 not prescribe a universal decision format or infer a decision from arbitrary
 prose. The concrete routing mechanism remains candidate work.
@@ -66,6 +66,19 @@ of a step without user-visible text remain candidate work.
 Completion and a satisfactory result are different. A review that finishes with
 "changes needed" can take the normal correction path. Interface constraints
 still apply where declared; a malformed required result is not a valid success.
+
+### Deterministic conditions and Agent decisions
+
+When the authored rule can be evaluated from explicit data, the flow can apply
+that condition directly. A test process's declared exit code can select a path
+without asking an Agent for a second verdict. An Agent decision is appropriate
+when the authored task calls for judgment. The blueprint makes that choice;
+a consumer does not silently replace one with the other.
+
+The exact predicates, data selection and validation behavior belong to the
+proposed [block contract](0021-logic-block-contract-0.2.md). Data required by a
+condition must be explicitly available to it. This does not add raw Tool
+exchanges to the default Agent response transfer.
 
 ### Configuration selected before initialization
 
@@ -256,15 +269,18 @@ continuity, steering, recovery or cancellation. No automatic migration is promis
 
 ## Work before an implementable candidate
 
-The following details remain proposed work, not settled requirements:
+The flow directions above are settled at the design level. The following
+serialization and integration details remain open. The proposed
+[block contract](0021-logic-block-contract-0.2.md) develops their shared boundary
+and review scenarios; it does not adopt a grammar.
 
 - Define the minimal Message envelope and step identity needed to associate
   completion, failure and selected results with the correct work. Specify how
   user-visible response text is collected when queueing or steering introduces
   additional inputs, how text is assembled, and the case with no user-visible
   text, without falling back to a prior reply.
-- Specify configuration selection and when initialization occurs, including
-  unresolved selections and repeated visits to an already initialized Agent.
+- Serialize configuration selection before initialization. Define diagnostics
+  for unresolved selections and conflicting revisits to an initialized Agent.
 - Define step outputs and their connections, result selectors, branch conditions,
   joins and loop limits in one grammar. State iteration counting, limit exhaustion,
   ties between acceptable results and the outcome when no branch provides an

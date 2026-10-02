@@ -4,7 +4,8 @@ Status: **0.2 design directions accepted under
 [Decision 0011](../docs/decisions/0011-message-based-agent-model.md); not an
 adopted contract or candidate edition.**
 The directions cover persistent Agents, distinct prompt and resources,
-multimodal messages, optional output constraints and configured workspace access.
+multimodal Messages, optional initial prompt and output constraints, and
+configured workspace access.
 Concrete shapes and binding rules below remain proposed for the next candidate.
 [0017](0017-agent-only-kiss-0.2.md) remains the implemented experimental contract;
 [release status](../README.md#release-status-and-history) remains authoritative.
@@ -85,9 +86,14 @@ They describe the content part of an Agent, not its complete declaration.
 
 | Element | Shape and meaning |
 | --- | --- |
-| Initial prompt | A nonempty ordered sequence of content sources carrying requests or instructions. It establishes the Agent's initial direction. |
+| Initial prompt | An optional ordered sequence of content sources carrying requests or instructions. When supplied, it establishes the Agent's initial direction. An Agent without an initial prompt waits for its first Message. |
 | Accessible resources | A collection of explicitly supplied content sources with names local to the Agent. It may be empty. Names let a prompt or later request identify a resource without embedding its location. Collection order carries no meaning; this is not an exhaustive workspace inventory. |
 | Content source | Exactly one inline value or one URI reference, with an optional media type describing the intended representation. Either role may use text, structured data or other media, including images, audio and video. |
+
+Instructions and information remain distinct roles, independent of storage or
+media type. Omitting the initial prompt does not change the separately declared
+Engine, Tools, access or other configuration. It supplies no implicit task to run.
+The grammar must define omission and any equivalent empty representation.
 
 One source rule serves both roles. A source is either supplied content or a
 location through which the recipient obtains content. Supplying both is
@@ -108,11 +114,11 @@ that it can support the declared representation and reports incompatibility.
 Prompt order is preserved; it does not establish provider-specific system/user
 roles or resolve contradictory instructions. An audio recording can supply a
 spoken request; a video can supply instructions by demonstration. Their role is
-authored explicitly, just as for text. Prompt sources must be made usable in the
+authored explicitly, just as for text. Supplied prompt sources must be made usable in the
 intended role before their instructions can be applied; text extraction is not
-a universal substitute for receiving the original media. Unavailable initial
-prompt content prevents successful initialization rather than silently
-shortening the prompt.
+a universal substitute for receiving the original media. Unavailable supplied
+initial prompt content prevents successful initialization rather than silently
+shortening the prompt. This differs from an intentionally omitted initial prompt.
 
 Resources can be shared between Agents by referring to the same source. Shared
 resources do not merge Agent contexts. Reading a resource does not give its text
@@ -319,7 +325,13 @@ the accessible-information collection defined here.
   for compatibility assessment, without a universal permission vocabulary or
   resource snapshot policy.
 
-A new candidate must test at least mixed resource types, inline versus referenced
+These are serialization and integration tasks; they do not reopen the accepted
+Agent continuity, content roles or optional initial prompt. The
+[0.2 preparation index](../docs/0.2/README.md) tracks the document hierarchy.
+
+A new candidate must test at least an Agent initialized without a prompt and
+waiting for its first Message, a supplied but unavailable prompt, mixed resource
+types, inline versus referenced
 content, unresolved access, instruction/resource role separation, a multimodal
 prompt, distinct input/output support, a Model/harness mismatch, an explicit
 conversion, combined media, output-format validation, and two successive
