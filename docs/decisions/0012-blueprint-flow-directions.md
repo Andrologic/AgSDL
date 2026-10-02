@@ -36,8 +36,13 @@ Explicit result selection remains available, including for non-text content.
 
 This refines the accepted transfer direction in
 [0020](../../proposals/0020-blueprint-flow-0.2.md#completion-and-result-transfer).
+The maintainer also confirmed that using an explicitly identified routing
+decision does not alter the default transferred text. A decision present in the
+user-visible response stays in that text. A decision supplied only through a
+Tool exchange remains excluded, without automatic insertion into the text.
+
 Text assembly, attribution with queueing or steering, and the case with no
-user-visible text still need candidate rules. It does not adopt named outcomes
-or decide whether a routing signal embedded in visible text should be included
-in transferred content. The official contract, frozen candidate and readers
-remain unchanged.
+user-visible text still need candidate rules. This refinement settles text
+preservation when routing uses a decision; it does not adopt the withdrawn named
+outcome design, its transmission mechanisms or its choice finalization rules.
+The official contract, frozen candidate and readers remain unchanged.

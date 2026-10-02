@@ -41,6 +41,15 @@ explanation or quotation written by the Agent remains part of its response,
 even when based on Tool results. Collecting intermediate text does not make it
 a completion signal or forward it before the step completes.
 
+A routing decision explicitly identified by the integration can select a branch
+without altering the default transferred text. If that decision appears in the
+user-visible response, preserve it with the rest of the text. If it is supplied
+only through a Tool invocation or result, it is excluded under the rule above;
+routing does not automatically insert it into the transferred text. This does
+not prescribe a universal decision format or infer a decision from arbitrary
+prose. The routing mechanism and when a choice becomes definitive remain
+candidate work.
+
 An explicit selection can instead transfer specified results, content or file
 references, including non-text content. Selecting a file reference does not
 grant access to its target. A previous step's reply cannot stand in for a
