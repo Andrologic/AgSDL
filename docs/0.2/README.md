@@ -20,6 +20,9 @@ separate frozen static-reader candidate.
 4. [Worked scenarios](worked-scenarios.md): follow a basic conversation, a
    deterministic test loop and two grouped reviews, then inspect a custom Call.
    These semantic walkthroughs are illustrative, not executable fixtures.
+5. [Concrete notation](../../proposals/0022-concrete-flow-notation-0.2.md): JSON
+   sketches of those scenarios, with proposed references and explicit review
+   gates. They are not yet a candidate grammar accepted by readers.
 
 The Agent and flow directions are accepted under [Decision 0011](../decisions/0011-message-based-agent-model.md)
 and [Decision 0012](../decisions/0012-blueprint-flow-directions.md). Their concrete
@@ -100,7 +103,7 @@ evidence of context continuity, media delivery or execution.
 | --- | --- |
 | Consistent Agent/content/flow directions | Recorded in 0019/0020 and their decisions. |
 | Reviewed common block contract | Proposed in 0021; resolve its remaining semantic choices before freezing a candidate. |
-| Concrete new edition | Not allocated here. Define Message and block serialization, references, conditions, selectors and configuration bindings. |
+| Concrete new edition | Initial notation proposed in 0022. Review its references and content roles, then complete binding declarations and grammar before allocating a candidate. |
 | Lifecycle and correlation rules | Define queue/steering boundaries, result grouping by current work, no-visible-text cases, duplicate/late data, first-satisfactory ties and pending stops. |
 | Examples, schema and static readers | Derive them from the selected candidate and compare independent readers on its own cases. Existing 0.1/0017 checks do not cover it. |
 | Integration evidence | Exercise actual Agent continuity, Tool calls, effects, media, approvals and stop behavior in consuming software before claiming support for them. |

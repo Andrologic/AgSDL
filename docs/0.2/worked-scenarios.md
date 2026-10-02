@@ -246,3 +246,7 @@ requests, visible reports and all-required Join; they do not settle those cases.
 Next, derive serialized examples and positive/negative conformance cases from a
 reviewed candidate. Repository checks on this document verify its maintenance,
 not the runtime behavior described in its tables.
+
+[Proposal 0022](../../proposals/0022-concrete-flow-notation-0.2.md) provides the
+first concrete JSON sketches for these scenarios and identifies the notation
+choices still requiring review.

@@ -33,6 +33,7 @@ The [specification](../spec/README.md) is the normative source, not these files.
 | [0019](0019-agent-prompt-and-resources.md) | 0.2 design directions accepted under [Decision 0011](../docs/decisions/0011-message-based-agent-model.md): persistent Agents, multimodal Messages, distinct prompt/resources, optional initial prompt and output constraints and workspace access through configuration. Concrete grammar remains proposed; no normative adoption, implementation or candidate edition. |
 | [0020](0020-blueprint-flow-0.2.md) | 0.2 flow directions accepted under [Decision 0012](../docs/decisions/0012-blueprint-flow-directions.md): visible response transfer, terminal routing decisions, deterministic conditions, configuration before initialization, recovery, loops, parallel output connections, queueing/steering and explicit joins. Concrete grammar remains proposed; no normative adoption, reader implementation or execution evidence. |
 | [0021](0021-logic-block-contract-0.2.md) | Proposed common contract for Condition, Join, Prepare, Call, local compositions and custom implementations. Builds on 0019/0020; no adopted grammar, candidate marker, reader implementation or execution evidence. |
+| [0022](0022-concrete-flow-notation-0.2.md) | Proposed JSON notation for the current worked scenarios: optional flow, persistent Agent references, explicit result bindings and grouped reviews. Incomplete configuration/integration catalog and grammar; no candidate marker, reader support or normative adoption. |
 
 The proposed-status statements inside 0012/0013 describe their historical
 preparation dates. This register records the later limited adoption without
@@ -64,3 +65,4 @@ state publication or implementation conformance.
 - [`0019: persistent Agents, prompt and resources`](0019-agent-prompt-and-resources.md)
 - [`0020: message flow for persistent Agents`](0020-blueprint-flow-0.2.md)
 - [`0021: a common contract for logic blocks`](0021-logic-block-contract-0.2.md)
+- [`0022: concrete flow notation for the 0.2 walkthroughs`](0022-concrete-flow-notation-0.2.md)
