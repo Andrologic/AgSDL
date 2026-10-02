@@ -47,8 +47,14 @@ user-visible response, preserve it with the rest of the text. If it is supplied
 only through a Tool invocation or result, it is excluded under the rule above;
 routing does not automatically insert it into the transferred text. This does
 not prescribe a universal decision format or infer a decision from arbitrary
-prose. The routing mechanism and when a choice becomes definitive remain
-candidate work.
+prose. The concrete routing mechanism remains candidate work.
+
+For a step that uses an Agent-supplied routing decision, the Agent announces
+that decision only when its work is finished. The decision closes the current
+step; the Agent then waits for later Messages with its context. There is no
+provisional routing decision or revision within that completed step, and no
+"last decision wins" rule. Concrete integration rules must associate the
+decision with step completion.
 
 An explicit selection can instead transfer specified results, content or file
 references, including non-text content. Selecting a file reference does not
