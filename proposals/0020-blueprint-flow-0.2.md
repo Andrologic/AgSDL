@@ -30,14 +30,22 @@ When an Agent finishes a step, the flow proceeds to the planned successor or
 successors. An intermediate Message is not sufficient evidence of completion.
 The Agent remains available with its context for later steps.
 
-Transferred content is configurable. By default, transfer the Agent's last
-Message belonging to the completed step, including its content items. An
-explicit selection can instead transfer specified results, content or file
-references. Selecting a file reference does not grant access to its target.
-Previous conversation history and internal context are not transferred by
-implication. A previous step's reply cannot stand in for a missing current
-result. Exact selection syntax and the treatment of a step without a Message
-remain candidate work.
+Transferred content is configurable. By default, transfer all user-visible text
+the Agent produces for the completed step, in response order, including
+intermediate Messages and the final reply. For work started by one input
+Message, this covers the response from that input through completion. It does
+not include earlier conversation history or internal context.
+
+Reasoning, Tool invocations and raw Tool results are excluded. A user-facing
+explanation or quotation written by the Agent remains part of its response,
+even when based on Tool results. Collecting intermediate text does not make it
+a completion signal or forward it before the step completes.
+
+An explicit selection can instead transfer specified results, content or file
+references, including non-text content. Selecting a file reference does not
+grant access to its target. A previous step's reply cannot stand in for a
+missing current result. Exact selection syntax, text assembly and the treatment
+of a step without user-visible text remain candidate work.
 
 Completion and a satisfactory result are different. A review that finishes with
 "changes needed" can take the normal correction path. Interface constraints
@@ -132,10 +140,11 @@ flowchart TD
 
 One branch initializes the developer. Each correction returns to that same
 Agent; the reviewer also keeps its context. Without an explicit result
-selection, the developer sends its last Message for that step. The loop has no
-iteration cap unless the blueprint declares one. A failed Engine call takes a
-declared recovery path, or stops the affected path if none is declared. It does
-not produce an invented "changes needed" review.
+selection, the developer sends all its user-visible response text for that step,
+including progress Messages and the final reply, without reasoning or raw Tool
+exchanges. The loop has no iteration cap unless the blueprint declares one.
+A failed Engine call takes a declared recovery path, or stops the affected path
+if none is declared. It does not produce an invented "changes needed" review.
 
 ### Two required checks or two alternative answers
 
@@ -193,8 +202,10 @@ continuity, steering, recovery or cancellation. No automatic migration is promis
 The following details remain proposed work, not settled requirements:
 
 - Define the minimal Message envelope and step identity needed to associate
-  completion, failure and selected results with the correct work. Specify the
-  no-Message case without falling back to a prior reply.
+  completion, failure and selected results with the correct work. Specify how
+  user-visible response text is collected when queueing or steering introduces
+  additional inputs, how text is assembled, and the case with no user-visible
+  text, without falling back to a prior reply.
 - Specify configuration selection and when initialization occurs, including
   unresolved selections and repeated visits to an already initialized Agent.
 - Define result selectors, branch conditions, joins and loop limits in one
