@@ -47,3 +47,12 @@ The frozen 0017 candidate, its acyclic graphs, readers and corpus keep their
 current meaning. The official specification is unchanged. Static comparison
 cannot establish context continuity, actual media support or access enforcement.
 Those require execution evidence from consuming implementations.
+
+## Refinement on 2026-10-02: optional initial prompt
+
+The maintainer allowed an Agent to be prepared with its Engine, Tools and access
+while waiting for its first Message. The initial prompt is therefore optional,
+as reflected in [0019](../../proposals/0019-agent-prompt-and-resources.md#minimum-content-model).
+Omission supplies no implicit task. A supplied prompt still has to be usable;
+its unavailability is not treated as intentional omission. Concrete omission
+syntax remains proposed, and existing editions are unchanged.

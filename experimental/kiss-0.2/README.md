@@ -10,6 +10,10 @@ and [KISS assessment](ASSESSMENT.md) record the bounded evidence for this marker
 No runtime or normative conformance implementation is supplied here.
 The current published contract remains `agsdl-0.1.0` in release 0.1.1.
 
+For the newer persistent-Agent, Message and logic-block model, use the
+[0.2 preparation index](../../docs/0.2/README.md). Those directions do not change
+this frozen candidate or extend the evidence reported here.
+
 ## Human and software participation direction
 
 [Proposal 0018](../../proposals/0018-human-and-software-agents.md), under

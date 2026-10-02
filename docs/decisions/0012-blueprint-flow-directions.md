@@ -77,3 +77,13 @@ an Agent instead deliver separate Messages under its queueing or steering mode.
 records this distinction and an illustrative graph. This does not settle result
 serialization, correlation across iterations or acceptance conditions, and does
 not establish execution support.
+
+## Refinement on 2026-10-02: deterministic branch conditions
+
+The maintainer chose deterministic evaluation when explicit data can decide the
+authored rule. A flow need not request a second Agent verdict for such a rule.
+Judgment can still be assigned to an Agent. The blueprint selects the mechanism;
+it does not delegate that choice implicitly to the consuming software.
+[0020](../../proposals/0020-blueprint-flow-0.2.md#deterministic-conditions-and-agent-decisions)
+records this direction. The predicates and integration contract proposed in
+[0021](../../proposals/0021-logic-block-contract-0.2.md) remain subject to review.

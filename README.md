@@ -20,21 +20,22 @@ the full example and validate its D, G and R units without installation. Their
 mismatches. The [0.1.1 diagnostic dossier](docs/reviews/0009-0.1.1-diagnostic-expectations.md)
 records additional limits; this evidence does not establish universal agreement.
 
-## 0.2 experiment
+## Preparing 0.2
 
-The [KISS experiment](experimental/kiss-0.2/README.md) explores a smaller
-modular format. Its [candidate contract](proposals/0017-agent-only-kiss-0.2.md)
-and [assessment](experimental/kiss-0.2/ASSESSMENT.md) describe the rules,
-evidence and limits. It remains experimental; the official specification
-above continues to apply. The [human and software Agent direction](proposals/0018-human-and-software-agents.md)
-adds two static feasibility examples without changing that candidate grammar.
-The [next model directions](proposals/0019-agent-prompt-and-resources.md), accepted
-under [Decision 0011](docs/decisions/0011-message-based-agent-model.md), use
-persistent Agents and multimodal Messages with optional output constraints and
-configured workspace access. [Flow directions](proposals/0020-blueprint-flow-0.2.md)
-under [Decision 0012](docs/decisions/0012-blueprint-flow-directions.md) add declared
-sequencing, configuration selection, recovery, loops and parallel work. The
-concrete grammar for these directions is not implemented.
+Start with the [0.2 preparation index](docs/0.2/README.md) for the current model,
+its source hierarchy and the remaining work before an implementable edition.
+[Agents and Messages](proposals/0019-agent-prompt-and-resources.md) and
+[flow directions](proposals/0020-blueprint-flow-0.2.md) describe persistent Agents,
+optional initial prompts, multimodal content, visible response transfer,
+deterministic choices, parallel connections and explicit result joins.
+[Logic blocks](proposals/0021-logic-block-contract-0.2.md) proposes a common
+contract for Condition, Join, Prepare, Call and reusable/custom behavior.
+Concrete grammar and integration details remain proposed, not implemented.
+
+The [KISS experiment](experimental/kiss-0.2/README.md) remains a separate frozen
+candidate under [0017](proposals/0017-agent-only-kiss-0.2.md). Its
+[42-case assessment](experimental/kiss-0.2/ASSESSMENT.md) covers its static readers,
+not the newer Agent/Message and block model. No 0.2 edition is published.
 
 ## What 0.1.0 describes
 
