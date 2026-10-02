@@ -67,3 +67,13 @@ step. Connections from other outputs are not activated by that selection.
 records the rule and a small scenario. This does not change Agent message-handling
 modes or define how parallel results are joined. Concrete serialization and
 validation remain candidate work; no runtime support is established.
+
+## Refinement on 2026-10-02: explicit result joins
+
+The maintainer confirmed an explicit join step for waiting for required results
+and passing one input containing them to the next step. Direct connections to
+an Agent instead deliver separate Messages under its queueing or steering mode.
+[0020](../../proposals/0020-blueprint-flow-0.2.md#joining-parallel-results)
+records this distinction and an illustrative graph. This does not settle result
+serialization, correlation across iterations or acceptance conditions, and does
+not establish execution support.
