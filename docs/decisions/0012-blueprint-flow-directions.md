@@ -44,5 +44,15 @@ Tool exchange remains excluded, without automatic insertion into the text.
 Text assembly, attribution with queueing or steering, and the case with no
 user-visible text still need candidate rules. This refinement settles text
 preservation when routing uses a decision; it does not adopt the withdrawn named
-outcome design, its transmission mechanisms or its choice finalization rules.
-The official contract, frozen candidate and readers remain unchanged.
+outcome design or its transmission mechanisms. The official contract, frozen
+candidate and readers remain unchanged.
+
+## Refinement on 2026-10-02: terminal routing decisions
+
+The maintainer clarified that an Agent announces its routing decision only when
+it has finished the work. That decision closes the current step; the Agent then
+waits for later Messages while retaining its context. There is no provisional
+choice, revision within that completed step or "last decision wins" rule.
+[0020](../../proposals/0020-blueprint-flow-0.2.md#completion-and-result-transfer)
+records this direction. The concrete integration rules for associating the
+decision with step completion remain candidate work.
