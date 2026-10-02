@@ -124,9 +124,15 @@ acknowledgements still need candidate rules.
 
 ### Joining parallel results
 
-By default, a join waits for all required branch results. The blueprint may
-instead continue with the first satisfactory result, using an explicit
-acceptance condition. The first response alone does not satisfy that condition.
+A join is an explicit flow step. By default, it waits for all required branch
+results and sends one input containing those results to the next step. Several
+connections directly targeting an Agent instead deliver separate Messages,
+handled according to that Agent's queueing or steering mode. Converging
+connections alone do not imply a join.
+
+The blueprint may instead configure a join to continue with the first
+satisfactory result, using an explicit acceptance condition. The first response
+alone does not satisfy that condition.
 
 After such a result is accepted, request that the remaining unnecessary branch
 work stop by default. The blueprint may explicitly let that work finish. This
@@ -181,6 +187,21 @@ step. Selecting it starts both destination steps as parallel branches.
 Selecting `changes_needed` starts only the correction step. The result-transfer
 rules apply to each activated connection. This example does not introduce an
 implicit join between the parallel results.
+
+### Gather results before starting the next step
+
+```mermaid
+flowchart LR
+    D["Documentation completed"] --> J["Wait for both results"]
+    T["Tests completed"] --> J
+    J -->|One input containing both results| S["Agent produces a synthesis"]
+```
+
+The join groups the required results before the synthesis step starts. Connecting
+both producers directly to the synthesis Agent would deliver two separate
+Messages instead. Grouping does not imply that every result is satisfactory;
+any acceptance condition still applies. Result grouping and association with
+the correct work still need concrete candidate rules.
 
 ### Two required checks or two alternative answers
 
