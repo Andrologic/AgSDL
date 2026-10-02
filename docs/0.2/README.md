@@ -17,6 +17,9 @@ separate frozen static-reader candidate.
 3. [Logic blocks](../../proposals/0021-logic-block-contract-0.2.md): proposed common
    contract for Condition, Join, Prepare, Call and reusable/custom behavior.
    Includes small graphs and cases to exercise before implementation.
+4. [Worked scenarios](worked-scenarios.md): follow a basic conversation, a
+   deterministic test loop and two grouped reviews, then inspect a custom Call.
+   These semantic walkthroughs are illustrative, not executable fixtures.
 
 The Agent and flow directions are accepted under [Decision 0011](../decisions/0011-message-based-agent-model.md)
 and [Decision 0012](../decisions/0012-blueprint-flow-directions.md). Their concrete

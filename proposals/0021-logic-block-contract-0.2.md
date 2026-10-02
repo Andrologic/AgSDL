@@ -210,6 +210,8 @@ validation contract need separate definition.
 ## Small contract scenarios
 
 These are semantic review examples, not serialized fixtures or execution proof.
+For inputs, result bindings, repeated visits and failure paths, read the
+[worked scenarios](../docs/0.2/worked-scenarios.md).
 
 ### Deterministic check and correction
 
