@@ -56,3 +56,14 @@ choice, revision within that completed step or "last decision wins" rule.
 [0020](../../proposals/0020-blueprint-flow-0.2.md#completion-and-result-transfer)
 records this direction. The concrete integration rules for associating the
 decision with step completion remain candidate work.
+
+## Refinement on 2026-10-02: parallel output connections
+
+The maintainer confirmed that several connections from the same selected output
+of a step activate all their destinations as parallel branches. One routing
+decision can therefore start several steps without a separate parallel-launch
+step. Connections from other outputs are not activated by that selection.
+[0020](../../proposals/0020-blueprint-flow-0.2.md#parallel-branches-and-loops)
+records the rule and a small scenario. This does not change Agent message-handling
+modes or define how parallel results are joined. Concrete serialization and
+validation remain candidate work; no runtime support is established.

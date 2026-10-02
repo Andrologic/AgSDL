@@ -41,9 +41,10 @@ explanation or quotation written by the Agent remains part of its response,
 even when based on Tool results. Collecting intermediate text does not make it
 a completion signal or forward it before the step completes.
 
-A routing decision explicitly identified by the integration can select a branch
-without altering the default transferred text. If that decision appears in the
-user-visible response, preserve it with the rest of the text. If it is supplied
+A routing decision explicitly identified by the integration selects the
+outgoing connections to follow without altering the default transferred text.
+If that decision appears in the user-visible response, preserve it with the rest
+of the text. If it is supplied
 only through a Tool invocation or result, it is excluded under the rule above;
 routing does not automatically insert it into the transferred text. This does
 not prescribe a universal decision format or infer a decision from arbitrary
@@ -94,9 +95,14 @@ review follows its declared result branch, not this failure path.
 
 ### Parallel branches and loops
 
-The blueprint may start independent branches in parallel. Their Messages still
-target the declared Agent instances. Parallel branches do not grant concurrent
-access to an Agent beyond its message-handling mode below.
+The blueprint may start independent branches in parallel. Several connections
+from the same selected output of a step activate all their destinations as
+parallel branches. No separate parallel-launch step is required. One routing
+decision can therefore activate several destinations; connections from other
+outputs of that step are not activated by that selection.
+
+Their Messages still target the declared Agent instances. Parallel branches do
+not grant concurrent access to an Agent beyond its message-handling mode below.
 
 A loop follows its declared continuation and exit conditions. An iteration limit
 is optional; by default there is no maximum iteration count. This does not
@@ -161,6 +167,21 @@ exchanges. The loop has no iteration cap unless the blueprint declares one.
 A failed Engine call takes a declared recovery path, or stops the affected path
 if none is declared. It does not produce an invented "changes needed" review.
 
+### One decision starts two parallel steps
+
+```mermaid
+flowchart LR
+    R["Reviewer finishes"] -->|accepted| D["Agent writes documentation"]
+    R -->|accepted| T["Agent runs additional tests"]
+    R -->|changes_needed| C["Developer corrects the work"]
+```
+
+The two connections labeled `accepted` belong to the same output of the review
+step. Selecting it starts both destination steps as parallel branches.
+Selecting `changes_needed` starts only the correction step. The result-transfer
+rules apply to each activated connection. This example does not introduce an
+implicit join between the parallel results.
+
 ### Two required checks or two alternative answers
 
 | Declared flow | Behavior |
@@ -223,9 +244,10 @@ The following details remain proposed work, not settled requirements:
   text, without falling back to a prior reply.
 - Specify configuration selection and when initialization occurs, including
   unresolved selections and repeated visits to an already initialized Agent.
-- Define result selectors, branch conditions, joins and loop limits in one
-  grammar. State iteration counting, limit exhaustion, ties between acceptable
-  results and the outcome when no branch provides an acceptable result.
+- Define step outputs and their connections, result selectors, branch conditions,
+  joins and loop limits in one grammar. State iteration counting, limit exhaustion,
+  ties between acceptable results and the outcome when no branch provides an
+  acceptable result.
 - Place queue/steering and branch-stop choices in that grammar. Specify ordering,
   correlation and how queued work, shared Agents and pending or unsupported
   stops interact, without cancelling unrelated work or pretending it stopped.
