@@ -313,6 +313,86 @@ class ContractTests(unittest.TestCase):
         assessment=next(x for x in validate(d)['support'] if x.get('configuration')=='project')
         self.assertEqual(assessment['status'],'unknown')
 
+    def test_admission_origin_consistency_for_call_and_agent_targets(self):
+        invalid = [
+            ('agent', {'text':'A','responseMessages':[['B']]}),
+            ('agent', {'baseUri':'relative/','results':{}}),
+            ('agent', {'results':{'report':{'uri':'bad%zz'}}}),
+            ('entry', {'prompt':[{'ref':'missing'}]}),
+            ('prepare', {'resources':{'report':{'ref':'missing'}}}),
+            ('entry', {'prompt':[{'uri':'bad%zz'}]}),
+            ('entry', {'baseUri':'relative/'}),
+        ]
+        for kind in ('call', 'agent'):
+            d=example('protected-publication')
+            target=d['flow']['steps']['publish']
+            if kind=='call':
+                target['arguments']={'artifact':{'value':'fixed'}}
+            else:
+                target.pop('binding');target.pop('arguments')
+                target.update(type='agent',agent='worker')
+                d['agents']={'worker':{'configuration':'fixed'}}
+                d['configurations']={'fixed':{'engine':'publisher'}}
+            for origin,current in invalid:
+                with self.subTest(kind=kind,origin=origin,current=current):
+                    record=admission_record(d)
+                    record.update(origin=origin,input=current)
+                    self.assertEqual(check_admission(d,'publish',record)['error']['code'],'INVALID_RECORD')
+                    with self.assertRaises((KeyError,ValueError)):
+                        capture(d,'publish','work-1',origin,current)
+                    if kind=='agent':
+                        delivery={'origin':origin,'input':current,'configuration':'fixed','message':{}}
+                        self.assertEqual(check_delivery(d,'worker',delivery)['error']['code'],'INVALID_RECORD')
+        # Check consistency, not completeness of response history or content access.
+        d=example('protected-publication')
+        d['flow']['steps']['publish']['arguments']={}
+        opaque={'uri':'bad%zz','baseUri':'relative/','ref':'missing','text':'A','responseMessages':[['B']]}
+        values=[('entry',{'resources':{'data':{'value':opaque}}}),
+                ('call',{'data':opaque}),
+                ('agent',{'text':'AB','responseMessages':[['A','B']]}),
+                ('agent',{'results':{'report':{'value':opaque}}}),
+                ('join',{'members':{'one':{'text':'A','responseMessages':[['B']]}}}),
+                ('error',{'error':{'code':'CALL_FAILED','message':'failed','details':[{'path':'','rule':'external','expected':opaque}]}})]
+        for origin,current in values:
+            with self.subTest(opaque_origin=origin):
+                record=admission_record(d)
+                record.update(origin=origin,input=current)
+                invocation=capture(d,'publish','work-1',origin,current)
+                record['invocation']=invocation
+                for decision in record['decisions']:
+                    decision['invocation']=copy.deepcopy(invocation)
+                self.assertTrue(check_admission(d,'publish',record)['valid'])
+
+    def test_absolute_uri_dot_segments_queries_and_fragments(self):
+        cases={
+            'https://a/b/../c':'https://a/c',
+            'x:/a/../b':'x:/b',
+            'https://a/b/./c/../d?x=/../#f/./':'https://a/b/d?x=/../#f/./',
+            'https://a/b/../c?#':'https://a/c?#',
+            'https://a/b/../c?':'https://a/c?',
+            'https://a/b/../c#':'https://a/c#',
+            'https://a/%2e/%2E%2e/c':'https://a/%2e/%2E%2e/c',
+        }
+        for uri,expected in cases.items():
+            for base in (None,'https://base.invalid/a/'):
+                with self.subTest(uri=uri,base=base):
+                    self.assertEqual(resolve_uri(uri,base),expected)
+        normalized,_=normalize_completion({'results':{'report':{'uri':'https://a/b/../c?#'}}})
+        self.assertEqual(normalized['results']['report']['uri'],'https://a/c?#')
+
+    def test_composition_as_join_anchor_requires_one_expanded_step(self):
+        d=example('parallel-reviews')
+        d['compositions']={'anchor':{'entry':'start','outputs':['done'],'steps':{
+            'start':{'type':'prepare','message':{},'next':[{'output':'done'}]}}}}
+        d['flow']['steps']['develop']={'type':'compose','composition':'anchor','agents':{},'next':{'done':['code','tests']}}
+        # Read the existing member names rather than inventing a different Join.
+        d['flow']['steps']['develop']['next']['done']=d['flow']['steps']['reviews']['members'][:]
+        self.assertTrue(validate(d)['valid'],validate(d))
+        body=d['compositions']['anchor']['steps']
+        body['start']['next']=['finish']
+        body['finish']={'type':'prepare','message':{},'next':[{'output':'done'}]}
+        self.assertIn('JOIN_GROUP',[x['code'] for x in validate(d)['findings']])
+
     def test_record_addresses_and_large_integer_deadlines(self):
         d=example('protected-publication')
         for address in ([], [['publish']], {}, ['publish', 'extra', 'extra']):

@@ -35,8 +35,29 @@ def select_configuration(document, agent_name, current, retained=None):
     return config['cases'][choice]
 
 
+def validate_origin_record(document, origin, value):
+    """Check only the explicitly named origin, preserving nested data boundaries."""
+    schema = {'entry': 'Message', 'prepare': 'Message', 'agent': 'Completion',
+              'call': 'CallResult', 'join': 'JoinResult', 'error': 'ErrorInput'}.get(origin)
+    if schema is None or not shape(value, SCHEMA['$defs'][schema]):
+        raise ValueError('Input does not match its claimed origin.')
+    if origin in ('entry', 'prepare'):
+        # Catalog refs are authored Message content, not arbitrary inline values.
+        return normalize_message(value, document)[1]
+    if origin == 'agent':
+        observations = normalize_completion(value)[1]
+        if 'responseMessages' in value:
+            assembled = '\n'.join(part for msg in value['responseMessages'] if (part := ''.join(msg)) != '')
+            if 'text' in value and value['text'] != assembled:
+                raise ValueError('Inconsistent recorded response text.')
+        return observations
+    # Call data and error details stay literal. Join members have shapes but no
+    # independently supplied producing origins; do not infer nested provenance.
+    return []
+
+
 def delivered_message(document, origin, value):
-    """Declared adaptation only. Caller checks origin shape using delivery check."""
+    """Declared adaptation only. Call validate_origin_record before adapting supplied records."""
     if origin in ('entry', 'prepare'):
         return normalize_message(value, document)[0]
     if origin == 'agent':
@@ -61,6 +82,10 @@ def check_delivery(document, agent_name, record):
         return failure('INVALID_REQUEST', 'Select an Agent in a valid document.')
     if not shape(record, SCHEMA['$defs']['DeliveryRecord']):
         return failure('INVALID_RECORD', 'Invalid delivery record shape.')
+    try:
+        observations = validate_origin_record(document, record['origin'], record['input'])
+    except (KeyError, ValueError) as error:
+        return failure('INVALID_RECORD', str(error))
     config = document['agents'][agent_name]['configuration']
     allowed = [config] if isinstance(config, str) else list(config['cases'].values())
     if 'retainedConfiguration' in record:
@@ -81,42 +106,7 @@ def check_delivery(document, agent_name, record):
         return failure('INVALID_RECORD', 'Claimed configuration differs from the selected or retained one.')
 
     value, origin = record['input'], record['origin']
-    observations = []
-    if origin in ('entry', 'prepare'):
-        if not shape(value, SCHEMA['$defs']['Message']):
-            return failure('INVALID_RECORD', 'Message origin requires a Message value.')
-        sources = list(value.get('prompt', [])) + list(value.get('resources', {}).values())
-        if any('ref' in source and source['ref'] not in document.get('content', {})
-               for source in sources):
-            return failure('INVALID_RECORD', 'Recorded Message has an unresolved content reference.')
-        try:
-            expected, observations = normalize_message(value, document)
-        except (KeyError, ValueError):
-            return failure('INVALID_RECORD', 'Invalid content URI, base or reference.')
-    elif origin == 'agent':
-        if not shape(value, SCHEMA['$defs']['Completion']):
-            return failure('INVALID_RECORD', 'Agent origin requires a completion shape.')
-        try:
-            _, observations = normalize_completion(value)
-        except ValueError:
-            return failure('INVALID_RECORD', 'Invalid completion URI or base.')
-        text = value.get('text', '')
-        if 'responseMessages' in value:
-            assembled = '\n'.join(part for msg in value['responseMessages'] if (part := ''.join(msg)) != '')
-            if 'text' in value and text != assembled:
-                return failure('INVALID_RECORD', 'Inconsistent recorded response text.')
-            text = assembled
-        expected = {'resources': {'result': {'value': text, 'mediaType': 'text/plain'}}}
-    else:
-        key = {'call': 'data', 'join': 'members', 'error': 'error'}[origin]
-        if not isinstance(value, dict) or set(value) != {key}:
-            return failure('INVALID_RECORD', 'Origin requires its declared result envelope.')
-        if origin == 'error' and not shape(value['error'], SCHEMA['$defs']['Error']):
-            return failure('INVALID_RECORD', 'Unknown or malformed terminal failure input.')
-        if origin == 'join' and not shape(value, SCHEMA['$defs']['JoinResult']):
-            return failure('INVALID_RECORD', 'Join requires a nonempty named map of complete member-result shapes.')
-        expected = {'resources': {'error' if origin == 'error' else 'result': {
-            'value': value if origin == 'join' else value[key], 'mediaType': 'application/json'}}}
+    expected = delivered_message(document, origin, value)
     try:
         claimed, claimed_sources = normalize_message(record['message'], document)
     except (KeyError, ValueError):

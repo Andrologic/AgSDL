@@ -4,7 +4,8 @@ from pathlib import Path
 
 from reader import MARKER, SCHEMA, dumps, equal, loads, shape, validate
 from modular import expand_document, selected_step
-from check_delivery import check_delivery, delivered_message, operand_value, select_configuration
+from check_delivery import (check_delivery, delivered_message, operand_value,
+                            select_configuration, validate_origin_record)
 
 
 def capture(document, address, occurrence, origin, current, retained=None):
@@ -12,6 +13,7 @@ def capture(document, address, occurrence, origin, current, retained=None):
     step, key = selected_step(document, address)
     if step is None or step['type'] not in ('agent', 'call') or 'scope' not in step:
         raise ValueError('Select a scoped Agent or Call.')
+    validate_origin_record(document, origin, current)
     scope = step['scope']
     invocation = {'declaration': document, 'target': list(key), 'occurrence': occurrence,
                   'origin': origin, 'input': current,
@@ -68,11 +70,10 @@ def check_admission(document, address, record):
         return failure('INVALID_RECORD', 'Malformed admission record.')
     if step['type'] == 'call' and 'retainedConfiguration' in record:
         return failure('INVALID_RECORD', 'A Call has no Agent configuration retention.')
-    # Even Call input has a producing origin; validate its envelope independently.
-    origin_schema = {'entry': 'Message', 'prepare': 'Message', 'agent': 'Completion',
-                     'call': 'CallResult', 'join': 'JoinResult', 'error': 'ErrorInput'}[record['origin']]
-    if not shape(record['input'], SCHEMA['$defs'][origin_schema]):
-        return failure('INVALID_RECORD', 'Input does not match its claimed origin.')
+    try:
+        validate_origin_record(document, record['origin'], record['input'])
+    except (KeyError, ValueError) as error:
+        return failure('INVALID_RECORD', str(error))
     try:
         expected = capture(document, address, record['occurrence'], record['origin'],
                            record['input'], record.get('retainedConfiguration'))

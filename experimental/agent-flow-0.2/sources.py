@@ -77,7 +77,8 @@ def remove_dots(path):
 def resolve_uri(uri, base=None):
     s, a, p, q, f = parts(uri)
     if s is not None:
-        return uri
+        return (s + ':' + ('//' + a if a is not None else '') + remove_dots(p) +
+                ('?' + q if q is not None else '') + ('#' + f if f is not None else ''))
     if base is None:
         return None
     valid_base(base)

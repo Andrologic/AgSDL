@@ -604,6 +604,13 @@ It rejects an unresolved selector as `CONFIGURATION`, a malformed record or
 inconsistent claim as `INVALID_RECORD`, and an invalid document or unknown Agent
 as `INVALID_REQUEST`. Exit codes are 0, 1 and 2 as for the completion checker.
 
+Both delivery and admission check the explicitly supplied origin before
+adaptation or capture, for Agent and Call targets alike. A contradictory
+`text`/`responseMessages` pair, missing Message catalog reference or invalid
+content URI/base is `INVALID_RECORD`. Literal `value`, Call `data` and error
+details remain data. Join members retain their shape-only boundary because the
+record does not establish each member's producing origin.
+
 This checks recorded data, not whether origin, retention, Condition identity,
 response filtering or actual delivery occurred. Agent completion shapes are
 checked here; use the completion checker for its output constraints. External
@@ -698,8 +705,10 @@ fail. Unconstrained URI bytes and actual MIME content remain outside the check.
 A document, incoming Message or completion may supply `baseUri`, an absolute
 hierarchical URI without fragment. Bases and sources use the ASCII URI syntax of
 [RFC 3986](https://www.rfc-editor.org/rfc/rfc3986#section-5.2); Unicode needs percent
-encoding. Resolution follows its section 5.2 algorithm. A relative URI uses only
-its originating artifact's explicit base. No working directory, input filename,
+encoding. Resolution follows its section 5.2 algorithm, including dot-segment
+removal for references with their own scheme. Percent-encoded dots stay literal;
+query and fragment are preserved, including explicit empty components.
+A relative URI uses only its originating artifact's explicit base. No working directory, input filename,
 receiver base or network lookup supplies a fallback. A missing base retains the
 source as unresolved with an `unassessed` entry; it is not a shape error. Invalid
 URI syntax or an invalid supplied base fails `URI`.
@@ -786,8 +795,10 @@ the CLI accepts a JSON array argument for an expanded step.
 
 Ordinary reachability, Join and approval checks run after expansion. Composition
 as a direct-fork Join member is rejected in this bounded version, including a
-one-step body; no arbitrary hierarchical scheduler is implied. Other top-level
-parallel flow remains available. A body cannot export a result while another
+one-step body. As `Join.after`, a one-step composition may be an anchor when
+its expanded step satisfies the ordinary direct-fork rules. A multi-step body
+cannot be that anchor and fails `JOIN_GROUP`. No arbitrary hierarchical
+scheduler is implied. Other top-level parallel flow remains available. A body cannot export a result while another
 internal branch runs because internal fan-out is forbidden.
 
 ### Protected admission
@@ -837,9 +848,10 @@ captured invocation. Its deadline is entry plus min(timeoutMs, validForMs);
 equality is expired. At actual action admission every decision remains valid
 until that gate's entry plus validForMs, again strictly before expiration.
 Gates occur in their declared order. The selected Agent may wait in its queue,
-but expired approval never starts work. Rejected, missing, stale or mismatched
-approvals fail `APPROVAL`; technical integration failure also uses `APPROVAL`
-with explanatory details. Failure to admit follows the protected action's error
+but expired approval never starts work. A valid negative gate decision takes
+only its normal `denied` route, never an error route. Missing, stale or mismatched authorization, or authorization rejected
+as invalid at admission, fails `APPROVAL`. Technical integration failure also
+uses `APPROVAL` with explanatory details. Failure to admit follows the protected action's error
 route. Each retry, loop visit or sibling occurrence requires fresh authorization;
 no approval survives stop/edit/start or a changed document/configuration.
 
