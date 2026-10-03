@@ -1,0 +1,106 @@
+{
+  "contract": "agsdl-exp-flow-0.2-c1",
+  "id": "protected-publication",
+  "bindings": {
+    "publisher": {
+      "contract": {
+        "identity": "example/publisher",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-publisher",
+        "version": "1"
+      },
+      "effects": "external"
+    },
+    "authorization": {
+      "contract": {
+        "identity": "example/authorization",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-authorization",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {},
+  "agents": {},
+  "flow": {
+    "entry": "owner-approval",
+    "steps": {
+      "owner-approval": {
+        "type": "approval",
+        "call": "publish",
+        "binding": "authorization",
+        "timeoutMs": 1000,
+        "validForMs": 2000,
+        "next": {
+          "approved": [
+            "release-approval"
+          ],
+          "denied": [
+            "revise"
+          ]
+        }
+      },
+      "release-approval": {
+        "type": "approval",
+        "call": "publish",
+        "binding": "authorization",
+        "timeoutMs": 500,
+        "validForMs": 1000,
+        "next": {
+          "approved": [
+            "publish"
+          ],
+          "denied": [
+            "revise"
+          ]
+        }
+      },
+      "publish": {
+        "type": "call",
+        "binding": "publisher",
+        "arguments": {
+          "artifact": {
+            "path": [
+              "resources",
+              "artifact",
+              "value"
+            ]
+          }
+        },
+        "scope": {
+          "action": "Publish the supplied artifact",
+          "resources": [
+            "release-channel"
+          ],
+          "context": {
+            "path": []
+          }
+        },
+        "onError": [
+          "failure"
+        ]
+      },
+      "revise": {
+        "type": "prepare",
+        "message": {
+          "prompt": [
+            {
+              "value": "Prepare another explicit publication request."
+            }
+          ]
+        },
+        "next": [
+          "owner-approval"
+        ]
+      },
+      "failure": {
+        "type": "prepare",
+        "message": {}
+      }
+    }
+  }
+}

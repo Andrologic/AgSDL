@@ -42,6 +42,7 @@ def shape(value, schema):
     kind = schema.get('type')
     kinds = {'object': isinstance(value, dict), 'array': isinstance(value, list),
              'string': isinstance(value, str), 'boolean': isinstance(value, bool),
+             'null': value is None, 'number': type(value) in (int, float, Decimal),
              'integer': (type(value) is int or isinstance(value, Decimal) and value == value.to_integral_value() or type(value) is float and value.is_integer())}
     if kind is not None and not kinds[kind]:
         return False
@@ -74,8 +75,116 @@ def pointer(parts):
     return ''.join('/' + str(p).replace('~', '~0').replace('/', '~1') for p in parts)
 
 
+def validate_graph(flow, document, fail, parameter_agents=()):
+    bindings = document['bindings']
+    agents = set(document['agents']) | set(parameter_agents)
+
+    def reference(catalog, name, location):
+        if name not in catalog:
+            fail('REFERENCE', location)
+
+    def sources(container, location):
+        for field in ('prompt', 'resources'):
+            values = container.get(field, [] if field == 'prompt' else {})
+            iterator = enumerate(values) if isinstance(values, list) else values.items()
+            for key, source in iterator:
+                if 'ref' in source:
+                    reference(document.get('content', {}), source['ref'], location + [field, key, 'ref'])
+
+    steps = flow['steps']
+    reference(steps, flow['entry'], ['flow', 'entry'])
+
+    def routes(step):
+        nxt = step.get('next', [])
+        return list(nxt.values()) if isinstance(nxt, dict) else [nxt]
+
+    incoming = {k: set() for k in steps}
+    for name, step in steps.items():
+        loc = ['flow', 'steps', name]
+        for targets in routes(step) + [step.get('onError', [])]:
+            if len(targets) != len(set(targets)):
+                fail('DUPLICATE', loc)
+            for target in targets:
+                reference(steps, target, loc)
+                if target in incoming:
+                    incoming[target].add(name)
+        if step['type'] == 'agent':
+            reference(agents, step['agent'], loc + ['agent'])
+            steering = step.get('delivery', 'queue') == 'steering'
+            if steering:
+                target = steps.get(step.get('steers'))
+                grouped = {member for item in steps.values() if item['type'] == 'join'
+                           for member in item['members']}
+                if (target is None or target['type'] != 'agent' or
+                    target.get('delivery', 'queue') != 'queue' or
+                    target.get('agent') != step['agent'] or
+                    name == flow['entry'] or 'next' in step or 'decision' in step or
+                    name in grouped):
+                    fail('STEERING', loc)
+            elif 'steers' in step:
+                fail('STEERING', loc + ['steers'])
+            decision = step.get('decision')
+            if decision:
+                reference(bindings, decision['binding'], loc + ['decision', 'binding'])
+                choices = decision['choices']
+                if len(choices) != len(set(choices)):
+                    fail('DUPLICATE', loc + ['decision', 'choices'])
+                if not isinstance(step.get('next'), dict) or set(step['next']) != set(choices):
+                    fail('ROUTES', loc + ['next'])
+            elif isinstance(step.get('next'), dict):
+                fail('ROUTES', loc + ['next'])
+        elif step['type'] in ('call', 'approval'):
+            reference(bindings, step['binding'], loc + ['binding'])
+        elif step['type'] == 'prepare':
+            sources(step['message'], loc + ['message'])
+
+    for name, step in steps.items():
+        if step['type'] != 'join':
+            continue
+        loc = ['flow', 'steps', name]
+        mode = step.get('mode', 'all')
+        if mode == 'first' and 'accept' not in step:
+            fail('JOIN_POLICY', loc)
+        if mode == 'all' and ('accept' in step or 'remaining' in step):
+            fail('JOIN_POLICY', loc)
+        members = step['members']
+        anchor = steps.get(step['after'])
+        # c1 deliberately implements the direct fork-and-join shape only.
+        if (len(set(members)) != len(members) or name == flow['entry'] or
+            step['after'] in members or name in members or
+            anchor is None or not isinstance(anchor.get('next'), list) or
+            set(anchor['next']) != set(members) or
+            any(member in anchor.get('onError', []) for member in members) or
+            incoming[name] != set(members)):
+            fail('JOIN_GROUP', loc)
+        for member in members:
+            source = steps.get(member)
+            if (source is None or source['type'] == 'join' or
+                incoming.get(member) != {step['after']} or
+                any(targets != [name] for targets in routes(source)) or
+                source.get('onError') or member == flow['entry']):
+                fail('JOIN_GROUP', loc)
+
+    reachable = set()
+    todo = [flow['entry']]
+    while todo:
+        name = todo.pop()
+        if name in reachable or name not in steps:
+            continue
+        reachable.add(name)
+        step = steps[name]
+        for targets in routes(step) + [step.get('onError', [])]:
+            todo.extend(targets)
+    for name in steps.keys() - reachable:
+        fail('UNREACHABLE', ['flow', 'steps', name])
+    from modular import check_approvals
+    check_approvals(flow, document, fail)
+
+
 def validate(document):
     findings = []
+    observations = {}
+    flow, origins = None, {}
 
     def fail(code, location):
         item = {'code': code, 'path': pointer(location)}
@@ -134,99 +243,36 @@ def validate(document):
                 if allowed is not None and not set(constraint['mediaTypes']) <= set(allowed):
                     fail('OUTPUT_FORMAT', loc + ['interface', 'results', result])
 
-        flow = document.get('flow')
+        from modular import expand_document, projection
+        flow, origins, templates = expand_document(document, fail)
+        for template, paths, parameters in templates:
+            def template_fail(code, location):
+                if location[:2] == ['flow', 'steps'] and len(location) > 2:
+                    location = paths[location[2]] + location[3:]
+                elif location == ['flow', 'entry']:
+                    location = paths[('entry',)]
+                fail(code, location)
+            validate_graph(template, document, template_fail, parameters)
         if flow:
-            steps = flow['steps']
-            reference(steps, flow['entry'], ['flow', 'entry'])
-
-            def routes(step):
-                nxt = step.get('next', [])
-                return list(nxt.values()) if isinstance(nxt, dict) else [nxt]
-
-            incoming = {k: set() for k in steps}
-            for name, step in steps.items():
-                loc = ['flow', 'steps', name]
-                for targets in routes(step) + [step.get('onError', [])]:
-                    if len(targets) != len(set(targets)):
-                        fail('DUPLICATE', loc)
-                    for target in targets:
-                        reference(steps, target, loc)
-                        if target in incoming:
-                            incoming[target].add(name)
-                if step['type'] == 'agent':
-                    reference(agents, step['agent'], loc + ['agent'])
-                    steering = step.get('delivery', 'queue') == 'steering'
-                    if steering:
-                        target = steps.get(step.get('steers'))
-                        grouped = {member for item in steps.values() if item['type'] == 'join'
-                                   for member in item['members']}
-                        if (target is None or target['type'] != 'agent' or
-                            target.get('delivery', 'queue') != 'queue' or
-                            target.get('agent') != step['agent'] or
-                            name == flow['entry'] or 'next' in step or 'decision' in step or
-                            name in grouped):
-                            fail('STEERING', loc)
-                    elif 'steers' in step:
-                        fail('STEERING', loc + ['steers'])
-                    decision = step.get('decision')
-                    if decision:
-                        reference(bindings, decision['binding'], loc + ['decision', 'binding'])
-                        choices = decision['choices']
-                        if len(choices) != len(set(choices)):
-                            fail('DUPLICATE', loc + ['decision', 'choices'])
-                        if not isinstance(step.get('next'), dict) or set(step['next']) != set(choices):
-                            fail('ROUTES', loc + ['next'])
-                    elif isinstance(step.get('next'), dict):
-                        fail('ROUTES', loc + ['next'])
-                elif step['type'] == 'call':
-                    reference(bindings, step['binding'], loc + ['binding'])
-                elif step['type'] == 'prepare':
-                    sources(step['message'], loc + ['message'])
-
-            for name, step in steps.items():
-                if step['type'] != 'join':
-                    continue
-                loc = ['flow', 'steps', name]
-                mode = step.get('mode', 'all')
-                if mode == 'first' and 'accept' not in step:
-                    fail('JOIN_POLICY', loc)
-                if mode == 'all' and ('accept' in step or 'remaining' in step):
-                    fail('JOIN_POLICY', loc)
-                members = step['members']
-                anchor = steps.get(step['after'])
-                # c1 deliberately implements the direct fork-and-join shape only.
-                if (len(set(members)) != len(members) or name == flow['entry'] or
-                    step['after'] in members or name in members or
-                    anchor is None or not isinstance(anchor.get('next'), list) or
-                    set(anchor['next']) != set(members) or
-                    any(member in anchor.get('onError', []) for member in members) or
-                    incoming[name] != set(members)):
-                    fail('JOIN_GROUP', loc)
-                for member in members:
-                    source = steps.get(member)
-                    if (source is None or source['type'] == 'join' or
-                        incoming.get(member) != {step['after']} or
-                        any(targets != [name] for targets in routes(source)) or
-                        source.get('onError') or member == flow['entry']):
-                        fail('JOIN_GROUP', loc)
-
-            reachable = set()
-            todo = [flow['entry']]
-            while todo:
-                name = todo.pop()
-                if name in reachable or name not in steps:
-                    continue
-                reachable.add(name)
-                step = steps[name]
-                for targets in routes(step) + [step.get('onError', [])]:
-                    todo.extend(targets)
-            for name in steps.keys() - reachable:
-                fail('UNREACHABLE', ['flow', 'steps', name])
+            def expanded_fail(code, location):
+                invocation = None
+                if location[:2] == ['flow', 'steps'] and len(location) > 2:
+                    source, invocation = origins[location[2]]
+                    location = source + location[3:]
+                item = {'code': code, 'path': pointer(location)}
+                if invocation is not None:
+                    item['invocation'] = pointer(invocation)
+                if item not in findings:
+                    findings.append(item)
+            validate_graph(flow, document, expanded_fail)
+        from declarations import check_declarations
+        observations = check_declarations(document, fail)
 
     return {'contract': MARKER, 'valid': not findings,
             'scope': 'document-shape-and-declared-references',
             'executionSupport': 'not-assessed',
-            'findings': sorted(findings, key=lambda x: (x['path'], x['code']))}
+            'findings': sorted(findings, key=lambda x: (x['path'], x['code'], x.get('invocation', ''))),
+            **observations, **({'expandedFlow': projection(flow, origins)} if flow and document.get('compositions') else {})}
 
 
 def loads(raw):
@@ -259,6 +305,18 @@ def loads(raw):
     return value
 
 
+def dumps(value):
+    """Emit exact JSON numbers in reports without rounding Decimal values."""
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, dict):
+        return '{' + ','.join(json.dumps(k, ensure_ascii=True) + ':' + dumps(v)
+                              for k, v in value.items()) + '}'
+    if isinstance(value, list):
+        return '[' + ','.join(dumps(v) for v in value) + ']'
+    return json.dumps(value, ensure_ascii=True)
+
+
 def main():
     if len(sys.argv) != 2:
         print('Usage: python3 reader.py DOCUMENT.json', file=sys.stderr)
@@ -273,7 +331,7 @@ def main():
     except OSError as error:
         print(str(error), file=sys.stderr)
         return 2
-    print(json.dumps(result, ensure_ascii=True, sort_keys=True))
+    print(dumps(result))
     return 0 if result['valid'] else 1
 
 

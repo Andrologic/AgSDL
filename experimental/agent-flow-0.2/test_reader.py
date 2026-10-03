@@ -10,6 +10,7 @@ from pathlib import Path
 from reader import SCHEMA, equal, loads, shape, validate
 from check_completion import check_completion
 from check_delivery import check_delivery
+from test_contract import ContractTests, document_cases
 
 ROOT = Path(__file__).parent
 
@@ -337,7 +338,7 @@ def check_schema_library():
     import jsonschema
     jsonschema.Draft202012Validator.check_schema(SCHEMA)
     independent=jsonschema.Draft202012Validator(SCHEMA)
-    for name, document, _ in cases():
+    for name, document, _ in cases() + document_cases():
         assert shape(document,SCHEMA) == independent.is_valid(document), name
     completion_schema = {**SCHEMA, '$ref': '#/$defs/Completion'}
     completions = [{}, {'text': ''}, {'text': 1},
@@ -377,7 +378,13 @@ def check_schema_library():
         library = jsonschema.Draft202012Validator(record_schema)
         for record in samples:
             assert shape(record, record_schema) == library.is_valid(record), record
-    print(f'Schema-library agreement on {len(cases())} documents and {len(completions)} completion records, plus {sum(len(samples) for samples in records.values())} boundary records; no execution claim.')
+    from test_contract import schema_records
+    for definition, samples in schema_records().items():
+        record_schema = {**SCHEMA, '$ref': '#/$defs/' + definition}
+        library = jsonschema.Draft202012Validator(record_schema)
+        for record in samples:
+            assert shape(record, record_schema) == library.is_valid(record), (definition, record)
+    print(f'Schema-library agreement on {len(cases()) + len(document_cases())} documents and {len(completions)} completion records, plus {sum(len(samples) for samples in records.values()) + sum(len(samples) for samples in schema_records().values())} boundary/constraint records; no execution claim.')
 
 
 if __name__ == '__main__':

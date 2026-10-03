@@ -294,9 +294,9 @@ validation rules are required before reader support can be claimed.
 The [bounded c1 contract](../experimental/agent-flow-0.2/README.md) proposes
 predicate syntax, current-input selectors, versioned bindings, Join ties and
 exhaustion, and output-correction diagnostics. Those choices still need final
-adoption. The current c1 refinement proposes work correlation, queue/steering boundaries
-and text assembly. Composition bindings and approval admission remain separate work. An author may
-not resolve them silently through an implementation default. The
+adoption. The current c1 refinement proposes work correlation, queue/steering
+boundaries, text assembly, bounded composition bindings and approval admission.
+Their static and supplied-record checks still need independent semantic review. The
 [preparation index](../docs/0.2/README.md#before-a-02-release) tracks completion.
 
 At minimum, the future conformance material should distinguish:
@@ -350,3 +350,12 @@ The c1 lifecycle rules correlate occurrence completion, queue admission,
 steering acknowledgement and Join membership. Its closed failure vocabulary
 and common error input apply across blocks. These rules remain proposed, and
 static record checks do not demonstrate delivery or scheduler behavior.
+
+## Proposed bounded modular contract
+
+The candidate defines [local expansion and protected admission](../experimental/agent-flow-0.2/README.md#local-composition-and-protected-admission).
+Its initial composition form is non-nested and serial or conditional internally;
+it preserves explicitly bound Agent identities. Approval gates protect actual
+Agent work or Calls, including after expansion. Capture, deadlines and scoped
+admission are integration obligations with a supplied-record consistency check,
+not authentication or runtime enforcement. These concrete rules remain proposed.

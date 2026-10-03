@@ -1,0 +1,138 @@
+{
+  "contract": "agsdl-exp-flow-0.2-c1",
+  "id": "structured-report",
+  "baseUri": "https://example.invalid/project/",
+  "content": {
+    "instructions": {
+      "uri": "instructions/review.txt",
+      "mediaType": "text/plain"
+    }
+  },
+  "skills": {
+    "review": {
+      "prompt": [
+        {
+          "ref": "instructions"
+        }
+      ],
+      "requires": [
+        {
+          "contract": {
+            "identity": "example/media-path",
+            "version": "1"
+          },
+          "parameters": {
+            "direction": "output",
+            "mediaTypes": [
+              "application/json"
+            ],
+            "delivery": "inline"
+          }
+        }
+      ]
+    }
+  },
+  "bindings": {
+    "engine": {
+      "contract": {
+        "identity": "example/engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "review": {
+      "engine": "engine",
+      "requires": [
+        {
+          "contract": {
+            "identity": "example/media-path",
+            "version": "1"
+          },
+          "parameters": {
+            "direction": "output",
+            "mediaTypes": [
+              "application/json"
+            ],
+            "delivery": "inline"
+          }
+        }
+      ],
+      "claims": [
+        {
+          "requirement": {
+            "contract": {
+              "identity": "example/media-path",
+              "version": "1"
+            },
+            "parameters": {
+              "direction": "output",
+              "mediaTypes": [
+                "application/json"
+              ],
+              "delivery": "inline"
+            }
+          },
+          "status": "supported",
+          "evidence": "0000000000000000000000000000000000000000000000000000000000000000"
+        }
+      ]
+    }
+  },
+  "agents": {
+    "reviewer": {
+      "configuration": "review",
+      "skills": [
+        "review"
+      ],
+      "resources": {
+        "input": {
+          "uri": "data/input.json",
+          "mediaType": "application/json"
+        }
+      },
+      "interface": {
+        "results": {
+          "report": {
+            "mediaTypes": [
+              "application/json"
+            ],
+            "required": true,
+            "valueSchema": {
+              "type": "object",
+              "properties": {
+                "accepted": {
+                  "type": "boolean"
+                },
+                "issues": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "accepted",
+                "issues"
+              ],
+              "additionalProperties": false
+            }
+          }
+        }
+      }
+    }
+  },
+  "flow": {
+    "entry": "review",
+    "steps": {
+      "review": {
+        "type": "agent",
+        "agent": "reviewer"
+      }
+    }
+  }
+}

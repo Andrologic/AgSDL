@@ -356,3 +356,10 @@ steering, rather than to the Agent's whole conversation. The candidate defines
 exact assembly and an optional recorded-parts check. Empty text is valid when
 required outputs are satisfied. It does not permit silently dropping media,
 claiming actual support or replacing a persistent Agent after correction.
+
+## Proposed bounded declaration checks
+
+The candidate now specifies [structured results, URI origins and scoped support](../experimental/agent-flow-0.2/README.md#structured-results-uri-origins-and-support).
+These rules remain proposed. They add a closed structured-value vocabulary,
+explicit source bases and exact requirement/claim matching. Static declarations
+and supplied records cannot establish content access, permission or execution.

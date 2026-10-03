@@ -3,7 +3,10 @@ import json
 import sys
 from pathlib import Path
 
-from reader import MARKER, SCHEMA, loads, pointer, shape, validate
+from reader import MARKER, SCHEMA, dumps, loads, pointer, shape, validate
+from modular import selected_step
+from declarations import constraint_matches
+from sources import normalize_completion
 
 
 def check_completion(document, step_name, result):
@@ -15,7 +18,7 @@ def check_completion(document, step_name, result):
 
     if not validate(document)['valid']:
         return invalid_request('Validate the document before checking a completion.')
-    step = document.get('flow', {}).get('steps', {}).get(step_name)
+    step, _ = selected_step(document, step_name)
     if (step is None or step['type'] != 'agent' or
             step.get('delivery', 'queue') == 'steering'):
         return invalid_request('Select a declared Agent step.')
@@ -35,6 +38,12 @@ def check_completion(document, step_name, result):
             return {**report, 'error': {'code': 'INVALID_RECORD',
                     'message': 'Text differs from the recorded response Message assembly.', 'details': []}}
         text = assembled
+
+    try:
+        normalized, sources = normalize_completion(result)
+    except ValueError:
+        return {**report, 'error': {'code': 'INVALID_RECORD', 'message': 'Invalid URI or base.', 'details': []}}
+    unassessed = [x['path'] for x in sources if x['status'] == 'unresolved']
 
     interface = document['agents'][step['agent']].get('interface', {})
     results = result.get('results', {})
@@ -56,6 +65,13 @@ def check_completion(document, step_name, result):
         elif results[name].get('mediaType') not in constraint['mediaTypes']:
             violation(['results', name, 'mediaType'], 'format', constraint['mediaTypes'])
 
+        if name in results and 'valueSchema' in constraint:
+            if 'uri' in results[name]:
+                if pointer(['results', name]) not in unassessed:
+                    unassessed.append(pointer(['results', name]))
+            elif not constraint_matches(results[name]['value'], constraint['valueSchema']):
+                violation(['results', name, 'value'], 'structure', constraint['valueSchema'])
+
     if 'decision' in step and result.get('choice') not in step['decision']['choices']:
         violation(['choice'], 'choice', step['decision']['choices'])
 
@@ -63,7 +79,9 @@ def check_completion(document, step_name, result):
         return {**report, 'error': {'code': 'OUTPUT_CONSTRAINT',
                 'message': 'Complete or correct the required outputs for this work.',
                 'details': details}}
-    return {**report, 'valid': True, 'text': text}
+    return {**report, 'valid': True, 'text': text, 'normalizedResults': normalized.get('results', {}),
+            'sources': sources, 'unassessed': unassessed,
+            'constraintAssessment': 'unassessed' if unassessed else 'checked'}
 
 
 def main():
@@ -71,7 +89,8 @@ def main():
         print('Usage: python3 check_completion.py DOCUMENT.json STEP RESULT.json', file=sys.stderr)
         return 2
     try:
-        report = check_completion(loads(Path(sys.argv[1]).read_bytes()), sys.argv[2],
+        address = loads(sys.argv[2].encode()) if sys.argv[2].startswith('[') else sys.argv[2]
+        report = check_completion(loads(Path(sys.argv[1]).read_bytes()), address,
                                   loads(Path(sys.argv[3]).read_bytes()))
     except (ValueError, UnicodeError, RecursionError, ArithmeticError):
         print('Invalid or unsupported JSON input.', file=sys.stderr)
@@ -79,7 +98,7 @@ def main():
     except OSError as error:
         print(str(error), file=sys.stderr)
         return 2
-    print(json.dumps(report, ensure_ascii=True, sort_keys=True))
+    print(dumps(report))
     return 0 if report['valid'] else 1
 
 
