@@ -160,7 +160,8 @@ transcript without an explicit conversion contract.
 Message. Every step must be reachable from entry through a normal or error
 connection. Step and Agent names have separate scopes. Without a graph, ordinary external
 Messages follow the same per-Agent queue and completion attribution rules;
-step-specific routing and steering declarations are absent. Several steps may refer
+step-specific routing is absent. External requests may use the graphless
+steering profile below. Several steps may refer
 to one Agent. Default Agent-step delivery is `queue`; explicit `steering` is defined below.
 
 Ordinary `next` is a list of destination steps. Completion activates every
@@ -270,9 +271,8 @@ work. The retained Agent configuration and context remain those of that instance
 
 An Agent step may instead declare `delivery: "steering"` and `steers`, naming
 an ordinary queued Agent step for the same Agent. It cannot be entry, declare
-`next` even empty, declare a `decision`, or be a Join member. Its target cannot
-be a Join member either. This bounded form cannot merge distinct required Join
-results. The integration associates a steering request with one exact intended
+`next` even empty, declare a `decision`, or be a Join member. An ordinary Join
+member may own steering; that member still supplies only its one required result. The integration associates a steering request with one exact intended
 occurrence of that target step in the same flow invocation, at request creation. A common
 fork activation can provide that association. A target step name alone is not
 enough to distinguish loop visits. Missing or ambiguous association fails as
@@ -307,6 +307,49 @@ continuation, and no S continuation. If S is rejected, S's error route may run
 and O still completes once. If O already ended when S was admitted, only S fails.
 A correction Message arriving through an ordinary queued step creates new work
 on the same Agent; it does not revise the failed occurrence's terminal record.
+
+A Join member's result is released only after pending steering acknowledgements
+for that occurrence resolve. Its result, decision and membership remain those
+of the owner; accepted steering never supplies another member result. A group
+stop request targets that exact owner occurrence. Once stopping begins, reject
+new steering as `STEERING_LATE`; settle already pending requests from their
+actual delivery evidence. A confirmed stop resolves the group's termination
+wait without a successful member result. It does not assert acceptance or
+rejection of a pending steering request. Such a request remains pending until
+its own acknowledgement resolves, even if the Join has already continued after
+confirmed stop. Its late rejection may use only its own error path; neither a
+late acceptance nor rejection reopens the ended owner or completed Join. If the
+owner completes instead of stopping, its normal result waits for pending
+acknowledgements as above. A stop request or missing acknowledgement alone
+proves neither termination nor completion.
+
+### External delivery without a graph
+
+A single persistent Agent accepts ordinary external Messages with queue delivery
+by default. An integration can also accept an explicit steering request for that
+Agent without requiring a graph. The `ExternalDeliveryRequest` schema describes
+a declarative profile for such requests: `agent` names the declared Agent,
+`message` is the authored Message, and optional `delivery` is `queue` or
+`steering`. Queue requests omit `owner`. Steering requires `owner`, an opaque
+nonempty identifier that the integration resolves to one exact work occurrence
+on that Agent within the current system start. It is not a step name, newest-work
+selector or global address. It must not resolve to a different Agent or a later
+occurrence after a restart. Resolve unknown or ambiguous association as
+`CORRELATION`, and a known ended owner as `STEERING_LATE`.
+
+The integration checks Agent and Message content references against the document.
+Queue admission, retained configuration, context and response attribution obey
+the same rules as graph delivery. Steering must not initialize an idle Agent or
+reselect configuration. It uses the same accepted, rejected, unsupported, late
+and pending acknowledgement semantics, and is consumed without a separate work
+result. The owner alone produces its completion. Failures and pending statuses
+are returned to the external requester because there is no graph error route.
+Stable request identity and duplicate suppression are integration obligations;
+they are not inferred from Message equality. No universal transport, wire ID
+format, scheduler or live delivery endpoint is introduced. The bundled schema
+checks profile shape only; no command executes this request or verifies its
+owner association. An integration must demonstrate these behaviors to claim
+support.
 
 ### Agent, Call, Condition and Prepare
 
@@ -386,7 +429,7 @@ confirmation.
 With default `stop-and-wait`, request stop of unfinished, unnecessary member
 work and hold the winner until that work is confirmed stopped or finishes.
 A rejected request or missing acknowledgement does not release successors.
-Report unsupported stopping and wait for completion or explicit recovery; do
+Report unsupported stopping and wait for completion or explicit interruption of the pending wait to enter recovery; do
 not fabricate confirmation. With `remaining: finish`, continue with the winner
 and let other members finish without a stop request. Their late results do not
 reopen the group. Neither mode resets Agents, cancels unrelated work, rolls back
@@ -544,6 +587,15 @@ a previously selected configuration. The checker verifies that it belongs to
 the Agent's alternatives and skips selection on this new input. Without that
 field it evaluates the selector on `input` before checking the delivered Message.
 It compares Message values without changing instructions, Sources or input data.
+Entry and Prepare Message `ref` uses must exist in the document content catalog;
+objects inside literal `value` are not interpreted as references. Recorded Join
+results require a nonempty map of valid member names and complete result shapes:
+Agent completion, Message, Call result, Join result or preserved error input.
+An identity Condition may preserve any of those shapes. Shape alternatives can
+overlap, especially an empty Message and empty Agent completion; accepting that
+shape does not infer its origin. Exact membership/cardinality for a particular
+source Join, member output constraints and nested provenance remain unassessed
+because this command selects a destination Agent, not a source Join.
 It rejects an unresolved selector as `CONFIGURATION`, a malformed record or
 inconsistent claim as `INVALID_RECORD`, and an invalid document or unknown Agent
 as `INVALID_REQUEST`. Exit codes are 0, 1 and 2 as for the completion checker.
@@ -568,7 +620,7 @@ The reader implements these rule codes:
 | `RESOURCE_COLLISION` | Skill expansion cannot overwrite a resource. |
 | `OUTPUT_FORMAT` | A named result's formats fit the overall allowed output formats. |
 | `ROUTES` | Agent decision declarations and routing maps agree. |
-| `STEERING` | Steering names an ordinary step for the same Agent, has no independent normal continuation or decision, and neither step is a Join member. |
+| `STEERING` | Steering names an ordinary step for the same Agent, has no independent normal continuation or decision, and the consumed steering request is not a Join member. |
 | `JOIN_POLICY` | A first-satisfactory Join has an acceptance rule, and policy fields match its mode. |
 | `JOIN_GROUP` | The declared group satisfies c1's bounded fork-and-join structure. |
 | `UNREACHABLE` | Every step is reachable from entry. |

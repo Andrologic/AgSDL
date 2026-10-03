@@ -94,9 +94,18 @@ def cases():
         d['agents']['other'] = {'configuration': 'project'}
         d['flow']['steps']['adjust']['agent'] = 'other'
     case('steering-same-agent-required', 'steering', other_agent, 'STEERING')
-    def grouped_owner(d):
-        d['flow']['steps']['code'].update(delivery='steering', steers='docs')
-    case('steering-cannot-merge-join-members', 'parallel-reviews', grouped_owner, 'STEERING')
+    def owner_member(d):
+        d['flow']['entry'] = 'start'
+        d['flow']['steps'].update({
+            'start': {'type': 'prepare', 'message': {}, 'next': ['develop', 'guidance']},
+            'guidance': {'type': 'prepare', 'message': {'prompt': [{'value': 'Also inspect empty input.'}]}, 'next': ['adjust']},
+            'adjust': {'type': 'agent', 'agent': 'code-reviewer', 'delivery': 'steering', 'steers': 'code'}})
+    case('ordinary-join-member-can-own-steering', 'parallel-reviews', owner_member, None)
+    def request_member(d):
+        owner_member(d)
+        # Only membership changes: adjust still has a valid owner, no decision or next.
+        d['flow']['steps']['reviews']['members'].append('adjust')
+    case('consumed-steering-cannot-be-join-member', 'parallel-reviews', request_member, 'STEERING')
     return result
 
 
@@ -252,6 +261,44 @@ class CandidateTests(unittest.TestCase):
         error['code'] = 'STEERING_PENDING'
         self.assertFalse(check_delivery(document, 'helper', record)['valid'])
 
+    def test_recorded_message_checks_only_symbolic_content_references(self):
+        document = example('conversation')
+        document['content'] = {'known': {'value': 'Instructions'}}
+        for origin in ('entry', 'prepare'):
+            for message in ({'prompt': [{'ref': 'known'}]}, {'resources': {'r': {'ref': 'known'}}},
+                            {'prompt': [{'value': {'ref': 'absent'}}]},
+                            {'resources': {'r': {'value': {'ref': 'absent'}}}}):
+                record = {'origin': origin, 'input': message, 'message': message, 'configuration': 'project'}
+                self.assertTrue(check_delivery(document, 'helper', record)['valid'])
+            for message in ({'prompt': [{'ref': 'absent'}]}, {'resources': {'r': {'ref': 'absent'}}}):
+                record = {'origin': origin, 'input': message, 'message': message, 'configuration': 'project'}
+                self.assertEqual(check_delivery(document, 'helper', record)['error']['code'], 'INVALID_RECORD')
+
+    def test_recorded_join_requires_complete_named_member_shapes(self):
+        document = example('conversation')
+        for members, valid in [({}, False), ({'bad/name': {}}, False), ({'x': None}, False),
+                               ({'x': {'text': 1}}, False), ({'x': {'other': 1}}, False),
+                               ({'x': {}}, True), ({'x': {'data': None}}, True),
+                               ({'x': {'text': 'review'}, 'y': {'resources': {}}}, True)]:
+            value = {'members': members}
+            record = {'origin': 'join', 'input': value, 'configuration': 'project',
+                      'message': {'resources': {'result': {'value': value, 'mediaType': 'application/json'}}}}
+            self.assertEqual(check_delivery(document, 'helper', record)['valid'], valid, members)
+
+    def test_delivery_api_rejects_non_string_agent_selectors(self):
+        for agent in ([], {}, None, 1):
+            self.assertEqual(check_delivery(example('conversation'), agent, {})['error']['code'], 'INVALID_REQUEST')
+
+    def test_external_steering_profile_requires_exact_owner_reference(self):
+        schema = SCHEMA['$defs']['ExternalDeliveryRequest']
+        self.assertTrue(shape({'agent': 'helper', 'message': {}}, schema))
+        request = {'agent': 'helper', 'message': {}, 'delivery': 'steering', 'owner': 'session-a/work-1'}
+        self.assertTrue(shape(request, schema))
+        for change in ({'owner': ''}, {'delivery': 'queue'}, {'delivery': 'interrupt'}):
+            self.assertFalse(shape({**request, **change}, schema))
+        request.pop('owner')
+        self.assertFalse(shape(request, schema))
+
     def test_parse_rejects_ambiguous_or_non_json_inputs(self):
         for raw in (b'{"a":1,"a":2}', b'{"a":NaN}', b'{"a":Infinity}',
                     b'{"x":"\\ud800"}', b'\xff', b'{} {}'):
@@ -314,12 +361,23 @@ def check_schema_library():
             {'origin': 'condition', 'input': {}, 'message': {}, 'configuration': 'project'},
             {'origin': 'agent', 'input': {}, 'message': {}, 'configuration': 'project', 'retainedConfiguration': 'project'},
             {'origin': 'call', 'input': {}, 'message': {'prompt': 'bad'}, 'configuration': 'project'}]}
+    records['JoinResult'] = [
+        {'members': {}}, {'members': {'bad/name': {}}}, {'members': {'x': None}},
+        {'members': {'x': {}}}, {'members': {'x': {'data': 0}}},
+        {'members': {'x': {'text': 'done'}, 'y': {'prompt': [{'value': 'Message'}]}}},
+        {'members': {'x': {'members': {'nested': {}}}}},
+        {'members': {'x': {'text': False}}}]
+    records['ExternalDeliveryRequest'] = [
+        {'agent': 'helper', 'message': {}},
+        {'agent': 'helper', 'message': {}, 'delivery': 'steering', 'owner': 'work/1'},
+        {'agent': 'helper', 'message': {}, 'delivery': 'steering'},
+        {'agent': 'helper', 'message': {}, 'owner': 'work/1'}]
     for definition, samples in records.items():
         record_schema = {**SCHEMA, '$ref': '#/$defs/' + definition}
         library = jsonschema.Draft202012Validator(record_schema)
         for record in samples:
             assert shape(record, record_schema) == library.is_valid(record), record
-    print(f'Schema-library agreement on {len(cases())} documents and {len(completions)} completion records, plus 8 error/delivery records; no execution claim.')
+    print(f'Schema-library agreement on {len(cases())} documents and {len(completions)} completion records, plus {sum(len(samples) for samples in records.values())} boundary records; no execution claim.')
 
 
 if __name__ == '__main__':

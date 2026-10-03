@@ -352,9 +352,16 @@ that work and has no independent normal continuation, result or decision.
 Only the owner completes and routes. Failure or a late request uses the steering
 step's error path without failing the owner. Uncertain acknowledgement remains
 pending until resolved; it is not assumed rejected or redelivered as queued work.
-The bounded candidate rejects steering to or from Join members, so distinct
-required results cannot collapse into one work item. Broader grouping of steered
-work would need a separately reviewed rule.
+A consumed steering request cannot itself be a Join member. An ordinary member
+may own steering and still supplies exactly one member result. Its pending
+acknowledgements must resolve before that result is released. Confirmed stop
+ends its work without fabricating a result; unresolved steering does not prove
+stop, and a stop does not prove that guidance was incorporated.
+
+A graphless external delivery request may explicitly select steering and name
+one exact owning work occurrence on the persistent Agent. The same consumption,
+acknowledgement and late-delivery rules apply without graph continuations. The
+candidate describes a declarative request profile, not a universal transport.
 
 Visible text concatenates text parts within each user-visible response Message
 without a separator, then joins nonempty Message texts with one LF. Preserve

@@ -26,7 +26,8 @@ def check_delivery(document, agent_name, record):
     def failure(code, message):
         return {**report, 'error': {'code': code, 'message': message, 'details': []}}
 
-    if not validate(document)['valid'] or agent_name not in document['agents']:
+    if (not isinstance(agent_name, str) or not validate(document)['valid'] or
+            agent_name not in document['agents']):
         return failure('INVALID_REQUEST', 'Select an Agent in a valid document.')
     if not shape(record, SCHEMA['$defs']['DeliveryRecord']):
         return failure('INVALID_RECORD', 'Invalid delivery record shape.')
@@ -53,6 +54,10 @@ def check_delivery(document, agent_name, record):
     if origin in ('entry', 'prepare'):
         if not shape(value, SCHEMA['$defs']['Message']):
             return failure('INVALID_RECORD', 'Message origin requires a Message value.')
+        sources = list(value.get('prompt', [])) + list(value.get('resources', {}).values())
+        if any('ref' in source and source['ref'] not in document.get('content', {})
+               for source in sources):
+            return failure('INVALID_RECORD', 'Recorded Message has an unresolved content reference.')
         expected = value
     elif origin == 'agent':
         if not shape(value, SCHEMA['$defs']['Completion']):
@@ -70,8 +75,8 @@ def check_delivery(document, agent_name, record):
             return failure('INVALID_RECORD', 'Origin requires its declared result envelope.')
         if origin == 'error' and not shape(value['error'], SCHEMA['$defs']['Error']):
             return failure('INVALID_RECORD', 'Unknown or malformed terminal failure input.')
-        if origin == 'join' and not isinstance(value['members'], dict):
-            return failure('INVALID_RECORD', 'Join members must be a map.')
+        if origin == 'join' and not shape(value, SCHEMA['$defs']['JoinResult']):
+            return failure('INVALID_RECORD', 'Join requires a nonempty named map of complete member-result shapes.')
         expected = {'resources': {'error' if origin == 'error' else 'result': {
             'value': value if origin == 'join' else value[key], 'mediaType': 'application/json'}}}
     if not equal(record['message'], expected):

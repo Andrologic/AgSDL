@@ -967,6 +967,114 @@
         "configuration"
       ],
       "additionalProperties": false
+    },
+    "CallResult": {
+      "type": "object",
+      "properties": {
+        "data": {}
+      },
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false
+    },
+    "ErrorInput": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/Error"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "JoinResult": {
+      "type": "object",
+      "properties": {
+        "members": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "$ref": "#/$defs/Name"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/MemberResult"
+          }
+        }
+      },
+      "required": [
+        "members"
+      ],
+      "additionalProperties": false
+    },
+    "MemberResult": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Completion"
+        },
+        {
+          "$ref": "#/$defs/Message"
+        },
+        {
+          "$ref": "#/$defs/CallResult"
+        },
+        {
+          "$ref": "#/$defs/JoinResult"
+        },
+        {
+          "$ref": "#/$defs/ErrorInput"
+        }
+      ]
+    },
+    "ExternalDeliveryRequest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "agent": {
+              "$ref": "#/$defs/Name"
+            },
+            "message": {
+              "$ref": "#/$defs/Message"
+            },
+            "delivery": {
+              "const": "queue"
+            }
+          },
+          "required": [
+            "agent",
+            "message"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "agent": {
+              "$ref": "#/$defs/Name"
+            },
+            "message": {
+              "$ref": "#/$defs/Message"
+            },
+            "delivery": {
+              "const": "steering"
+            },
+            "owner": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "agent",
+            "message",
+            "delivery",
+            "owner"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   }
 }
