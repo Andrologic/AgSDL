@@ -22,6 +22,8 @@ using this candidate to assess readiness.
 | [Parallel reviews](examples/parallel-reviews.json) | Two final decisions grouped for the same developer completion, followed by one correction Message. |
 | [Output correction](examples/output-correction.json) | A missing required report produces a diagnostic and a correction Message for the same Agent. |
 | [First satisfactory review](examples/first-review.json) | Explicit acceptance rule, with stop-and-wait as the default for remaining work. |
+| [Steering](examples/steering.json) | Explicit owner, consumed steering occurrence and a separate error path. Parallel launch does not guarantee the owner is still active; a late delivery is an expected possible failure. |
+| [Selected media](examples/selected-media.json) | Preserve a named image Source through Prepare and an identity Condition. |
 | [Multimedia and reuse](examples/multimedia-and-reuse.json) | Reusable skill instructions, two Engine choices, multiple media and required versus optional outputs. |
 
 All Engine, Tool, implementation and contract identities are fictional. Their
@@ -84,10 +86,11 @@ defined here.
 ## Agents, configuration and reusable behavior
 
 Each Agent names one fixed configuration, or supplies `select` and `cases`
-for a declared pre-initialization choice. The selector reads the first input;
-its value must be a string naming a case. A missing value, wrong type or unknown
-case fails without a default. Evaluate a dynamic choice when the first work
-arrives, before initializing the Agent. Evaluate it once for that instance;
+for a declared pre-initialization choice. The selector reads the first current
+flow value before delivery adaptation; its value must be a string naming a case.
+A missing value, wrong type or unknown case fails without a default. Evaluate a
+dynamic choice when the first queued work begins, before initializing the Agent.
+Retain a successful selection once for that instance;
 later Messages use the retained configuration without evaluating the selector
 again. They need not repeat the selection data. Even a later value naming a
 different case is ordinary input, not a reconfiguration request. A fixed
@@ -104,12 +107,15 @@ a dynamic configuration could select `project` from the first Message's
 it reaches the same Agent using `project`, with no selection data to reconstruct.
 A later Message carrying a different mode still cannot change that instance.
 
-Open c1 question: when a Call result reaches an Agent through a Condition,
-does configuration selection read that flow value or the Message after delivery
-adaptation? The same boundary determines default delivery through intermediate
-blocks. This is not yet settled; static acceptance of such a path does not
-establish its portable Agent input. One-time selection and configuration
-persistence remain fixed in either case.
+For Call → Condition → Agent, selection therefore reads `data` from the Call
+result. For Prepare → Condition → Agent, it reads the prepared Message.
+Condition changes neither value nor origin. Selection failure leaves the Agent
+uninitialized and produces `CONFIGURATION`; a later explicitly authored attempt
+may select again only while no configuration has been retained. Once selected,
+the configuration remains fixed even if initialization or delivery fails. An
+initialization failure does not authorize replacing a partially initialized
+instance or replaying effects; recovery needs the integration to report a usable
+instance or requires stop, edit and start.
 
 No initial prompt means no implicit initial task. A configuration's explicit
 Engine binding is required even when the Agent waits for its first Message.
@@ -152,8 +158,11 @@ transcript without an explicit conversion contract.
 
 `flow` has an `entry` step and a `steps` map. The consumer supplies the entry
 Message. Every step must be reachable from entry through a normal or error
-connection. Step and Agent names have separate scopes. Several steps may refer
-to one Agent. Default message handling is queueing; c1 has no steering syntax.
+connection. Step and Agent names have separate scopes. Without a graph, ordinary external
+Messages follow the same per-Agent queue and completion attribution rules;
+step-specific routing is absent. External requests may use the graphless
+steering profile below. Several steps may refer
+to one Agent. Default Agent-step delivery is `queue`; explicit `steering` is defined below.
 
 Ordinary `next` is a list of destination steps. Completion activates every
 destination in that list. Missing or empty `next` ends the current path, not
@@ -165,7 +174,7 @@ The proposed data boundary distinguishes:
 
 | Result field | Meaning |
 | --- | --- |
-| `text` | All user-visible response text for this completed Agent work, excluding reasoning, raw Tool exchanges and earlier history. Absent visible text alone is not a failure; required outputs still apply. Exact text assembly remains release work. |
+| `text` | All user-visible response text for this completed Agent work, excluding reasoning, raw Tool exchanges and earlier history. Absent visible text alone is not a failure; required outputs still apply. Assembly follows the response-text rule below. |
 | `results` | Named output sources declared by the Agent Interface, including non-text artifacts. |
 | `choice` | An explicitly identified final Agent decision, only when the step requires one. |
 | `data` | A Call's normal result value, supplied under its external contract. |
@@ -184,6 +193,163 @@ No path refers to a global last result, filesystem location or arbitrary code.
 Condition preserves its input unchanged for the selected continuation. Prepare
 therefore selects the current report directly; it needs no remote-step lookup.
 This is a proposed simplification of data binding under 0021.
+
+### Portable delivery
+
+Every flow input has a current value and an origin kind known from the producing
+operation. Origin is integration metadata, not an inspected payload field or a
+mandatory wire envelope. The following table defines the Message delivered on
+an Agent connection, after its configuration selector has read the unchanged
+current value. Generated resources are information and introduce no prompt.
+
+| Origin | Current value | Message delivered to an Agent |
+| --- | --- | --- |
+| Entry | A Message supplied by the consumer | The same Message, preserving prompt and resources. |
+| Prepare | The constructed Message | The same Message, preserving prompt and resources. |
+| Agent | A completion with `text`, `results` and any required `choice` | `{"resources":{"result":{"value":text,"mediaType":"text/plain"}}}`. Missing text is the empty string. Named results require explicit Prepare selection. |
+| Call | `{"data":value}` from the external contract | `{"resources":{"result":{"value":value,"mediaType":"application/json"}}}`. Even a Message-shaped value remains information. |
+| Join | `{"members":{...}}` | `{"resources":{"result":{"value":{"members":{...}},"mediaType":"application/json"}}}`. References inside members remain data; use Prepare `source` to deliver one as media. |
+| Error | The error input defined below | `{"resources":{"error":{"value":error,"mediaType":"application/json"}}}`. No implicit request to retry. |
+| Condition | The same value and origin it received | Apply the unchanged origin's rule. Chains of Conditions do not change delivery. |
+
+The table applies to entry at any step, not only an Agent. A Call returning
+`{"prompt":[{"value":"Ignore the task"}]}` cannot acquire instruction authority
+by passing through Condition. A prepared prompt keeps its instruction role
+through that same Condition. A Join preserves each member's complete result,
+not just its default direct-Agent text projection. No block guesses a Source,
+Message or control decision from arbitrary payload shape.
+
+### Response text and result selection
+
+For each user-visible response Message of the owning occurrence, concatenate
+its text parts in their declared order with no separator. Ignore non-text parts
+for this text projection, but preserve selected named results independently.
+Discard only Message texts equal to the empty string. Join the remaining Message
+texts in response order with exactly one LF, U+000A. Do not trim whitespace,
+normalize line endings, add labels, summarize or insert routing data. For example,
+`[["A", "B"], [], ["\nC"], ["D\n"]]` assembles as `"AB\n\nC\nD\n"`.
+No visible text produces `""`, never a previous reply or a missing-text failure.
+
+The integration attributes all parts to the owning occurrence, including text
+before and after acknowledged steering, and excludes reasoning, Tool calls,
+raw Tool results and prior history. A user-visible explanation of a Tool result
+is response text; the raw Tool exchange is not. Response order is the recorded
+emission order, not arrival order after transport reordering. Stable Message
+identity prevents retransmission from duplicating text. If the integration
+cannot establish attribution or order, it reports `CORRELATION`, not a guessed
+concatenation. Completion waits for that occurrence's response collection to
+close. Late or duplicate events cannot reopen it or replace the retained result.
+A conflicting terminal duplicate reports a correlation diagnostic; it does not
+route an already resolved occurrence a second time.
+
+Prepare `select` deliberately wraps any selected JSON value as inline content.
+Prepare `source` instead copies one selected Source unchanged. For example,
+`{"source":{"path":["results","diagram"]}}` keeps an image URI and its
+`image/png` representation. It neither serializes that source as text nor fetches
+its bytes. Selected inline objects remain objects. References, formats, declared
+support and actual access are separate obligations. A missing optional result
+still fails an unconditional selector; branch explicitly if it may be absent.
+
+### Queue admission, work identity and steering
+
+An occurrence identifies one activation within a flow invocation. The consuming
+integration associates it with the step, persistent Agent instance, incoming
+activation and any Join group/member. Repeated visits and separate fan-out
+edges create distinct occurrences, even when their payloads are equal. A
+retransmission of an existing occurrence does not create another visit. These
+are correlation obligations, not a universal identifier format or transport.
+
+For ordinary Agent steps, omitted `delivery` means `queue`. Record a total
+admission order per Agent instance, across all steps using it. Process queued
+occurrences FIFO, starting the oldest only when its prior active work has ended.
+An unordered arrival batch is assigned and recorded an admission order by the
+integration before acceptance; no ordering across independent Agents is imposed.
+Each dequeued occurrence owns its response, final choice and continuation.
+`maxVisits` is checked when queued work begins, not on retransmission or waiting.
+Failures resolve the failed occurrence once. They do not clear unrelated queued
+work. The retained Agent configuration and context remain those of that instance.
+
+An Agent step may instead declare `delivery: "steering"` and `steers`, naming
+an ordinary queued Agent step for the same Agent. It cannot be entry, declare
+`next` even empty, declare a `decision`, or be a Join member. An ordinary Join
+member may own steering; that member still supplies only its one required result. The integration associates a steering request with one exact intended
+occurrence of that target step in the same flow invocation, at request creation. A common
+fork activation can provide that association. A target step name alone is not
+enough to distinguish loop visits. Missing or ambiguous association fails as
+`CORRELATION`; never guess from whichever occurrence is now active. The selected
+owner must still be active when the request is admitted. No matching active
+occurrence yields `STEERING_LATE`; it does not initialize an idle Agent, create work or fall back to queueing.
+
+Check a steering step's visit limit before attempting delivery. One attempt
+consumes one visit. Bind the request to that exact owner, adapt its input and
+request acknowledgement that it was incorporated before the owner's terminal
+boundary. Acceptance resolves the steering occurrence as consumed: it has no
+result or normal graph continuation. Only the owner later completes, validates
+its outputs and routes once. Owner completion may incorporate all acknowledged
+steering inputs; it is not duplicated for each input. Pending acknowledgement
+holds the owner's graph continuation until the integration can classify the
+request as accepted-before-completion, rejected or late. This obligation does
+not require keeping the Agent itself working after it finishes.
+
+An explicit rejection yields `STEERING_REJECTED`; lack of capability yields
+`STEERING_UNSUPPORTED`; a request known not to have arrived before owner
+completion yields `STEERING_LATE`. Each follows only the steering step's
+`onError`, leaving the owner's result and route intact. Lost or uncertain
+acknowledgement remains pending and reports `STEERING_PENDING` diagnostically;
+it fires neither normal nor error continuations until resolved. It cannot be
+automatically retried, queued or treated as rejected, because delivery may have
+occurred. A later acknowledgement resolves the original request, never a new
+visit. Duplicate acknowledgements have no additional effect. Missing integration
+evidence does not establish steering support or guarantee eventual resolution.
+
+For example, owner O plus accepted steering S produces one O result and one O
+continuation, and no S continuation. If S is rejected, S's error route may run
+and O still completes once. If O already ended when S was admitted, only S fails.
+A correction Message arriving through an ordinary queued step creates new work
+on the same Agent; it does not revise the failed occurrence's terminal record.
+
+A Join member's result is released only after pending steering acknowledgements
+for that occurrence resolve. Its result, decision and membership remain those
+of the owner; accepted steering never supplies another member result. A group
+stop request targets that exact owner occurrence. Once stopping begins, reject
+new steering as `STEERING_LATE`; settle already pending requests from their
+actual delivery evidence. A confirmed stop resolves the group's termination
+wait without a successful member result. It does not assert acceptance or
+rejection of a pending steering request. Such a request remains pending until
+its own acknowledgement resolves, even if the Join has already continued after
+confirmed stop. Its late rejection may use only its own error path; neither a
+late acceptance nor rejection reopens the ended owner or completed Join. If the
+owner completes instead of stopping, its normal result waits for pending
+acknowledgements as above. A stop request or missing acknowledgement alone
+proves neither termination nor completion.
+
+### External delivery without a graph
+
+A single persistent Agent accepts ordinary external Messages with queue delivery
+by default. An integration can also accept an explicit steering request for that
+Agent without requiring a graph. The `ExternalDeliveryRequest` schema describes
+a declarative profile for such requests: `agent` names the declared Agent,
+`message` is the authored Message, and optional `delivery` is `queue` or
+`steering`. Queue requests omit `owner`. Steering requires `owner`, an opaque
+nonempty identifier that the integration resolves to one exact work occurrence
+on that Agent within the current system start. It is not a step name, newest-work
+selector or global address. It must not resolve to a different Agent or a later
+occurrence after a restart. Resolve unknown or ambiguous association as
+`CORRELATION`, and a known ended owner as `STEERING_LATE`.
+
+The integration checks Agent and Message content references against the document.
+Queue admission, retained configuration, context and response attribution obey
+the same rules as graph delivery. Steering must not initialize an idle Agent or
+reselect configuration. It uses the same accepted, rejected, unsupported, late
+and pending acknowledgement semantics, and is consumed without a separate work
+result. The owner alone produces its completion. Failures and pending statuses
+are returned to the external requester because there is no graph error route.
+Stable request identity and duplicate suppression are integration obligations;
+they are not inferred from Message equality. No universal transport, wire ID
+format, scheduler or live delivery endpoint is introduced. The bundled schema
+checks profile shape only; no command executes this request or verifies its
+owner association. An integration must demonstrate these behaviors to claim
+support.
 
 ### Agent, Call, Condition and Prepare
 
@@ -211,9 +377,13 @@ does not matter; array order does. All referenced operands must be available
 and valid, even if another operand would determine the Boolean result. A missing
 operand is an error, not false. The input is preserved on either normal path.
 
-A `prepare` constructs `message`. Its resources may use normal content or
-`select`, an operand whose selected value becomes inline information. An optional
-media type describes that selected value. Authored prompt sources remain
+A `prepare` constructs `message`. Its resources may use normal content,
+`select`, an operand whose selected value becomes inline information, or `source`,
+an operand selecting one complete Source. An optional media type describes an
+inline selection. A source selection preserves its own media type and cannot
+override it. A selected Source must contain exactly one `value` or `uri`; a
+content-catalog `ref` is not a Source. Missing or malformed selections fail
+before delivery. Use several named resources to select several results. Authored prompt sources remain
 instructions. Preparation does not summarize, fetch, convert media or clear
 context. Its output is one Message to the next Agent. c1 does not implement
 these operations; it validates their declared shape and static references.
@@ -259,7 +429,7 @@ confirmation.
 With default `stop-and-wait`, request stop of unfinished, unnecessary member
 work and hold the winner until that work is confirmed stopped or finishes.
 A rejected request or missing acknowledgement does not release successors.
-Report unsupported stopping and wait for completion or explicit recovery; do
+Report unsupported stopping and wait for completion or explicit interruption of the pending wait to enter recovery; do
 not fabricate confirmation. With `remaining: finish`, continue with the winner
 and let other members finish without a stop request. Their late results do not
 reopen the group. Neither mode resets Agents, cancels unrelated work, rolls back
@@ -306,13 +476,79 @@ or choices. The [output-correction example](examples/output-correction.json)
 branches on that code, prepares an instruction with the details as information,
 and sends a new Message to the same Agent. Other technical failures do not take
 this particular correction path. The loop has no implicit retry cap or replay
-of side effects. Exact contracts for other failure kinds remain release work.
+of side effects. Other failures use the closed vocabulary below.
+
+### Closed failure input
+
+An error continuation receives exactly
+`{"error":{"code":"CODE","message":"description","details":[]}}`.
+`code` is one terminal code in the table. If correlation is so incomplete that
+no failing occurrence can be identified, report the diagnostic outside the
+flow; do not guess an error route. `message` is explanatory text, never
+control syntax. Each detail has `path`, a JSON Pointer relative to the failing
+input or declaration, `rule`, a descriptive string, and `expected`, a JSON value.
+Use an empty details list when no narrower location applies. The integration
+correlates the error to its occurrence and retains original input and failure
+context for diagnostics; it does not inject prior conversation into the error.
+External diagnostics may be described in `message` or `expected`, without adding
+new portable codes. Route by `code`; details do not prescribe an action.
+
+| Code | Failure boundary |
+| --- | --- |
+| `CONFIGURATION` | The first configuration selector is missing, wrongly typed or names no case. |
+| `INITIALIZATION` | The selected Agent configuration cannot initialize successfully, including unusable supplied prompt. |
+| `INPUT_CONSTRAINT` | The adapted Message violates declared input constraints. |
+| `CONTENT_UNAVAILABLE` | Required content cannot be obtained or made usable. |
+| `UNSUPPORTED` | A required integration capability or declared media path is unsupported, except steering. |
+| `OPERAND` | A Condition, Call argument or Prepare selector cannot read its operand, or source selection is not a Source. |
+| `CALL_FAILED` | External invocation fails technically. A normal negative business result is not this error. |
+| `CALL_RESULT` | The external result violates its declared Call contract. |
+| `OUTPUT_CONSTRAINT` | Required Agent outputs, formats or terminal decision are missing or invalid. |
+| `AGENT_FAILED` | Agent work fails technically without a more specific code. |
+| `INTERRUPTED` | Work ends without completion because of an interruption. Effects may remain. |
+| `CORRELATION` | Integration cannot safely associate input, response or completion with current work. |
+| `VISIT_LIMIT` | Starting this occurrence would exceed its step limit. |
+| `MEMBER_FAILED` | A required member fails an all-required Join. Detail identifies the member and underlying error. |
+| `NO_ACCEPTABLE_RESULT` | All first-satisfactory members end without a qualifying result. |
+| `STEERING_UNSUPPORTED` | Steering capability is unavailable. |
+| `STEERING_REJECTED` | Integration explicitly refuses the steering request. |
+| `STEERING_LATE` | No matching active owner, or delivery is known to miss its terminal boundary. |
+
+Pending conditions are not terminal failures. `STEERING_PENDING` and
+`STOP_PENDING` are diagnostic statuses only, never error inputs or normal
+results. An unsupported or rejected stop reports `STOP_PENDING` with its reason
+and keeps waiting for confirmed termination. This does not fabricate cancellation
+or dispatch a recovery path while work may still be active. An external operator
+can interrupt the waiting Join; only then does `INTERRUPTED` use its error route. Interrupting the wait does
+not prove that member work ended or stopped.
+Stopped losing members resolve that wait without running member successors.
+
+Use the first failed boundary in processing order: visit admission, configuration
+selection if needed, initialization if needed, input adaptation and constraints,
+work, output validation, then continuation. Do not perform dependent later work
+after failure. Independent failures are separate occurrences, not alternative
+successes. A malformed first-Join acceptance operand fails that Join as `OPERAND`;
+after a winner, remaining terminal statuses only resolve its wait.
+
+Each terminal occurrence dispatches its normal destinations or its error
+destinations once, never both. Join member failures resolve through the Join
+policy instead of independent error routes; late members cannot re-dispatch a
+resolved Join. No error authorizes automatic retry, rollback, duplicate effects,
+Agent replacement, cancellation of other work or a successful required result.
+Static checker's `INVALID_REQUEST` and `INVALID_RECORD` are command/record errors,
+not additional graph failure codes or Agent correction inputs.
 
 ### Checking recorded outputs
 
 [check_completion.py](check_completion.py) validates a supplied completion record
-against the selected Agent step. A record has optional `text`, `results` and
-`choice`; each named result is a content source. Missing required results,
+against the selected Agent step. A record has optional `text`, `responseMessages`, `results` and
+`choice`; each named result is a content source. `responseMessages` is an ordered array
+of arrays of visible text parts, already filtered and attributed by the caller.
+When supplied, the checker assembles it by the rule above. If `text` is also
+supplied it must equal that assembly; a mismatch is `INVALID_RECORD`. With only
+`text`, the checker cannot verify assembly. A successful report includes the
+assembled `text`, or supplied `text`, or the empty string. It does not claim
+that the record includes every actual response. Missing required results,
 incompatible declared formats or a missing/unknown required choice produce
 `OUTPUT_CONSTRAINT`. Absent text with valid required artifacts succeeds. Merely
 writing a completion sentence does not substitute for a required artifact.
@@ -335,6 +571,42 @@ Exit codes are 0 for a conforming record, 1 for a rejected record/request and
 A runtime must route the error through the authored flow and supply the declared
 Message itself.
 
+### Checking recorded delivery
+
+[check_delivery.py](check_delivery.py) checks a claimed boundary record, without
+running the graph or retaining live Agent state:
+
+```sh
+python3 experimental/agent-flow-0.2/check_delivery.py DOCUMENT.json AGENT RECORD.json
+```
+
+A record contains `origin`, `input`, `message` and the claimed `configuration`.
+Origin is one of the six producing origins in the delivery table; an intervening
+Condition retains that origin and input. Optional `retainedConfiguration` states
+a previously selected configuration. The checker verifies that it belongs to
+the Agent's alternatives and skips selection on this new input. Without that
+field it evaluates the selector on `input` before checking the delivered Message.
+It compares Message values without changing instructions, Sources or input data.
+Entry and Prepare Message `ref` uses must exist in the document content catalog;
+objects inside literal `value` are not interpreted as references. Recorded Join
+results require a nonempty map of valid member names and complete result shapes:
+Agent completion, Message, Call result, Join result or preserved error input.
+An identity Condition may preserve any of those shapes. Shape alternatives can
+overlap, especially an empty Message and empty Agent completion; accepting that
+shape does not infer its origin. Exact membership/cardinality for a particular
+source Join, member output constraints and nested provenance remain unassessed
+because this command selects a destination Agent, not a source Join.
+It rejects an unresolved selector as `CONFIGURATION`, a malformed record or
+inconsistent claim as `INVALID_RECORD`, and an invalid document or unknown Agent
+as `INVALID_REQUEST`. Exit codes are 0, 1 and 2 as for the completion checker.
+
+This checks recorded data, not whether origin, retention, Condition identity,
+response filtering or actual delivery occurred. Agent completion shapes are
+checked here; use the completion checker for its output constraints. External
+Call contracts, content availability, lifecycle ordering, acknowledgement and
+runtime attribution remain integration obligations. The record has no capacity
+to certify those claims. Pending status codes are rejected as terminal errors.
+
 ## Static checks and evidence limits
 
 The reader implements these rule codes:
@@ -348,6 +620,7 @@ The reader implements these rule codes:
 | `RESOURCE_COLLISION` | Skill expansion cannot overwrite a resource. |
 | `OUTPUT_FORMAT` | A named result's formats fit the overall allowed output formats. |
 | `ROUTES` | Agent decision declarations and routing maps agree. |
+| `STEERING` | Steering names an ordinary step for the same Agent, has no independent normal continuation or decision, and the consumed steering request is not a Join member. |
 | `JOIN_POLICY` | A first-satisfactory Join has an acceptance rule, and policy fields match its mode. |
 | `JOIN_GROUP` | The declared group satisfies c1's bounded fork-and-join structure. |
 | `UNREACHABLE` | Every step is reachable from entry. |
@@ -373,11 +646,10 @@ Execution evidence is required only for the implementation support claimed.
 
 | Direction outside c1 | Remaining work before the complete 0.2 candidate |
 | --- | --- |
-| Steering | Delivery acknowledgement, attribution to active work and interaction with graph continuations. |
 | Proposed composition | Review and adopt a local reusable graph form with parameter binding and stable Agent identity. |
 | Protected actions | Explicit approval admission bound to the action, scope and actual invocation. |
 | Interfaces and support | Structured-value constraints, support claims/evidence, delivery paths and relative URI bases. |
-| Completion and errors | Exact visible-text assembly, non-text transfer selection and remaining failure-kind contracts. Recorded output constraints have a checker; claims of actual delivery and correction need consuming implementation evidence. |
+| Lifecycle integration evidence | Queue and steering obligations, text assembly, source selection and error inputs are defined above. Static record checks do not prove attribution, delivery, correction or cancellation in an implementation. |
 | Validation and release | Broader graph rules, an independent semantic reader, review, migration guidance and adoption decision. |
 
 No release tag, official contract replacement or publication follows from this

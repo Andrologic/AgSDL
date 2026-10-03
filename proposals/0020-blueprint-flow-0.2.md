@@ -61,7 +61,8 @@ An explicit selection can instead transfer specified results, content or file
 references, including non-text content. Selecting a file reference does not
 grant access to its target. A previous step's reply cannot stand in for a
 missing current result. No visible text alone is not an error when the required
-outputs are present. Exact selection syntax and text assembly remain candidate work.
+outputs are present. The current c1 refinement below proposes selection syntax
+and exact text assembly; these are not adopted rules.
 
 By default, a direct transfer to another Agent delivers the result as
 information in a Message. The recipient's instructions define what to do with
@@ -292,27 +293,12 @@ continuity, steering, recovery or cancellation. No automatic migration is promis
 
 ## Work before an implementable candidate
 
-The flow directions above are settled at the design level. The following
-serialization and integration details remain open. The proposed
-[block contract](0021-logic-block-contract-0.2.md) develops their shared boundary
-and review scenarios; it does not adopt a grammar.
-
-- Define the minimal Message envelope and step identity needed to associate
-  completion, failure and selected results with the correct work. Specify how
-  user-visible response text is collected when queueing or steering introduces
-  additional inputs, how text is assembled, and the case with no user-visible
-  text, without falling back to a prior reply.
-- Serialize configuration selection before initialization. Define diagnostics
-  for unresolved selections and persistence across later Messages.
-- Define step outputs and their connections, result selectors, branch conditions,
-  joins and loop limits in one grammar. State iteration counting, limit exhaustion,
-  ties between acceptable results and the outcome when no branch provides an
-  acceptable result.
-- Place queue/steering and branch-stop choices in that grammar. Specify ordering,
-  correlation and how queued work, shared Agents and pending or unsupported
-  stops interact, without cancelling unrelated work or pretending it stopped.
-- Define recovery entry information and its interaction with required parallel
-  results. Keep failure, completed negative results and interrupted work distinct.
+The flow directions above are settled at the design level. The current c1
+refinements below propose concrete delivery, text assembly, configuration,
+queueing, steering, correlation, Join and error rules. They need independent
+review before adoption. The [block contract](0021-logic-block-contract-0.2.md)
+retains separate composition, protected-action and support requirements that
+these lifecycle refinements do not settle.
 
 A candidate review must cover each small scenario above and adverse cases:
 stale or missing results, unresolved configuration, unsupported steering,
@@ -341,3 +327,54 @@ otherwise the recorded-output checker rejects it as `INVALID_RECORD`.
 
 These clarify the experimental candidate. They do not change the accepted scope,
 adopt the grammar, or establish execution support.
+
+### Proposed portable delivery and lifecycle refinement
+
+The current c1 revision defines proposed integration obligations, without
+adopting a runtime or transport. Configuration selection reads the current flow
+value before Agent delivery adaptation. Condition preserves that value and its
+origin. A retained configuration is never selected again. Direct delivery uses
+the origin contract, never the presence of payload keys. Entry and Prepare
+Messages preserve authored roles; Agent text, Call data, Join members and
+recovery errors become information. Prepare can select a source as a source,
+preserving its URI and media type instead of wrapping or flattening it.
+
+Each activation has an occurrence associated with its flow invocation, step,
+Agent instance and, where relevant, Join group/member. Queue admission records
+an order per Agent; one work item is active at a time. Repeated delivery of the
+same occurrence is not a new activation. Completion resolves that occurrence
+once and cannot release a continuation twice.
+
+Explicit steering names an owning Agent step. The integration identifies the exact intended
+occurrence in the same flow invocation before delivery; a step name alone must
+not redirect a late request to a later loop visit. The owner must still be active. Acknowledged steering adds input to
+that work and has no independent normal continuation, result or decision.
+Only the owner completes and routes. Failure or a late request uses the steering
+step's error path without failing the owner. Uncertain acknowledgement remains
+pending until resolved; it is not assumed rejected or redelivered as queued work.
+A consumed steering request cannot itself be a Join member. An ordinary member
+may own steering and still supplies exactly one member result. Its pending
+acknowledgements must resolve before that result is released. Confirmed stop
+ends its work without fabricating a result; unresolved steering does not prove
+stop, and a stop does not prove that guidance was incorporated.
+
+A graphless external delivery request may explicitly select steering and name
+one exact owning work occurrence on the persistent Agent. The same consumption,
+acknowledgement and late-delivery rules apply without graph continuations. The
+candidate describes a declarative request profile, not a universal transport.
+
+Visible text concatenates text parts within each user-visible response Message
+without a separator, then joins nonempty Message texts with one LF. Preserve
+authored whitespace; do not trim, summarize or include reasoning, Tool
+exchanges or earlier history. No visible text yields the empty string. Record
+response order and attribution to the owning occurrence, including acknowledged
+steering. Terminal completion closes collection; duplicates and late events
+cannot alter the retained result. Optional recorded Message text parts let the
+static completion checker verify assembly, not actual execution attribution.
+
+The c1 contract gives failures a closed code vocabulary and the common recovery
+input `error` with `code`, `message` and `details`. Error continuations belong to
+the failed occurrence, keep diagnostic data informational and never manufacture
+successful results, retries, cancellation or rollback. Output correction is a
+new Message to the same persistent Agent. The concrete shapes and failure table
+are proposed in the [candidate](../experimental/agent-flow-0.2/README.md).

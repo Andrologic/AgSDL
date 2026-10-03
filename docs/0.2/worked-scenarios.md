@@ -49,7 +49,8 @@ For the first completed request, the default transferable result contains both
 visible replies, in order: "I am checking empty input." and "Empty input reaches
 the parser without a guard." The Tool invocation and its raw result are excluded.
 The integration associates those replies with completion of this request; the
-progress sentence alone does not complete it. Exact text assembly remains open.
+progress sentence alone does not complete it. The current c1 refinement
+concatenates text parts within each Message and joins nonempty Message texts with one LF, preserving authored whitespace.
 
 The second request uses the same Agent and its continuing context. Its result
 contains only the new visible response. Earlier replies remain in the Agent's
@@ -238,7 +239,7 @@ test loops, direct fork-and-join, output correction and first-satisfactory
 selection. These walkthroughs remain illustrations, not execution traces.
 
 The [preparation index](README.md#before-a-02-release) tracks the remaining
-contract and adoption work. In particular, queue/steering overlap, exact text
-assembly, composition and the protected-action binding are not settled by these
+contract and adoption work. The c1 contract now proposes queue/steering
+boundaries and exact text assembly. Composition and the protected-action binding are not settled by these
 sequential-request scenarios. Repository checks on this document verify its
 maintenance, not the runtime behavior described in its tables.

@@ -31,6 +31,8 @@ def shape(value, schema):
         return schema
     if '$ref' in schema:
         return shape(value, SCHEMA['$defs'][schema['$ref'].split('/')[-1]])
+    if 'anyOf' in schema and not any(shape(value, s) for s in schema['anyOf']):
+        return False
     if 'oneOf' in schema and sum(shape(value, s) for s in schema['oneOf']) != 1:
         return False
     if 'const' in schema and not equal(value, schema['const']):
@@ -153,6 +155,19 @@ def validate(document):
                             incoming[target].add(name)
                 if step['type'] == 'agent':
                     reference(agents, step['agent'], loc + ['agent'])
+                    steering = step.get('delivery', 'queue') == 'steering'
+                    if steering:
+                        target = steps.get(step.get('steers'))
+                        grouped = {member for item in steps.values() if item['type'] == 'join'
+                                   for member in item['members']}
+                        if (target is None or target['type'] != 'agent' or
+                            target.get('delivery', 'queue') != 'queue' or
+                            target.get('agent') != step['agent'] or
+                            name == flow['entry'] or 'next' in step or 'decision' in step or
+                            name in grouped):
+                            fail('STEERING', loc)
+                    elif 'steers' in step:
+                        fail('STEERING', loc + ['steers'])
                     decision = step.get('decision')
                     if decision:
                         reference(bindings, decision['binding'], loc + ['decision', 'binding'])

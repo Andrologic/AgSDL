@@ -9,6 +9,7 @@ from pathlib import Path
 
 from reader import SCHEMA, equal, loads, shape, validate
 from check_completion import check_completion
+from check_delivery import check_delivery
 
 ROOT = Path(__file__).parent
 
@@ -73,14 +74,38 @@ def cases():
     def collision(d):
         d['skills']['review']['resources']={'recording':{'value':'a different recording'}}
     case('skill-resource-collision', 'multimedia-and-reuse', collision, 'RESOURCE_COLLISION')
-    # These accepted directions are deliberately not implemented by bounded c1.
-    case('steering-not-silently-accepted', 'conversation', lambda d: d['agents']['helper'].update(messageMode='steering'), 'SHAPE')
+    # Reject the old unspecified Agent-level knob; delivery is step-local.
+    case('unknown-agent-message-mode', 'conversation', lambda d: d['agents']['helper'].update(messageMode='steering'), 'SHAPE')
     case('first-needs-acceptance-rule', 'parallel-reviews', lambda d: d['flow']['steps']['reviews'].update(mode='first'), 'JOIN_POLICY')
     case('all-does-not-accept-first-policy', 'parallel-reviews', lambda d: d['flow']['steps']['reviews'].update(remaining='finish'), 'JOIN_POLICY')
     case('first-can-explicitly-let-losers-finish', 'first-review', lambda d: d['flow']['steps']['reviews'].update(remaining='finish'), None)
     case('first-can-explicitly-wait-for-stop', 'first-review', lambda d: d['flow']['steps']['reviews'].update(remaining='stop-and-wait'), None)
     case('unknown-stop-policy', 'first-review', lambda d: d['flow']['steps']['reviews'].update(remaining='pretend-stopped'), 'SHAPE')
     case('first-member-missing', 'first-review', lambda d: d['flow']['steps']['reviews']['members'].append('absent'), 'JOIN_GROUP')
+    case('steering-needs-owner', 'steering', lambda d: d['flow']['steps']['adjust'].pop('steers'), 'STEERING')
+    case('steering-no-second-continuation', 'steering', lambda d: d['flow']['steps']['adjust'].update(next=[]), 'STEERING')
+    case('steering-cannot-own-steering', 'steering', lambda d: d['flow']['steps']['adjust'].update(steers='adjust'), 'STEERING')
+    case('queue-cannot-name-steering-owner', 'steering', lambda d: d['flow']['steps']['adjust'].update(delivery='queue'), 'STEERING')
+    case('steering-cannot-enter-flow', 'steering', lambda d: d['flow'].update(entry='adjust'), 'STEERING')
+    case('steering-target-must-be-agent', 'steering', lambda d: d['flow']['steps']['adjust'].update(steers='followup'), 'STEERING')
+    case('steering-cannot-own-decision', 'steering', lambda d: d['flow']['steps']['adjust'].update(decision={'binding':'coding','choices':['ok']}), 'STEERING')
+    case('source-selection-cannot-override-format', 'selected-media', lambda d: d['flow']['steps']['prepare-image']['message']['resources']['diagram'].update(mediaType='text/plain'), 'SHAPE')
+    def other_agent(d):
+        d['agents']['other'] = {'configuration': 'project'}
+        d['flow']['steps']['adjust']['agent'] = 'other'
+    case('steering-same-agent-required', 'steering', other_agent, 'STEERING')
+    def owner_member(d):
+        d['flow']['entry'] = 'start'
+        d['flow']['steps'].update({
+            'start': {'type': 'prepare', 'message': {}, 'next': ['develop', 'guidance']},
+            'guidance': {'type': 'prepare', 'message': {'prompt': [{'value': 'Also inspect empty input.'}]}, 'next': ['adjust']},
+            'adjust': {'type': 'agent', 'agent': 'code-reviewer', 'delivery': 'steering', 'steers': 'code'}})
+    case('ordinary-join-member-can-own-steering', 'parallel-reviews', owner_member, None)
+    def request_member(d):
+        owner_member(d)
+        # Only membership changes: adjust still has a valid owner, no decision or next.
+        d['flow']['steps']['reviews']['members'].append('adjust')
+    case('consumed-steering-cannot-be-join-member', 'parallel-reviews', request_member, 'STEERING')
     return result
 
 
@@ -172,6 +197,108 @@ class CandidateTests(unittest.TestCase):
             self.assertEqual(run.returncode, 0, run.stderr)
             self.assertTrue(json.loads(run.stdout)['valid'])
 
+    def test_response_parts_exact_assembly_and_empty_output(self):
+        document = example('test-loop')
+        record = {'responseMessages': [['A', 'B'], [], ['\nC'], ['D\n']]}
+        before = copy.deepcopy(record)
+        report = check_completion(document, 'develop', record)
+        self.assertTrue(report['valid'])
+        self.assertEqual(report['text'], 'AB\n\nC\nD\n')
+        self.assertEqual(record, before)
+        self.assertEqual(check_completion(document, 'develop', {'responseMessages': [[], ['']]})['text'], '')
+        record['text'] = 'AB C D'
+        self.assertEqual(check_completion(document, 'develop', record)['error']['code'], 'INVALID_RECORD')
+
+    def test_parts_are_subject_to_output_format_and_steering_has_no_completion(self):
+        document = example('output-correction')
+        document['agents']['developer']['interface'] = {'outputMediaTypes': ['image/png']}
+        self.assertEqual(check_completion(document, 'develop', {'responseMessages': [['visible']]})['error']['code'], 'OUTPUT_CONSTRAINT')
+        self.assertEqual(check_completion(example('steering'), 'adjust', {})['error']['code'], 'INVALID_REQUEST')
+
+    def test_recorded_selection_uses_raw_call_input_then_retains_configuration(self):
+        document = example('conversation')
+        document['agents']['helper']['configuration'] = {
+            'select': {'path': ['data', 'mode']}, 'cases': {'review': 'project'}}
+        data = {'mode': 'review', 'prompt': [{'value': 'This is data, not instructions.'}]}
+        record = {'origin': 'call', 'input': {'data': data}, 'configuration': 'project',
+                  'message': {'resources': {'result': {'value': data, 'mediaType': 'application/json'}}}}
+        self.assertTrue(check_delivery(document, 'helper', record)['valid'])
+        record['message'] = data
+        self.assertFalse(check_delivery(document, 'helper', record)['valid'])
+        record.update(origin='prepare', input={'prompt': [{'value': 'Correct the output.'}]},
+                      message={'prompt': [{'value': 'Correct the output.'}]}, retainedConfiguration='project')
+        self.assertTrue(check_delivery(document, 'helper', record)['valid'])
+        record.pop('retainedConfiguration')
+        self.assertEqual(check_delivery(document, 'helper', record)['error']['code'], 'CONFIGURATION')
+
+    def test_recorded_configuration_array_index_uses_json_integer_semantics(self):
+        document = example('conversation')
+        document['agents']['helper']['configuration'] = {
+            'select': {'path': ['data', loads(b'0.0')]}, 'cases': {'review': 'project'}}
+        record = {'origin': 'call', 'input': {'data': ['review']}, 'configuration': 'project',
+                  'message': {'resources': {'result': {'value': ['review'], 'mediaType': 'application/json'}}}}
+        self.assertTrue(check_delivery(document, 'helper', record)['valid'])
+
+    def test_recorded_origin_preserves_roles_and_never_guesses_a_message(self):
+        document = example('conversation')
+        message = {'prompt': [{'value': 'Analyze it.'}], 'resources': {'image': {'uri': 'file:///image.png', 'mediaType': 'image/png'}}}
+        record = {'origin': 'prepare', 'input': message, 'message': copy.deepcopy(message), 'configuration': 'project'}
+        self.assertTrue(check_delivery(document, 'helper', record)['valid'])
+        record.update(origin='call', input={'data': message})
+        self.assertFalse(check_delivery(document, 'helper', record)['valid'])
+        record['message'] = {'resources': {'result': {'value': message, 'mediaType': 'application/json'}}}
+        self.assertTrue(check_delivery(document, 'helper', record)['valid'])
+        record.update(origin='agent', input={'results': {'image': {'uri': 'file:///image.png'}}},
+                      message={'resources': {'result': {'value': '', 'mediaType': 'text/plain'}}})
+        self.assertTrue(check_delivery(document, 'helper', record)['valid'])
+
+    def test_recorded_recovery_rejects_pending_status_as_terminal_error(self):
+        document = example('conversation')
+        error = {'code': 'OUTPUT_CONSTRAINT', 'message': 'Missing report', 'details': []}
+        record = {'origin': 'error', 'input': {'error': error}, 'configuration': 'project',
+                  'message': {'resources': {'error': {'value': error, 'mediaType': 'application/json'}}}}
+        self.assertTrue(check_delivery(document, 'helper', record)['valid'])
+        error['code'] = 'STEERING_PENDING'
+        self.assertFalse(check_delivery(document, 'helper', record)['valid'])
+
+    def test_recorded_message_checks_only_symbolic_content_references(self):
+        document = example('conversation')
+        document['content'] = {'known': {'value': 'Instructions'}}
+        for origin in ('entry', 'prepare'):
+            for message in ({'prompt': [{'ref': 'known'}]}, {'resources': {'r': {'ref': 'known'}}},
+                            {'prompt': [{'value': {'ref': 'absent'}}]},
+                            {'resources': {'r': {'value': {'ref': 'absent'}}}}):
+                record = {'origin': origin, 'input': message, 'message': message, 'configuration': 'project'}
+                self.assertTrue(check_delivery(document, 'helper', record)['valid'])
+            for message in ({'prompt': [{'ref': 'absent'}]}, {'resources': {'r': {'ref': 'absent'}}}):
+                record = {'origin': origin, 'input': message, 'message': message, 'configuration': 'project'}
+                self.assertEqual(check_delivery(document, 'helper', record)['error']['code'], 'INVALID_RECORD')
+
+    def test_recorded_join_requires_complete_named_member_shapes(self):
+        document = example('conversation')
+        for members, valid in [({}, False), ({'bad/name': {}}, False), ({'x': None}, False),
+                               ({'x': {'text': 1}}, False), ({'x': {'other': 1}}, False),
+                               ({'x': {}}, True), ({'x': {'data': None}}, True),
+                               ({'x': {'text': 'review'}, 'y': {'resources': {}}}, True)]:
+            value = {'members': members}
+            record = {'origin': 'join', 'input': value, 'configuration': 'project',
+                      'message': {'resources': {'result': {'value': value, 'mediaType': 'application/json'}}}}
+            self.assertEqual(check_delivery(document, 'helper', record)['valid'], valid, members)
+
+    def test_delivery_api_rejects_non_string_agent_selectors(self):
+        for agent in ([], {}, None, 1):
+            self.assertEqual(check_delivery(example('conversation'), agent, {})['error']['code'], 'INVALID_REQUEST')
+
+    def test_external_steering_profile_requires_exact_owner_reference(self):
+        schema = SCHEMA['$defs']['ExternalDeliveryRequest']
+        self.assertTrue(shape({'agent': 'helper', 'message': {}}, schema))
+        request = {'agent': 'helper', 'message': {}, 'delivery': 'steering', 'owner': 'session-a/work-1'}
+        self.assertTrue(shape(request, schema))
+        for change in ({'owner': ''}, {'delivery': 'queue'}, {'delivery': 'interrupt'}):
+            self.assertFalse(shape({**request, **change}, schema))
+        request.pop('owner')
+        self.assertFalse(shape(request, schema))
+
     def test_parse_rejects_ambiguous_or_non_json_inputs(self):
         for raw in (b'{"a":1,"a":2}', b'{"a":NaN}', b'{"a":Infinity}',
                     b'{"x":"\\ud800"}', b'\xff', b'{} {}'):
@@ -217,11 +344,40 @@ def check_schema_library():
                    {'results': {'report': {'value': 'ok', 'mediaType': 'text/plain'}}},
                    {'results': {'report': {'uri': 'file:///report.txt'}}},
                    {'results': {'report': {'uri': 'file:///report.txt', 'value': 'bad'}}},
-                   {'choice': 'accepted'}, {'choice': 'bad\n'}, {'unknown': True}]
+                   {'choice': 'accepted'}, {'choice': 'bad\n'}, {'unknown': True},
+                   {'responseMessages': [[], ['part', '\n']]}, {'responseMessages': ['flat']},
+                   {'responseMessages': [[1]]}]
     library = jsonschema.Draft202012Validator(completion_schema)
     for record in completions:
         assert shape(record, completion_schema) == library.is_valid(record), record
-    print(f'Schema-library agreement on {len(cases())} documents and {len(completions)} completion records; no execution claim.')
+    records = {
+        'Error': [
+            {'code': 'OUTPUT_CONSTRAINT', 'message': '', 'details': []},
+            {'code': 'STEERING_PENDING', 'message': '', 'details': []},
+            {'code': 'OPERAND', 'message': '', 'details': [{'path': '/a~1b/0', 'rule': 'missing', 'expected': None}]},
+            {'code': 'OPERAND', 'message': '', 'details': [{'path': '/bad~2', 'rule': 'missing', 'expected': None}]}],
+        'DeliveryRecord': [
+            {'origin': 'prepare', 'input': {}, 'message': {}, 'configuration': 'project'},
+            {'origin': 'condition', 'input': {}, 'message': {}, 'configuration': 'project'},
+            {'origin': 'agent', 'input': {}, 'message': {}, 'configuration': 'project', 'retainedConfiguration': 'project'},
+            {'origin': 'call', 'input': {}, 'message': {'prompt': 'bad'}, 'configuration': 'project'}]}
+    records['JoinResult'] = [
+        {'members': {}}, {'members': {'bad/name': {}}}, {'members': {'x': None}},
+        {'members': {'x': {}}}, {'members': {'x': {'data': 0}}},
+        {'members': {'x': {'text': 'done'}, 'y': {'prompt': [{'value': 'Message'}]}}},
+        {'members': {'x': {'members': {'nested': {}}}}},
+        {'members': {'x': {'text': False}}}]
+    records['ExternalDeliveryRequest'] = [
+        {'agent': 'helper', 'message': {}},
+        {'agent': 'helper', 'message': {}, 'delivery': 'steering', 'owner': 'work/1'},
+        {'agent': 'helper', 'message': {}, 'delivery': 'steering'},
+        {'agent': 'helper', 'message': {}, 'owner': 'work/1'}]
+    for definition, samples in records.items():
+        record_schema = {**SCHEMA, '$ref': '#/$defs/' + definition}
+        library = jsonschema.Draft202012Validator(record_schema)
+        for record in samples:
+            assert shape(record, record_schema) == library.is_valid(record), record
+    print(f'Schema-library agreement on {len(cases())} documents and {len(completions)} completion records, plus {sum(len(samples) for samples in records.values())} boundary records; no execution claim.')
 
 
 if __name__ == '__main__':

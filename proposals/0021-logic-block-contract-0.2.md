@@ -294,8 +294,8 @@ validation rules are required before reader support can be claimed.
 The [bounded c1 contract](../experimental/agent-flow-0.2/README.md) proposes
 predicate syntax, current-input selectors, versioned bindings, Join ties and
 exhaustion, and output-correction diagnostics. Those choices still need final
-adoption. Work correlation, composition bindings, queue/steering boundaries,
-text assembly and approval admission remain to be completed. An author may
+adoption. The current c1 refinement proposes work correlation, queue/steering boundaries
+and text assembly. Composition bindings and approval admission remain separate work. An author may
 not resolve them silently through an implementation default. The
 [preparation index](../docs/0.2/README.md#before-a-02-release) tracks completion.
 
@@ -325,7 +325,7 @@ The [c1 contract](../experimental/agent-flow-0.2/README.md) makes the basic
 walkthroughs testable with declarations and a static reader. It proposes
 input-preserving Conditions, selectors restricted to current input, reusable
 content/skill/configuration bindings and direct fork-and-join with all-required or first-satisfactory selection.
-These concrete rules remain proposed. Complete the accepted steering direction,
+These concrete rules remain proposed. Review the bounded steering form below,
 the retained protected-action control and the portable input/completion/error
 boundary. Local composition is the proposed realization of reusable graphs,
 subject to review and adoption with the block contract. External contracts may
@@ -334,3 +334,19 @@ Configuration selection has a proposed c1 shape; claims about actual lifecycle
 support require evidence from consuming implementations. Such evidence is not a
 universal prerequisite to publishing the language draft. The experiment neither
 silently drops accepted directions nor supplies execution evidence.
+
+## Proposed c1 data and recovery boundary
+
+The [c1 delivery contract](../experimental/agent-flow-0.2/README.md#portable-delivery)
+now carries origin alongside the current value as integration metadata. Condition
+preserves both; Call does not promote a returned Message-shaped object into
+instructions. Prepare is the explicit construction boundary. Its `select`
+resource inserts an inline value; its `source` resource copies a selected content
+source, preserving URI, representation and information role. Missing operands
+and a selected value that is not a source fail before any prepared Message is
+delivered. There is no fetch or implicit media conversion.
+
+The c1 lifecycle rules correlate occurrence completion, queue admission,
+steering acknowledgement and Join membership. Its closed failure vocabulary
+and common error input apply across blocks. These rules remain proposed, and
+static record checks do not demonstrate delivery or scheduler behavior.
