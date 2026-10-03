@@ -72,7 +72,8 @@ code blocks, multiline code spans, or destinations with nested parentheses.
 
 ### Reader commands
 
-`./scripts/check.sh` runs all three Python reader suites and the corpus checks.
+`./scripts/check.sh` runs the Python reader suites, the persistent-Agent
+candidate checks and the corpus checks.
 Node.js is not required for that command. From the repository root, run the six
 Python and JavaScript reader suites with:
 
@@ -120,7 +121,8 @@ in the active Python environment, use a new empty directory outside the checkout
 This runs `check.sh`, all six reader suites, all three corpus comparisons,
 `conformance/check-corpus.py --jsonschema`, Draft 2020-12 validation of every
 produced official report, and `scripts/check-examples.py --jsonschema` for the
-56 example responses. Checks run sequentially. Independent checks continue after
+56 example responses. It also compares the persistent-Agent candidate shapes
+with `jsonschema`; this comparison is not a second semantic reader. Checks run sequentially. Independent checks continue after
 failure, and the command exits nonzero if any check fails. Logs, exit statuses,
 raw comparator responses, summaries, the tested SHA, dirty status and manifest
 SHA-256 remain in that directory. A dirty status means the SHA alone does not

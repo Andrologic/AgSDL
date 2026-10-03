@@ -334,6 +334,8 @@ It also proposes counting a Join visit when its anchor completes, before
 starting the group's members. One admitted group consumes one visit regardless
 of its outcome, acceptance mode or stop policy. A limit breach follows the
 Join's error path without dispatching a new group or stopping previous groups.
+A first-satisfactory Join stops evaluating acceptance once it retains a winner;
+later member results only resolve its remaining-work wait.
 A completion record may carry `choice` only for a step declaring a decision;
 otherwise the recorded-output checker rejects it as `INVALID_RECORD`.
 

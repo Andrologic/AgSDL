@@ -91,8 +91,8 @@ arrives, before initializing the Agent. Evaluate it once for that instance;
 later Messages use the retained configuration without evaluating the selector
 again. They need not repeat the selection data. Even a later value naming a
 different case is ordinary input, not a reconfiguration request. A fixed
-configuration can be prepared before its first Message. This is the proposed concrete rule for the
-accepted pre-initialization direction. An Agent can add `prompt`, `resources`, `skills`
+configuration can be prepared before its first Message. This is the proposed
+concrete rule for the accepted pre-initialization direction. An Agent can add `prompt`, `resources`, `skills`
 and an `interface`. The Agent is one persistent participant, including human
 participation where the integration supplies it. Visiting an Agent step again
 uses its existing instance and context. There is no per-visit initialization,
@@ -242,7 +242,12 @@ This is not a distributed clock requirement. Retain the winner; subsequent
 results cannot replace it. A completed negative result is not a technical error.
 If all members end without a qualifying result, fail with `NO_ACCEPTABLE_RESULT`.
 A member failure cannot be a winner, but another member may still qualify.
-A malformed acceptance input is a group error, not a false comparison.
+Before selection, a malformed acceptance input is a group error, not a false
+comparison. Once a winner is retained, stop evaluating `accept`. Remaining
+member results cannot invalidate it; their terminal status only resolves the
+stop/completion wait. A failed remaining member still reports its diagnostic
+and must be known to have ended; it is neither a successful result nor a stop
+confirmation.
 
 With default `stop-and-wait`, request stop of unfinished, unnecessary member
 work and hold the winner until that work is confirmed stopped or finishes.
@@ -275,10 +280,13 @@ For a first-satisfactory Join with `maxVisits: 1`, this proposed timeline applie
 | --- | --- | --- |
 | First anchor completion | 1 | Admit the group, then start its members. |
 | One member supplies an acceptable result | 1 | Retain the winner. With `finish`, continue now; otherwise request stop and wait. |
-| Remaining work confirms stop or completes | 1 | Release a waiting winner; do not repeat an earlier continuation. |
+| Remaining work confirms stop or completes | 1 | Release a waiting winner; do not evaluate `accept` again or repeat an earlier continuation. |
 | A loop produces another anchor completion | 1 | Reject the next group before dispatching its members, even if an earlier loser is still running under `finish`. |
 
-This is a contract example, not execution evidence.
+For example, after a result with `data.eligible: true` wins, a later conforming
+Call result without `eligible` only establishes that the remaining work finished.
+It does not trigger a missing-operand error in the now-inactive acceptance rule.
+These are contract examples, not execution evidence.
 
 Technical failure or a visit-limit breach follows `onError`, if supplied, with
 diagnostic information as its input. Otherwise the affected path stops with a
