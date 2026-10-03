@@ -104,6 +104,13 @@ a dynamic configuration could select `project` from the first Message's
 it reaches the same Agent using `project`, with no selection data to reconstruct.
 A later Message carrying a different mode still cannot change that instance.
 
+Open c1 question: when a Call result reaches an Agent through a Condition,
+does configuration selection read that flow value or the Message after delivery
+adaptation? The same boundary determines default delivery through intermediate
+blocks. This is not yet settled; static acceptance of such a path does not
+establish its portable Agent input. One-time selection and configuration
+persistence remain fixed in either case.
+
 No initial prompt means no implicit initial task. A configuration's explicit
 Engine binding is required even when the Agent waits for its first Message.
 Configuration has optional Model edition, Tool bindings, settings and capability
@@ -359,15 +366,18 @@ remain necessary before claiming cross-reader agreement for this new model.
 ## Remaining release scope
 
 This c1 is a testable foundation, not a proposal to silently remove accepted
-features from 0.2. Unknown syntax is rejected rather than ignored.
+features from 0.2. Unknown syntax is rejected rather than ignored. The
+[preparation index](../../docs/0.2/README.md#before-a-02-release) tracks completion;
+this table identifies c1's boundaries. Proposed forms still need adoption.
+Execution evidence is required only for the implementation support claimed.
 
 | Direction outside c1 | Remaining work before the complete 0.2 candidate |
 | --- | --- |
 | Steering | Delivery acknowledgement, attribution to active work and interaction with graph continuations. |
-| Composition | Local reusable graph expansion and parameter binding with stable Agent identity. |
+| Proposed composition | Review and adopt a local reusable graph form with parameter binding and stable Agent identity. |
 | Protected actions | Explicit approval admission bound to the action, scope and actual invocation. |
 | Interfaces and support | Structured-value constraints, support claims/evidence, delivery paths and relative URI bases. |
-| Completion and errors | Exact visible-text assembly, non-text transfer selection and remaining failure-kind contracts. Recorded output constraints have a checker; delivery and correction still need consuming implementation evidence. |
+| Completion and errors | Exact visible-text assembly, non-text transfer selection and remaining failure-kind contracts. Recorded output constraints have a checker; claims of actual delivery and correction need consuming implementation evidence. |
 | Validation and release | Broader graph rules, an independent semantic reader, review, migration guidance and adoption decision. |
 
 No release tag, official contract replacement or publication follows from this

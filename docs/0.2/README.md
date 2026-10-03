@@ -103,6 +103,13 @@ evidence of context continuity, media delivery or execution.
 
 ## Before a 0.2 release
 
+This is the maintained completion index. Decisions 0011/0012 establish the
+accepted directions; 0021 proposes their block forms and local composition.
+Preparing that proposal does not adopt every proposed mechanism. The final
+contract must settle them explicitly without silently dropping accepted scope.
+Execution evidence is required for claims about a consuming implementation,
+not for every possible Engine or Tool before publishing a language draft.
+
 | Requirement | Current state and next evidence |
 | --- | --- |
 | Consistent Agent/content/flow directions | Recorded in 0019/0020 and their decisions. |
