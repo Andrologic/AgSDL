@@ -14,7 +14,7 @@ remains a separate frozen experiment; neither is a normative adoption.
 
 ## Problem and scope
 
-The current experiment applies Instructions `before-invoke` and describes an
+The 0017 experiment applies Instructions `before-invoke` and describes an
 Agent definition independently of a running instance. It does not establish
 context continuity between calls. Adding documents to that structure as more
 Instructions would also confuse information with behavioral direction.
@@ -30,7 +30,7 @@ Both roles are independent of storage and delivery. A referenced instructions
 file contributes to the prompt; an inline report remains a resource.
 Engine selection and Tool contracts remain separate. This proposal does not
 redesign graphs, approvals or the complete configuration grammar. Media
-requirements extend the proposed Interface contract, not the current readers.
+requirements extend the proposed Interface contract, not the 0017 readers.
 
 ## Agent continuity
 

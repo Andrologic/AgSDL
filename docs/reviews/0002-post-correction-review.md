@@ -8,7 +8,7 @@
 ## Scope and method
 
 This review rechecks findings B-01 through B-05 and I-01 through I-10 from
-`docs/reviews/0001-cross-proposal-review.md`. It compares the corrected research
+[review 0001](0001-cross-proposal-review.md). It compares the corrected research
 note and proposals with `docs/scope.md`, Decision 0001, and each other. The
 proposals remain non-normative and pre-syntax.
 

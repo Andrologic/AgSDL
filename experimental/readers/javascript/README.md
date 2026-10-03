@@ -87,8 +87,8 @@ extensions, local and external G, approval and data-flow failures, annex
 payload errors, transitive exclusions, R states and prerequisite aggregation.
 A JavaScript-only run passed the report validation and targeted assertions for
 all 121 shared corpus cases with the harness integrated at
-`ef9659fb221b3f6e1f0a468f54dad6810f81e058`. The orchestrator owns the separate
-two-reader comparison; this result does not establish cross-reader agreement.
+`ef9659fb221b3f6e1f0a468f54dad6810f81e058`. That single-reader result is distinct
+from the later [two-reader comparison](../../../docs/reviews/0006-candidate-0.1.0-adoption.md#final-experimental-comparison).
 No external integration has been run.
 
 The parser and graph walkers run in memory. Resource exhaustion on adversarial

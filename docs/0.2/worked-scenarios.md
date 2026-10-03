@@ -57,7 +57,7 @@ context but are not implicitly retransmitted as the second result. This scenario
 delivers the second request after the first completes, so it needs no steering
 rule. Fresh context would require a different Agent.
 
-**What this exercises:** a basic conversation needs an Agent, Messages and
+A basic conversation needs an Agent, Messages and
 configured access. None of the four logic blocks is mandatory.
 
 ## 2. A developer and deterministic tests
@@ -124,7 +124,7 @@ retries the Call. The loop has no authored iteration limit; an author can add on
 under 0020. The bounded c1 contract now proposes per-step visit counting and
 limit handling; these rules remain unadopted.
 
-**What this exercises:** one persistent Agent plus Call, Condition and Prepare
+One persistent Agent plus Call, Condition and Prepare
 can express the loop. An Agent judgment is unnecessary for the exit-code rule.
 
 ## 3. Two reviews, one correction request
@@ -196,7 +196,7 @@ two separate Messages, queued by default. That is a different authored behavior.
 Neither a favorable review nor the label `accepted` grants permission for a
 separately protected action.
 
-**What this exercises:** parallel connections and an explicit Join are enough.
+Parallel connections and an explicit Join are enough.
 Grouping, Agent judgment and deterministic comparison remain separate operations.
 
 ## A custom implementation with the same visible contract

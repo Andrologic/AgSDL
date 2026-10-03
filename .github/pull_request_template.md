@@ -9,7 +9,7 @@ List the normative, editorial, schema, example, or tooling changes.
 ## Verification
 
 - [ ] `./scripts/check.sh` succeeds.
-- [ ] `./scripts/check-full.sh NEW_EVIDENCE_DIRECTORY` succeeds with Python, Node.js and optional `jsonschema` installed: six reader suites, three corpus comparisons, Draft 2020-12 corpus/report checks and 56 example responses.
+- [ ] The [full verification procedure](../CONTRIBUTING.md#full-local-and-ci-verification) succeeds with logs retained outside the checkout.
 - [ ] Retained logs and comparison summaries identify the tested SHA and any open limitations.
 - [ ] Normative changes have an accepted or linked proposal.
 - [ ] Schemas and examples remain aligned with normative text.

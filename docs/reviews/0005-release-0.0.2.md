@@ -6,6 +6,9 @@
 - Examined commit: `b1c22aa4bcd880136dc3bd3c46ef9db19237a716`
 - Review branch: `feature/review-0.0.2`, created from that verified local `develop`
 
+The file inventory below describes the reviewed tree. Retired session plans
+remain in the [published historical snapshot](https://github.com/Andrologic/AgSDL/blob/ebe403905ad626fe9a63ff4e8d9fb87f8f2ece07/docs/plans).
+
 ## Verdict and boundary
 
 Favorable for the cumulative work as a non-normative conceptual milestone,
