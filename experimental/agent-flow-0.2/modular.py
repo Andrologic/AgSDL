@@ -147,6 +147,10 @@ def expand_document(document, fail):
             entries[name] = (name,)
             continue
         entries[name] = (name, body['entry'])
+        if len(body['steps']) != 1:
+            for join_name, other in uses.items():
+                if other['type'] == 'join' and other['after'] == name:
+                    fail('JOIN_GROUP', ['flow', 'steps', join_name])
         if set(step['agents']) != set(body.get('agentParameters', [])) or set(step['next']) != set(body['outputs']):
             fail('COMPOSITION', loc)
         for param, agent in step['agents'].items():

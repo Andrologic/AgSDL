@@ -796,8 +796,9 @@ the CLI accepts a JSON array argument for an expanded step.
 Ordinary reachability, Join and approval checks run after expansion. Composition
 as a direct-fork Join member is rejected in this bounded version, including a
 one-step body. As `Join.after`, a one-step composition may be an anchor when
-its expanded step satisfies the ordinary direct-fork rules. A multi-step body
-cannot be that anchor and fails `JOIN_GROUP`. No arbitrary hierarchical
+its expanded step satisfies the ordinary direct-fork rules. A body with more than one declared step
+cannot be that anchor and fails `JOIN_GROUP`, even if an additional step is
+reachable only through an error route. No arbitrary hierarchical
 scheduler is implied. Other top-level parallel flow remains available. A body cannot export a result while another
 internal branch runs because internal fan-out is forbidden.
 

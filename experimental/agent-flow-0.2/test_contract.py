@@ -388,6 +388,14 @@ class ContractTests(unittest.TestCase):
         # Read the existing member names rather than inventing a different Join.
         d['flow']['steps']['develop']['next']['done']=d['flow']['steps']['reviews']['members'][:]
         self.assertTrue(validate(d)['valid'],validate(d))
+        error_only=copy.deepcopy(d)
+        error_only['compositions']['anchor']['outputs'].append('recovered')
+        error_only['compositions']['anchor']['steps']['start']['onError']=['recover']
+        error_only['compositions']['anchor']['steps']['recover']={
+            'type':'prepare','message':{},'next':[{'output':'recovered'}]}
+        error_only['flow']['steps']['develop']['next']['recovered']=[]
+        self.assertEqual(validate(error_only)['findings'],[
+            {'code':'JOIN_GROUP','path':'/flow/steps/reviews'}])
         body=d['compositions']['anchor']['steps']
         body['start']['next']=['finish']
         body['finish']={'type':'prepare','message':{},'next':[{'output':'done'}]}
