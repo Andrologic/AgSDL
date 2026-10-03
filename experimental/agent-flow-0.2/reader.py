@@ -172,6 +172,11 @@ def validate(document):
                 if step['type'] != 'join':
                     continue
                 loc = ['flow', 'steps', name]
+                mode = step.get('mode', 'all')
+                if mode == 'first' and 'accept' not in step:
+                    fail('JOIN_POLICY', loc)
+                if mode == 'all' and ('accept' in step or 'remaining' in step):
+                    fail('JOIN_POLICY', loc)
                 members = step['members']
                 anchor = steps.get(step['after'])
                 # c1 deliberately implements the direct fork-and-join shape only.

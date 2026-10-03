@@ -686,6 +686,21 @@
                 "$ref": "#/$defs/Name"
               },
               "minItems": 2
+            },
+            "mode": {
+              "enum": [
+                "all",
+                "first"
+              ]
+            },
+            "accept": {
+              "$ref": "#/$defs/Predicate"
+            },
+            "remaining": {
+              "enum": [
+                "stop-and-wait",
+                "finish"
+              ]
             }
           },
           "required": [
@@ -810,6 +825,27 @@
         "select",
         "cases"
       ],
+      "additionalProperties": false
+    },
+    "Completion": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "results": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Name"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Source"
+          }
+        },
+        "choice": {
+          "$ref": "#/$defs/Name"
+        }
+      },
       "additionalProperties": false
     }
   }

@@ -1,0 +1,116 @@
+{
+  "contract": "agsdl-exp-flow-0.2-c1",
+  "id": "output-correction",
+  "bindings": {
+    "coding": {
+      "contract": {
+        "identity": "example/agent-engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    },
+    "edit": {
+      "contract": {
+        "identity": "example/edit-files",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/engine-edit",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "project": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-write"
+      },
+      "tools": {
+        "edit": "edit"
+      }
+    }
+  },
+  "agents": {
+    "developer": {
+      "configuration": "project",
+      "prompt": [
+        {
+          "value": "Make minimal changes and explain them."
+        }
+      ],
+      "interface": {
+        "results": {
+          "report": {
+            "mediaTypes": [
+              "text/plain"
+            ],
+            "required": true
+          }
+        }
+      }
+    }
+  },
+  "flow": {
+    "entry": "develop",
+    "steps": {
+      "develop": {
+        "type": "agent",
+        "agent": "developer",
+        "onError": [
+          "classify-error"
+        ]
+      },
+      "classify-error": {
+        "type": "condition",
+        "test": {
+          "equals": [
+            {
+              "path": [
+                "error",
+                "code"
+              ]
+            },
+            {
+              "value": "OUTPUT_CONSTRAINT"
+            }
+          ]
+        },
+        "next": {
+          "true": [
+            "correct-output"
+          ],
+          "false": []
+        }
+      },
+      "correct-output": {
+        "type": "prepare",
+        "message": {
+          "prompt": [
+            {
+              "value": "Supply or correct the missing outputs described below. Preserve completed work; do not repeat its effects."
+            }
+          ],
+          "resources": {
+            "output-errors": {
+              "select": {
+                "path": [
+                  "error",
+                  "details"
+                ]
+              },
+              "mediaType": "application/json"
+            }
+          }
+        },
+        "next": [
+          "develop"
+        ]
+      }
+    }
+  }
+}

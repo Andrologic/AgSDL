@@ -60,8 +60,8 @@ decision with step completion.
 An explicit selection can instead transfer specified results, content or file
 references, including non-text content. Selecting a file reference does not
 grant access to its target. A previous step's reply cannot stand in for a
-missing current result. Exact selection syntax, text assembly and the treatment
-of a step without user-visible text remain candidate work.
+missing current result. No visible text alone is not an error when the required
+outputs are present. Exact selection syntax and text assembly remain candidate work.
 
 By default, a direct transfer to another Agent delivers the result as
 information in a Message. The recipient's instructions define what to do with
@@ -108,6 +108,14 @@ The blueprint may provide a recovery path. That path examines the actual state
 and decides what to do next, including continuing work or asking for help. It
 can use ordinary Agents and Messages; no separate recovery-agent type is needed.
 Without a recovery path, the affected path stops with a diagnostic.
+
+A missing or invalid required Agent output can take an explicit correction
+loop: send the output diagnostic and an authored correction request back to the
+same Agent. Its context and completed effects remain. The correction is new
+work; a previously completed response is not reopened or silently replaced.
+No extra Agent, text-only output requirement or blind replay of actions is needed.
+Normal successors wait for a conforming result. This does not automatically
+retry technical failures from Tools or Calls.
 
 An interruption may occur after files or other external state have changed.
 Failure does not imply that no work happened, that effects were undone, or that
@@ -164,7 +172,13 @@ or unrelated work. Its context remains available for later Messages.
 A stop request is not confirmation that work has stopped. It does not undo file
 edits or other effects. A consuming implementation must preserve that distinction;
 it cannot assert a clean workspace or stopped activity from the request alone.
-The next candidate must address how subsequent work interacts with pending stops.
+By default, retain the selected result and wait until the unnecessary work is
+confirmed stopped or has finished before activating successors. The blueprint's
+explicit let-finish alternative may continue without waiting; any remaining
+workspace activity then remains possible. Missing or rejected stop acknowledgement
+is not permission to proceed under the default. The integration must report it
+and wait for actual completion or follow declared recovery. No timeout, rollback
+or cancellation of unrelated work is implied.
 
 ## Small design scenarios
 

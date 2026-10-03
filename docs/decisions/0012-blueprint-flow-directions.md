@@ -98,3 +98,19 @@ additional preparation step. Record this direction in
 This accepts the content-role default, not a concrete JSON shape, the withdrawn
 0022 notation or its reference and grouping rules. The normative specification
 and existing reader contracts remain unchanged.
+
+## Refinement on 2026-10-03: output correction and pending stops
+
+The maintainer clarified that missing required output should be recoverable by
+sending the error back to the same Agent for correction, with its context intact.
+Completing a response does not end the Agent's lifetime. An absent text response
+alone does not fail work whose required outputs are present. This direction
+permits an explicit correction loop; it does not mandate replay of completed
+effects or automatic retry of every technical failure.
+
+For a first-satisfactory Join, the maintainer accepted waiting for confirmation
+that unnecessary work stopped, or for that work to finish, before continuing.
+The blueprint may explicitly allow remaining work to finish without waiting.
+A stop request alone does not satisfy the default wait. Record these directions
+in [0020](../../proposals/0020-blueprint-flow-0.2.md). Their concrete candidate
+checks do not establish actual cancellation, output delivery or execution support.

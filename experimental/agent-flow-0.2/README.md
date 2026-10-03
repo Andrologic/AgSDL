@@ -20,6 +20,8 @@ using this candidate to assess readiness.
 | [Conversation](examples/conversation.json) | One Agent, a reusable configuration and an explicit Engine binding; no initial prompt or graph. |
 | [Test loop](examples/test-loop.json) | A persistent developer, custom test Call, deterministic Condition and prepared correction Message. |
 | [Parallel reviews](examples/parallel-reviews.json) | Two final decisions grouped for the same developer completion, followed by one correction Message. |
+| [Output correction](examples/output-correction.json) | A missing required report produces a diagnostic and a correction Message for the same Agent. |
+| [First satisfactory review](examples/first-review.json) | Explicit acceptance rule, with stop-and-wait as the default for remaining work. |
 | [Multimedia and reuse](examples/multimedia-and-reuse.json) | Reusable skill instructions, two Engine choices, multiple media and required versus optional outputs. |
 
 All Engine, Tool, implementation and contract identities are fictional. Their
@@ -148,7 +150,8 @@ The proposed data boundary distinguishes:
 
 | Result field | Meaning |
 | --- | --- |
-| `text` | All user-visible response text for this completed Agent work, excluding reasoning, raw Tool exchanges and earlier history. Text assembly and the empty-text case remain release decisions. |
+| `text` | All user-visible response text for this completed Agent work, excluding reasoning, raw Tool exchanges and earlier history. Absent visible text alone is not a failure; required outputs still apply. Exact text assembly remains release work. |
+| `results` | Named output sources declared by the Agent Interface, including non-text artifacts. |
 | `choice` | An explicitly identified final Agent decision, only when the step requires one. |
 | `data` | A Call's normal result value, supplied under its external contract. |
 | `members` | A Join's complete member results, keyed by member step. |
@@ -202,21 +205,46 @@ these operations; it validates their declared shape and static references.
 
 ### Grouping, loops and failures
 
-A c1 `join` declares `after` and `members`. This bounded form supports a direct
+A c1 `join` declares `after` and `members`, with optional `mode`. Omitted mode
+means `all`; `first` requires an `accept` predicate evaluated on each current
+member result. `remaining` is permitted only in `first` mode and defaults to
+`stop-and-wait`; its explicit alternative is `finish`. Acceptance or stop-policy
+fields on an all-required Join are invalid. This bounded form supports a direct
 fork-and-join only: the anchor's ordinary `next` lists exactly the distinct
 members, and every normal outcome of each member connects only to this Join.
 The Join receives no other inputs, and members receive work only from normal
 anchor completion, never its error path.
 Neither the Join nor a member can be the flow entry. Members have no independent
-error continuation in c1; a failed required member fails its group, whose
-`onError` can provide recovery. Membership is not the number of incoming arrows.
+error continuation in c1; in all-required mode a failed required member fails
+its group, whose `onError` can provide recovery. First-satisfactory mode handles
+member failure as specified below. Membership is not the number of incoming arrows.
 
-Each anchor completion starts a distinct group. Join waits for one completed
-result from each member of that group and emits `members`. Negative business
+Each anchor completion starts a distinct group. In `all` mode, Join waits for
+one completed result from each member of that group and emits `members`. Negative business
 results can complete a group; technical failures cannot stand in for them.
 Late or duplicate results cannot reopen a completed group or fill another
 round. The association is a consumer obligation; static declarations cannot
 prove it. Direct convergence to an Agent delivers separate Messages instead.
+
+In `first` mode, select the first conforming result satisfying `accept`. Preserve
+that result under `members` with only its source member present. The proposed
+ordering is the integration's recorded completion order; if a delivery batch
+contains no order, use the declared `members` order to break that batch's tie.
+This is not a distributed clock requirement. Retain the winner; subsequent
+results cannot replace it. A completed negative result is not a technical error.
+If all members end without a qualifying result, fail with `NO_ACCEPTABLE_RESULT`.
+A member failure cannot be a winner, but another member may still qualify.
+A malformed acceptance input is a group error, not a false comparison.
+
+With default `stop-and-wait`, request stop of unfinished, unnecessary member
+work and hold the winner until that work is confirmed stopped or finishes.
+A rejected request or missing acknowledgement does not release successors.
+Report unsupported stopping and wait for completion or explicit recovery; do
+not fabricate confirmation. With `remaining: finish`, continue with the winner
+and let other members finish without a stop request. Their late results do not
+reopen the group. Neither mode resets Agents, cancels unrelated work, rolls back
+effects or guarantees exclusive workspace access. These are declared semantics;
+the static reader does not execute or attest to them.
 
 A return connection can form a loop through the same Agents. `maxVisits`, when
 present, is a positive limit per step within one flow invocation. Count each
@@ -229,7 +257,39 @@ Technical failure or a visit-limit breach follows `onError`, if supplied, with
 diagnostic information as its input. Otherwise the affected path stops with a
 diagnostic. An error never creates a normal result. Failure and interruption
 do not undo workspace effects, prove a sibling stopped or authorize retry.
-Exact failure-result fields and cancellation coordination remain release work.
+A failed required output uses the proposed error input
+`{"error":{"code":"OUTPUT_CONSTRAINT","message":"...","details":[...]}}`.
+Each detail identifies an output path, a violated rule and the expected formats
+or choices. The [output-correction example](examples/output-correction.json)
+branches on that code, prepares an instruction with the details as information,
+and sends a new Message to the same Agent. Other technical failures do not take
+this particular correction path. The loop has no implicit retry cap or replay
+of side effects. Exact contracts for other failure kinds remain release work.
+
+### Checking recorded outputs
+
+[check_completion.py](check_completion.py) validates a supplied completion record
+against the selected Agent step. A record has optional `text`, `results` and
+`choice`; each named result is a content source. Missing required results,
+incompatible declared formats or a missing/unknown required choice produce
+`OUTPUT_CONSTRAINT`. Absent text with valid required artifacts succeeds. Merely
+writing a completion sentence does not substitute for a required artifact.
+
+The command accepts a document path, an Agent step name and a JSON result path:
+
+```sh
+python3 experimental/agent-flow-0.2/check_completion.py DOCUMENT.json STEP RESULT.json
+```
+
+It checks recorded declarations only: it does not fetch a URI, inspect file
+bytes, verify MIME content, associate a real execution or enforce termination.
+The integration must check actual delivery and support. Invalid document/step
+requests yield `INVALID_REQUEST`; malformed records yield `INVALID_RECORD`.
+Those errors are distinct from an Agent's correctable output constraint failure.
+Exit codes are 0 for a conforming record, 1 for a rejected record/request and
+2 for command, file or parsing failure. No command schedules a correction.
+A runtime must route the error through the authored flow and supply the declared
+Message itself.
 
 ## Static checks and evidence limits
 
@@ -244,6 +304,7 @@ The reader implements these rule codes:
 | `RESOURCE_COLLISION` | Skill expansion cannot overwrite a resource. |
 | `OUTPUT_FORMAT` | A named result's formats fit the overall allowed output formats. |
 | `ROUTES` | Agent decision declarations and routing maps agree. |
+| `JOIN_POLICY` | A first-satisfactory Join has an acceptance rule, and policy fields match its mode. |
 | `JOIN_GROUP` | The declared group satisfies c1's bounded fork-and-join structure. |
 | `UNREACHABLE` | Every step is reachable from entry. |
 
@@ -266,11 +327,10 @@ features from 0.2. Unknown syntax is rejected rather than ignored.
 | Direction outside c1 | Remaining work before the complete 0.2 candidate |
 | --- | --- |
 | Steering | Delivery acknowledgement, attribution to active work and interaction with graph continuations. |
-| First-satisfactory Join | Acceptance predicate, ties, exhausted alternatives and pending-stop policy. |
 | Composition | Local reusable graph expansion and parameter binding with stable Agent identity. |
 | Protected actions | Explicit approval admission bound to the action, scope and actual invocation. |
 | Interfaces and support | Structured-value constraints, support claims/evidence, delivery paths and relative URI bases. |
-| Completion and errors | Exact visible-text assembly, absent text, selected non-text results and recovery input. |
+| Completion and errors | Exact visible-text assembly, non-text transfer selection and remaining failure-kind contracts. Recorded output constraints have a checker; delivery and correction still need consuming implementation evidence. |
 | Validation and release | Broader graph rules, an independent semantic reader, review, migration guidance and adoption decision. |
 
 No release tag, official contract replacement or publication follows from this

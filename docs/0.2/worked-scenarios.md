@@ -240,8 +240,10 @@ These walkthroughs expose the declarations the next candidate must make precise:
 | Block and composition grammar | Express the small comparison, preparation, Call binding and expandable local composition. |
 | Diagnostics and support | Distinguish malformed data, unavailable implementation, technical failure and completed negative result. |
 
-Queue/steering overlap, results without visible text, first-satisfactory ties and
-pending stops remain open in 0020/0021. These scenarios deliberately use sequential
+Queue/steering overlap and exact text assembly remain open in 0020/0021.
+Output correction and waiting for stops are now accepted directions; the
+[bounded candidate](../../experimental/agent-flow-0.2/README.md) proposes
+first-satisfactory ordering and exhaustion rules. These scenarios deliberately use sequential
 requests, visible reports and all-required Join; they do not settle those cases.
 Next, derive serialized examples and positive/negative conformance cases from a
 reviewed candidate. Repository checks on this document verify its maintenance,
