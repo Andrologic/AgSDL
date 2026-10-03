@@ -19,15 +19,17 @@ agreement does not adopt an edition or establish execution support. See the
 ## Reader checks
 
 Use the [shared commands](../CONTRIBUTING.md#reader-commands) for candidate-2,
-modular and official readers. The frozen KISS and active flow candidates have
-separate checks documented in their guides above.
+modular, official and persistent-Agent flow readers. The frozen KISS candidate
+keeps its separate checks documented in its guide above.
 
 ## Retain comparison reports
 
 The [full verification procedure](../CONTRIBUTING.md#full-local-and-ci-verification)
 retains comparison output and logs. For a single experiment, use its own
 [candidate-2](candidate-2/README.md#comparing-reader-commands),
-[modular](modular-candidate-1/README.md#compare-the-readers) or
+[modular](modular-candidate-1/README.md#compare-the-readers),
+[flow declaration](agent-flow-0.2/conformance/README.md) or
 [KISS](kiss-0.2/corpus/README.md) comparison command with a new evidence directory.
-The flow candidate currently has one semantic reader; its optional schema
-comparison is a shape check only.
+The flow candidate has independent Python and JavaScript declaration readers.
+Its optional schema-library comparison remains a shape check only; declaration
+agreement establishes no supplied-record or execution support.

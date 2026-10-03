@@ -73,8 +73,8 @@ code blocks, multiline code spans, or destinations with nested parentheses.
 ### Reader commands
 
 `./scripts/check.sh` runs the Python reader suites, the persistent-Agent
-candidate checks and the corpus checks.
-Node.js is not required for that command. From the repository root, run the six
+candidate checks, the declaration-comparator fault tests and the corpus checks.
+Node.js is not required for that command. From the repository root, run the eight
 Python and JavaScript reader suites with:
 
 ```sh
@@ -82,16 +82,16 @@ Python and JavaScript reader suites with:
 ```
 
 This separate command requires Python 3 and Node.js with `node --test` support.
-It uses their standard libraries and installs no packages. To compare all three
+It uses their standard libraries and installs no packages. To compare all four
 corpora, which additionally requires Python 3.9 or newer, run:
 
 ```sh
 ./scripts/check-readers.sh --compare
 ```
 
-The comparison mode covers candidate-2, modular candidate-1 and official 0.1.0
-in separate temporary report directories. Select one with `--compare
-candidate-2`, `--compare modular`, `--compare official` or `--compare 0.1.0`.
+The comparison mode covers candidate-2, modular candidate-1, official 0.1.0 and
+the persistent-Agent candidate in separate temporary report directories. Select one with `--compare
+candidate-2`, `--compare modular`, `--compare official`, `--compare 0.1.0` or `--compare flow`.
 The command prints each summary, preserves a nonzero comparator exit and removes
 its temporary reports on exit unless `AGSDL_REPORTS_DIR` is set. It does not run the reader test suites. Use the
 [experimental guide](experimental/README.md#retain-comparison-reports) or
@@ -118,7 +118,7 @@ in the active Python environment, use a new empty directory outside the checkout
 ./scripts/check-full.sh /tmp/agsdl-verification
 ```
 
-This runs `check.sh`, all six reader suites, all three corpus comparisons,
+This runs `check.sh`, all eight reader suites, all four corpus comparisons,
 `conformance/check-corpus.py --jsonschema`, Draft 2020-12 validation of every
 produced official report, and `scripts/check-examples.py --jsonschema` for the
 56 example responses. It also compares the persistent-Agent candidate shapes
@@ -134,7 +134,7 @@ upload runs even after a check fails. Running locally does not execute that
 workflow remotely or publish a release. `./scripts/check.sh` still requires
 only Python and its standard library, with Git provenance checked in checkouts.
 
-To retain just the three comparisons, run:
+To retain all four comparisons, run:
 
 ```sh
 AGSDL_REPORTS_DIR=/tmp/agsdl-comparisons ./scripts/check-readers.sh --compare
