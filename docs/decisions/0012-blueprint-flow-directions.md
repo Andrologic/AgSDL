@@ -87,3 +87,14 @@ it does not delegate that choice implicitly to the consuming software.
 [0020](../../proposals/0020-blueprint-flow-0.2.md#deterministic-conditions-and-agent-decisions)
 records this direction. The predicates and integration contract proposed in
 [0021](../../proposals/0021-logic-block-contract-0.2.md) remain subject to review.
+
+## Refinement on 2026-10-03: default delivery as information
+
+The maintainer confirmed that a direct connection delivers the source result
+as information. The destination's instructions or explicit Message preparation
+define the task to perform. An Agent already configured for that task needs no
+additional preparation step. Record this direction in
+[0020](../../proposals/0020-blueprint-flow-0.2.md#completion-and-result-transfer).
+This accepts the content-role default, not a concrete JSON shape, the withdrawn
+0022 notation or its reference and grouping rules. The normative specification
+and existing reader contracts remain unchanged.

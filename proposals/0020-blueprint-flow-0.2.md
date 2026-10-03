@@ -63,6 +63,15 @@ grant access to its target. A previous step's reply cannot stand in for a
 missing current result. Exact selection syntax, text assembly and the treatment
 of a step without user-visible text remain candidate work.
 
+By default, a direct transfer to another Agent delivers the result as
+information in a Message. The recipient's instructions define what to do with
+it. When the next task needs different instructions, explicit Message
+preparation can add an authored request alongside the result. A simple handoff
+needs no Prepare step when the recipient already has the required instructions.
+The connection itself does not promote the source's reply into instructions or
+replace the recipient's initial prompt or context. Concrete preparation syntax
+remains proposed in [0021](0021-logic-block-contract-0.2.md#prepare).
+
 Completion and a satisfactory result are different. A review that finishes with
 "changes needed" can take the normal correction path. Interface constraints
 still apply where declared; a malformed required result is not a valid success.

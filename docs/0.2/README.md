@@ -20,9 +20,6 @@ separate frozen static-reader candidate.
 4. [Worked scenarios](worked-scenarios.md): follow a basic conversation, a
    deterministic test loop and two grouped reviews, then inspect a custom Call.
    These semantic walkthroughs are illustrative, not executable fixtures.
-5. [Concrete notation](../../proposals/0022-concrete-flow-notation-0.2.md): JSON
-   sketches of those scenarios, with proposed references and explicit review
-   gates. They are not yet a candidate grammar accepted by readers.
 
 The Agent and flow directions are accepted under [Decision 0011](../decisions/0011-message-based-agent-model.md)
 and [Decision 0012](../decisions/0012-blueprint-flow-directions.md). Their concrete
@@ -45,7 +42,9 @@ A single Agent needs no flow graph. When flow is declared, steps describe work
 and connections describe what follows. Completing a step does not end an Agent's
 lifetime. By default, an Agent transfers all user-visible text produced for that
 work, including progress Messages and the final reply, without reasoning or raw
-Tool exchanges. Explicit result selection remains possible.
+Tool exchanges. Explicit result selection remains possible. A direct transfer
+to another Agent delivers information; the recipient's instructions or explicit
+Message preparation define the task.
 
 An Agent's routing decision is final when it completes the work. The integration
 identifies it explicitly. Routing preserves the visible text, including a
@@ -103,7 +102,7 @@ evidence of context continuity, media delivery or execution.
 | --- | --- |
 | Consistent Agent/content/flow directions | Recorded in 0019/0020 and their decisions. |
 | Reviewed common block contract | Proposed in 0021; resolve its remaining semantic choices before freezing a candidate. |
-| Concrete new edition | Initial notation proposed in 0022. Review its references and content roles, then complete binding declarations and grammar before allocating a candidate. |
+| Concrete new edition | Not allocated. Define Message and block serialization, references, conditions, selectors and configuration bindings from the reviewed semantics. |
 | Lifecycle and correlation rules | Define queue/steering boundaries, result grouping by current work, no-visible-text cases, duplicate/late data, first-satisfactory ties and pending stops. |
 | Examples, schema and static readers | Derive them from the selected candidate and compare independent readers on its own cases. Existing 0.1/0017 checks do not cover it. |
 | Integration evidence | Exercise actual Agent continuity, Tool calls, effects, media, approvals and stop behavior in consuming software before claiming support for them. |
