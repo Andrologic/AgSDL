@@ -1,10 +1,13 @@
 # Proposal 0020: message flow for persistent Agents
 
-Status: **0.2 design directions accepted under
-[Decision 0012](../docs/decisions/0012-blueprint-flow-directions.md); concrete
-serialization and validation rules remain proposed.**
-This extends the [Agent and Message model](0019-agent-prompt-and-resources.md).
-It does not change the implemented 0017 candidate or the published specification.
+Status: **proposal basis selected through the reviewed bounded 0.2.0 contract;
+local adoption recorded in [Decision 0013](../docs/decisions/0013-adopt-0.2.0-contract.md).
+Unreleased.** The [normative specification](../spec/0.2/README.md) controls the
+adopted concrete rules. This proposal preserves the design rationale and its
+broader alternatives; it is not an additional normative source. Historical
+"proposed" and candidate-work wording below describes the development of those
+rules, not outstanding adoption gates. Only the selected bounded contract is
+adopted. The frozen 0017 experiment and published 0.1 contract remain unchanged.
 
 ## Problem and scope
 
@@ -295,10 +298,9 @@ continuity, steering, recovery or cancellation. No automatic migration is promis
 
 ## Candidate review and integration evidence
 
-The flow directions above are settled at the design level. The current c1
-refinements below propose concrete delivery, text assembly, configuration,
-queueing, steering, correlation, Join and error rules. They need independent
-review before adoption. The [candidate specification](../spec/0.2/README.md) also
+The flow directions above are settled at the design level. The reviewed
+refinements below supply the bounded delivery, text assembly, configuration,
+queueing, steering, correlation, Join and error rules selected in Decision 0013. The [0.2.0 specification](../spec/0.2/README.md) also
 defines bounded composition, protected-action admission and scoped support
 declarations. Their requirements are separate from lifecycle evidence.
 
@@ -310,9 +312,9 @@ Continuity, delivery, completion and actual stop behavior require execution
 evidence from consuming implementations. Durable restart recovery, arbitrary
 Agent spawning and a runtime implementation are outside this proposal.
 
-### Proposed c1 refinements after review
+### Selected 0.2.0 refinements after review
 
-The [bounded c1 contract](../spec/0.2/README.md) proposes
+The [0.2.0 contract](../spec/0.2/README.md) defines
 selecting configuration once from the first input, then retaining it without
 reevaluating later Messages. This lets correction Messages carry the error
 without repeating initialization data. A later selection-like value cannot
@@ -327,8 +329,8 @@ later member results only resolve its remaining-work wait.
 A completion record may carry `choice` only for a step declaring a decision;
 otherwise the recorded-output checker rejects it as `INVALID_RECORD`.
 
-These clarify the experimental candidate. They do not change the accepted scope,
-adopt the grammar, or establish execution support.
+These rules were reviewed as candidate refinements and selected in Decision 0013.
+Their adoption does not establish execution support.
 
 ### Proposed portable delivery and lifecycle refinement
 
@@ -379,4 +381,4 @@ input `error` with `code`, `message` and `details`. Error continuations belong t
 the failed occurrence, keep diagnostic data informational and never manufacture
 successful results, retries, cancellation or rollback. Output correction is a
 new Message to the same persistent Agent. The concrete shapes and failure table
-are proposed in the [candidate](../spec/0.2/README.md).
+are defined in the [0.2.0 contract](../spec/0.2/README.md).

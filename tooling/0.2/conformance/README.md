@@ -1,17 +1,18 @@
 # Independent declaration-reader comparison
 
-This corpus checks the candidate [document rules](../../../spec/0.2/validation.md#static-checks-and-evidence-limits).
-It is non-normative tooling. Candidate semantics remain in `spec/0.2/`.
+This corpus checks the 0.2.0 [document rules](../../../spec/0.2/validation.md#static-checks-and-evidence-limits).
+It is non-normative tooling. 0.2.0 semantics remain in `spec/0.2/`.
 
 The Python and JavaScript readers consume the same original document bytes.
-The JavaScript semantic implementation was written from the candidate contract,
-schema and examples before comparing it with Python. It shares the schema as
+The JavaScript semantic implementation was written from the reviewed candidate
+contract, schema and examples before comparing it with Python. Edition promotion
+changed only its marker; the semantic implementation is unchanged. It shares the schema as
 data and the official JavaScript `json.mjs` scanner, number-token class and
 serializer as lexical utilities. It does not import or invoke a Python reader,
-reuse Python graph/constraint/URI algorithms, or import official semantic rules.
+reuse Python graph/constraint/URI algorithms, or import 0.1 semantic rules.
 Python source was inspected afterward to diagnose proven report differences.
 
-[cases.py](cases.py) authors 111 reproducible cases independently of the readers,
+[cases.py](cases.py) authors 112 reproducible cases independently of the readers,
 including the 11 maintained examples. It constructs fixture bytes and explicit
 expected rule-code sets, plus selected source, support and expansion observations.
 Every one of the 18 document rule codes has a failing witness. The corpus covers
@@ -29,9 +30,9 @@ libraries are used. No command installs packages, accesses the network, reads
 URI content or executes an Agent, Call or graph.
 
 ```sh
-node --test experimental/agent-flow-0.2/javascript/reader.test.mjs
-python3 experimental/agent-flow-0.2/conformance/test_compare.py -v
-python3 experimental/agent-flow-0.2/conformance/compare.py --reports /tmp/agsdl-flow-comparison
+node --test tooling/0.2/javascript/reader.test.mjs
+python3 tooling/0.2/conformance/test_compare.py -v
+python3 tooling/0.2/conformance/compare.py --reports /tmp/agsdl-flow-comparison
 ```
 
 The output directory must be empty. The comparator preserves every input byte
@@ -55,7 +56,7 @@ tests; executing the independent reader requires the separate Node.js command.
 ## Report interchange conventions
 
 These conventions describe the tools' diagnostic representation; they add no
-candidate execution or document semantics. Reports have the candidate contract,
+0.2.0 execution or document semantics. Reports have the 0.2.0 contract,
 `valid`, `scope`, `executionSupport` and `findings`. Parse failures use scope
 `parse`; other reports use `document-shape-and-declared-references`. Parse and
 shape failures omit declaration observations. Shape-valid documents include

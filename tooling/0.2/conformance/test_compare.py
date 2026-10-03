@@ -12,7 +12,7 @@ from pathlib import Path
 from compare import agree, canonical, decode, exact, run, validate
 from cases import cases
 
-REPORT = {'contract':'agsdl-exp-flow-0.2-c1', 'valid':True,
+REPORT = {'contract':'agsdl-0.2.0', 'valid':True,
           'scope':'document-shape-and-declared-references','executionSupport':'not-assessed',
           'findings':[],'sources':[],'support':[],'coreNeeds':[],'unassessed':[]}
 CASE = {'name':'fault','bytes':b'{}','codes':[],'assertions':{},'source':'comparator self-test'}

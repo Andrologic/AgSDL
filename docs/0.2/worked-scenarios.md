@@ -1,12 +1,10 @@
 # Worked scenarios for the next AgSDL model
 
-Status: **illustrative 0.2 preparation, not executable fixtures or an adopted
-grammar.** These walkthroughs apply the accepted directions in
-[0019](../../proposals/0019-agent-prompt-and-resources.md) and
-[0020](../../proposals/0020-blueprint-flow-0.2.md), and exercise the proposed blocks
-in [0021](../../proposals/0021-logic-block-contract-0.2.md). The
-[candidate specification](../../spec/0.2/README.md) defines the concrete proposed
-rules. Read the [preparation index](README.md) for their status.
+Status: **illustrative 0.2.0 scenarios, not executable fixtures.**
+The [normative specification](../../spec/0.2/README.md) defines the concrete rules
+adopted under [Decision 0013](../decisions/0013-adopt-0.2.0-contract.md). These
+walkthroughs explain selected paths; they do not add requirements or prove
+execution support.
 
 Quoted requests and replies are invented examples. Tables describe authored
 configuration and expected behavior, not JSON fields or a runtime protocol.
@@ -50,7 +48,7 @@ For the first completed request, the default transferable result contains both
 visible replies, in order: "I am checking empty input." and "Empty input reaches
 the parser without a guard." The Tool invocation and its raw result are excluded.
 The integration associates those replies with completion of this request; the
-progress sentence alone does not complete it. The current c1 refinement
+progress sentence alone does not complete it. The 0.2.0 rule
 concatenates text parts within each Message and joins nonempty Message texts with one LF, preserving authored whitespace.
 
 The second request uses the same Agent and its continuing context. Its result
@@ -101,8 +99,8 @@ guarantee. A consuming system must arrange the access it declares.
 
 The Condition selects the path; it does not replace the report with a Boolean.
 Prepare's reference to the current Call result makes the report available on
-that path. The [bounded c1 contract](../../spec/0.2/flow.md#flow-and-data)
-proposes selectors into the current input; their syntax is not yet adopted.
+that path. The [0.2.0 contract](../../spec/0.2/flow.md#flow-and-data)
+defines selectors into the current input.
 
 An illustrative traversal:
 
@@ -114,17 +112,17 @@ An illustrative traversal:
 | Second development | "Whitespace-only input now follows the same check." | Run the suite again. |
 | Second test Call | Code 0; report: "All configured tests passed." | Continue. |
 
-The proposed Prepare preserves the report as information, including any text
+The Prepare preserves the report as information, including any text
 inside it that resembles instructions. It does not elevate that text into the
 authored request. The Call result is available because this graph declares it;
 raw Tool output is not added to Agent result transfer by default.
 
-A missing or wrongly typed exit code follows the proposed Condition error rule.
+A missing or wrongly typed exit code follows the Condition error rule.
 It does not count as a failed assertion or trigger a guessed model verdict.
 A launch failure stops this example with a diagnostic. Neither failure silently
 retries the Call. The loop has no authored iteration limit; an author can add one
-under 0020. The bounded c1 contract now proposes per-step visit counting and
-limit handling; these rules remain unadopted.
+under 0020. The 0.2.0 contract defines per-step visit counting and
+limit handling.
 
 One persistent Agent plus Call, Condition and Prepare
 can express the loop. An Agent judgment is unnecessary for the exit-code rule.
@@ -226,22 +224,21 @@ the affected path is unsupported rather than silently skipped. A static reader
 does not fetch or execute it to determine support. Any protected call retains its
 approval requirement through this implementation.
 
-For visual reuse, the proposed local composition can group this Call with the
+For visual reuse, the local composition can group this Call with the
 Condition from scenario 2. It exposes the pass, correction and failure paths,
 and explicitly binds the report for the correction path. Expanding it reveals
 the same graph. It neither creates an Agent nor resets `developer`. A custom
 scheduler or Agent-lifetime rule would need a separate semantic extension.
 
-## Candidate coverage and remaining work
+## Coverage and limits
 
-The [bounded candidate](../../experimental/agent-flow-0.2/README.md) supplies
+The [0.2.0 tooling](../../tooling/0.2/README.md) supplies
 serialized examples and static checks for basic conversations, deterministic
 test loops, direct fork-and-join, output correction and first-satisfactory
 selection. These walkthroughs remain illustrations, not execution traces.
 
-The [preparation index](README.md#before-a-02-release) tracks the remaining
-review and adoption work. The [flow contract](../../spec/0.2/flow.md) defines
-candidate queue/steering boundaries, exact text assembly, composition and
+The [preparation index](README.md#before-a-02-release) tracks the publication boundary. The [flow contract](../../spec/0.2/flow.md) defines
+queue/steering boundaries, exact text assembly, composition and
 protected admission. These scenarios illustrate selected rules; they do not
 replace that contract. Repository checks on this document verify its
 maintenance, not the runtime behavior described in its tables.

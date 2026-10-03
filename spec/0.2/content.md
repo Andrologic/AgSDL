@@ -1,7 +1,7 @@
 # Content, configuration and declarations
 
-These are [candidate requirements pending maintainer adoption](README.md) for
-`agsdl-exp-flow-0.2-c1`. They do not replace the normative 0.1.0 contract.
+These are [normative 0.2.0 requirements](README.md) under `agsdl-0.2.0`.
+The separate normative 0.1.0 contract remains unchanged.
 
 ## Document and content
 
@@ -14,7 +14,7 @@ numbers and unpaired Unicode surrogates are rejected. The Python reader keeps
 decimal values exact while checking integer constraints; excessive parser
 depth or numeric representation limits produce a parse failure, not success.
 
-The [schema](../../experimental/agent-flow-0.2/schema.json) lists the closed shapes, required fields and types.
+The [schema](../../tooling/0.2/schema.json) lists the closed shapes, required fields and types.
 Omitted optional maps and lists are empty unless a rule below states otherwise.
 An object key inside a literal `value` or `settings` object is never interpreted
 as an AgSDL reference. Validators neither fetch content nor load implementation
@@ -45,14 +45,14 @@ Retain a successful selection once for that instance;
 later Messages use the retained configuration without evaluating the selector
 again. They need not repeat the selection data. Even a later value naming a
 different case is ordinary input, not a reconfiguration request. A fixed
-configuration can be prepared before its first Message. This is the proposed
+configuration can be prepared before its first Message. This is the
 concrete rule for the accepted pre-initialization direction. An Agent can add `prompt`, `resources`, `skills`
 and an `interface`. The Agent is one persistent participant, including human
 participation where the integration supplies it. Visiting an Agent step again
 uses its existing instance and context. There is no per-visit initialization,
 context reset, implicit spawning or hot configuration replacement.
 
-For example, in the [output-correction example](../../experimental/agent-flow-0.2/examples/output-correction.json),
+For example, in the [output-correction example](../../tooling/0.2/examples/output-correction.json),
 a dynamic configuration could select `project` from the first Message's
 `resources.mode.value`. The correction Message contains only `output-errors`:
 it reaches the same Agent using `project`, with no selection data to reconstruct.
@@ -189,4 +189,4 @@ unassessed. Core needs are listed separately as unassessed at their declarations
 Agent continuity, configuration selection, input/output formats and content
 roles, structure checks, delivery, steering, Join stopping, approval admission
 and composition expansion. External claims never discharge these core needs in
-this candidate. A consumer must assess its actual path before executing it.
+this edition. A consumer must assess its actual path before executing it.

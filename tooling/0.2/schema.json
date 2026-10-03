@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "AgSDL persistent Agent flow candidate c1 shapes",
-  "$comment": "Proposed bounded candidate. README.md defines semantics and exclusions. No execution support is implied.",
+  "title": "AgSDL 0.2.0 persistent Agent flow shapes",
+  "$comment": "Derived from spec/0.2/. The normative text defines semantics and exclusions. No execution support is implied.",
   "$ref": "#/$defs/Document",
   "$defs": {
     "Name": {
@@ -878,7 +878,7 @@
       "type": "object",
       "properties": {
         "contract": {
-          "const": "agsdl-exp-flow-0.2-c1"
+          "const": "agsdl-0.2.0"
         },
         "id": {
           "$ref": "#/$defs/Name"

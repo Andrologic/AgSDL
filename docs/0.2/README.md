@@ -1,45 +1,23 @@
-# Preparing AgSDL 0.2
+# AgSDL 0.2.0 guide
 
-Status: **concrete candidate requirements pending final review and maintainer
-adoption; unreleased.** This is the maintained entry point for the next model. Publication
-status remains in the [root README](../../README.md#release-status-and-history).
-The normative specification is still `agsdl-0.1.0`; the 0017 experiment is a
-separate frozen static-reader candidate.
+Status: **adopted locally under `agsdl-0.2.0`; unreleased.**
+[Decision 0013](../decisions/0013-adopt-0.2.0-contract.md) records the bounded
+selection. Publication status remains in the [root README](../../README.md#release-status-and-history).
+The separate 0.1.0 specification and frozen 0017 experiment retain their meaning.
 
 ## Read the current model
 
-Start with the [candidate specification](../../spec/0.2/README.md) for concrete
-requirements under `agsdl-exp-flow-0.2-c1`. Its chapters cover content and
-configuration, flow and lifecycle, and the scope of static and record checks.
-The following documents explain the accepted directions and their use:
+Start with the [normative specification](../../spec/0.2/README.md). Its chapters
+cover content and configuration, flow and lifecycle, and static and supplied-record
+checks. Then read the [worked scenarios](worked-scenarios.md),
+[serialized examples and tools](../../tooling/0.2/README.md), and
+[migration guide](migration.md). Scenarios and examples are illustrative;
+implementations and proposals do not override the normative requirements.
 
-1. [Agents and Messages](../../proposals/0019-agent-prompt-and-resources.md):
-   persistent participation, optional initial prompt, information, media and
-   configured access.
-2. [Flow](../../proposals/0020-blueprint-flow-0.2.md): completion, result transfer,
-   deterministic conditions and Agent decisions, loops, parallel connections,
-   explicit joins, recovery and message handling.
-3. [Logic blocks](../../proposals/0021-logic-block-contract-0.2.md): proposed common
-   contract for Condition, Join, Prepare, Call and reusable/custom behavior.
-   Includes small graphs and cases to exercise before implementation.
-4. [Worked scenarios](worked-scenarios.md): follow a basic conversation, a
-   deterministic test loop and two grouped reviews, then inspect a custom Call.
-   These semantic walkthroughs are illustrative, not executable fixtures.
-5. [Migration guide](migration.md): carry intent forward from official 0.1 or
-   the frozen 0017 experiment without relabelling either edition.
-
-The [tooling guide](../../experimental/agent-flow-0.2/README.md) supplies JSON
-examples, a schema and independent Python/JavaScript declaration readers. The
-[111-case comparison](../../experimental/agent-flow-0.2/conformance/README.md)
-covers static semantics and complete reports. The [candidate boundaries](../../spec/0.2/README.md#remaining-release-scope)
-remain explicit; passing checks does not adopt the candidate or establish
-execution support.
-
-The Agent and flow directions are accepted under [Decision 0011](../decisions/0011-message-based-agent-model.md)
-and [Decision 0012](../decisions/0012-blueprint-flow-directions.md). Their concrete
-serialization is specified in the candidate and remains proposed. Proposal 0021
-develops the common block contract; neither preparation nor static verification
-adopts its new rules.
+The independent Python and JavaScript declaration readers use a
+[112-case corpus](../../tooling/0.2/conformance/README.md). It includes the reviewed
+candidate cases promoted to 0.2.0 and rejection of the old candidate marker.
+Agreement covers those declarations and reports, not runtime support.
 
 ## How the pieces fit
 
@@ -78,63 +56,45 @@ selected, the configuration is retained; an initialized Agent keeps its context.
 blueprint follows stop, edit and start. Ordinary Messages and authorized
 workspace edits are activity within that configuration, not hot reconfiguration.
 
-## Proposed block vocabulary
+## Block vocabulary
 
-The [flow chapter](../../spec/0.2/flow.md) defines the concrete candidate rules;
-0021 records the proposed common block contract. This table is a summary.
+The [flow chapter](../../spec/0.2/flow.md) defines the rules. This table is a summary.
 
-| Function | Purpose | Status |
-| --- | --- | --- |
-| Condition | Apply an explicit deterministic rule to available data. | Direction accepted; predicates and contract proposed. |
-| Join | Wait for required results and group them, or select a first satisfactory result when configured. | Direction accepted; activation and data contract proposed. |
-| Prepare | Select and assemble content for the next step while preserving its roles. | Configurable transfer accepted; block form proposed. |
-| Call | Invoke a function, Tool or service through a declared implementation. | New flow contract proposed. |
-| Composition | Reuse a local graph of existing steps without changing their meaning or Agent identities. | Non-nested serial/conditional candidate form specified; adoption pending. |
-| Custom implementation | Supply a versioned behavior through Call and its declared requirements. | Proposed; no interpreter supplied by current readers. |
-| Approval control | Admit an explicitly protected action only under its required authorization. | Gate chains, capture and admission freshness specified in the candidate; adoption pending. |
+| Function | Purpose and bound |
+| --- | --- |
+| Condition | Apply an explicit deterministic predicate to current input. |
+| Join | Group required results or select a first satisfactory result within the direct-fork structure. |
+| Prepare | Select and assemble content while preserving instruction and information roles. |
+| Call | Invoke a declared external contract through its selected implementation. |
+| Composition | Expand a non-nested serial/conditional body, preserving existing Agent identities. |
+| Custom implementation | Supply versioned behavior through Call; static readers do not execute it. |
+| Approval control | Capture and admit a protected Agent or Call invocation through an ordered gate chain. |
 
 Parallel launch, loops and error paths do not need separate mandatory block
-families. Queueing belongs to message handling. A favorable opinion does not
-replace an approval control. A requested branch stop does not prove it stopped
-or undo its effects.
+families. A favorable opinion does not replace an approval control. A requested
+branch stop does not prove it stopped or undo its effects.
 
 ## Source hierarchy and earlier material
 
 | Material | Meaning |
 | --- | --- |
-| [Official specification](../../spec/README.md) | Normative 0.1.0 contract; official schemas and readers derive from it. |
-| [Candidate specification](../../spec/0.2/README.md) | Canonical concrete requirements under `agsdl-exp-flow-0.2-c1`, pending final review and maintainer adoption. |
-| [0017 experiment](../../experimental/kiss-0.2/README.md) | Frozen candidate `agsdl-exp-0017-c1`, with its own examples and 42-case static comparison. Its grammar does not implement the model described above. |
-| [0014 sketches](../research/0.2-design-examples.md) and [0015 reports](../../proposals/0015-validation-reports-0.2.md) | Earlier proposed inputs, not the current Agent/Message contract or adopted 0.2 syntax. |
-| [0019](../../proposals/0019-agent-prompt-and-resources.md) and [0020](../../proposals/0020-blueprint-flow-0.2.md) | Current accepted design directions; concrete rules are specified separately in the candidate, with integration evidence still scoped. |
-| [0021](../../proposals/0021-logic-block-contract-0.2.md) | Proposed shared block contract and semantic review scenarios. |
-
-Historical files retain their vocabulary and evidence. This preparation does not
-rewrite frozen snapshots, migrate old documents or relabel static comparison as
-evidence of context continuity, media delivery or execution.
+| [0.2.0 specification](../../spec/0.2/README.md) | Normative bounded contract, adopted locally and unreleased. |
+| [0.1.0 specification](../../spec/README.md) | Separate normative contract retained by the published 0.1.1 release. |
+| [0019](../../proposals/0019-agent-prompt-and-resources.md), [0020](../../proposals/0020-blueprint-flow-0.2.md), [0021](../../proposals/0021-logic-block-contract-0.2.md) | Proposal basis for the selected concrete 0.2.0 rules. Broader alternatives are not adopted implicitly. |
+| Persistent-Agent candidate | Historical `agsdl-exp-flow-0.2-c1` at `bc441c0a894d286c4585eee261b07f8f03f9d6a7`; retained reports keep that identity. |
+| [0017 experiment](../../experimental/kiss-0.2/README.md) | Frozen `agsdl-exp-0017-c1`, with its own 42-case comparison, predating persistent Agents. |
+| [0014 sketches](../research/0.2-design-examples.md), [0015 reports](../../proposals/0015-validation-reports-0.2.md) | Earlier proposed inputs, not additional normative 0.2.0 requirements. |
 
 ## Before a 0.2 release
 
-This is the maintained completion index. Decisions 0011/0012 establish the
-accepted directions; 0021 proposes their block forms and local composition.
-The candidate now specifies their bounded concrete forms. Final review must
-assess that scope explicitly; preparation does not adopt it or silently remove
-accepted directions.
-Execution evidence is required for claims about a consuming implementation,
-not for every possible Engine or Tool before publishing a language draft.
+The reviewed bounded contract and migration guide are integrated, with local
+adoption recorded in Decision 0013. The [release notes](../releases/0.2.0.md)
+record edition-specific verification and remain UNRELEASED. Publication needs
+separate authorization. Consuming implementations must demonstrate continuity,
+Tool effects, media delivery, authority enforcement and stopping before claiming
+support for those behaviors. Static agreement and record consistency do not
+supply that evidence.
 
-| Requirement | Current state and next evidence |
-| --- | --- |
-| Consistent Agent/content/flow directions | Recorded in 0019/0020 and their decisions. |
-| Reviewed common block contract | Concrete bounded rules are in the candidate specification; final review and explicit adoption remain. |
-| Concrete new edition | Candidate requirements retain `agsdl-exp-flow-0.2-c1`; final edition allocation and adoption remain pending. |
-| Lifecycle and correlation rules | c1 now proposes FIFO admission, explicit steering ownership and acknowledgement, unchanged-origin delivery, exact text assembly, Source selection and closed recovery inputs. Recorded checks cover delivery/configuration and output assembly; independent review and consuming integration evidence remain distinct requirements. |
-| Modular contract and declarations | c1 proposes non-nested serial/conditional composition, protected Agent/Call admission, bounded structured results, explicit URI origins and exact scoped support claims. Examples and adverse static/record checks cover this bounded form; the independent declaration comparison covers 111 cases; final review and adoption remain. |
-| Examples, schema and static readers | Examples, schema and independent Python/JavaScript declaration readers are available, with a 111-case comparison. Final coverage review remains pending. Existing 0.1/0017 evidence does not transfer. |
-| Integration evidence | Exercise actual Agent continuity, Tool calls, effects, media, approvals and stop behavior in consuming software before claiming support for them. |
-| Migration and publication | The [migration guide](migration.md) addresses the concrete candidate; [release notes](../releases/0.2.0.md) are an unreleased draft. Final review, edition allocation and explicit adoption/publication decisions remain. No publication is part of this preparation. |
-
-The scope remains generalist. It adds no product-specific runtime, default Engine,
-context-reset operation, arbitrary Agent spawning, hot configuration changes,
-universal event transport or package marketplace. Future capabilities must carry
-explicit semantics and support requirements rather than hiding in opaque fields.
+This edition adds no product-specific runtime, default Engine, context reset,
+arbitrary Agent spawning, hot configuration changes, universal transport or
+package marketplace.

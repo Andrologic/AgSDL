@@ -1,7 +1,7 @@
 # Static validation and supplied-record checks
 
-These are [candidate requirements pending maintainer adoption](README.md) for
-`agsdl-exp-flow-0.2-c1`. They do not replace the normative 0.1.0 contract.
+These are [normative 0.2.0 requirements](README.md) under `agsdl-0.2.0`.
+The separate normative 0.1.0 contract remains unchanged.
 Each check covers its stated declarations or supplied record. A successful
 check does not establish execution support. Commands run from the repository root.
 
@@ -20,7 +20,7 @@ The reader implements these rule codes:
 | `ROUTES` | Agent decision declarations and routing maps agree. |
 | `STEERING` | Steering names an ordinary step for the same Agent, has no independent normal continuation or decision, and the consumed steering request is not a Join member. |
 | `JOIN_POLICY` | A first-satisfactory Join has an acceptance rule, and policy fields match its mode. |
-| `JOIN_GROUP` | The declared group satisfies c1's bounded fork-and-join structure. |
+| `JOIN_GROUP` | The declared group satisfies this edition's bounded fork-and-join structure. |
 | `UNREACHABLE` | Every step is reachable from entry. |
 | `COMPOSITION` | Parameter/output coverage, serial body restrictions and supported Join boundary. |
 | `APPROVAL` | Finite ordered gate chain, actual target and absence of bypass. |
@@ -36,16 +36,16 @@ The report's validity means only these checks passed. It does not prove that
 every path terminates, an input selector will exist at runtime, a predicate is
 satisfied, permissions hold or an implementation is available.
 
-The named cases in [test_reader.py](../../experimental/agent-flow-0.2/test_reader.py) exercise these rules without
+The named cases in [test_reader.py](../../tooling/0.2/test_reader.py) exercise these rules without
 executing a described graph. The optional schema-library check cross-checks
-shape validation only. The [independent declaration-reader corpus](../../experimental/agent-flow-0.2/conformance/README.md)
-compares Python and JavaScript reports on 111 cases. Supplied-record checks below
+shape validation only. The [independent declaration-reader corpus](../../tooling/0.2/conformance/README.md)
+compares Python and JavaScript reports on 112 cases. Supplied-record checks below
 remain separately scoped Python tooling; independent review remains distinct
 from cross-reader agreement.
 
 ## Checking recorded outputs
 
-[check_completion.py](../../experimental/agent-flow-0.2/check_completion.py) validates a supplied completion record
+[check_completion.py](../../tooling/0.2/check_completion.py) validates a supplied completion record
 against the selected Agent step. A record has optional `text`, `responseMessages`, `results`, `baseUri` and
 `choice`; each named result is a content source. `responseMessages` is an ordered array
 of arrays of visible text parts, already filtered and attributed by the caller.
@@ -61,7 +61,7 @@ writing a completion sentence does not substitute for a required artifact.
 The command accepts a document path, an Agent step name and a JSON result path:
 
 ```sh
-python3 experimental/agent-flow-0.2/check_completion.py DOCUMENT.json STEP RESULT.json
+python3 tooling/0.2/check_completion.py DOCUMENT.json STEP RESULT.json
 ```
 
 It checks recorded declarations only: it does not fetch a URI, inspect file
@@ -78,11 +78,11 @@ Message itself.
 
 ## Checking recorded delivery
 
-[check_delivery.py](../../experimental/agent-flow-0.2/check_delivery.py) checks a claimed boundary record, without
+[check_delivery.py](../../tooling/0.2/check_delivery.py) checks a claimed boundary record, without
 running the graph or retaining live Agent state:
 
 ```sh
-python3 experimental/agent-flow-0.2/check_delivery.py DOCUMENT.json AGENT RECORD.json
+python3 tooling/0.2/check_delivery.py DOCUMENT.json AGENT RECORD.json
 ```
 
 A record contains `origin`, `input`, `message` and the claimed `configuration`.
@@ -139,7 +139,7 @@ authorization service. No runtime or decision intake service is implemented.
 
 ## Checking prepared content
 
-The deterministic `prepare_message` helper in [sources.py](../../experimental/agent-flow-0.2/sources.py) checks
+The deterministic `prepare_message` helper in [sources.py](../../tooling/0.2/sources.py) checks
 supplied preparation data. `agent_content` expands skill and Agent initialization
 content using the same source-origin rules, without initializing an Engine.
 The preparation helper's optional `source_bases` map associates selected

@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   echo "Usage: $0 [--compare [candidate-2|modular|official|0.1.0|flow] | --help]"
-  echo "Default: run the Python and Node.js tests for the historical editions, 0.1.0 and the persistent-Agent candidate."
+  echo "Default: run the Python and Node.js tests for the historical editions, 0.1.0 and 0.2.0."
   echo "--compare: compare all four corpora; AGSDL_REPORTS_DIR retains reports when set."
   echo "--compare candidate-2|modular|official|0.1.0|flow: compare only the selected corpus."
 }
@@ -55,8 +55,8 @@ if [[ $reader_mode == tests ]]; then
   node --test experimental/readers/javascript/reader.test.mjs
   node --test experimental/modular-candidate-1/readers/javascript/reader.test.mjs
   node --test tooling/readers/javascript/reader.test.mjs
-  python3 experimental/agent-flow-0.2/test_reader.py -v
-  node --test experimental/agent-flow-0.2/javascript/reader.test.mjs
+  python3 tooling/0.2/test_reader.py -v
+  node --test tooling/0.2/javascript/reader.test.mjs
   exit 0
 fi
 
@@ -123,10 +123,10 @@ if [[ $comparison_scope == all || $comparison_scope == official || $comparison_s
 fi
 
 if [[ $comparison_scope == all || $comparison_scope == flow ]]; then
-  flow_reports="$reader_reports/agent-flow-0.2"
-  echo "Comparing the persistent-Agent candidate declaration corpus."
+  flow_reports="$reader_reports/official-0.2.0"
+  echo "Comparing the 0.2.0 declaration corpus."
   flow_exit=0
-  python3 experimental/agent-flow-0.2/conformance/compare.py \
+  python3 tooling/0.2/conformance/compare.py \
     --reports "$flow_reports" || flow_exit=$?
   if [[ $flow_exit -ne 0 && $comparison_exit -eq 0 ]]; then
     comparison_exit=$flow_exit
