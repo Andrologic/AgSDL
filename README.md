@@ -4,7 +4,8 @@ AgSDL is the Agentic Systems Definition Language, an open,
 implementation-independent specification for describing agentic systems in a
 form that people and software can read, validate, exchange and version.
 
-AgSDL 0.2.0 is adopted locally and **unreleased**. Start with the
+AgSDL 0.2.0 is published as a bounded language draft under
+[`v0.2.0`](https://github.com/Andrologic/AgSDL/releases/tag/v0.2.0). Start with the
 [0.2.0 specification](spec/0.2/README.md), [tools and examples](tooling/0.2/README.md)
 and [migration guide](docs/0.2/migration.md). It describes persistent Agents,
 Messages, explicit configuration and optional flow under `agsdl-0.2.0`.
@@ -13,7 +14,7 @@ adoption; [release notes](docs/releases/0.2.0.md) record its limits and verifica
 Static readers do not execute Agents, Calls or graphs and do not prove runtime
 interoperability.
 
-AgSDL 0.1.1 remains the latest published release under `v0.1.1`, with unchanged
+AgSDL 0.1.1 remains available under `v0.1.1`, with unchanged
 contract `agsdl-0.1.0`. Its [specification](spec/README.md),
 [progressive examples](examples/0.1.0/README.md),
 [implementation walkthrough](docs/implementation-guide.md) and
@@ -106,9 +107,13 @@ the specification or the accepted 0.2 directions.
 
 ## Release status and history
 
-This section is the current publication-status reference. AgSDL 0.2.0 is adopted
-locally but unreleased; no release tag or publication is implied. Version 0.1.1 is
-published as [`v0.1.1`](https://github.com/Andrologic/AgSDL/releases/tag/v0.1.1)
+This section is the current publication-status reference. AgSDL 0.2.0 is the
+latest published release, tagged
+[`v0.2.0`](https://github.com/Andrologic/AgSDL/releases/tag/v0.2.0), with contract
+marker `agsdl-0.2.0`. It is a GitHub pre-release and a bounded, unstable language
+draft. See its [release notes](docs/releases/0.2.0.md) for scope and evidence.
+
+Version 0.1.1 was published as [`v0.1.1`](https://github.com/Andrologic/AgSDL/releases/tag/v0.1.1)
 for documentation, corpus and reader maintenance, as described in the
 [release notes](docs/releases/0.1.1.md). The contract marker remains `agsdl-0.1.0`. No new
 language syntax or execution feature is introduced by that maintenance scope.
@@ -120,7 +125,7 @@ normative 0.1.0 subset was adopted separately by
 [Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md); material outside its selection retains its recorded status unless adopted
 separately. Decision 0013 records the later bounded 0.2.0 adoption.
 
-- [0.2.0 unreleased notes](docs/releases/0.2.0.md)
+- [0.2.0 release notes](docs/releases/0.2.0.md)
 - [0.1.1 maintenance release notes](docs/releases/0.1.1.md)
 - [0.1.0 release notes](docs/releases/0.1.0.md)
 - [Delivery-readiness review](docs/reviews/0008-0.1.0-release-readiness.md)

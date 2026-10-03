@@ -19,7 +19,7 @@ experiments.
 [Decision 0013](../docs/decisions/0013-adopt-0.2.0-contract.md) records delegated
 local adoption of the bounded contract reviewed at
 `bc441c0a894d286c4585eee261b07f8f03f9d6a7`. The normative source is
-[spec/0.2/](../spec/0.2/README.md), with marker `agsdl-0.2.0`. It is unreleased.
+[spec/0.2/](../spec/0.2/README.md), with marker `agsdl-0.2.0`, published as `v0.2.0`.
 
 | Proposals | Disposition |
 | --- | --- |

@@ -1,6 +1,6 @@
 # AgSDL reference tooling
 
-For the locally adopted, unreleased 0.2.0 edition, use the [0.2 tools and examples](0.2/README.md)
+For the published 0.2.0 edition, use the [0.2 tools and examples](0.2/README.md)
 and [declaration comparison](0.2/conformance/README.md). The remainder of this
 guide documents the unchanged 0.1.0 reader contracts.
 

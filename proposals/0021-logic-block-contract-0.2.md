@@ -2,7 +2,7 @@
 
 Status: **proposal basis selected through the reviewed bounded 0.2.0 contract;
 local adoption recorded in [Decision 0013](../docs/decisions/0013-adopt-0.2.0-contract.md).
-Unreleased.** The [normative specification](../spec/0.2/README.md) controls the
+Published as `v0.2.0`.** The [normative specification](../spec/0.2/README.md) controls the
 adopted concrete rules. This proposal preserves the design rationale and its
 broader alternatives; it is not an additional normative source. Historical
 "proposed" and candidate-work wording below describes the development of those
@@ -301,7 +301,7 @@ exhaustion, and output-correction diagnostics. Decision 0013 selects those
 reviewed rules with work correlation, queue/steering boundaries, text assembly,
 bounded composition bindings and approval admission. Static and supplied-record
 checks retain their distinct evidence limits. The
-[preparation index](../docs/0.2/README.md#before-a-02-release) tracks completion.
+[release scope](../docs/0.2/README.md#release-scope) records the publication boundary.
 
 At minimum, the future conformance material should distinguish:
 

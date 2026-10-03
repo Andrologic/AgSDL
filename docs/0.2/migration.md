@@ -1,7 +1,7 @@
 # Migrating to AgSDL 0.2.0
 
 This guide maps system intent from the published `agsdl-0.1.0` contract or the
-frozen `agsdl-exp-0017-c1` experiment to the locally adopted, unreleased
+frozen `agsdl-exp-0017-c1` experiment to the published
 [0.2.0 contract](../../spec/0.2/README.md). It is a migration aid, not a normative
 contract or an automatic conversion recipe. [Decision 0013](../decisions/0013-adopt-0.2.0-contract.md)
 records the concrete selection from the 0019/0020/0021 proposal work.
@@ -133,4 +133,4 @@ The [0.2.0 specification](../../spec/0.2/README.md) defines block contracts,
 protected admission, scoped support declarations, lifecycle and delivery rules.
 Its common Agent model does not make a human Message an authorization. Preserve
 separate approval controls and verify actual implementation support for the
-selected configuration and path. Publication remains separate from local adoption.
+selected configuration and path.

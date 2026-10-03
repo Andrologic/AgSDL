@@ -2,7 +2,7 @@
 
 Status: **PROPOSED, not adopted, not implemented.** All candidate rules below
 are recommendations for maintainer arbitration, not additions to the current
-contract. Publication remains 0.1.1 with contract `agsdl-0.1.0`; see the
+contract. See the current
 [release status](../README.md#release-status-and-history). No 0.2 release marker
 is allocated here. The sketches deliberately use `PROPOSED-0014` and are not
 valid inputs to the current readers or schemas.

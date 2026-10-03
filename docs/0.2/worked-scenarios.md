@@ -237,7 +237,7 @@ serialized examples and static checks for basic conversations, deterministic
 test loops, direct fork-and-join, output correction and first-satisfactory
 selection. These walkthroughs remain illustrations, not execution traces.
 
-The [preparation index](README.md#before-a-02-release) tracks the publication boundary. The [flow contract](../../spec/0.2/flow.md) defines
+The [release scope](README.md#release-scope) records the publication boundary. The [flow contract](../../spec/0.2/flow.md) defines
 queue/steering boundaries, exact text assembly, composition and
 protected admission. These scenarios illustrate selected rules; they do not
 replace that contract. Repository checks on this document verify its

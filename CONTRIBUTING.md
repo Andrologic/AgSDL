@@ -1,6 +1,6 @@
 # Contributing to AgSDL
 
-AgSDL has a locally adopted, unreleased 0.2.0 contract and a published 0.1.1
+AgSDL has a published 0.2.0 contract and retains the 0.1.1
 maintenance release of the bounded 0.1.0 contract. It continues to define the
 broader problem and vocabulary. Contributions should reduce ambiguity
 and preserve the status of normative, proposed, experimental and illustrative

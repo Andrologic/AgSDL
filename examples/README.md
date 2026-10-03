@@ -1,6 +1,6 @@
 # AgSDL examples
 
-For the locally adopted, unreleased 0.2.0 edition, use the
+For the published 0.2.0 edition, use the
 [serialized examples](../tooling/0.2/README.md#read-or-check-an-example) and
 [worked scenarios](../docs/0.2/worked-scenarios.md).
 

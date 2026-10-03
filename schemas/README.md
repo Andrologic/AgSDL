@@ -1,7 +1,7 @@
 # AgSDL schemas
 
 The [0.2.0 schema](../tooling/0.2/schema.json) derives from the separately adopted
-[0.2.0 specification](../spec/0.2/README.md). That edition is unreleased.
+[0.2.0 specification](../spec/0.2/README.md). That edition is published as `v0.2.0`.
 The schemas below retain the published 0.1.0 contract.
 
 ## AgSDL 0.1.0 schemas

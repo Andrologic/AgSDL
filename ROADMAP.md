@@ -6,11 +6,10 @@ Publication status and release history are maintained in the
 
 ## Current edition: AgSDL 0.2.0
 
-The [0.2.0 specification](spec/0.2/README.md) is adopted locally under
+The [0.2.0 specification](spec/0.2/README.md) is adopted under
 [Decision 0013](docs/decisions/0013-adopt-0.2.0-contract.md). The reviewed bounded
 contract, migration guide and independent declaration readers are integrated.
-[Release notes](docs/releases/0.2.0.md) remain UNRELEASED. Publication requires
-separate authorization; this preparation creates no tag or remote release.
+[Release notes](docs/releases/0.2.0.md) describe the published `v0.2.0` draft.
 Execution support claims need evidence from consuming implementations.
 
 ## Maintenance: AgSDL 0.1

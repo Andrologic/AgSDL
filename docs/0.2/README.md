@@ -1,6 +1,6 @@
 # AgSDL 0.2.0 guide
 
-Status: **adopted locally under `agsdl-0.2.0`; unreleased.**
+Status: **published bounded draft under `agsdl-0.2.0`.**
 [Decision 0013](../decisions/0013-adopt-0.2.0-contract.md) records the bounded
 selection. Publication status remains in the [root README](../../README.md#release-status-and-history).
 The separate 0.1.0 specification and frozen 0017 experiment retain their meaning.
@@ -78,19 +78,18 @@ branch stop does not prove it stopped or undo its effects.
 
 | Material | Meaning |
 | --- | --- |
-| [0.2.0 specification](../../spec/0.2/README.md) | Normative bounded contract, adopted locally and unreleased. |
+| [0.2.0 specification](../../spec/0.2/README.md) | Normative bounded contract published as `v0.2.0`. |
 | [0.1.0 specification](../../spec/README.md) | Separate normative contract retained by the published 0.1.1 release. |
 | [0019](../../proposals/0019-agent-prompt-and-resources.md), [0020](../../proposals/0020-blueprint-flow-0.2.md), [0021](../../proposals/0021-logic-block-contract-0.2.md) | Proposal basis for the selected concrete 0.2.0 rules. Broader alternatives are not adopted implicitly. |
 | Persistent-Agent candidate | Historical `agsdl-exp-flow-0.2-c1` at `bc441c0a894d286c4585eee261b07f8f03f9d6a7`; retained reports keep that identity. |
 | [0017 experiment](../../experimental/kiss-0.2/README.md) | Frozen `agsdl-exp-0017-c1`, with its own 42-case comparison, predating persistent Agents. |
 | [0014 sketches](../research/0.2-design-examples.md), [0015 reports](../../proposals/0015-validation-reports-0.2.md) | Earlier proposed inputs, not additional normative 0.2.0 requirements. |
 
-## Before a 0.2 release
+## Release scope
 
-The reviewed bounded contract and migration guide are integrated, with local
-adoption recorded in Decision 0013. The [release notes](../releases/0.2.0.md)
-record edition-specific verification and remain UNRELEASED. Publication needs
-separate authorization. Consuming implementations must demonstrate continuity,
+The bounded contract and migration guide are published, with adoption recorded
+in Decision 0013. The [release notes](../releases/0.2.0.md) record edition-specific
+verification. Consuming implementations must demonstrate continuity,
 Tool effects, media delivery, authority enforcement and stopping before claiming
 support for those behaviors. Static agreement and record consistency do not
 supply that evidence.

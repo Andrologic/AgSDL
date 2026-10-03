@@ -1,9 +1,9 @@
 # AgSDL 0.2.0
 
-Status: **adopted locally; UNRELEASED.** [Decision 0013](../../docs/decisions/0013-adopt-0.2.0-contract.md)
+Status: **published bounded draft under `v0.2.0`.** [Decision 0013](../../docs/decisions/0013-adopt-0.2.0-contract.md)
 records the bounded adoption under delegated maintainer authority. The document
 and report marker is `agsdl-0.2.0`. The [0.1.0 specification](../README.md)
-retains its meaning and bytes; 0.1.1 remains the latest published release in the
+retains its meaning and bytes. Publication history is maintained in the
 [release-status reference](../../README.md#release-status-and-history).
 
 This index and its three chapters define the normative 0.2.0 contract.
@@ -48,5 +48,3 @@ Execution evidence is required for the implementation support claimed, not for
 every possible Engine or Tool before publishing a language draft. The
 [tooling guide](../../tooling/0.2/README.md) provides commands and examples;
 [release notes](../../docs/releases/0.2.0.md) record verification and limits.
-Local adoption does not publish a release. Publication remains separately
-authorized.

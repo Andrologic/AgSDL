@@ -1,6 +1,6 @@
 # Persistent-Agent flow 0.2.0 tools and examples
 
-Status: **bounded adopted edition `agsdl-0.2.0`, unreleased.** The normative requirements are
+Status: **bounded published edition `agsdl-0.2.0`.** The normative requirements are
 in [spec/0.2/](../../spec/0.2/README.md). This directory supplies derived shapes,
 examples and non-normative static tooling. The [bounded scope](../../spec/0.2/README.md#bounded-scope)
 separates normative requirements from implementation evidence.

@@ -1,6 +1,6 @@
 # AgSDL agent instructions
 
-AgSDL 0.2.0 is adopted locally under `agsdl-0.2.0`, unreleased.
+AgSDL 0.2.0 uses contract marker `agsdl-0.2.0`.
 The published 0.1.1 release retains contract marker `agsdl-0.1.0`.
 It is neither stable nor universal.
 Read [release status](README.md#release-status-and-history) before stating

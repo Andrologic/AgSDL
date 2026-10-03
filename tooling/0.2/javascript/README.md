@@ -1,7 +1,7 @@
 # Independent JavaScript 0.2.0 reader
 
 This standard-library Node.js reader checks 0.2.0 document declarations.
-Its semantic source is [spec/0.2/](../../../spec/0.2/README.md), adopted locally. It preserves the `agsdl-0.2.0` marker and reports execution
+Its semantic source is [spec/0.2/](../../../spec/0.2/README.md), published as `v0.2.0`. It preserves the `agsdl-0.2.0` marker and reports execution
 support as `not-assessed`.
 
 ```sh

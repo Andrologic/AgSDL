@@ -2,7 +2,7 @@
 
 Status: **proposal basis selected through the reviewed bounded 0.2.0 contract;
 local adoption recorded in [Decision 0013](../docs/decisions/0013-adopt-0.2.0-contract.md).
-Unreleased.** The [normative specification](../spec/0.2/README.md) controls the
+Published as `v0.2.0`.** The [normative specification](../spec/0.2/README.md) controls the
 adopted concrete rules. This proposal preserves the design rationale and its
 broader alternatives; it is not an additional normative source. Historical
 "proposed" and candidate-work wording below describes the development of those
