@@ -1,7 +1,8 @@
 # Contributing to AgSDL
 
-AgSDL has a published, bounded 0.1.0 first-draft contract and continues to
-define the broader problem and vocabulary. Contributions should reduce ambiguity
+AgSDL has a locally adopted, unreleased 0.2.0 contract and a published 0.1.1
+maintenance release of the bounded 0.1.0 contract. It continues to define the
+broader problem and vocabulary. Contributions should reduce ambiguity
 and preserve the status of normative, proposed, experimental and illustrative
 material.
 
@@ -72,8 +73,7 @@ code blocks, multiline code spans, or destinations with nested parentheses.
 
 ### Reader commands
 
-`./scripts/check.sh` runs the Python reader suites, the persistent-Agent
-candidate checks, the declaration-comparator fault tests and the corpus checks.
+`./scripts/check.sh` runs the Python reader suites, the 0.2.0 checks, the declaration-comparator fault tests and the corpus checks.
 Node.js is not required for that command. From the repository root, run the eight
 Python and JavaScript reader suites with:
 
@@ -90,7 +90,7 @@ corpora, which additionally requires Python 3.9 or newer, run:
 ```
 
 The comparison mode covers candidate-2, modular candidate-1, official 0.1.0 and
-the persistent-Agent candidate in separate temporary report directories. Select one with `--compare
+official 0.2.0 in separate temporary report directories. Select one with `--compare
 candidate-2`, `--compare modular`, `--compare official`, `--compare 0.1.0` or `--compare flow`.
 The command prints each summary, preserves a nonzero comparator exit and removes
 its temporary reports on exit unless `AGSDL_REPORTS_DIR` is set. It does not run the reader test suites. Use the
@@ -98,7 +98,7 @@ its temporary reports on exit unless `AGSDL_REPORTS_DIR` is set. It does not run
 [official corpus guide](conformance/README.md#reader-comparison) to retain raw
 reports.
 
-Run the official focused suites directly with:
+Run the 0.1.0 focused suites directly with:
 
 ```sh
 node --test tooling/readers/javascript/reader.test.mjs
@@ -120,8 +120,8 @@ in the active Python environment, use a new empty directory outside the checkout
 
 This runs `check.sh`, all eight reader suites, all four corpus comparisons,
 `conformance/check-corpus.py --jsonschema`, Draft 2020-12 validation of every
-produced official report, and `scripts/check-examples.py --jsonschema` for the
-56 example responses. It also compares the persistent-Agent candidate shapes
+produced 0.1.0 report, and `scripts/check-examples.py --jsonschema` for the
+56 example responses. It also compares the 0.2.0 shapes
 with `jsonschema`; this comparison is not a second semantic reader. Checks run sequentially. Independent checks continue after
 failure, and the command exits nonzero if any check fails. Logs, exit statuses,
 raw comparator responses, summaries, the tested SHA, dirty status and manifest

@@ -1,10 +1,14 @@
 # AgSDL examples
 
+For the locally adopted, unreleased 0.2.0 edition, use the
+[serialized examples](../tooling/0.2/README.md#read-or-check-an-example) and
+[worked scenarios](../docs/0.2/worked-scenarios.md).
+
 For the published 0.1.0 contract, start with the
 [progressive Document/G/R examples](0.1.0/README.md). It is non-normative, uses the official
 edition marker and can be checked with both official readers. The
 conceptual examples below preserve their earlier proposal-era status. For the
-next model, use the [0.2 worked scenarios](../docs/0.2/worked-scenarios.md).
+0.2 model, use the worked scenarios linked above.
 
 The first two examples originated in the AgSDL 0.0.1 conceptual release. The
 versions below follow proposals 0001–0004, including the composition

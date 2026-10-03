@@ -90,7 +90,7 @@ def validate(report, case):
     for field in extras - {'expandedFlow'}:
         if field in report and not isinstance(report[field], list):
             errors.append(f'invalid {field} array')
-    if report['contract'] != 'agsdl-exp-flow-0.2-c1' or report['scope'] not in ('document-shape-and-declared-references', 'parse') or report['executionSupport'] != 'not-assessed':
+    if report['contract'] != 'agsdl-0.2.0' or report['scope'] not in ('document-shape-and-declared-references', 'parse') or report['executionSupport'] != 'not-assessed':
         errors.append('incorrect report identity or scope')
     if type(report['valid']) is not bool or not isinstance(report['findings'], list):
         return errors + ['invalid verdict or findings']

@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 SCHEMA = json.loads(Path(__file__).with_name('schema.json').read_text())
-MARKER = 'agsdl-exp-flow-0.2-c1'
+MARKER = 'agsdl-0.2.0'
 
 
 def equal(a, b):

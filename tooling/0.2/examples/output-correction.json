@@ -1,6 +1,6 @@
 {
-  "contract": "agsdl-exp-flow-0.2-c1",
-  "id": "test-loop",
+  "contract": "agsdl-0.2.0",
+  "id": "output-correction",
   "bindings": {
     "coding": {
       "contract": {
@@ -10,20 +10,6 @@
       "implementation": {
         "identity": "example/local-engine",
         "version": "1"
-      }
-    },
-    "tests": {
-      "contract": {
-        "identity": "example/test-suite",
-        "version": "1"
-      },
-      "implementation": {
-        "identity": "example/local-tests",
-        "version": "1"
-      },
-      "settings": {
-        "workspace": "file:///workspace/project",
-        "suite": "unit"
       }
     },
     "edit": {
@@ -56,7 +42,17 @@
         {
           "value": "Make minimal changes and explain them."
         }
-      ]
+      ],
+      "interface": {
+        "results": {
+          "report": {
+            "mediaTypes": [
+              "text/plain"
+            ],
+            "required": true
+          }
+        }
+      }
     }
   },
   "flow": {
@@ -65,56 +61,49 @@
       "develop": {
         "type": "agent",
         "agent": "developer",
-        "next": [
-          "tests"
+        "onError": [
+          "classify-error"
         ]
       },
-      "tests": {
-        "type": "call",
-        "binding": "tests",
-        "next": [
-          "passed"
-        ]
-      },
-      "passed": {
+      "classify-error": {
         "type": "condition",
         "test": {
           "equals": [
             {
               "path": [
-                "data",
-                "exitCode"
+                "error",
+                "code"
               ]
             },
             {
-              "value": 0
+              "value": "OUTPUT_CONSTRAINT"
             }
           ]
         },
         "next": {
-          "true": [],
-          "false": [
-            "correction"
-          ]
+          "true": [
+            "correct-output"
+          ],
+          "false": []
         }
       },
-      "correction": {
+      "correct-output": {
         "type": "prepare",
         "message": {
           "prompt": [
             {
-              "value": "Fix the failures in the test report and explain your changes."
+              "value": "Supply or correct the missing outputs described below. Preserve completed work; do not repeat its effects."
             }
           ],
           "resources": {
-            "test-report": {
+            "output-errors": {
               "select": {
                 "path": [
-                  "data",
-                  "report"
+                  "error",
+                  "details"
                 ]
               },
-              "mediaType": "text/plain"
+              "mediaType": "application/json"
             }
           }
         },

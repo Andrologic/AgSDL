@@ -1,5 +1,5 @@
 {
-  "contract": "agsdl-exp-flow-0.2-c1",
+  "contract": "agsdl-0.2.0",
   "id": "steering",
   "bindings": {
     "coding": {

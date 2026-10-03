@@ -30,6 +30,7 @@ def cases():
         mutate(value)
         result.append((name, value, code))
 
+    case('rejected-candidate-edition', 'conversation', lambda d: d.update(contract='agsdl-exp-flow-0.2-c1'), 'SHAPE')
     case('wrong-edition', 'conversation', lambda d: d.update(contract='agsdl-0.1.0'), 'SHAPE')
     case('undeclared-field', 'conversation', lambda d: d.update(runtimeReset=True), 'SHAPE')
     case('configuration-missing', 'conversation', lambda d: d['configurations'].clear(), 'REFERENCE')

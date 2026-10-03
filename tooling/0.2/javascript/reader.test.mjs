@@ -6,7 +6,7 @@ import { parse, equal, shape, satisfies, NumberToken } from './values.mjs';
 import { resolveUri } from './declarations.mjs';
 
 const base = () => ({
-  contract: 'agsdl-exp-flow-0.2-c1',
+  contract: 'agsdl-0.2.0',
   id: 'test',
   bindings: {
     engine: {
@@ -31,6 +31,14 @@ test('all maintained examples pass the independent declaration reader', () => {
     );
     assert.equal(result.executionSupport, 'not-assessed');
   }
+});
+test('the candidate marker is a distinct rejected edition', () => {
+  const doc = base();
+  doc.contract = 'agsdl-exp-flow-0.2-c1';
+  const result = report(doc);
+  assert.equal(result.contract, 'agsdl-0.2.0');
+  assert.equal(result.valid, false);
+  assert.deepEqual(result.findings, [{ code: 'SHAPE', path: '' }]);
 });
 test('numbers are exact, mathematical integers and distinct from booleans', () => {
   assert.equal(equal(number('1'), number('1.0e0')), true);

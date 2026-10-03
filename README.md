@@ -4,46 +4,39 @@ AgSDL is the Agentic Systems Definition Language, an open,
 implementation-independent specification for describing agentic systems in a
 form that people and software can read, validate, exchange and version.
 
-AgSDL 0.1.1 is published as a maintenance release of the bounded first-draft
-MVP under `v0.1.1`. Its specification contract remains `agsdl-0.1.0`. It is
-not a stable or universal language release.
-It defines a deterministic Document/Graph/Runtime declaration model and seven
-static reader operations. It does not define Agent execution, engine launch,
-hot reload, deployment or runtime interoperability.
+AgSDL 0.2.0 is adopted locally and **unreleased**. Start with the
+[0.2.0 specification](spec/0.2/README.md), [tools and examples](tooling/0.2/README.md)
+and [migration guide](docs/0.2/migration.md). It describes persistent Agents,
+Messages, explicit configuration and optional flow under `agsdl-0.2.0`.
+[Decision 0013](docs/decisions/0013-adopt-0.2.0-contract.md) records the bounded
+adoption; [release notes](docs/releases/0.2.0.md) record its limits and verification.
+Static readers do not execute Agents, Calls or graphs and do not prove runtime
+interoperability.
 
-Start with the [0.1.0 specification](spec/README.md), then read the
+AgSDL 0.1.1 remains the latest published release under `v0.1.1`, with unchanged
+contract `agsdl-0.1.0`. Its [specification](spec/README.md),
 [progressive examples](examples/0.1.0/README.md),
-[implementation walkthrough](docs/implementation-guide.md) and the
-[reader guide](tooling/README.md). The Python and JavaScript readers can inspect
-the full example and validate its D, G and R units without installation. Their
-0.1.0 delivery comparison covered 137 cases without blocked cases, failures or
-mismatches. The [0.1.1 diagnostic dossier](docs/reviews/0009-0.1.1-diagnostic-expectations.md)
-records additional limits; this evidence does not establish universal agreement.
+[implementation walkthrough](docs/implementation-guide.md) and
+[reader guide](tooling/README.md) retain that edition. It is a bounded first draft,
+not a stable or universal language release. The
+[0.1.1 diagnostic dossier](docs/reviews/0009-0.1.1-diagnostic-expectations.md)
+records its additional evidence limits.
 
-## Preparing 0.2
+## AgSDL 0.2.0
 
-Start with the [0.2 preparation index](docs/0.2/README.md) for the current model,
-its source hierarchy and the remaining review and adoption work.
-[Agents and Messages](proposals/0019-agent-prompt-and-resources.md) and
-[flow directions](proposals/0020-blueprint-flow-0.2.md) describe persistent Agents,
-optional initial prompts, multimodal content, visible response transfer,
-deterministic choices, parallel connections and explicit result joins.
-[Logic blocks](proposals/0021-logic-block-contract-0.2.md) proposes a common
-contract for Condition, Join, Prepare, Call and reusable/custom behavior.
-The [candidate specification](spec/0.2/README.md) now defines concrete content,
-configuration, flow, lifecycle, composition and admission requirements, plus
-scoped static and record checks. It retains `agsdl-exp-flow-0.2-c1` pending final
-review, edition allocation and maintainer adoption. The
-[tooling guide](experimental/agent-flow-0.2/README.md) provides JSON examples, a
-schema and independent Python/JavaScript declaration readers. Their
-[111-case comparison](experimental/agent-flow-0.2/conformance/README.md) covers
-static semantics and reports, with execution support unassessed.
-[Draft release notes](docs/releases/0.2.0.md) describe the proposed scope.
+The [0.2 guide](docs/0.2/README.md) explains the model and source hierarchy.
+The normative chapters define content and configuration, flow and lifecycle,
+composition and protected admission, and scoped static and supplied-record
+checks. Independent Python and JavaScript declaration readers use a 112-case
+corpus. Agreement is bounded to those inputs; record consistency and schema
+validation do not establish execution support.
 
-The [KISS experiment](experimental/kiss-0.2/README.md) remains a separate frozen
-candidate under [0017](proposals/0017-agent-only-kiss-0.2.md). Its
-[42-case assessment](experimental/kiss-0.2/ASSESSMENT.md) covers its static readers,
-not the newer Agent/Message and block model. No 0.2 edition is published.
+The previous persistent-Agent candidate is preserved in Git at
+`bc441c0a894d286c4585eee261b07f8f03f9d6a7` with marker
+`agsdl-exp-flow-0.2-c1`. The [KISS experiment](experimental/kiss-0.2/README.md)
+remains a separate frozen candidate under [0017](proposals/0017-agent-only-kiss-0.2.md).
+Its [42-case assessment](experimental/kiss-0.2/ASSESSMENT.md) retains its own scope.
+Neither candidate's retained reports are relabelled as 0.2.0 results.
 
 ## What 0.1.0 describes
 
@@ -91,15 +84,14 @@ See the [project scope](docs/scope.md) and
 
 ## Repository structure
 
-- `spec/` contains the adopted normative 0.1.0 text; `spec/0.2/` contains candidate
-  requirements pending adoption.
+- `spec/` contains the adopted normative 0.1.0 text; `spec/0.2/` contains the adopted 0.2.0 contract.
 - `schemas/` contains derived JSON Schema shapes; the specification controls.
 - `examples/0.1.0/` contains official but non-normative examples of that text.
 - `tooling/readers/` contains non-normative official-edition readers.
 - `experimental/` preserves candidate editions and their bounded evidence.
 - `proposals/` records proposed material changes and the adoption history.
 - `docs/` contains scope, decisions, research, review evidence and release notes.
-  The [0.2 index](docs/0.2/README.md) tracks current preparation; dated records
+  The [0.2 index](docs/0.2/README.md) describes the current edition; dated records
   describe their historical revisions.
 - `scripts/` contains repository and source-verification checks.
 
@@ -112,7 +104,8 @@ the specification or the accepted 0.2 directions.
 
 ## Release status and history
 
-This section is the current publication-status reference. Version 0.1.1 is
+This section is the current publication-status reference. AgSDL 0.2.0 is adopted
+locally but unreleased; no release tag or publication is implied. Version 0.1.1 is
 published as [`v0.1.1`](https://github.com/Andrologic/AgSDL/releases/tag/v0.1.1)
 for documentation, corpus and reader maintenance, as described in the
 [release notes](docs/releases/0.1.1.md). The contract marker remains `agsdl-0.1.0`. No new
@@ -122,9 +115,10 @@ Historical decisions and reviews retain their status at the time of writing.
 The published `v0.0.1` and `v0.0.2` tags remain conceptual pre-drafts. Their
 proposals and examples keep the status recorded at those releases. The current
 normative 0.1.0 subset was adopted separately by
-[Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md); material not adopted
-by that decision remains proposed or experimental.
+[Decision 0007](docs/decisions/0007-adopt-0.1.0-contract.md); material outside its selection retains its recorded status unless adopted
+separately. Decision 0013 records the later bounded 0.2.0 adoption.
 
+- [0.2.0 unreleased notes](docs/releases/0.2.0.md)
 - [0.1.1 maintenance release notes](docs/releases/0.1.1.md)
 - [0.1.0 release notes](docs/releases/0.1.0.md)
 - [Delivery-readiness review](docs/reviews/0008-0.1.0-release-readiness.md)

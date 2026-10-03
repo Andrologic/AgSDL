@@ -1,17 +1,13 @@
 # Proposal 0019: persistent Agents, prompt and resources
 
-Status: **0.2 design directions accepted under
-[Decision 0011](../docs/decisions/0011-message-based-agent-model.md); not an
-adopted contract or candidate edition.**
-The directions cover persistent Agents, distinct prompt and resources,
-multimodal Messages, optional initial prompt and output constraints, and
-configured workspace access.
-Concrete shapes and binding rules remain proposed. The canonical requirements
-are in [the 0.2 candidate specification](../spec/0.2/README.md). Its
-[tooling guide](../experimental/agent-flow-0.2/README.md) provides
-partial static checks of these directions. [0017](0017-agent-only-kiss-0.2.md)
-remains a separate frozen experiment; neither is a normative adoption.
-[Release status](../README.md#release-status-and-history) remains authoritative.
+Status: **proposal basis selected through the reviewed bounded 0.2.0 contract;
+local adoption recorded in [Decision 0013](../docs/decisions/0013-adopt-0.2.0-contract.md).
+Unreleased.** The [normative specification](../spec/0.2/README.md) controls the
+adopted concrete rules. This proposal preserves the design rationale and its
+broader alternatives; it is not an additional normative source. Historical
+"proposed" and candidate-work wording below describes the development of those
+rules, not outstanding adoption gates. Only the selected bounded contract is
+adopted. The frozen 0017 experiment and published 0.1 contract remain unchanged.
 
 ## Problem and scope
 
@@ -207,13 +203,13 @@ Distinguish permitted formats from required results. Allowing text or audio does
 not require both. Requiring a JSON report and an audio file requires both; an
 optional audio result must be declared optional. A failed constraint is reported,
 not presented as a conforming result or used to silently replace the Agent.
-The [candidate Interface and structured-result rules](../spec/0.2/content.md#structured-results)
-specify a bounded syntax pending adoption. Describe
+The [0.2.0 Interface and structured-result rules](../spec/0.2/content.md#structured-results)
+specify a bounded syntax adopted in 0.2.0. Describe
 the concrete format with an open media type, such as `text/plain`, `image/png`,
 `audio/wav`, `video/mp4` or `application/json`. These are examples, not a closed
 format list. Accepting audio input says nothing about producing audio output.
 Multiple input or output items can carry different formats in one interaction.
-The candidate Interface syntax distinguishes formats offered as alternatives
+The 0.2.0 Interface syntax distinguishes formats offered as alternatives
 from items required together, without repeating those contracts on each call.
 
 The same inline-or-URI source rule represents produced content. For example, an
@@ -233,8 +229,8 @@ Keep support declarations with the selected configuration and its integration,
 including the selected Model where applicable. Reuse the existing distinction
 between required capabilities, support claims and evidence. Do not derive
 support from an Engine or Model name, or invent a default Model.
-The [candidate binding and support rules](../spec/0.2/content.md#agents-configuration-and-reusable-behavior)
-specify those declarations pending adoption; no universal provider catalog is introduced.
+The [0.2.0 binding and support rules](../spec/0.2/content.md#agents-configuration-and-reusable-behavior)
+specify those declarations adopted in 0.2.0; no universal provider catalog is introduced.
 
 For native model input or output, every component on the selected path must
 support the required representation and direction. A Model supporting an image
@@ -321,11 +317,11 @@ the accessible-information collection defined here.
 
 ## Candidate coverage and integration review
 
-The [candidate specification](../spec/0.2/README.md) now defines the document,
+The [0.2.0 specification](../spec/0.2/README.md) now defines the document,
 Message, Interface and binding shapes, configuration retention and delivery
 profiles. The [migration guide](../docs/0.2/migration.md) separates their meaning
 from existing Instructions, slots, Applications, Definition identity and old
-`invoke` semantics. These concrete rules await review and adoption.
+`invoke` semantics. These concrete rules were selected in Decision 0013.
 
 Engine settings and Tool contracts declare integration-specific workspace access;
 the candidate adds no universal permission vocabulary or resource snapshot policy.
@@ -346,9 +342,9 @@ configurations without per-file resource declarations. Static comparison can
 establish declaration agreement; context continuity and actual access need
 runtime evidence from consuming implementations.
 
-## Proposed c1 input and response precision
+## Selected 0.2.0 input and response precision
 
-The [c1 candidate](../spec/0.2/README.md) distinguishes a
+The [0.2.0 contract](../spec/0.2/README.md) distinguishes a
 Message's authored content roles from flow-result data. Delivery adaptation
 occurs after the one-time configuration choice. Result objects cannot assign
 themselves instruction authority by containing `prompt` or `resources` keys.
@@ -360,9 +356,9 @@ exact assembly and an optional recorded-parts check. Empty text is valid when
 required outputs are satisfied. It does not permit silently dropping media,
 claiming actual support or replacing a persistent Agent after correction.
 
-## Proposed bounded declaration checks
+## Selected bounded declaration checks
 
 The candidate now specifies [structured results, URI origins and scoped support](../spec/0.2/content.md#structured-results-uri-origins-and-support).
-These rules remain proposed. They add a closed structured-value vocabulary,
+The bounded rules are adopted in 0.2.0. They add a closed structured-value vocabulary,
 explicit source bases and exact requirement/claim matching. Static declarations
 and supplied records cannot establish content access, permission or execution.

@@ -1,40 +1,39 @@
-# Migrating from 0.1 and the 0017 experiment
+# Migrating to AgSDL 0.2.0
 
-This guide helps readers carry system intent from the published `agsdl-0.1.0`
-contract or the frozen `agsdl-exp-0017-c1` experiment into the persistent-Agent
-and Message model being prepared for 0.2. It describes the accepted directions
-in [Decision 0011](../decisions/0011-message-based-agent-model.md) and
-[Decision 0012](../decisions/0012-blueprint-flow-directions.md), and the current
-proposals [0019](../../proposals/0019-agent-prompt-and-resources.md),
-[0020](../../proposals/0020-blueprint-flow-0.2.md), and
-[0021](../../proposals/0021-logic-block-contract-0.2.md). The concrete target for
-candidate work is the [0.2 candidate specification](../../spec/0.2/README.md),
-still pending maintainer adoption. This guide is a migration aid, not a normative
-contract or an automatic conversion recipe. The [0.2 preparation index](README.md)
-records adoption and evidence status.
+This guide maps system intent from the published `agsdl-0.1.0` contract or the
+frozen `agsdl-exp-0017-c1` experiment to the locally adopted, unreleased
+[0.2.0 contract](../../spec/0.2/README.md). It is a migration aid, not a normative
+contract or an automatic conversion recipe. [Decision 0013](../decisions/0013-adopt-0.2.0-contract.md)
+records the concrete selection from the 0019/0020/0021 proposal work.
 
 ## Keep editions and evidence distinct
 
-The published 0.1 contract remains `agsdl-0.1.0`. The frozen 0017 experiment
-uses `agsdl-exp-0017-c1`; its readers and comparison evidence apply to that
-candidate. The persistent-Agent flow c1 is another bounded experiment,
-`agsdl-exp-flow-0.2-c1`. None of these markers can be relabelled as another.
-There is no automatic upgrade or format converter. Preserve each source
-artifact and its reports, then author a separate candidate description against
-`agsdl-exp-flow-0.2-c1`. Review it against the final adopted edition when one exists;
-that later step must preserve the candidate artifact and its evidence too.
-Static checks do not establish execution support.
-The official 0.1 reader contract names seven operations: `inspect`,
-`validateD`, `validateG`, `resolveG`, `validateR`, `exchange`, and
-`lossyExchange`. Experimental candidates have their own static checks and
-report scopes; those checks do not replace the seven official operation
-contracts or produce comparable official results.
+The published 0.1 contract remains `agsdl-0.1.0`; frozen 0017 uses
+`agsdl-exp-0017-c1`. Both need deliberate model mapping below. Preserve each
+source artifact and its reports, then author and validate a separate 0.2.0
+description. No automatic upgrade or format converter is supplied. Static checks
+do not establish execution support.
+
+The reviewed persistent-Agent candidate at
+`bc441c0a894d286c4585eee261b07f8f03f9d6a7` uses `agsdl-exp-flow-0.2-c1`.
+Its mechanical promotion to 0.2.0 changes only the document/report edition marker
+and maintained tooling paths, not the reviewed semantic rules. For a document
+conforming to that exact candidate revision, retain the original, create a
+separate copy with `contract: "agsdl-0.2.0"`, and run fresh 0.2.0 checks. This is
+not permission to reinterpret older revisions or change source files in place.
+Readers reject the candidate marker as a distinct edition. Candidate reports and
+comparison results are not transferable; retain them and generate new reports.
+
+The 0.1 reader contract names seven operations: `inspect`, `validateD`,
+`validateG`, `resolveG`, `validateR`, `exchange`, and `lossyExchange`. The 0.2.0
+static and record checks have their own scopes. They do not replace those seven
+operation contracts or produce interchangeable 0.1 reports.
 
 ## Re-map the model before the flow
 
 The 0.1 model centers on a versioned Document boundary, Root, owned Definitions,
 typed Relations, exports, dependencies, and optional Graph and
-RuntimeDeclaration records. The next model centers on persistent Agents,
+RuntimeDeclaration records. The 0.2.0 model centers on persistent Agents,
 Messages, content, configuration, and, when needed, a flow. Do not assume that
 one old record becomes one new record.
 
@@ -48,7 +47,7 @@ do not map directly to named Agent and content entries. Do not silently discard
 package identity or treat a content URI as a versioned AgSDL Definition.
 
 Make a loss list for the old D relations (`actsAs`, `exposes`, `directedBy`,
-`uses`, and `contains`), exports, dependencies, and deferrals. The next model
+`uses`, and `contains`), exports, dependencies, and deferrals. The 0.2.0 model
 does not carry these as equivalent typed relation records. Re-express their
 intent in Agent, content, configuration, or flow declarations where the target
 contract provides a corresponding concept; retain the original tuple and
@@ -60,19 +59,19 @@ documents, reports, and other supporting material belong with resources. A
 resource does not become an instruction merely because the old format stored
 both as Definitions. Keep declared accessibility and actual authorization
 separate: a URI does not establish that content is available or permitted.
-The target directions allow multiple media types and optional output
+The 0.2.0 rules allow multiple media types and optional output
 constraints, subject to the selected Engine and integration.
 
 Do not treat content applied before every old invocation as only the persistent
 Agent's initial prompt. Distinguish initial instructions from instructions or
 information that must accompany later Messages. Retain or explicitly remap
 application adapters, parameters, order, and 0017 instruction-slot identities;
-repeated applications must not be silently deduplicated. The next contract may
+repeated applications must not be silently deduplicated. The 0.2.0 contract may
 not preserve each application mechanism.
 
 0.1 requires each Agent Definition to refer through `actsAs` to a Principal,
 and each invoke to agree with that Principal. The 0017 experiment removed the
-Principal catalog and approval-recipient lists. The next model uses one Agent
+Principal catalog and approval-recipient lists. The 0.2.0 model uses one Agent
 concept for human and software participation and does not define Principal as
 its actor record. Preserve any needed identity, responsibility, or audit facts
 outside that removed relation. Authentication and authority remain external.
@@ -84,7 +83,7 @@ approval intent attached to the action in the target design.
 A 0.1 Graph schedules explicit `invoke` operations against an Agent Interface
 and Operation. Each invoke carries action, resource, principal, context and
 typed port references. The 0017 grammar also describes calls and explicit
-operations. In the next model, an Agent is a continuing participant across
+operations. In the 0.2.0 model, an Agent is a continuing participant across
 Messages. A flow step addresses work to that Agent; revisiting it does not
 create a new Agent or reset its context. A fresh context therefore needs a
 separate Agent. Preserve invocation-specific action/resource scope and typed
@@ -92,7 +91,7 @@ input/output obligations when they remain important, since they do not
 automatically follow from naming an Agent.
 
 Record the old graph's intended order, branches, terminal outcomes, and failure
-paths before rewriting it. The next flow directions support deterministic
+paths before rewriting it. The 0.2.0 flow rules support deterministic
 conditions, routing decisions, parallel connections, explicit joins, loops,
 and recovery. All connections from the selected output activate their
 destinations; other outputs remain inactive. Direct inputs to an Agent remain
@@ -106,7 +105,7 @@ flow design. Do not infer an implicit Join or iteration limit.
 0.1 `RuntimeDeclaration` binds configurations to graphs and assigns Engines,
 Tools, implementations, reusable-content Applications, parameters, and
 capability claims. 0017 has its own explicit per-Agent configuration and
-Application grammar. The next model selects each Agent's configuration before
+Application grammar. The 0.2.0 model selects each Agent's configuration before
 initialization; that selection remains fixed for the Agent instance. There is
 no default provider or Engine. Re-map Engine and Tool choices, settings, access,
 prompt/resource content, and output requirements deliberately. Preserve old
@@ -123,23 +122,15 @@ new directions do not make an Engine or Model name proof of support.
 3. For each item, record whether the target keeps it, expresses it through a
    different concept, or leaves it outside the target model. Carry forward
    security, authorization, and provenance obligations explicitly.
-4. Author a separate target against the [candidate serialization](../../spec/0.2/README.md).
-   The c1 schema and static reader check only that bounded candidate. Review
-   the target against the eventual adopted edition before claiming migration
-   to it; do not change its marker and reuse candidate evidence.
-5. Validate with tools for the target edition and retain their edition marker
-   and evidence scope. Do not compare a c1 result as if it were an official
-   0.1 result, or claim runtime behavior from static validation.
+4. Author a separate target against the [0.2.0 serialization](../../spec/0.2/README.md).
+   Check the preserved intent and loss list against its bounded rules; a marker
+   change alone does not migrate the 0.1 or 0017 model.
+5. Validate with 0.2.0 tools and retain the edition marker and evidence scope.
+   Do not reuse historical candidate reports or compare a 0.2.0 result as if it
+   were an official 0.1 result. Static validation does not prove runtime behavior.
 
-Before using a new edition, consult the preparation index for final review,
-adoption and edition allocation. The candidate specifies block contracts,
+The [0.2.0 specification](../../spec/0.2/README.md) defines block contracts,
 protected admission, scoped support declarations, lifecycle and delivery rules.
-[Decision 0010](../decisions/0010-human-and-software-agents.md)
-and [Decision 0011](../decisions/0011-message-based-agent-model.md) retain the
-shared Agent model and separate approval controls. [Proposal 0019](../../proposals/0019-agent-prompt-and-resources.md)
-records support declarations; [Proposal 0021](../../proposals/0021-logic-block-contract-0.2.md)
-retains protected-action and support requirements. Their concrete candidate
-syntax and integration obligations are in [spec/0.2/](../../spec/0.2/README.md).
-Condition, Join, Prepare, Call, composition and approval forms remain proposed,
-not adopted 0.2 syntax. Static checks cannot establish that an integration
-implements their behavior.
+Its common Agent model does not make a human Message an authorization. Preserve
+separate approval controls and verify actual implementation support for the
+selected configuration and path. Publication remains separate from local adoption.

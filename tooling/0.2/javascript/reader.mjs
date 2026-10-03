@@ -5,7 +5,7 @@ import { checkDeclarations } from './declarations.mjs';
 import { checkGraphs } from './graphs.mjs';
 export function read(bytes) {
   const report = {
-    contract: 'agsdl-exp-flow-0.2-c1',
+    contract: 'agsdl-0.2.0',
     valid: false,
     scope: 'document-shape-and-declared-references',
     executionSupport: 'not-assessed',

@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EDITION = {'identity': 'example/test', 'version': '1'}
 BINDING = {'contract': EDITION, 'implementation': EDITION}
-BASE = {'contract': 'agsdl-exp-flow-0.2-c1', 'id': 'independent',
+BASE = {'contract': 'agsdl-0.2.0', 'id': 'independent',
         'bindings': {'engine': BINDING}, 'configurations': {'main': {'engine': 'engine'}},
         'agents': {'worker': {'configuration': 'main'}}}
 SCOPE = {'action': 'publish', 'resources': ['repository'], 'context': {'value': {}}}
@@ -31,6 +31,7 @@ def cases():
         add(name, doc, codes, assertions, source)
 
     add('minimal', BASE)
+    mutate('rejected-candidate-edition', lambda d: d.update(contract='agsdl-exp-flow-0.2-c1'), ['SHAPE'])
     for path in sorted((ROOT / 'examples').glob('*.json')):
         add('example-' + path.stem, raw=path.read_bytes(), source='Read or check an example')
     mutate('literal-nonreferences', lambda d: d.update(content={'literal': {'value': {

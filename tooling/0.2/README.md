@@ -1,10 +1,9 @@
-# Persistent-Agent flow candidate tools and examples
+# Persistent-Agent flow 0.2.0 tools and examples
 
-Status: **bounded experimental candidate `agsdl-exp-flow-0.2-c1`, pending
-maintainer adoption and unreleased.** The canonical candidate requirements are
+Status: **bounded adopted edition `agsdl-0.2.0`, unreleased.** The normative requirements are
 in [spec/0.2/](../../spec/0.2/README.md). This directory supplies derived shapes,
-examples and non-normative static tooling. The [remaining release scope](../../spec/0.2/README.md#remaining-release-scope)
-separates candidate requirements from review, adoption and implementation evidence.
+examples and non-normative static tooling. The [bounded scope](../../spec/0.2/README.md#bounded-scope)
+separates normative requirements from implementation evidence.
 
 ## Contract and check references
 
@@ -13,7 +12,7 @@ separates candidate requirements from review, adoption and implementation eviden
 - [Flow and lifecycle](../../spec/0.2/flow.md), including graphless delivery,
   composition and protected admission.
 - [Static validation and supplied-record checks](../../spec/0.2/validation.md).
-- [Derived schema](schema.json). Its shapes enforce the candidate contract;
+- [Derived schema](schema.json). Its shapes enforce the 0.2.0 contract;
   they do not establish execution support.
 
 ## Read or check an example
@@ -40,8 +39,8 @@ in configuration settings; they are not universal Engine-setting names. The exam
 From the repository root, using Python 3 and its standard library:
 
 ```sh
-python3 experimental/agent-flow-0.2/reader.py experimental/agent-flow-0.2/examples/test-loop.json
-python3 experimental/agent-flow-0.2/test_reader.py -v
+python3 tooling/0.2/reader.py tooling/0.2/examples/test-loop.json
+python3 tooling/0.2/test_reader.py -v
 ```
 
 Exit codes are 0 for a valid checked document, 1 for an invalid document or
@@ -51,14 +50,14 @@ With `jsonschema` installed, check the schema and compare shape validation
 against a separate implementation:
 
 ```sh
-python3 experimental/agent-flow-0.2/test_reader.py --schema
+python3 tooling/0.2/test_reader.py --schema
 ```
 
 That optional schema-library comparison covers shapes only. For independent
 declaration semantics, run:
 
 ```sh
-node experimental/agent-flow-0.2/javascript/reader.mjs experimental/agent-flow-0.2/examples/test-loop.json
+node tooling/0.2/javascript/reader.mjs tooling/0.2/examples/test-loop.json
 ./scripts/check-readers.sh --compare flow
 ```
 
@@ -71,21 +70,21 @@ The [completion check contract](../../spec/0.2/validation.md#checking-recorded-o
 defines the accepted completion record and report scope:
 
 ```sh
-python3 experimental/agent-flow-0.2/check_completion.py DOCUMENT.json STEP RESULT.json
+python3 tooling/0.2/check_completion.py DOCUMENT.json STEP RESULT.json
 ```
 
 The [delivery check contract](../../spec/0.2/validation.md#checking-recorded-delivery)
 defines the claimed input, origin, Message and configuration record:
 
 ```sh
-python3 experimental/agent-flow-0.2/check_delivery.py DOCUMENT.json AGENT RECORD.json
+python3 tooling/0.2/check_delivery.py DOCUMENT.json AGENT RECORD.json
 ```
 
 The [admission check contract](../../spec/0.2/validation.md#checking-recorded-admission)
 defines the supplied approval consistency record:
 
 ```sh
-python3 experimental/agent-flow-0.2/check_admission.py DOCUMENT STEP RECORD
+python3 tooling/0.2/check_admission.py DOCUMENT STEP RECORD
 ```
 
 The [preparation helpers](../../spec/0.2/validation.md#checking-prepared-content)
@@ -96,7 +95,7 @@ or authorize actions.
 
 The named cases in [test_reader.py](test_reader.py) exercise the stated static
 and record checks. The independent Python/JavaScript [declaration comparison](conformance/README.md)
-covers 111 contract-authored cases, with retained complete reports. Supplied-record
+covers 112 contract-authored cases, with retained complete reports. Supplied-record
 checks remain separately scoped Python tooling. The optional
 schema-library comparison covers shapes only. Consult the
 [validation chapter](../../spec/0.2/validation.md) for each check's limits; no

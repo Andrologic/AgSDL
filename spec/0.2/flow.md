@@ -1,7 +1,7 @@
 # Flow, lifecycle and protected admission
 
-These are [candidate requirements pending maintainer adoption](README.md) for
-`agsdl-exp-flow-0.2-c1`. They do not replace the normative 0.1.0 contract.
+These are [normative 0.2.0 requirements](README.md) under `agsdl-0.2.0`.
+The separate normative 0.1.0 contract remains unchanged.
 
 ## Flow and data
 
@@ -19,7 +19,7 @@ the Agent's lifetime or unrelated work. Duplicate destinations are invalid.
 Steps using an explicit routing choice use a map from choice to destination
 lists. A choice selects one list, whose destinations all activate.
 
-The proposed data boundary distinguishes:
+The data boundary distinguishes:
 
 | Result field | Meaning |
 | --- | --- |
@@ -41,7 +41,7 @@ path selects the whole input. Missing values or wrong container types are errors
 No path refers to a global last result, filesystem location or arbitrary code.
 Condition preserves its input unchanged for the selected continuation. Prepare
 therefore selects the current report directly; it needs no remote-step lookup.
-This is a proposed simplification of data binding under 0021.
+This is the data-binding boundary for this edition.
 
 ### Portable delivery
 
@@ -207,7 +207,7 @@ nonempty distinct choices. Its `next` map must cover exactly those choices.
 Without a decision, `next` is an ordinary list. The integration associates a
 final choice with the current completed work. Missing, unknown or ambiguous
 choices fail. A visible choice remains in the transferred text; a Tool-only
-choice is not injected into it. c1 does not implement a text-marker parser or
+choice is not injected into it. This edition does not implement a text-marker parser or
 require a universal Tool protocol.
 
 A `call` step names a binding and optionally maps argument names to operands.
@@ -219,7 +219,7 @@ correction, and a process-launch failure is technical failure. A custom
 implementation can satisfy this contract without changing the graph. Its
 effects and permissions still require actual support.
 
-A `condition` evaluates `test` and selects `true` or `false`. c1 supports
+A `condition` evaluates `test` and selects `true` or `false`. This edition supports
 `equals` with exactly two operands, nonempty `all` and `not`. Equality compares
 JSON values without coercing strings or Booleans to numbers. JSON object order
 does not matter; array order does. All referenced operands must be available
@@ -241,7 +241,7 @@ selectors and constructs a Message without executing a graph, Agent or Call.
 
 ### Grouping, loops and failures
 
-A c1 `join` declares `after` and `members`, with optional `mode`. Omitted mode
+A `join` declares `after` and `members`, with optional `mode`. Omitted mode
 means `all`; `first` requires an `accept` predicate evaluated on each current
 member result. `remaining` is permitted only in `first` mode and defaults to
 `stop-and-wait`; its explicit alternative is `finish`. Acceptance or stop-policy
@@ -251,7 +251,7 @@ members, and every normal outcome of each member connects only to this Join.
 The Join receives no other inputs, and members receive work only from normal
 anchor completion, never its error path.
 Neither the Join nor a member can be the flow entry. Members have no independent
-error continuation in c1; in all-required mode a failed required member fails
+error continuation in this edition; in all-required mode a failed required member fails
 its group, whose `onError` can provide recovery. First-satisfactory mode handles
 member failure as specified below. Membership is not the number of incoming arrows.
 
@@ -263,7 +263,7 @@ round. The association is a consumer obligation; static declarations cannot
 prove it. Direct convergence to an Agent delivers separate Messages instead.
 
 In `first` mode, select the first conforming result satisfying `accept`. Preserve
-that result under `members` with only its source member present. The proposed
+that result under `members` with only its source member present. The
 ordering is the integration's recorded completion order; if a delivery batch
 contains no order, use the declared `members` order to break that batch's tie.
 This is not a distributed clock requirement. Retain the winner; subsequent
@@ -302,7 +302,7 @@ not stop work in previously admitted groups. Other steps reject activations
 beyond their own limit before performing their work. Omission imposes no limit.
 The counter is local to a step, not a global budget.
 
-For a first-satisfactory Join with `maxVisits: 1`, this proposed timeline applies:
+For a first-satisfactory Join with `maxVisits: 1`, this timeline applies:
 
 | Event | Join visits | Consequence |
 | --- | --- | --- |
@@ -320,10 +320,10 @@ Technical failure or a visit-limit breach follows `onError`, if supplied, with
 diagnostic information as its input. Otherwise the affected path stops with a
 diagnostic. An error never creates a normal result. Failure and interruption
 do not undo workspace effects, prove a sibling stopped or authorize retry.
-A failed required output uses the proposed error input
+A failed required output uses the error input
 `{"error":{"code":"OUTPUT_CONSTRAINT","message":"...","details":[...]}}`.
 Each detail identifies an output path, a violated rule and the expected formats
-or choices. The [output-correction example](../../experimental/agent-flow-0.2/examples/output-correction.json)
+or choices. The [output-correction example](../../tooling/0.2/examples/output-correction.json)
 branches on that code, prepares an instruction with the details as information,
 and sends a new Message to the same Agent. Other technical failures do not take
 this particular correction path. The loop has no implicit retry cap or replay
@@ -449,7 +449,7 @@ later gate is entry.
 Denial/error paths cannot reach the action or later gates without first reaching
 the first gate. Returning there starts a new authorization attempt. An ordinary
 favorable Agent result, including a human's, cannot replace a gate decision.
-Steering cannot be a protected target in this bounded candidate.
+Steering cannot be a protected target in this bounded edition.
 
 Agent/Call steps may add `scope` with nonempty `action`, a nonempty distinct list
 of resource descriptions and `context`, an Operand. Scope is required for any

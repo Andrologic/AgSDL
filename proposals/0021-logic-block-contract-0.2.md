@@ -1,15 +1,13 @@
 # Proposal 0021: a common contract for logic blocks
 
-Status: **proposed semantic contract for 0.2 preparation; not adopted or
-published. A bounded static experiment covers only part of it.** The maintainer requested preparation of standard
-and custom blocks after reviewing the design. This text makes that work
-reviewable; it does not treat every recommendation as an accepted requirement.
-Accepted Agent and flow directions remain in [0019](0019-agent-prompt-and-resources.md)
-and [0020](0020-blueprint-flow-0.2.md). This proposal is not a final JSON grammar. The
-[candidate specification](../spec/0.2/README.md) defines concrete requirements;
-its [tooling guide](../experimental/agent-flow-0.2/README.md) supplies examples,
-a schema and static checks. Its marker and remaining exclusions do not adopt
-or narrow the full 0.2 directions. See the [preparation index](../docs/0.2/README.md).
+Status: **proposal basis selected through the reviewed bounded 0.2.0 contract;
+local adoption recorded in [Decision 0013](../docs/decisions/0013-adopt-0.2.0-contract.md).
+Unreleased.** The [normative specification](../spec/0.2/README.md) controls the
+adopted concrete rules. This proposal preserves the design rationale and its
+broader alternatives; it is not an additional normative source. Historical
+"proposed" and candidate-work wording below describes the development of those
+rules, not outstanding adoption gates. Only the selected bounded contract is
+adopted. The frozen 0017 experiment and published 0.1 contract remain unchanged.
 
 ## Problem and scope
 
@@ -58,7 +56,7 @@ obligations, not a list of mandatory JSON objects for every simple step.
 
 An association with the current work is required at activation and completion.
 A result from an earlier loop iteration cannot satisfy a later Join. A duplicate
-or late delivery cannot silently reopen completed work. The [candidate lifecycle
+or late delivery cannot silently reopen completed work. The [0.2.0 lifecycle
 rules](../spec/0.2/flow.md#queue-admission-work-identity-and-steering) define ordering
 and acknowledgement obligations. Wire identifiers remain integration-specific;
 no distributed transport or exactly-once infrastructure guarantee follows from
@@ -140,8 +138,8 @@ Reuse the existing separation of Tool contract and implementation rather than
 inventing a second provider catalog. Describe inputs, results, parameters,
 completion, failures, effects and required capabilities. A contract identity or
 an opaque setting does not prove that the implementation exists or supports it.
-The [candidate binding syntax](../spec/0.2/content.md#agents-configuration-and-reusable-behavior)
-remains proposed.
+The [0.2.0 binding syntax](../spec/0.2/content.md#agents-configuration-and-reusable-behavior)
+is adopted as specified in the 0.2.0 contract.
 
 A returned nonzero test exit code can be a normal Call result that a Condition
 examines. Failure to start the test process is a technical failure. The selected
@@ -291,18 +289,18 @@ collection iteration and custom scheduling are not added to the minimum.
 
 ## Compatibility and review before implementation
 
-The official specification and frozen 0017 grammar remain unchanged. Their
+The official 0.1 specification and frozen 0017 grammar remain unchanged. Their
 comparisons cannot validate this contract. Current extension declarations do
-not supply an interpreter for these blocks. The [candidate specification](../spec/0.2/README.md)
-now supplies the proposed grammar and scoped validation rules under its own
+not supply an interpreter for these blocks. The [0.2.0 specification](../spec/0.2/README.md)
+now supplies the adopted grammar and scoped validation rules under its own
 marker. Reader evidence applies only to those rules and checked inputs.
 
-The [bounded c1 contract](../spec/0.2/README.md) proposes
+The [0.2.0 contract](../spec/0.2/README.md) defines
 predicate syntax, current-input selectors, versioned bindings, Join ties and
-exhaustion, and output-correction diagnostics. Those choices still need final
-adoption. The current c1 refinement proposes work correlation, queue/steering
-boundaries, text assembly, bounded composition bindings and approval admission.
-Their static and supplied-record checks still need independent semantic review. The
+exhaustion, and output-correction diagnostics. Decision 0013 selects those
+reviewed rules with work correlation, queue/steering boundaries, text assembly,
+bounded composition bindings and approval admission. Static and supplied-record
+checks retain their distinct evidence limits. The
 [preparation index](../docs/0.2/README.md#before-a-02-release) tracks completion.
 
 At minimum, the future conformance material should distinguish:
@@ -327,23 +325,22 @@ separate evidence from consuming implementations.
 
 ## Bounded implementation work
 
-The [c1 contract](../spec/0.2/README.md) makes the basic
+The [0.2.0 contract](../spec/0.2/README.md) makes the basic
 walkthroughs testable with declarations and a static reader. It proposes
 input-preserving Conditions, selectors restricted to current input, reusable
 content/skill/configuration bindings and direct fork-and-join with all-required or first-satisfactory selection.
-These concrete rules remain proposed. Review the bounded steering form below,
-the retained protected-action control and the portable input/completion/error
-boundary. Local composition is the proposed realization of reusable graphs,
-subject to review and adoption with the block contract. External contracts may
+The bounded concrete rules are adopted in 0.2.0, including steering, protected
+actions and the portable input/completion/error boundary. Local composition is
+the selected bounded realization of reusable graphs. External contracts may
 supply integration-specific details without redefining that portable boundary.
-Configuration selection has a proposed c1 shape; claims about actual lifecycle
+Configuration selection has the reviewed 0.2.0 shape; claims about actual lifecycle
 support require evidence from consuming implementations. Such evidence is not a
 universal prerequisite to publishing the language draft. The experiment neither
 silently drops accepted directions nor supplies execution evidence.
 
-## Proposed c1 data and recovery boundary
+## Selected 0.2.0 data and recovery boundary
 
-The [c1 delivery contract](../spec/0.2/flow.md#portable-delivery)
+The [0.2.0 delivery contract](../spec/0.2/flow.md#portable-delivery)
 now carries origin alongside the current value as integration metadata. Condition
 preserves both; Call does not promote a returned Message-shaped object into
 instructions. Prepare is the explicit construction boundary. Its `select`
@@ -354,14 +351,14 @@ delivered. There is no fetch or implicit media conversion.
 
 The c1 lifecycle rules correlate occurrence completion, queue admission,
 steering acknowledgement and Join membership. Its closed failure vocabulary
-and common error input apply across blocks. These rules remain proposed, and
+and common error input apply across blocks. These rules are adopted in 0.2.0, and
 static record checks do not demonstrate delivery or scheduler behavior.
 
-## Proposed bounded modular contract
+## Selected bounded modular contract
 
 The candidate defines [local expansion and protected admission](../spec/0.2/flow.md#local-composition-and-protected-admission).
 Its initial composition form is non-nested and serial or conditional internally;
 it preserves explicitly bound Agent identities. Approval gates protect actual
 Agent work or Calls, including after expansion. Capture, deadlines and scoped
 admission are integration obligations with a supplied-record consistency check,
-not authentication or runtime enforcement. These concrete rules remain proposed.
+not authentication or runtime enforcement. The bounded concrete rules are adopted in 0.2.0.

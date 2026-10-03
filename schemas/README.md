@@ -1,4 +1,10 @@
-# AgSDL 0.1.0 schemas
+# AgSDL schemas
+
+The [0.2.0 schema](../tooling/0.2/schema.json) derives from the separately adopted
+[0.2.0 specification](../spec/0.2/README.md). That edition is unreleased.
+The schemas below retain the published 0.1.0 contract.
+
+## AgSDL 0.1.0 schemas
 
 These JSON Schema Draft 2020-12 shapes derive from the adopted
 [specification](../spec/README.md). The normative text controls. Schemas do not
