@@ -6,12 +6,13 @@ contract. Each marker has its own meaning and corpus.
 
 | Candidate | Marker | Role and guide |
 | --- | --- | --- |
-| Persistent-Agent flow | `agsdl-exp-flow-0.2-c1` | [Active preparation](agent-flow-0.2/README.md) for persistent Agents and message flows; incomplete and not adopted. |
+| Persistent-Agent flow | `agsdl-exp-flow-0.2-c1` | [Tools and examples](agent-flow-0.2/README.md) for the [candidate specification](../spec/0.2/README.md); pending review and adoption, unreleased. |
 | Agent-only KISS | `agsdl-exp-0017-c1` | [Frozen prototype](kiss-0.2/README.md) with a [42-case assessment](kiss-0.2/ASSESSMENT.md); predates the persistent-Agent model. |
 | Modular candidate-1 | `proposal-0013-candidate-1` | [Historical corpus and readers](modular-candidate-1/README.md), 26 cases. Source for part of the adopted 0.1.0 contract. |
 | Candidate-2 | `proposal-0012-candidate-2` | [Historical corpus and readers](candidate-2/README.md), 121 cases. Source for inherited 0.1.0 rules. |
 
-The official specification lives in [spec/](../spec/README.md). Experimental
+The official 0.1 specification lives in [spec/](../spec/README.md); the 0.2
+candidate is separately labelled in [spec/0.2/](../spec/0.2/README.md). Experimental
 agreement does not adopt an edition or establish execution support. See the
 [release status](../README.md#release-status-and-history) for published versions.
 

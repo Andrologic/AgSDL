@@ -6,9 +6,10 @@ and custom blocks after reviewing the design. This text makes that work
 reviewable; it does not treat every recommendation as an accepted requirement.
 Accepted Agent and flow directions remain in [0019](0019-agent-prompt-and-resources.md)
 and [0020](0020-blueprint-flow-0.2.md). This proposal is not a final JSON grammar. The
-[bounded c1 experiment](../experimental/agent-flow-0.2/README.md) now supplies
-concrete examples, a schema and a static reader for basic flows. Its marker and
-remaining exclusions do not adopt or narrow the full 0.2 directions. See the [preparation index](../docs/0.2/README.md).
+[candidate specification](../spec/0.2/README.md) defines concrete requirements;
+its [tooling guide](../experimental/agent-flow-0.2/README.md) supplies examples,
+a schema and static checks. Its marker and remaining exclusions do not adopt
+or narrow the full 0.2 directions. See the [preparation index](../docs/0.2/README.md).
 
 ## Problem and scope
 
@@ -57,9 +58,11 @@ obligations, not a list of mandatory JSON objects for every simple step.
 
 An association with the current work is required at activation and completion.
 A result from an earlier loop iteration cannot satisfy a later Join. A duplicate
-or late delivery cannot silently reopen completed work. The wire identifiers,
-ordering and delivery acknowledgements remain candidate work; no distributed
-transport or exactly-once infrastructure guarantee follows from this boundary.
+or late delivery cannot silently reopen completed work. The [candidate lifecycle
+rules](../spec/0.2/flow.md#queue-admission-work-identity-and-steering) define ordering
+and acknowledgement obligations. Wire identifiers remain integration-specific;
+no distributed transport or exactly-once infrastructure guarantee follows from
+this boundary.
 
 Standard blocks, compositions and external implementations share this boundary,
 but need not share one internal algorithm. Join waits; Prepare can work as soon
@@ -137,7 +140,8 @@ Reuse the existing separation of Tool contract and implementation rather than
 inventing a second provider catalog. Describe inputs, results, parameters,
 completion, failures, effects and required capabilities. A contract identity or
 an opaque setting does not prove that the implementation exists or supports it.
-The concrete binding syntax remains proposed.
+The [candidate binding syntax](../spec/0.2/content.md#agents-configuration-and-reusable-behavior)
+remains proposed.
 
 A returned nonzero test exit code can be a normal Call result that a Condition
 examines. Failure to start the test process is a technical failure. The selected
@@ -162,7 +166,8 @@ That mapping must unambiguously associate the decision with the completed work.
 A missing, unknown or ambiguous required choice cannot take a successful path.
 A text convention must distinguish a real selection from quoted report content.
 There is no provisional choice, implicit first/last winner or second decision
-that reopens completed work. Exact mechanism profiles remain to be written.
+that reopens completed work. The candidate defines the required association and
+choice checks; each external decision integration specifies its mechanism.
 
 The mapping does not rewrite the transferred visible text. A decision present
 in that text stays there. A decision present only in a Tool exchange is not
@@ -288,10 +293,11 @@ collection iteration and custom scheduling are not added to the minimum.
 
 The official specification and frozen 0017 grammar remain unchanged. Their
 comparisons cannot validate this contract. Current extension declarations do
-not supply an interpreter for these blocks. A new edition, grammar and scoped
-validation rules are required before reader support can be claimed.
+not supply an interpreter for these blocks. The [candidate specification](../spec/0.2/README.md)
+now supplies the proposed grammar and scoped validation rules under its own
+marker. Reader evidence applies only to those rules and checked inputs.
 
-The [bounded c1 contract](../experimental/agent-flow-0.2/README.md) proposes
+The [bounded c1 contract](../spec/0.2/README.md) proposes
 predicate syntax, current-input selectors, versioned bindings, Join ties and
 exhaustion, and output-correction diagnostics. Those choices still need final
 adoption. The current c1 refinement proposes work correlation, queue/steering
@@ -321,7 +327,7 @@ separate evidence from consuming implementations.
 
 ## Bounded implementation work
 
-The [c1 contract](../experimental/agent-flow-0.2/README.md) makes the basic
+The [c1 contract](../spec/0.2/README.md) makes the basic
 walkthroughs testable with declarations and a static reader. It proposes
 input-preserving Conditions, selectors restricted to current input, reusable
 content/skill/configuration bindings and direct fork-and-join with all-required or first-satisfactory selection.
@@ -337,7 +343,7 @@ silently drops accepted directions nor supplies execution evidence.
 
 ## Proposed c1 data and recovery boundary
 
-The [c1 delivery contract](../experimental/agent-flow-0.2/README.md#portable-delivery)
+The [c1 delivery contract](../spec/0.2/flow.md#portable-delivery)
 now carries origin alongside the current value as integration metadata. Condition
 preserves both; Call does not promote a returned Message-shaped object into
 instructions. Prepare is the explicit construction boundary. Its `select`
@@ -353,7 +359,7 @@ static record checks do not demonstrate delivery or scheduler behavior.
 
 ## Proposed bounded modular contract
 
-The candidate defines [local expansion and protected admission](../experimental/agent-flow-0.2/README.md#local-composition-and-protected-admission).
+The candidate defines [local expansion and protected admission](../spec/0.2/flow.md#local-composition-and-protected-admission).
 Its initial composition form is non-nested and serial or conditional internally;
 it preserves explicitly bound Agent identities. Approval gates protect actual
 Agent work or Calls, including after expansion. Capture, deadlines and scoped
