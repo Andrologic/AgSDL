@@ -17,6 +17,9 @@ using this candidate to assess readiness.
 
 | Example | What it exercises |
 | --- | --- |
+| [Reusable checker](examples/reusable-checker.json) | One local review/check composition, reused with the same Agent and a different Agent. |
+| [Protected publication](examples/protected-publication.json) | A scoped Call behind two ordered approvals, with a fresh-attempt denial loop. |
+| [Structured report](examples/structured-report.json) | Structured results, catalog URI origins and exact support claims. |
 | [Conversation](examples/conversation.json) | One Agent, a reusable configuration and an explicit Engine binding; no initial prompt or graph. |
 | [Test loop](examples/test-loop.json) | A persistent developer, custom test Call, deterministic Condition and prepared correction Message. |
 | [Parallel reviews](examples/parallel-reviews.json) | Two final decisions grouped for the same developer completion, followed by one correction Message. |
@@ -54,7 +57,7 @@ reader and does not validate runtime behavior.
 ## Document and content
 
 A document requires `contract`, `id`, `agents`, `configurations` and `bindings`.
-`content`, `skills` and `flow` are optional. Maps use distinct names matching
+`content`, `skills`, `flow`, `compositions` and `baseUri` are optional. Maps use distinct names matching
 ASCII letter followed by ASCII letters, digits, underscore or hyphen. Unknown
 fields are invalid except inside explicitly open inline values, settings and
 external requirement parameters. Duplicate JSON object members, non-JSON
@@ -69,9 +72,8 @@ as an AgSDL reference. Validators neither fetch content nor load implementation
 code.
 
 A content source contains exactly one `value` or `uri`, and an optional
-`mediaType`. Inline strings are literal. URI availability, resolution and access
-belong to the selected integration and remain unassessed by this static reader.
-The examples use absolute URIs; portable relative-URI bases remain release work.
+`mediaType`. Inline strings are literal. URI availability and access remain integration obligations.
+[Explicit URI origins](#uri-origin) define static relative-reference resolution.
 A content use may instead contain only `ref`, naming a source in `content`.
 Those source declarations do not themselves contain references, so reference
 cycles cannot form in this catalog.
@@ -128,9 +130,9 @@ versioned `implementation`, with optional `settings` and `requires`. Each editio
 has an open `identity` and `version`; their spelling establishes no support.
 A configuration names its Engine binding and maps local Tool names to Tool
 bindings. Calls and decision integrations also reference declared bindings.
-The external contracts establish their intended role and capabilities; c1 checks
-reference existence, not compatibility or whether an implementation satisfies
-that contract. Opaque settings cannot redefine the AgSDL step semantics.
+The external contracts establish their intended role and capabilities.
+[Exact support declarations](#exact-support-declarations) assess claims, never
+whether the implementation actually satisfies its contract. Opaque settings cannot redefine the AgSDL step semantics.
 
 Reusable skills contain prompt sources, resource sources and optional capability
 requirements. They have no Engine assignment. Expand selected skills in their
@@ -145,13 +147,13 @@ has permitted `mediaTypes`; `required` defaults to false. Permitting several
 formats does not require all of them. Required named results must exist at
 completion and use one allowed format. A result's formats must fit any declared
 overall output formats. Content format, structure, actual availability and
-delivery remain distinct requirements. c1 has no structured-value shape
-constraint or compatibility-evidence evaluator; these are release-scope gaps.
+delivery remain distinct requirements. Optional [structured results](#structured-results)
+add value constraints without fetching referenced payloads.
 
 Requirements are external contract editions plus optional parameters. Presence
 of a requirement is not evidence it is met. Missing support, simultaneous media
-delivery, Model/Engine/Tool compatibility and access remain unassessed, never
-silently classified as supported. A video URI must not be treated as text or a
+delivery, Model/Engine/Tool compatibility and access require the separately
+scoped claim assessment below and actual integration evidence. A video URI must not be treated as text or a
 transcript without an explicit conversion contract.
 
 ## Flow and data
@@ -504,6 +506,7 @@ new portable codes. Route by `code`; details do not prescribe an action.
 | `CALL_FAILED` | External invocation fails technically. A normal negative business result is not this error. |
 | `CALL_RESULT` | The external result violates its declared Call contract. |
 | `OUTPUT_CONSTRAINT` | Required Agent outputs, formats or terminal decision are missing or invalid. |
+| `APPROVAL` | A required authorization is missing, stale, mismatched, expired or technically unavailable at protected admission. |
 | `AGENT_FAILED` | Agent work fails technically without a more specific code. |
 | `INTERRUPTED` | Work ends without completion because of an interruption. Effects may remain. |
 | `CORRELATION` | Integration cannot safely associate input, response or completion with current work. |
@@ -526,7 +529,7 @@ Stopped losing members resolve that wait without running member successors.
 Use the first failed boundary in processing order: visit admission, configuration
 selection if needed, initialization if needed, input adaptation and constraints,
 work, output validation, then continuation. Do not perform dependent later work
-after failure. Independent failures are separate occurrences, not alternative
+after failure. Protected work uses the [admission order below](#protected-admission). Independent failures are separate occurrences, not alternative
 successes. A malformed first-Join acceptance operand fails that Join as `OPERAND`;
 after a winner, remaining terminal statuses only resolve its wait.
 
@@ -541,7 +544,7 @@ not additional graph failure codes or Agent correction inputs.
 ### Checking recorded outputs
 
 [check_completion.py](check_completion.py) validates a supplied completion record
-against the selected Agent step. A record has optional `text`, `responseMessages`, `results` and
+against the selected Agent step. A record has optional `text`, `responseMessages`, `results`, `baseUri` and
 `choice`; each named result is a content source. `responseMessages` is an ordered array
 of arrays of visible text parts, already filtered and attributed by the caller.
 When supplied, the checker assembles it by the rule above. If `text` is also
@@ -586,7 +589,8 @@ Condition retains that origin and input. Optional `retainedConfiguration` states
 a previously selected configuration. The checker verifies that it belongs to
 the Agent's alternatives and skips selection on this new input. Without that
 field it evaluates the selector on `input` before checking the delivered Message.
-It compares Message values without changing instructions, Sources or input data.
+It compares Messages after explicit URI-origin normalization and catalog expansion,
+without changing roles or literal input data. Unresolved sources remain unassessed.
 Entry and Prepare Message `ref` uses must exist in the document content catalog;
 objects inside literal `value` are not interpreted as references. Recorded Join
 results require a nonempty map of valid member names and complete result shapes:
@@ -624,9 +628,16 @@ The reader implements these rule codes:
 | `JOIN_POLICY` | A first-satisfactory Join has an acceptance rule, and policy fields match its mode. |
 | `JOIN_GROUP` | The declared group satisfies c1's bounded fork-and-join structure. |
 | `UNREACHABLE` | Every step is reachable from entry. |
+| `COMPOSITION` | Parameter/output coverage, serial body restrictions and supported Join boundary. |
+| `APPROVAL` | Finite ordered gate chain, actual target and absence of bypass. |
+| `SCOPE` | Explicit scope on gated actions and Calls declaring external/unknown effects. |
+| `VALUE_SCHEMA` | Consistent required properties and typed, distinct enumeration values. |
+| `URI` | Valid explicit URI syntax and absolute hierarchical base. |
+| `SOURCE` | An authored literal Prepare source selector supplies a Source. |
+| `CLAIM` | No duplicate or conflicting claim for one exact requirement. |
 
 Shape failure ends semantic checking of that document. A report locates a rule
-violation by JSON Pointer; whole-shape and parse failures use the root pointer.
+violation by JSON Pointer, adding the invocation path for expanded steps; whole-shape and parse failures use the root pointer.
 The report's validity means only these checks passed. It does not prove that
 every path terminates, an input selector will exist at runtime, a predicate is
 satisfied, permissions hold or an implementation is available.
@@ -644,14 +655,224 @@ features from 0.2. Unknown syntax is rejected rather than ignored. The
 this table identifies c1's boundaries. Proposed forms still need adoption.
 Execution evidence is required only for the implementation support claimed.
 
-| Direction outside c1 | Remaining work before the complete 0.2 candidate |
+| Area | State and remaining work |
 | --- | --- |
-| Proposed composition | Review and adopt a local reusable graph form with parameter binding and stable Agent identity. |
-| Protected actions | Explicit approval admission bound to the action, scope and actual invocation. |
-| Interfaces and support | Structured-value constraints, support claims/evidence, delivery paths and relative URI bases. |
+| Composition | Non-nested serial/conditional expansion, explicit Agent parameters and diagnostic origins are specified and checked below. Review the bounded form before adoption. |
+| Protected actions | Gate chains, invocation capture and admission deadlines are specified; static structure and supplied record consistency are checked. Authority/enforcement needs consuming implementation evidence. |
+| Interfaces and support | Bounded value constraints, URI origins and scoped exact claims are specified and checked. URI payloads and core execution paths remain explicitly unassessed. |
 | Lifecycle integration evidence | Queue and steering obligations, text assembly, source selection and error inputs are defined above. Static record checks do not prove attribution, delivery, correction or cancellation in an implementation. |
 | Validation and release | Broader graph rules, an independent semantic reader, review, migration guidance and adoption decision. |
 
 No release tag, official contract replacement or publication follows from this
 experiment. Its role is to make implementation questions reproducible while
 maintaining the agreed scope in the preparation index.
+
+## Structured results, URI origins and support
+
+### Structured results
+
+A named Interface result may add `valueSchema`. This is a closed constraint
+language, not arbitrary JSON Schema. Every node requires `type`, one of
+`null`, `boolean`, `number`, `integer`, `string`, `array`, `object`. Optional
+`enum` is a nonempty array of literal JSON values. `array` alone permits `items`
+with another constraint. `object` alone permits `properties`, mapping arbitrary
+property names to constraints, `required`, a distinct list naming declared
+properties, and `additionalProperties`, a Boolean defaulting to true. Other
+keywords and keywords for another type fail. Missing `items` or `properties`
+imposes no child constraint. Each enum value must satisfy the node's other
+constraints; duplicates under JSON equality fail. Required properties must
+exist; optional properties are checked when present. Numbers compare exactly,
+with mathematical integers accepted and Booleans distinct from numbers. Strings
+are never parsed as JSON. There are no formats, coercions, references or fetching.
+
+The completion checker assesses inline result values. A failed constraint gives
+`OUTPUT_CONSTRAINT`. A URI-backed constrained result records its path in
+`unassessed`; `constraintAssessment` is `unassessed` even if the declaration is
+otherwise valid. `valid` then describes the checked record only, never a verified
+payload or permission for successful continuation. The consumer must obtain and
+check that payload before normal continuation. Missing required results still
+fail. Unconstrained URI bytes and actual MIME content remain outside the check.
+
+### URI origin
+
+A document, incoming Message or completion may supply `baseUri`, an absolute
+hierarchical URI without fragment. Bases and sources use the ASCII URI syntax of
+[RFC 3986](https://www.rfc-editor.org/rfc/rfc3986#section-5.2); Unicode needs percent
+encoding. Resolution follows its section 5.2 algorithm. A relative URI uses only
+its originating artifact's explicit base. No working directory, input filename,
+receiver base or network lookup supplies a fallback. A missing base retains the
+source as unresolved with an `unassessed` entry; it is not a shape error. Invalid
+URI syntax or an invalid supplied base fails `URI`.
+
+Document content, skills, Agent sources and authored Prepare content originate
+at the document base. Message-local sources originate at that Message's base;
+a Message `ref` still originates at its document catalog entry. Completion
+results originate at that completion's base. Normalize known relative sources
+to absolute URIs before forwarding, skill expansion or Prepare `source` copying;
+retain the original source path and base in diagnostic observations. An unresolved
+source cannot acquire the next Message's base: a consumer must retain its missing
+origin and report it, or stop transfer as `CONTENT_UNAVAILABLE`. Literal `value`
+objects, including keys spelled `uri` and `baseUri`, stay literal. Prepare `select`
+wraps data and does not discover Sources inside it. Call and Join arbitrary data
+likewise are not recursively interpreted as content. An explicitly selected Source
+retains its known producing origin, including a member completion in a Join.
+Resolution changes no access rights and proves neither availability nor sandboxing.
+
+### Exact support declarations
+
+A Binding or Configuration may add `claims`, each with `requirement`, `status`
+(`supported`, `unsupported`, `unknown`) and optional `evidence`, a lowercase
+64-digit SHA-256 reference. Claims apply only to that exact binding or
+configuration declaration, including its implementation/settings and selected
+Engine, Model and Tools. Changing that declaration changes applicability.
+The complete Requirement matches by exact structural JSON equality, including
+parameters; absent parameters differ from an explicit empty object. There is
+no subset matching, version ordering or promotion of a Tool or Model claim to
+an end-to-end configuration claim. Duplicate claims for one full requirement
+fail `CLAIM`, even when identical. Duplicate requirements fail `DUPLICATE`.
+
+The reader reports binding requirements and each Agent's applicable configuration
+requirements plus its selected skills' requirements. Dynamic alternatives are
+reported separately as conditional on selection; they are never merged into a
+fictional selected configuration. Missing or unknown claims, and supported
+claims without evidence, yield `unknown`. Unsupported yields `incompatible`;
+supported with evidence yields `declared-supported`. Aggregate precedence is
+incompatible, unknown, declared-supported. An empty requirement set yields
+`not-requested`, never whole-system support. Evidence is not retrieved or verified.
+These assessments do not change structural validity; incompatibility remains
+visible beside independent unknowns. Every report keeps execution support
+unassessed. Core needs are listed separately as unassessed at their declarations:
+Agent continuity, configuration selection, input/output formats and content
+roles, structure checks, delivery, steering, Join stopping, approval admission
+and composition expansion. External claims never discharge these core needs in
+this candidate. A consumer must assess its actual path before executing it.
+
+## Local composition and protected admission
+
+### Local composition
+
+An optional `compositions` map declares reusable local graphs with `entry`,
+`steps`, distinct `outputs`, and optional distinct `agentParameters`. Body Agent
+references may be an existing Agent name or `{ "parameter": "name" }`.
+A `compose` step names `composition`, supplies the exact `agents` parameter map,
+and a `next` map with exactly the output names. `onError` is optional. These
+parameters bind existing Agent references only; they never substitute code,
+settings, prompt text or arbitrary data. Bodies share document content, skills,
+configurations and bindings. Reuse never clones, resets or replaces an Agent.
+
+Body targets name local steps or `{ "output": "name" }`; an error route may
+instead name `{ "error": true }`. Outputs are normal routes only. Every normal
+route is explicit and nonempty. Each route contains exactly one target, so a
+body has no parallel fan-out. Bodies permit Agent, Call, Condition, Prepare and
+Approval; Join, steering and nested composition are rejected. Bodies may loop.
+Every step is reachable from entry and every declared output has an authored
+export. Every body, including unused bodies, is checked with these restrictions
+and ordinary references and approval rules. Finite expansion does not promise
+termination of its internal loops.
+
+Expansion copies steps per authored use, redirects incoming routes to the body
+entry, substitutes output exports with the use's successors and error exports
+with its error route. Missing error handling terminates that error path. Internal
+errors without a route remain terminal; errors do not become normal values.
+A use has no independent completion, visit counter, approval or cancellation
+lifetime. Internal `maxVisits` counters are separate per authored use and persist
+on re-entry; exported routes can fan out only after the serial body finishes.
+Step addresses are arrays `[use, localStep]`, or `[topLevelStep]`; implementations
+must not join names with an ambiguous delimiter. Reports preserve authored body
+paths and invocation paths. The public expanded projection represents steps as
+records with these addresses, not as newly declared Agents. Completion/admission
+checkers accept a top-level name or such a JSON address through their Python API;
+the CLI accepts a JSON array argument for an expanded step.
+
+Ordinary reachability, Join and approval checks run after expansion. Composition
+as a direct-fork Join member is rejected in this bounded version, including a
+one-step body; no arbitrary hierarchical scheduler is implied. Other top-level
+parallel flow remains available. A body cannot export a result while another
+internal branch runs because internal fan-out is forbidden.
+
+### Protected admission
+
+An `approval` step names `call`, an Agent or Call step, `binding`, `timeoutMs`
+and `validForMs`, both positive integers, and `next` with `approved` and `denied`
+routes. Approved has exactly one target: that action or the next gate for the
+same action. For each protected action all its gates form one finite chain.
+Only the last gate's approved edge enters the action, and only the preceding
+approved edge enters each later gate. A top-level gate cannot name a composition
+use as its action; place the gate on the actual body action. Neither action nor
+later gate is entry.
+Denial/error paths cannot reach the action or later gates without first reaching
+the first gate. Returning there starts a new authorization attempt. An ordinary
+favorable Agent result, including a human's, cannot replace a gate decision.
+Steering cannot be a protected target in this bounded candidate.
+
+Agent/Call steps may add `scope` with nonempty `action`, a nonempty distinct list
+of resource descriptions and `context`, an Operand. Scope is required for any
+gated target and for Calls whose binding explicitly declares `effects: external`
+or `effects: unknown`. Bindings may declare `effects: none`; omission is unknown,
+not a claim of no effects. An ungated action is legal, and effects alone never
+require a human gate. A scope grants no permission. Internal Agent Tool actions
+need their own actual-invocation admission enforcement through the selected
+Engine/Tool integration. Declare this through versioned requirements and retain
+it as unassessed; gating an Agent Message never proves interception of its Tools.
+
+At first gate entry capture the input/origin, evaluated arguments or adapted
+Message, scope context, action binding and selected configuration. For a fresh
+Agent select and retain its configuration before presenting approval, without
+initializing it or starting protected work. Capture reserves its FIFO queue
+position. If older queued work has not yet fixed that Agent's configuration,
+capture waits for that earlier selection instead of selecting out of order.
+Later captures reuse the retained selection. Approval may occur while earlier
+work runs, but admission still waits for its queue turn and checks freshness.
+A previously selected configuration stays fixed. All gates and actual admission use the same captured invocation,
+including the document declaration and occurrence identity. Denial or gate
+failure releases the reserved queue position and visit; it never admits work.
+Once the chain approves, the reserved visit is consumed even if admission later
+fails freshness, and is not counted twice. Unresolvable inputs
+fail `OPERAND` or `CONFIGURATION`; no approval request guesses them. The gate
+preserves input and origin on approval; denial is its separate normal route and
+gate technical failure uses `onError`.
+
+A gate decision must match its authorized integration, gate, occurrence and exact
+captured invocation. Its deadline is entry plus min(timeoutMs, validForMs);
+equality is expired. At actual action admission every decision remains valid
+until that gate's entry plus validForMs, again strictly before expiration.
+Gates occur in their declared order. The selected Agent may wait in its queue,
+but expired approval never starts work. Rejected, missing, stale or mismatched
+approvals fail `APPROVAL`; technical integration failure also uses `APPROVAL`
+with explanatory details. Failure to admit follows the protected action's error
+route. Each retry, loop visit or sibling occurrence requires fresh authorization;
+no approval survives stop/edit/start or a changed document/configuration.
+
+Processing order for protected Agent work is visit reservation, capture and
+configuration selection, approval chain, queue admission with freshness check,
+initialization if needed, input constraints, work and output validation. Reserving
+a target's visit at capture prevents a gate from authorizing a known exhausted
+visit; admission does not count it again. Ungated work retains its existing order.
+Successful selection remains retained even after denial or expiration, without
+starting an uninitialized Agent. All values and clock/authority observations
+remain integration obligations, not observations made by static graph checks.
+
+`check_admission.py DOCUMENT STEP RECORD` checks a supplied consistency record.
+It requires `occurrence`, `origin`, `input`, `invocation`, `admittedAt` and
+`decisions`; `retainedConfiguration` is optional for an Agent. The invocation is
+recomputed from declarations and recorded input; it contains the complete document
+as `declaration`, the addressed target, occurrence, input/origin, resolved scope and, for a Call,
+binding plus evaluated arguments, or for an Agent, its name, configuration and
+adapted Message. Each decision contains `gate` address, `occurrence`, `invocation`,
+`binding` declaration, `enteredAt`, `decidedAt`, `decision: approved` and
+`authorityConfirmed: true`. Times are nonnegative integer ticks in one declared
+millisecond time domain; no wall clock is consulted. Exact matches, ordering and
+both deadlines are checked. An accepted record establishes only its internal
+consistency, never that authority was authenticated, values captured immutably,
+a queue respected, or an action executed. A caller cannot use this checker as an
+authorization service. No runtime or decision intake service is implemented.
+
+The deterministic `prepare_message` helper in [sources.py](sources.py) checks
+supplied preparation data. `agent_content` expands skill and Agent initialization
+content using the same source-origin rules, without initializing an Engine.
+The preparation helper's optional `source_bases` map associates selected
+input JSON Pointers with their original bases, including nested Join members.
+It returns URI observations beside the Message; an unresolved observation must
+travel with that Source or block delivery. Passing a new receiving base is not
+an alternative to preserving that origin. This helper evaluates authored data
+transformations only; it never runs an Agent, Call or graph.

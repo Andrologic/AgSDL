@@ -3,7 +3,8 @@ import json
 import sys
 from pathlib import Path
 
-from reader import MARKER, SCHEMA, equal, loads, shape, validate
+from reader import MARKER, SCHEMA, dumps, equal, loads, shape, validate
+from sources import normalize_message, normalize_completion
 
 
 def operand_value(operand, value):
@@ -17,6 +18,35 @@ def operand_value(operand, value):
         else:
             raise ValueError('Operand container does not match the path.')
     return value
+
+
+def select_configuration(document, agent_name, current, retained=None):
+    config = document['agents'][agent_name]['configuration']
+    alternatives = [config] if isinstance(config, str) else list(config['cases'].values())
+    if retained is not None:
+        if retained not in alternatives:
+            raise ValueError('Invalid retained configuration.')
+        return retained
+    if isinstance(config, str):
+        return config
+    choice = operand_value(config['select'], current)
+    if not isinstance(choice, str):
+        raise ValueError('Configuration choice must be a string.')
+    return config['cases'][choice]
+
+
+def delivered_message(document, origin, value):
+    """Declared adaptation only. Caller checks origin shape using delivery check."""
+    if origin in ('entry', 'prepare'):
+        return normalize_message(value, document)[0]
+    if origin == 'agent':
+        text = value.get('text', '')
+        if 'responseMessages' in value:
+            text = '\n'.join(part for msg in value['responseMessages'] if (part := ''.join(msg)) != '')
+        return {'resources': {'result': {'value': text, 'mediaType': 'text/plain'}}}
+    key = {'call': 'data', 'join': 'members', 'error': 'error'}[origin]
+    return {'resources': {'error' if origin == 'error' else 'result': {
+        'value': value if origin == 'join' else value[key], 'mediaType': 'application/json'}}}
 
 
 def check_delivery(document, agent_name, record):
@@ -51,6 +81,7 @@ def check_delivery(document, agent_name, record):
         return failure('INVALID_RECORD', 'Claimed configuration differs from the selected or retained one.')
 
     value, origin = record['input'], record['origin']
+    observations = []
     if origin in ('entry', 'prepare'):
         if not shape(value, SCHEMA['$defs']['Message']):
             return failure('INVALID_RECORD', 'Message origin requires a Message value.')
@@ -58,10 +89,17 @@ def check_delivery(document, agent_name, record):
         if any('ref' in source and source['ref'] not in document.get('content', {})
                for source in sources):
             return failure('INVALID_RECORD', 'Recorded Message has an unresolved content reference.')
-        expected = value
+        try:
+            expected, observations = normalize_message(value, document)
+        except (KeyError, ValueError):
+            return failure('INVALID_RECORD', 'Invalid content URI, base or reference.')
     elif origin == 'agent':
         if not shape(value, SCHEMA['$defs']['Completion']):
             return failure('INVALID_RECORD', 'Agent origin requires a completion shape.')
+        try:
+            _, observations = normalize_completion(value)
+        except ValueError:
+            return failure('INVALID_RECORD', 'Invalid completion URI or base.')
         text = value.get('text', '')
         if 'responseMessages' in value:
             assembled = '\n'.join(part for msg in value['responseMessages'] if (part := ''.join(msg)) != '')
@@ -79,9 +117,14 @@ def check_delivery(document, agent_name, record):
             return failure('INVALID_RECORD', 'Join requires a nonempty named map of complete member-result shapes.')
         expected = {'resources': {'error' if origin == 'error' else 'result': {
             'value': value if origin == 'join' else value[key], 'mediaType': 'application/json'}}}
-    if not equal(record['message'], expected):
+    try:
+        claimed, claimed_sources = normalize_message(record['message'], document)
+    except (KeyError, ValueError):
+        return failure('INVALID_RECORD', 'Invalid delivered URI, base or reference.')
+    if not equal(claimed, expected):
         return failure('INVALID_RECORD', 'Claimed Message does not preserve the declared origin delivery.')
-    return {**report, 'valid': True}
+    return {**report, 'valid': True, 'sources': observations,
+            'unassessed': [x['path'] for x in observations + claimed_sources if x['status'] == 'unresolved']}
 
 
 def main():
@@ -94,7 +137,7 @@ def main():
     except (ValueError, UnicodeError, RecursionError, ArithmeticError, OSError) as error:
         print(str(error), file=sys.stderr)
         return 2
-    print(json.dumps(report, ensure_ascii=True, sort_keys=True))
+    print(dumps(report))
     return 0 if report['valid'] else 1
 
 
