@@ -1,0 +1,206 @@
+{
+  "contract": "agsdl-exp-flow-0.2-c1",
+  "id": "parallel-reviews",
+  "bindings": {
+    "coding": {
+      "contract": {
+        "identity": "example/agent-engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    },
+    "review-choice": {
+      "contract": {
+        "identity": "example/review-decision",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/explicit-final-choice",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "project": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-write"
+      }
+    },
+    "review": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-only"
+      }
+    }
+  },
+  "agents": {
+    "developer": {
+      "configuration": "project",
+      "prompt": [
+        {
+          "value": "Implement the request and address review feedback."
+        }
+      ]
+    },
+    "code-reviewer": {
+      "configuration": "review",
+      "prompt": [
+        {
+          "value": "Review the code. Explain findings and choose accepted or changes_needed when finished."
+        }
+      ]
+    },
+    "test-reviewer": {
+      "configuration": "review",
+      "prompt": [
+        {
+          "value": "Review coverage. Explain findings and choose accepted or changes_needed when finished."
+        }
+      ]
+    }
+  },
+  "flow": {
+    "entry": "develop",
+    "steps": {
+      "develop": {
+        "type": "agent",
+        "agent": "developer",
+        "next": [
+          "code",
+          "coverage"
+        ]
+      },
+      "code": {
+        "type": "agent",
+        "agent": "code-reviewer",
+        "decision": {
+          "binding": "review-choice",
+          "choices": [
+            "accepted",
+            "changes_needed"
+          ]
+        },
+        "next": {
+          "accepted": [
+            "reviews"
+          ],
+          "changes_needed": [
+            "reviews"
+          ]
+        }
+      },
+      "coverage": {
+        "type": "agent",
+        "agent": "test-reviewer",
+        "decision": {
+          "binding": "review-choice",
+          "choices": [
+            "accepted",
+            "changes_needed"
+          ]
+        },
+        "next": {
+          "accepted": [
+            "reviews"
+          ],
+          "changes_needed": [
+            "reviews"
+          ]
+        }
+      },
+      "reviews": {
+        "type": "join",
+        "after": "develop",
+        "members": [
+          "code",
+          "coverage"
+        ],
+        "next": [
+          "accepted"
+        ]
+      },
+      "accepted": {
+        "type": "condition",
+        "test": {
+          "all": [
+            {
+              "equals": [
+                {
+                  "path": [
+                    "members",
+                    "code",
+                    "choice"
+                  ]
+                },
+                {
+                  "value": "accepted"
+                }
+              ]
+            },
+            {
+              "equals": [
+                {
+                  "path": [
+                    "members",
+                    "coverage",
+                    "choice"
+                  ]
+                },
+                {
+                  "value": "accepted"
+                }
+              ]
+            }
+          ]
+        },
+        "next": {
+          "true": [],
+          "false": [
+            "correction"
+          ]
+        }
+      },
+      "correction": {
+        "type": "prepare",
+        "message": {
+          "prompt": [
+            {
+              "value": "Address the requested changes in both reviews."
+            }
+          ],
+          "resources": {
+            "code-review": {
+              "select": {
+                "path": [
+                  "members",
+                  "code",
+                  "text"
+                ]
+              },
+              "mediaType": "text/plain"
+            },
+            "test-review": {
+              "select": {
+                "path": [
+                  "members",
+                  "coverage",
+                  "text"
+                ]
+              },
+              "mediaType": "text/plain"
+            }
+          }
+        },
+        "next": [
+          "develop"
+        ]
+      }
+    }
+  }
+}

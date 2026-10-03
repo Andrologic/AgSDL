@@ -21,6 +21,11 @@ separate frozen static-reader candidate.
    deterministic test loop and two grouped reviews, then inspect a custom Call.
    These semantic walkthroughs are illustrative, not executable fixtures.
 
+The [persistent-Agent candidate](../../experimental/agent-flow-0.2/README.md)
+now supplies JSON examples, a schema and a bounded static reader for the basic
+flows. Its explicit release-scope gaps remain work for 0.2; passing those checks
+does not complete this preparation or establish execution support.
+
 The Agent and flow directions are accepted under [Decision 0011](../decisions/0011-message-based-agent-model.md)
 and [Decision 0012](../decisions/0012-blueprint-flow-directions.md). Their concrete
 serialization remains proposed. Proposal 0021 develops a reviewable contract;
@@ -102,9 +107,9 @@ evidence of context continuity, media delivery or execution.
 | --- | --- |
 | Consistent Agent/content/flow directions | Recorded in 0019/0020 and their decisions. |
 | Reviewed common block contract | Proposed in 0021; resolve its remaining semantic choices before freezing a candidate. |
-| Concrete new edition | Not allocated. Define Message and block serialization, references, conditions, selectors and configuration bindings from the reviewed semantics. |
-| Lifecycle and correlation rules | Define queue/steering boundaries, result grouping by current work, no-visible-text cases, duplicate/late data, first-satisfactory ties and pending stops. |
-| Examples, schema and static readers | Derive them from the selected candidate and compare independent readers on its own cases. Existing 0.1/0017 checks do not cover it. |
+| Concrete new edition | Bounded experiment `agsdl-exp-flow-0.2-c1` is available; no final edition allocated. Its remaining release scope must be completed or explicitly revised before adoption. |
+| Lifecycle and correlation rules | Define queue/steering boundaries, result grouping by current work, duplicate/late data and delivery acknowledgements. Output correction and waiting for stops are accepted directions; c1 proposes first-satisfactory ordering and exhaustion rules. |
+| Examples, schema and static readers | New basic-flow examples, schema and one static reader are available in the persistent-Agent experiment. Broader coverage and an independent semantic reader remain. Existing 0.1/0017 evidence does not transfer. |
 | Integration evidence | Exercise actual Agent continuity, Tool calls, effects, media, approvals and stop behavior in consuming software before claiming support for them. |
 | Migration and publication | Review changes from 0.1 and 0017, pin the final scope, obtain adoption/publication decisions and prepare release artifacts. No publication is part of this preparation. |
 

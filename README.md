@@ -30,7 +30,10 @@ optional initial prompts, multimodal content, visible response transfer,
 deterministic choices, parallel connections and explicit result joins.
 [Logic blocks](proposals/0021-logic-block-contract-0.2.md) proposes a common
 contract for Condition, Join, Prepare, Call and reusable/custom behavior.
-Concrete grammar and integration details remain proposed, not implemented.
+Concrete grammar and integration details remain proposed. A
+[bounded persistent-Agent candidate](experimental/agent-flow-0.2/README.md) now
+provides basic-flow JSON examples, a schema and one static reader; its documented
+gaps prevent treating it as the complete 0.2 edition.
 
 The [KISS experiment](experimental/kiss-0.2/README.md) remains a separate frozen
 candidate under [0017](proposals/0017-agent-only-kiss-0.2.md). Its

@@ -52,7 +52,8 @@ reference. [0019](proposals/0019-agent-prompt-and-resources.md) and
 [0012](docs/decisions/0012-blueprint-flow-directions.md), record accepted Agent,
 Message and flow directions. [0021](proposals/0021-logic-block-contract-0.2.md)
 proposes the shared contract for a small set of logic blocks, local compositions
-and custom implementations.
+and custom implementations. Its [bounded static experiment](experimental/agent-flow-0.2/README.md)
+now exercises basic flows without claiming the remaining directions are complete.
 
 Preparation now proceeds through these dependencies:
 

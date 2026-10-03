@@ -1,0 +1,97 @@
+{
+  "contract": "agsdl-exp-flow-0.2-c1",
+  "id": "multimedia-and-reuse",
+  "bindings": {
+    "coding": {
+      "contract": {
+        "identity": "example/agent-engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    },
+    "alternate": {
+      "contract": {
+        "identity": "example/agent-engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/alternate-engine",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "project": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-only"
+      }
+    },
+    "alternate": {
+      "engine": "alternate"
+    }
+  },
+  "agents": {
+    "reviewer": {
+      "configuration": "project",
+      "skills": [
+        "review"
+      ],
+      "resources": {
+        "recording": {
+          "uri": "file:///workspace/demo.mp4",
+          "mediaType": "video/mp4"
+        }
+      },
+      "interface": {
+        "inputMediaTypes": [
+          "text/plain",
+          "video/mp4"
+        ],
+        "outputMediaTypes": [
+          "text/plain",
+          "image/png"
+        ],
+        "results": {
+          "diagram": {
+            "mediaTypes": [
+              "image/png"
+            ],
+            "required": true
+          },
+          "explanation": {
+            "mediaTypes": [
+              "text/plain"
+            ],
+            "required": false
+          }
+        }
+      }
+    },
+    "other-reviewer": {
+      "configuration": "alternate",
+      "skills": [
+        "review"
+      ]
+    }
+  },
+  "content": {
+    "review-rules": {
+      "uri": "file:///workspace/instructions/review.md",
+      "mediaType": "text/markdown"
+    }
+  },
+  "skills": {
+    "review": {
+      "prompt": [
+        {
+          "ref": "review-rules"
+        }
+      ]
+    }
+  }
+}

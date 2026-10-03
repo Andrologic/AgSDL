@@ -1,6 +1,11 @@
 # Experimental candidates
 
 This directory keeps separate experimental editions. The
+[persistent-Agent flow candidate](agent-flow-0.2/README.md) supplies a bounded
+static implementation of the newer 0019/0020/0021 model, with explicit gaps
+before a complete 0.2 candidate. It does not supersede the frozen experiments.
+
+The
 [bounded KISS 0.2 candidate](kiss-0.2/README.md) specifies a new prototype and
 examples under proposal 0017, with Python and JavaScript static readers and a
 [42-case comparison and assessment](kiss-0.2/ASSESSMENT.md), without adoption. The

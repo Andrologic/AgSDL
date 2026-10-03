@@ -60,8 +60,8 @@ decision with step completion.
 An explicit selection can instead transfer specified results, content or file
 references, including non-text content. Selecting a file reference does not
 grant access to its target. A previous step's reply cannot stand in for a
-missing current result. Exact selection syntax, text assembly and the treatment
-of a step without user-visible text remain candidate work.
+missing current result. No visible text alone is not an error when the required
+outputs are present. Exact selection syntax and text assembly remain candidate work.
 
 By default, a direct transfer to another Agent delivers the result as
 information in a Message. The recipient's instructions define what to do with
@@ -108,6 +108,14 @@ The blueprint may provide a recovery path. That path examines the actual state
 and decides what to do next, including continuing work or asking for help. It
 can use ordinary Agents and Messages; no separate recovery-agent type is needed.
 Without a recovery path, the affected path stops with a diagnostic.
+
+A missing or invalid required Agent output can take an explicit correction
+loop: send the output diagnostic and an authored correction request back to the
+same Agent. Its context and completed effects remain. The correction is new
+work; a previously completed response is not reopened or silently replaced.
+No extra Agent, text-only output requirement or blind replay of actions is needed.
+Normal successors wait for a conforming result. This does not automatically
+retry technical failures from Tools or Calls.
 
 An interruption may occur after files or other external state have changed.
 Failure does not imply that no work happened, that effects were undone, or that
@@ -164,7 +172,13 @@ or unrelated work. Its context remains available for later Messages.
 A stop request is not confirmation that work has stopped. It does not undo file
 edits or other effects. A consuming implementation must preserve that distinction;
 it cannot assert a clean workspace or stopped activity from the request alone.
-The next candidate must address how subsequent work interacts with pending stops.
+By default, retain the selected result and wait until the unnecessary work is
+confirmed stopped or has finished before activating successors. The blueprint's
+explicit let-finish alternative may continue without waiting; any remaining
+workspace activity then remains possible. Missing or rejected stop acknowledgement
+is not permission to proceed under the default. The integration must report it
+and wait for actual completion or follow declared recovery. No timeout, rollback
+or cancellation of unrelated work is implied.
 
 ## Small design scenarios
 
@@ -289,7 +303,7 @@ and review scenarios; it does not adopt a grammar.
   additional inputs, how text is assembled, and the case with no user-visible
   text, without falling back to a prior reply.
 - Serialize configuration selection before initialization. Define diagnostics
-  for unresolved selections and conflicting revisits to an initialized Agent.
+  for unresolved selections and persistence across later Messages.
 - Define step outputs and their connections, result selectors, branch conditions,
   joins and loop limits in one grammar. State iteration counting, limit exhaustion,
   ties between acceptable results and the outcome when no branch provides an
@@ -307,3 +321,21 @@ Static readers can test authored structure and compatibility declarations.
 Continuity, delivery, completion and actual stop behavior require execution
 evidence from consuming implementations. Durable restart recovery, arbitrary
 Agent spawning and a runtime implementation are outside this proposal.
+
+### Proposed c1 refinements after review
+
+The [bounded c1 contract](../experimental/agent-flow-0.2/README.md) proposes
+selecting configuration once from the first input, then retaining it without
+reevaluating later Messages. This lets correction Messages carry the error
+without repeating initialization data. A later selection-like value cannot
+reconfigure the Agent.
+
+It also proposes counting a Join visit when its anchor completes, before
+starting the group's members. One admitted group consumes one visit regardless
+of its outcome, acceptance mode or stop policy. A limit breach follows the
+Join's error path without dispatching a new group or stopping previous groups.
+A completion record may carry `choice` only for a step declaring a decision;
+otherwise the recorded-output checker rejects it as `INVALID_RECORD`.
+
+These clarify the experimental candidate. They do not change the accepted scope,
+adopt the grammar, or establish execution support.
