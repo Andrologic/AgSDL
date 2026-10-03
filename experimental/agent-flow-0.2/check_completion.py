@@ -22,6 +22,10 @@ def check_completion(document, step_name, result):
         return {**report, 'error': {'code': 'INVALID_RECORD',
                 'message': 'The completion record does not match its declared shape.', 'details': []}}
 
+    if 'choice' in result and 'decision' not in step:
+        return {**report, 'error': {'code': 'INVALID_RECORD',
+                'message': 'This Agent step declares no decision; omit choice.', 'details': []}}
+
     interface = document['agents'][step['agent']].get('interface', {})
     results = result.get('results', {})
     allowed = interface.get('outputMediaTypes')

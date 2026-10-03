@@ -134,6 +134,16 @@ class CandidateTests(unittest.TestCase):
         result['choice'] = 'unmapped'
         self.assertFalse(check_completion(document, 'code', result)['valid'])
 
+    def test_undeclared_decision_is_not_accepted_as_control_data(self):
+        document = example('test-loop')
+        step = document['flow']['entry']
+        result = {'text': 'accepted'}
+        self.assertTrue(check_completion(document, step, result)['valid'])
+        result['choice'] = 'accepted'
+        report = check_completion(document, step, result)
+        self.assertFalse(report['valid'])
+        self.assertEqual(report['error']['code'], 'INVALID_RECORD')
+
     def test_bad_record_or_request_is_not_an_agent_output_to_repair(self):
         document = example('output-correction')
         self.assertEqual(check_completion(document, 'develop', {'text': 12})['error']['code'], 'INVALID_RECORD')

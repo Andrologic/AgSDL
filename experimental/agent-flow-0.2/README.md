@@ -87,14 +87,22 @@ Each Agent names one fixed configuration, or supplies `select` and `cases`
 for a declared pre-initialization choice. The selector reads the first input;
 its value must be a string naming a case. A missing value, wrong type or unknown
 case fails without a default. Evaluate a dynamic choice when the first work
-arrives, before initializing the Agent. Later work must select the same
-configuration or fail before changing the Agent. A fixed configuration can be
-prepared before its first Message. This is the proposed concrete rule for the
+arrives, before initializing the Agent. Evaluate it once for that instance;
+later Messages use the retained configuration without evaluating the selector
+again. They need not repeat the selection data. Even a later value naming a
+different case is ordinary input, not a reconfiguration request. A fixed
+configuration can be prepared before its first Message. This is the proposed concrete rule for the
 accepted pre-initialization direction. An Agent can add `prompt`, `resources`, `skills`
 and an `interface`. The Agent is one persistent participant, including human
 participation where the integration supplies it. Visiting an Agent step again
 uses its existing instance and context. There is no per-visit initialization,
 context reset, implicit spawning or hot configuration replacement.
+
+For example, in the [output-correction example](examples/output-correction.json),
+a dynamic configuration could select `project` from the first Message's
+`resources.mode.value`. The correction Message contains only `output-errors`:
+it reaches the same Agent using `project`, with no selection data to reconstruct.
+A later Message carrying a different mode still cannot change that instance.
 
 No initial prompt means no implicit initial task. A configuration's explicit
 Engine binding is required even when the Agent waits for its first Message.
@@ -248,10 +256,29 @@ the static reader does not execute or attest to them.
 
 A return connection can form a loop through the same Agents. `maxVisits`, when
 present, is a positive limit per step within one flow invocation. Count each
-activation that begins work; a waiting Join begins once its complete group is
-available. Reject the next activation beyond the limit before performing its
-work. Omission imposes no limit. This proposed counting rule is local to a step,
-not a global budget or a runtime limit imposed on every graph.
+activation that begins work. For a Join, reserve and count one visit when its
+anchor completes normally, before dispatching that group's members. If the
+Join's limit is exhausted, do not start those members; follow the Join's
+`onError`, or stop that path with a diagnostic. The completed anchor's effects
+remain. This rule applies to both Join modes and both remaining-work policies.
+
+An admitted group consumes one visit even if it later fails or has no acceptable
+result. Member arrivals, stop requests, stop acknowledgements, late results and
+normal continuation never consume additional Join visits. A limit failure does
+not stop work in previously admitted groups. Other steps reject activations
+beyond their own limit before performing their work. Omission imposes no limit.
+The counter is local to a step, not a global budget.
+
+For a first-satisfactory Join with `maxVisits: 1`, this proposed timeline applies:
+
+| Event | Join visits | Consequence |
+| --- | --- | --- |
+| First anchor completion | 1 | Admit the group, then start its members. |
+| One member supplies an acceptable result | 1 | Retain the winner. With `finish`, continue now; otherwise request stop and wait. |
+| Remaining work confirms stop or completes | 1 | Release a waiting winner; do not repeat an earlier continuation. |
+| A loop produces another anchor completion | 1 | Reject the next group before dispatching its members, even if an earlier loser is still running under `finish`. |
+
+This is a contract example, not execution evidence.
 
 Technical failure or a visit-limit breach follows `onError`, if supplied, with
 diagnostic information as its input. Otherwise the affected path stops with a
@@ -285,6 +312,8 @@ It checks recorded declarations only: it does not fetch a URI, inspect file
 bytes, verify MIME content, associate a real execution or enforce termination.
 The integration must check actual delivery and support. Invalid document/step
 requests yield `INVALID_REQUEST`; malformed records yield `INVALID_RECORD`.
+A `choice` supplied for an Agent step without a declared `decision` also yields
+`INVALID_RECORD`; ordinary text containing a choice word remains plain text.
 Those errors are distinct from an Agent's correctable output constraint failure.
 Exit codes are 0 for a conforming record, 1 for a rejected record/request and
 2 for command, file or parsing failure. No command schedules a correction.

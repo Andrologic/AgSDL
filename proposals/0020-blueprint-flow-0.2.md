@@ -303,7 +303,7 @@ and review scenarios; it does not adopt a grammar.
   additional inputs, how text is assembled, and the case with no user-visible
   text, without falling back to a prior reply.
 - Serialize configuration selection before initialization. Define diagnostics
-  for unresolved selections and conflicting revisits to an initialized Agent.
+  for unresolved selections and persistence across later Messages.
 - Define step outputs and their connections, result selectors, branch conditions,
   joins and loop limits in one grammar. State iteration counting, limit exhaustion,
   ties between acceptable results and the outcome when no branch provides an
@@ -321,3 +321,21 @@ Static readers can test authored structure and compatibility declarations.
 Continuity, delivery, completion and actual stop behavior require execution
 evidence from consuming implementations. Durable restart recovery, arbitrary
 Agent spawning and a runtime implementation are outside this proposal.
+
+### Proposed c1 refinements after review
+
+The [bounded c1 contract](../experimental/agent-flow-0.2/README.md) proposes
+selecting configuration once from the first input, then retaining it without
+reevaluating later Messages. This lets correction Messages carry the error
+without repeating initialization data. A later selection-like value cannot
+reconfigure the Agent.
+
+It also proposes counting a Join visit when its anchor completes, before
+starting the group's members. One admitted group consumes one visit regardless
+of its outcome, acceptance mode or stop policy. A limit breach follows the
+Join's error path without dispatching a new group or stopping previous groups.
+A completion record may carry `choice` only for a step declaring a decision;
+otherwise the recorded-output checker rejects it as `INVALID_RECORD`.
+
+These clarify the experimental candidate. They do not change the accepted scope,
+adopt the grammar, or establish execution support.
