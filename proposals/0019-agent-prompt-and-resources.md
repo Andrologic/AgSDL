@@ -6,8 +6,9 @@ adopted contract or candidate edition.**
 The directions cover persistent Agents, distinct prompt and resources,
 multimodal Messages, optional initial prompt and output constraints, and
 configured workspace access.
-Concrete shapes and binding rules below remain proposed for the next candidate.
-The [bounded flow candidate](../experimental/agent-flow-0.2/README.md) provides
+Concrete shapes and binding rules remain proposed. The canonical requirements
+are in [the 0.2 candidate specification](../spec/0.2/README.md). Its
+[tooling guide](../experimental/agent-flow-0.2/README.md) provides
 partial static checks of these directions. [0017](0017-agent-only-kiss-0.2.md)
 remains a separate frozen experiment; neither is a normative adoption.
 [Release status](../README.md#release-status-and-history) remains authoritative.
@@ -206,12 +207,13 @@ Distinguish permitted formats from required results. Allowing text or audio does
 not require both. Requiring a JSON report and an audio file requires both; an
 optional audio result must be declared optional. A failed constraint is reported,
 not presented as a conforming result or used to silently replace the Agent.
-The exact syntax for these constraints remains to be specified. Describe
+The [candidate Interface and structured-result rules](../spec/0.2/content.md#structured-results)
+specify a bounded syntax pending adoption. Describe
 the concrete format with an open media type, such as `text/plain`, `image/png`,
 `audio/wav`, `video/mp4` or `application/json`. These are examples, not a closed
 format list. Accepting audio input says nothing about producing audio output.
 Multiple input or output items can carry different formats in one interaction.
-The future Interface syntax must distinguish formats offered as alternatives
+The candidate Interface syntax distinguishes formats offered as alternatives
 from items required together, without repeating those contracts on each call.
 
 The same inline-or-URI source rule represents produced content. For example, an
@@ -230,8 +232,9 @@ and check the produced value against it.
 Keep support declarations with the selected configuration and its integration,
 including the selected Model where applicable. Reuse the existing distinction
 between required capabilities, support claims and evidence. Do not derive
-support from an Engine or Model name, or invent a default Model. Binding details
-remain for the next candidate; no universal provider catalog is introduced.
+support from an Engine or Model name, or invent a default Model.
+The [candidate binding and support rules](../spec/0.2/content.md#agents-configuration-and-reusable-behavior)
+specify those declarations pending adoption; no universal provider catalog is introduced.
 
 For native model input or output, every component on the selected path must
 support the required representation and direction. A Model supporting an image
@@ -312,26 +315,22 @@ replace Tool contracts, access controls, or the effect scopes of governed calls.
 In particular, 0017 `scope.resources` describes the targets of effects; it is not
 the accessible-information collection defined here.
 
-## Work remaining before a new executable candidate
+## Candidate coverage and integration review
 
-- Set the exact serialization and relationship with existing Instructions,
-  slots, Applications, Interface media requirements and Definition identity. This
-  draft does not authorize a silent reinterpretation of `before-invoke` or of
-  existing `invoke` semantics.
-- Specify the Message envelope, how it targets an existing Agent and carries
-  multiple content items, and how optional output constraints are declared. Keep
-  initial setup distinct from later Messages. Coordinate flow and concurrent
-  delivery with 0020. Arbitrary dynamic Agent creation and durable resumption
-  remain outside this content model.
-- Specify how Engine settings and Tool contracts expose declared workspace access
-  for compatibility assessment, without a universal permission vocabulary or
-  resource snapshot policy.
+The [candidate specification](../spec/0.2/README.md) now defines the document,
+Message, Interface and binding shapes, configuration retention and delivery
+profiles. The [migration guide](../docs/0.2/migration.md) separates their meaning
+from existing Instructions, slots, Applications, Definition identity and old
+`invoke` semantics. These concrete rules await review and adoption.
 
-These are serialization and integration tasks; they do not reopen the accepted
-Agent continuity, content roles or optional initial prompt. The
-[0.2 preparation index](../docs/0.2/README.md) tracks the document hierarchy.
+Engine settings and Tool contracts declare integration-specific workspace access;
+the candidate adds no universal permission vocabulary or resource snapshot policy.
+Arbitrary dynamic Agent creation and durable resumption remain outside this
+content model. Consuming implementations must demonstrate actual continuity,
+access and media behavior for their support claims. The
+[preparation index](../docs/0.2/README.md) tracks adoption and evidence status.
 
-A new candidate must test at least an Agent initialized without a prompt and
+Candidate review must cover at least an Agent initialized without a prompt and
 waiting for its first Message, a supplied but unavailable prompt, mixed resource
 types, inline versus referenced
 content, unresolved access, instruction/resource role separation, a multimodal
@@ -345,7 +344,7 @@ runtime evidence from consuming implementations.
 
 ## Proposed c1 input and response precision
 
-The [c1 candidate](../experimental/agent-flow-0.2/README.md) distinguishes a
+The [c1 candidate](../spec/0.2/README.md) distinguishes a
 Message's authored content roles from flow-result data. Delivery adaptation
 occurs after the one-time configuration choice. Result objects cannot assign
 themselves instruction authority by containing `prompt` or `resources` keys.
@@ -359,7 +358,7 @@ claiming actual support or replacing a persistent Agent after correction.
 
 ## Proposed bounded declaration checks
 
-The candidate now specifies [structured results, URI origins and scoped support](../experimental/agent-flow-0.2/README.md#structured-results-uri-origins-and-support).
+The candidate now specifies [structured results, URI origins and scoped support](../spec/0.2/content.md#structured-results-uri-origins-and-support).
 These rules remain proposed. They add a closed structured-value vocabulary,
 explicit source bases and exact requirement/claim matching. Static declarations
 and supplied records cannot establish content access, permission or execution.

@@ -10,16 +10,16 @@ Proposal acceptance does not update the specification by itself. The normative
 change must be applied separately and reviewed against the accepted proposal.
 
 For the next model, start with the [0.2 preparation index](../docs/0.2/README.md).
-It distinguishes accepted directions from the proposed block contract and
-historical experiments.
+It distinguishes accepted directions, the [canonical candidate requirements](../spec/0.2/README.md),
+the proposed block contract and historical experiments.
 
 ## Current 0.2 preparation
 
 | Proposals | Disposition |
 | --- | --- |
-| [0019](0019-agent-prompt-and-resources.md) | 0.2 design directions accepted under [Decision 0011](../docs/decisions/0011-message-based-agent-model.md): persistent Agents, multimodal Messages, distinct prompt/resources, optional initial prompt and output constraints and workspace access through configuration. Concrete grammar remains proposed; the [bounded c1 experiment](../experimental/agent-flow-0.2/README.md) implements part of these directions as static checks. No normative adoption or execution evidence. |
-| [0020](0020-blueprint-flow-0.2.md) | 0.2 flow directions accepted under [Decision 0012](../docs/decisions/0012-blueprint-flow-directions.md): visible response transfer, terminal routing decisions, deterministic conditions, configuration before initialization, recovery, loops, parallel output connections, queueing/steering and explicit joins. Concrete grammar remains proposed; the [bounded c1 experiment](../experimental/agent-flow-0.2/README.md) implements part of these directions as static checks. No normative adoption or execution evidence. |
-| [0021](0021-logic-block-contract-0.2.md) | Proposed common contract for Condition, Join, Prepare, Call, local compositions and custom implementations. Builds on 0019/0020; a bounded static experiment is available under `agsdl-exp-flow-0.2-c1`. No final grammar adoption or execution evidence; remaining release scope stays explicit. |
+| [0019](0019-agent-prompt-and-resources.md) | 0.2 design directions accepted under [Decision 0011](../docs/decisions/0011-message-based-agent-model.md): persistent Agents, multimodal Messages, distinct prompt/resources, optional initial prompt and output constraints and workspace access through configuration. Concrete grammar is specified in the [candidate specification](../spec/0.2/README.md), pending adoption; the [bounded c1 tooling](../experimental/agent-flow-0.2/README.md) checks its stated static subset. No normative adoption or execution evidence. |
+| [0020](0020-blueprint-flow-0.2.md) | 0.2 flow directions accepted under [Decision 0012](../docs/decisions/0012-blueprint-flow-directions.md): visible response transfer, terminal routing decisions, deterministic conditions, configuration before initialization, recovery, loops, parallel output connections, queueing/steering and explicit joins. Concrete grammar is specified in the [candidate specification](../spec/0.2/README.md), pending adoption; the [bounded c1 tooling](../experimental/agent-flow-0.2/README.md) checks its stated static subset. No normative adoption or execution evidence. |
+| [0021](0021-logic-block-contract-0.2.md) | Proposed common contract for Condition, Join, Prepare, Call, local compositions and custom implementations. Builds on 0019/0020; the [candidate specification](../spec/0.2/README.md) defines its bounded concrete form under `agsdl-exp-flow-0.2-c1`. No final grammar adoption or execution evidence; remaining release scope stays explicit. |
 
 ## Adopted sources for 0.1.0
 

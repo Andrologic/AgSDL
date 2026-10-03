@@ -7,13 +7,16 @@ Publication status and release history are maintained in the
 ## Current work: AgSDL 0.2
 
 The [0.2 preparation index](docs/0.2/README.md) records the accepted directions,
-proposed block contract and remaining work. The
-[persistent-Agent candidate](experimental/agent-flow-0.2/README.md) provides
-examples, a schema and bounded static checks. It is not the complete edition.
+candidate contract and remaining work. The [candidate specification](spec/0.2/README.md)
+defines concrete requirements pending maintainer adoption. The
+[tooling guide](experimental/agent-flow-0.2/README.md) provides examples, a schema
+and bounded static checks under `agsdl-exp-flow-0.2-c1`.
 
-Finish the contract, validate it with independent readers, document migration
-and obtain an adoption decision before preparing publication. Execution support
-claims need separate evidence from consuming implementations.
+Complete independent semantic comparison and final review of the candidate and
+[migration guide](docs/0.2/migration.md), allocate the edition and obtain an
+explicit adoption decision. [Release notes](docs/releases/0.2.0.md) are an
+unreleased draft; publication remains a separate decision. Execution support
+claims need evidence from consuming implementations.
 
 ## Maintenance: AgSDL 0.1
 

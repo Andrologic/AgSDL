@@ -4,8 +4,9 @@ Status: **illustrative 0.2 preparation, not executable fixtures or an adopted
 grammar.** These walkthroughs apply the accepted directions in
 [0019](../../proposals/0019-agent-prompt-and-resources.md) and
 [0020](../../proposals/0020-blueprint-flow-0.2.md), and exercise the proposed blocks
-in [0021](../../proposals/0021-logic-block-contract-0.2.md). Those documents remain
-the sources of semantics. Read the [preparation index](README.md) for their status.
+in [0021](../../proposals/0021-logic-block-contract-0.2.md). The
+[candidate specification](../../spec/0.2/README.md) defines the concrete proposed
+rules. Read the [preparation index](README.md) for their status.
 
 Quoted requests and replies are invented examples. Tables describe authored
 configuration and expected behavior, not JSON fields or a runtime protocol.
@@ -100,7 +101,7 @@ guarantee. A consuming system must arrange the access it declares.
 
 The Condition selects the path; it does not replace the report with a Boolean.
 Prepare's reference to the current Call result makes the report available on
-that path. The [bounded c1 contract](../../experimental/agent-flow-0.2/README.md#flow-and-data)
+that path. The [bounded c1 contract](../../spec/0.2/flow.md#flow-and-data)
 proposes selectors into the current input; their syntax is not yet adopted.
 
 An illustrative traversal:
@@ -239,7 +240,8 @@ test loops, direct fork-and-join, output correction and first-satisfactory
 selection. These walkthroughs remain illustrations, not execution traces.
 
 The [preparation index](README.md#before-a-02-release) tracks the remaining
-contract and adoption work. The c1 contract now proposes queue/steering
-boundaries and exact text assembly. Composition and the protected-action binding are not settled by these
-sequential-request scenarios. Repository checks on this document verify its
+review and adoption work. The [flow contract](../../spec/0.2/flow.md) defines
+candidate queue/steering boundaries, exact text assembly, composition and
+protected admission. These scenarios illustrate selected rules; they do not
+replace that contract. Repository checks on this document verify its
 maintenance, not the runtime behavior described in its tables.

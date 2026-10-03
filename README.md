@@ -23,17 +23,20 @@ records additional limits; this evidence does not establish universal agreement.
 ## Preparing 0.2
 
 Start with the [0.2 preparation index](docs/0.2/README.md) for the current model,
-its source hierarchy and the remaining work before an implementable edition.
+its source hierarchy and the remaining review and adoption work.
 [Agents and Messages](proposals/0019-agent-prompt-and-resources.md) and
 [flow directions](proposals/0020-blueprint-flow-0.2.md) describe persistent Agents,
 optional initial prompts, multimodal content, visible response transfer,
 deterministic choices, parallel connections and explicit result joins.
 [Logic blocks](proposals/0021-logic-block-contract-0.2.md) proposes a common
 contract for Condition, Join, Prepare, Call and reusable/custom behavior.
-Concrete grammar and integration details remain proposed. A
-[bounded persistent-Agent candidate](experimental/agent-flow-0.2/README.md) now
-provides basic-flow JSON examples, a schema and one static reader; its documented
-gaps prevent treating it as the complete 0.2 edition.
+The [candidate specification](spec/0.2/README.md) now defines concrete content,
+configuration, flow, lifecycle, composition and admission requirements, plus
+scoped static and record checks. It retains `agsdl-exp-flow-0.2-c1` pending final
+review, edition allocation and maintainer adoption. The
+[tooling guide](experimental/agent-flow-0.2/README.md) provides JSON examples, a
+schema and one static reader; independent semantic comparison remains pending.
+[Draft release notes](docs/releases/0.2.0.md) describe the proposed scope.
 
 The [KISS experiment](experimental/kiss-0.2/README.md) remains a separate frozen
 candidate under [0017](proposals/0017-agent-only-kiss-0.2.md). Its
@@ -86,7 +89,8 @@ See the [project scope](docs/scope.md) and
 
 ## Repository structure
 
-- `spec/` contains the adopted normative 0.1.0 text.
+- `spec/` contains the adopted normative 0.1.0 text; `spec/0.2/` contains candidate
+  requirements pending adoption.
 - `schemas/` contains derived JSON Schema shapes; the specification controls.
 - `examples/0.1.0/` contains official but non-normative examples of that text.
 - `tooling/readers/` contains non-normative official-edition readers.

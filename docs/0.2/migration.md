@@ -7,10 +7,11 @@ in [Decision 0011](../decisions/0011-message-based-agent-model.md) and
 [Decision 0012](../decisions/0012-blueprint-flow-directions.md), and the current
 proposals [0019](../../proposals/0019-agent-prompt-and-resources.md),
 [0020](../../proposals/0020-blueprint-flow-0.2.md), and
-[0021](../../proposals/0021-logic-block-contract-0.2.md). It is a migration aid,
-not a normative contract or an automatic conversion recipe. The [0.2
-preparation index](README.md) records what is accepted, proposed, and still
-unsettled.
+[0021](../../proposals/0021-logic-block-contract-0.2.md). The concrete target for
+candidate work is the [0.2 candidate specification](../../spec/0.2/README.md),
+still pending maintainer adoption. This guide is a migration aid, not a normative
+contract or an automatic conversion recipe. The [0.2 preparation index](README.md)
+records adoption and evidence status.
 
 ## Keep editions and evidence distinct
 
@@ -19,8 +20,10 @@ uses `agsdl-exp-0017-c1`; its readers and comparison evidence apply to that
 candidate. The persistent-Agent flow c1 is another bounded experiment,
 `agsdl-exp-flow-0.2-c1`. None of these markers can be relabelled as another.
 There is no automatic upgrade or format converter. Preserve each source
-artifact and its reports, then author a separate target description against the
-eventual adopted 0.2 contract. Static checks do not establish execution support.
+artifact and its reports, then author a separate candidate description against
+`agsdl-exp-flow-0.2-c1`. Review it against the final adopted edition when one exists;
+that later step must preserve the candidate artifact and its evidence too.
+Static checks do not establish execution support.
 The official 0.1 reader contract names seven operations: `inspect`,
 `validateD`, `validateG`, `resolveG`, `validateR`, `exchange`, and
 `lossyExchange`. Experimental candidates have their own static checks and
@@ -120,19 +123,23 @@ new directions do not make an Engine or Model name proof of support.
 3. For each item, record whether the target keeps it, expresses it through a
    different concept, or leaves it outside the target model. Carry forward
    security, authorization, and provenance obligations explicitly.
-4. Author the target description against the adopted 0.2 serialization when it
-   exists. The current c1 schema and static reader can illustrate and check
-   their bounded candidate only; c1 does not settle all accepted directions.
+4. Author a separate target against the [candidate serialization](../../spec/0.2/README.md).
+   The c1 schema and static reader check only that bounded candidate. Review
+   the target against the eventual adopted edition before claiming migration
+   to it; do not change its marker and reuse candidate evidence.
 5. Validate with tools for the target edition and retain their edition marker
    and evidence scope. Do not compare a c1 result as if it were an official
    0.1 result, or claim runtime behavior from static validation.
 
-Before using a new edition, consult the preparation index for pending decisions
-about block contracts, protected actions, capability support, lifecycle,
-delivery, and migration scope. [Decision 0010](../decisions/0010-human-and-software-agents.md)
+Before using a new edition, consult the preparation index for final review,
+adoption and edition allocation. The candidate specifies block contracts,
+protected admission, scoped support declarations, lifecycle and delivery rules.
+[Decision 0010](../decisions/0010-human-and-software-agents.md)
 and [Decision 0011](../decisions/0011-message-based-agent-model.md) retain the
 shared Agent model and separate approval controls. [Proposal 0019](../../proposals/0019-agent-prompt-and-resources.md)
 records support declarations; [Proposal 0021](../../proposals/0021-logic-block-contract-0.2.md)
-retains protected-action and support requirements. Their concrete syntax and
-integration contracts remain pending for the next contract. Condition, Join,
-Prepare, Call, and composition forms remain proposed, not adopted 0.2 syntax.
+retains protected-action and support requirements. Their concrete candidate
+syntax and integration obligations are in [spec/0.2/](../../spec/0.2/README.md).
+Condition, Join, Prepare, Call, composition and approval forms remain proposed,
+not adopted 0.2 syntax. Static checks cannot establish that an integration
+implements their behavior.

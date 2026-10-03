@@ -48,7 +48,9 @@ of the text. If it is supplied only through a Tool invocation or result, it is
 excluded under the rule above;
 routing does not automatically insert it into the transferred text. This does
 not prescribe a universal decision format or infer a decision from arbitrary
-prose. The concrete routing mechanism remains candidate work.
+prose. The [candidate step contract](../spec/0.2/flow.md#agent-call-condition-and-prepare)
+defines the decision declaration and required association; the external integration
+supplies its mechanism.
 
 For a step that uses an Agent-supplied routing decision, the Agent announces
 that decision only when its work is finished. The decision closes the current
@@ -291,14 +293,14 @@ meaning. A new edition must identify these different flow semantics. The
 existing 42-case static comparison is not evidence for this model, context
 continuity, steering, recovery or cancellation. No automatic migration is promised.
 
-## Work before an implementable candidate
+## Candidate review and integration evidence
 
 The flow directions above are settled at the design level. The current c1
 refinements below propose concrete delivery, text assembly, configuration,
 queueing, steering, correlation, Join and error rules. They need independent
-review before adoption. The [block contract](0021-logic-block-contract-0.2.md)
-retains separate composition, protected-action and support requirements that
-these lifecycle refinements do not settle.
+review before adoption. The [candidate specification](../spec/0.2/README.md) also
+defines bounded composition, protected-action admission and scoped support
+declarations. Their requirements are separate from lifecycle evidence.
 
 A candidate review must cover each small scenario above and adverse cases:
 stale or missing results, unresolved configuration, unsupported steering,
@@ -310,7 +312,7 @@ Agent spawning and a runtime implementation are outside this proposal.
 
 ### Proposed c1 refinements after review
 
-The [bounded c1 contract](../experimental/agent-flow-0.2/README.md) proposes
+The [bounded c1 contract](../spec/0.2/README.md) proposes
 selecting configuration once from the first input, then retaining it without
 reevaluating later Messages. This lets correction Messages carry the error
 without repeating initialization data. A later selection-like value cannot
@@ -377,4 +379,4 @@ input `error` with `code`, `message` and `details`. Error continuations belong t
 the failed occurrence, keep diagnostic data informational and never manufacture
 successful results, retries, cancellation or rollback. Output correction is a
 new Message to the same persistent Agent. The concrete shapes and failure table
-are proposed in the [candidate](../experimental/agent-flow-0.2/README.md).
+are proposed in the [candidate](../spec/0.2/README.md).
