@@ -1,0 +1,278 @@
+# Persistent-Agent flow candidate
+
+Status: **bounded experimental candidate `agsdl-exp-flow-0.2-c1`, not adopted,
+published or the complete 0.2 release scope.** This directory turns the basic
+walkthroughs into machine-readable examples and static checks. It follows the
+accepted directions in [0019](../../proposals/0019-agent-prompt-and-resources.md)
+and [0020](../../proposals/0020-blueprint-flow-0.2.md), with the proposed block
+contract in [0021](../../proposals/0021-logic-block-contract-0.2.md).
+
+This document defines c1's proposed rules. The schema derives from these rules;
+the reader checks their stated static subset. Existing official and frozen
+experimental contracts retain their meaning. Final adoption needs a separate
+decision. Read [the release-scope gaps below](#remaining-release-scope) before
+using this candidate to assess readiness.
+
+## Read or check an example
+
+| Example | What it exercises |
+| --- | --- |
+| [Conversation](examples/conversation.json) | One Agent, a reusable configuration and an explicit Engine binding; no initial prompt or graph. |
+| [Test loop](examples/test-loop.json) | A persistent developer, custom test Call, deterministic Condition and prepared correction Message. |
+| [Parallel reviews](examples/parallel-reviews.json) | Two final decisions grouped for the same developer completion, followed by one correction Message. |
+| [Multimedia and reuse](examples/multimedia-and-reuse.json) | Reusable skill instructions, two Engine choices, multiple media and required versus optional outputs. |
+
+All Engine, Tool, implementation and contract identities are fictional. Their
+settings describe example requirements, not installed software or granted
+permissions. The fictional Engine contract interprets `workspace` and `access`
+in configuration settings; they are not universal Engine-setting names. The examples do not run tests, read resources or start Agents.
+
+From the repository root, using Python 3 and its standard library:
+
+```sh
+python3 experimental/agent-flow-0.2/reader.py experimental/agent-flow-0.2/examples/test-loop.json
+python3 experimental/agent-flow-0.2/test_reader.py -v
+```
+
+Exit codes are 0 for a valid checked document, 1 for an invalid document or
+unsupported parse input, and 2 for command usage or file-access failure.
+Reports identify their scope and always say `executionSupport: not-assessed`.
+With `jsonschema` installed, check the schema and compare shape validation
+against a separate implementation:
+
+```sh
+python3 experimental/agent-flow-0.2/test_reader.py --schema
+```
+
+That comparison covers shapes only. It is not a second independent semantic
+reader and does not validate runtime behavior.
+
+## Document and content
+
+A document requires `contract`, `id`, `agents`, `configurations` and `bindings`.
+`content`, `skills` and `flow` are optional. Maps use distinct names matching
+ASCII letter followed by ASCII letters, digits, underscore or hyphen. Unknown
+fields are invalid except inside explicitly open inline values, settings and
+external requirement parameters. Duplicate JSON object members, non-JSON
+numbers and unpaired Unicode surrogates are rejected. The Python reader keeps
+decimal values exact while checking integer constraints; excessive parser
+depth or numeric representation limits produce a parse failure, not success.
+
+The [schema](schema.json) lists the closed shapes, required fields and types.
+Omitted optional maps and lists are empty unless a rule below states otherwise.
+An object key inside a literal `value` or `settings` object is never interpreted
+as an AgSDL reference. Validators neither fetch content nor load implementation
+code.
+
+A content source contains exactly one `value` or `uri`, and an optional
+`mediaType`. Inline strings are literal. URI availability, resolution and access
+belong to the selected integration and remain unassessed by this static reader.
+The examples use absolute URIs; portable relative-URI bases remain release work.
+A content use may instead contain only `ref`, naming a source in `content`.
+Those source declarations do not themselves contain references, so reference
+cycles cannot form in this catalog.
+
+A Message contains optional `prompt` and `resources`. `prompt` is an ordered
+list of instruction content uses; `resources` is a map of named information
+content uses. Names identify information without assigning it instruction
+authority. Both can carry text, structured values or media references. Actual
+Message addressing and delivery use the consumer's integration, not a transport
+defined here.
+
+## Agents, configuration and reusable behavior
+
+Each Agent names one fixed configuration, or supplies `select` and `cases`
+for a declared pre-initialization choice. The selector reads the first input;
+its value must be a string naming a case. A missing value, wrong type or unknown
+case fails without a default. Evaluate a dynamic choice when the first work
+arrives, before initializing the Agent. Later work must select the same
+configuration or fail before changing the Agent. A fixed configuration can be
+prepared before its first Message. This is the proposed concrete rule for the
+accepted pre-initialization direction. An Agent can add `prompt`, `resources`, `skills`
+and an `interface`. The Agent is one persistent participant, including human
+participation where the integration supplies it. Visiting an Agent step again
+uses its existing instance and context. There is no per-visit initialization,
+context reset, implicit spawning or hot configuration replacement.
+
+No initial prompt means no implicit initial task. A configuration's explicit
+Engine binding is required even when the Agent waits for its first Message.
+Configuration has optional Model edition, Tool bindings, settings and capability
+requirements. No provider or Model default is inferred. The consumer enforces
+its declared access and delivery policy.
+
+`bindings` separates an external versioned `contract` from the selected
+versioned `implementation`, with optional `settings` and `requires`. Each edition
+has an open `identity` and `version`; their spelling establishes no support.
+A configuration names its Engine binding and maps local Tool names to Tool
+bindings. Calls and decision integrations also reference declared bindings.
+The external contracts establish their intended role and capabilities; c1 checks
+reference existence, not compatibility or whether an implementation satisfies
+that contract. Opaque settings cannot redefine the AgSDL step semantics.
+
+Reusable skills contain prompt sources, resource sources and optional capability
+requirements. They have no Engine assignment. Expand selected skills in their
+declared order, then append the Agent's own prompt. Merge resource maps without
+overwriting: duplicate skill selections or colliding resource names are invalid.
+Two Agents selecting one skill or configuration still have separate contexts.
+Configuration or skill changes follow stop, edit and start.
+
+An optional Interface declares accepted input formats, permitted output formats
+and named result constraints. Media types are open strings. Each named result
+has permitted `mediaTypes`; `required` defaults to false. Permitting several
+formats does not require all of them. Required named results must exist at
+completion and use one allowed format. A result's formats must fit any declared
+overall output formats. Content format, structure, actual availability and
+delivery remain distinct requirements. c1 has no structured-value shape
+constraint or compatibility-evidence evaluator; these are release-scope gaps.
+
+Requirements are external contract editions plus optional parameters. Presence
+of a requirement is not evidence it is met. Missing support, simultaneous media
+delivery, Model/Engine/Tool compatibility and access remain unassessed, never
+silently classified as supported. A video URI must not be treated as text or a
+transcript without an explicit conversion contract.
+
+## Flow and data
+
+`flow` has an `entry` step and a `steps` map. The consumer supplies the entry
+Message. Every step must be reachable from entry through a normal or error
+connection. Step and Agent names have separate scopes. Several steps may refer
+to one Agent. Default message handling is queueing; c1 has no steering syntax.
+
+Ordinary `next` is a list of destination steps. Completion activates every
+destination in that list. Missing or empty `next` ends the current path, not
+the Agent's lifetime or unrelated work. Duplicate destinations are invalid.
+Steps using an explicit routing choice use a map from choice to destination
+lists. A choice selects one list, whose destinations all activate.
+
+The proposed data boundary distinguishes:
+
+| Result field | Meaning |
+| --- | --- |
+| `text` | All user-visible response text for this completed Agent work, excluding reasoning, raw Tool exchanges and earlier history. Text assembly and the empty-text case remain release decisions. |
+| `choice` | An explicitly identified final Agent decision, only when the step requires one. |
+| `data` | A Call's normal result value, supplied under its external contract. |
+| `members` | A Join's complete member results, keyed by member step. |
+
+These result fields describe the inputs used by selectors, not a new wire
+protocol or proof that a consumer emits them. A direct Agent-to-Agent connection
+delivers the current visible text as information. The recipient's instructions
+or an explicit Prepare supply the task. A prepared Message retains its authored
+roles. Intermediate progress is not completion and cannot start successors.
+
+Every operand is either a literal `value` or a `path` into the current input.
+Paths contain exact object keys or nonnegative integer array indices. An empty
+path selects the whole input. Missing values or wrong container types are errors.
+No path refers to a global last result, filesystem location or arbitrary code.
+Condition preserves its input unchanged for the selected continuation. Prepare
+therefore selects the current report directly; it needs no remote-step lookup.
+This is a proposed simplification of data binding under 0021.
+
+### Agent, Call, Condition and Prepare
+
+An `agent` step names an Agent. An optional `decision` supplies a binding and
+nonempty distinct choices. Its `next` map must cover exactly those choices.
+Without a decision, `next` is an ordinary list. The integration associates a
+final choice with the current completed work. Missing, unknown or ambiguous
+choices fail. A visible choice remains in the transferred text; a Tool-only
+choice is not injected into it. c1 does not implement a text-marker parser or
+require a universal Tool protocol.
+
+A `call` step names a binding and optionally maps argument names to operands.
+Binding settings and selected arguments determine the invocation; Agent prose
+is not parsed into a command. The fictional test-suite contract returns
+an integer `data.exitCode` and a text `data.report`. A malformed result fails
+the Call contract before any Condition runs. Code zero passes, other returned codes request
+correction, and a process-launch failure is technical failure. A custom
+implementation can satisfy this contract without changing the graph. Its
+effects and permissions still require actual support.
+
+A `condition` evaluates `test` and selects `true` or `false`. c1 supports
+`equals` with exactly two operands, nonempty `all` and `not`. Equality compares
+JSON values without coercing strings or Booleans to numbers. JSON object order
+does not matter; array order does. All referenced operands must be available
+and valid, even if another operand would determine the Boolean result. A missing
+operand is an error, not false. The input is preserved on either normal path.
+
+A `prepare` constructs `message`. Its resources may use normal content or
+`select`, an operand whose selected value becomes inline information. An optional
+media type describes that selected value. Authored prompt sources remain
+instructions. Preparation does not summarize, fetch, convert media or clear
+context. Its output is one Message to the next Agent. c1 does not implement
+these operations; it validates their declared shape and static references.
+
+### Grouping, loops and failures
+
+A c1 `join` declares `after` and `members`. This bounded form supports a direct
+fork-and-join only: the anchor's ordinary `next` lists exactly the distinct
+members, and every normal outcome of each member connects only to this Join.
+The Join receives no other inputs, and members receive work only from normal
+anchor completion, never its error path.
+Neither the Join nor a member can be the flow entry. Members have no independent
+error continuation in c1; a failed required member fails its group, whose
+`onError` can provide recovery. Membership is not the number of incoming arrows.
+
+Each anchor completion starts a distinct group. Join waits for one completed
+result from each member of that group and emits `members`. Negative business
+results can complete a group; technical failures cannot stand in for them.
+Late or duplicate results cannot reopen a completed group or fill another
+round. The association is a consumer obligation; static declarations cannot
+prove it. Direct convergence to an Agent delivers separate Messages instead.
+
+A return connection can form a loop through the same Agents. `maxVisits`, when
+present, is a positive limit per step within one flow invocation. Count each
+activation that begins work; a waiting Join begins once its complete group is
+available. Reject the next activation beyond the limit before performing its
+work. Omission imposes no limit. This proposed counting rule is local to a step,
+not a global budget or a runtime limit imposed on every graph.
+
+Technical failure or a visit-limit breach follows `onError`, if supplied, with
+diagnostic information as its input. Otherwise the affected path stops with a
+diagnostic. An error never creates a normal result. Failure and interruption
+do not undo workspace effects, prove a sibling stopped or authorize retry.
+Exact failure-result fields and cancellation coordination remain release work.
+
+## Static checks and evidence limits
+
+The reader implements these rule codes:
+
+| Code | Checked condition |
+| --- | --- |
+| `PARSE` | Input can be read without duplicate keys, invalid Unicode, non-JSON values or unsupported parser limits. |
+| `SHAPE` | Document matches the bundled closed schema and marker. |
+| `REFERENCE` | Referenced content, skills, configurations, bindings, Agents and destination steps exist. |
+| `DUPLICATE` | A skill, choice or destination is not repeated where it would duplicate application or work. |
+| `RESOURCE_COLLISION` | Skill expansion cannot overwrite a resource. |
+| `OUTPUT_FORMAT` | A named result's formats fit the overall allowed output formats. |
+| `ROUTES` | Agent decision declarations and routing maps agree. |
+| `JOIN_GROUP` | The declared group satisfies c1's bounded fork-and-join structure. |
+| `UNREACHABLE` | Every step is reachable from entry. |
+
+Shape failure ends semantic checking of that document. A report locates a rule
+violation by JSON Pointer; whole-shape and parse failures use the root pointer.
+The report's validity means only these checks passed. It does not prove that
+every path terminates, an input selector will exist at runtime, a predicate is
+satisfied, permissions hold or an implementation is available.
+
+The named cases in [test_reader.py](test_reader.py) exercise these rules without
+executing a described graph. The optional schema-library check cross-checks
+shape validation only. A second semantic implementation and independent review
+remain necessary before claiming cross-reader agreement for this new model.
+
+## Remaining release scope
+
+This c1 is a testable foundation, not a proposal to silently remove accepted
+features from 0.2. Unknown syntax is rejected rather than ignored.
+
+| Direction outside c1 | Remaining work before the complete 0.2 candidate |
+| --- | --- |
+| Steering | Delivery acknowledgement, attribution to active work and interaction with graph continuations. |
+| First-satisfactory Join | Acceptance predicate, ties, exhausted alternatives and pending-stop policy. |
+| Composition | Local reusable graph expansion and parameter binding with stable Agent identity. |
+| Protected actions | Explicit approval admission bound to the action, scope and actual invocation. |
+| Interfaces and support | Structured-value constraints, support claims/evidence, delivery paths and relative URI bases. |
+| Completion and errors | Exact visible-text assembly, absent text, selected non-text results and recovery input. |
+| Validation and release | Broader graph rules, an independent semantic reader, review, migration guidance and adoption decision. |
+
+No release tag, official contract replacement or publication follows from this
+experiment. Its role is to make implementation questions reproducible while
+maintaining the agreed scope in the preparation index.

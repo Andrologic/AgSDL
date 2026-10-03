@@ -84,4 +84,5 @@ fi
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
   conformance/test_build_corpus.py conformance/test_check_corpus.py \
   conformance/test_compare_readers.py -v
+PYTHONDONTWRITEBYTECODE=1 python3 experimental/agent-flow-0.2/test_reader.py -v
 echo "AgSDL repository checks passed."

@@ -1,12 +1,14 @@
 # Proposal 0021: a common contract for logic blocks
 
-Status: **proposed semantic contract for 0.2 preparation; not adopted,
-implemented or published.** The maintainer requested preparation of standard
+Status: **proposed semantic contract for 0.2 preparation; not adopted or
+published. A bounded static experiment covers only part of it.** The maintainer requested preparation of standard
 and custom blocks after reviewing the design. This text makes that work
 reviewable; it does not treat every recommendation as an accepted requirement.
 Accepted Agent and flow directions remain in [0019](0019-agent-prompt-and-resources.md)
-and [0020](0020-blueprint-flow-0.2.md). This proposal allocates no contract marker
-and supplies no new JSON grammar. See the [preparation index](../docs/0.2/README.md).
+and [0020](0020-blueprint-flow-0.2.md). This proposal is not a final JSON grammar. The
+[bounded c1 experiment](../experimental/agent-flow-0.2/README.md) now supplies
+concrete examples, a schema and a static reader for basic flows. Its marker and
+remaining exclusions do not adopt or narrow the full 0.2 directions. See the [preparation index](../docs/0.2/README.md).
 
 ## Problem and scope
 
@@ -313,3 +315,15 @@ At minimum, the future conformance material should distinguish:
 Static readers can check declarations and their limits. Delivery, execution,
 effects, permission enforcement, context continuity and actual stopping require
 separate evidence from consuming implementations.
+
+## Bounded implementation work
+
+The [c1 contract](../experimental/agent-flow-0.2/README.md) makes the basic
+walkthroughs testable with declarations and a static reader. It proposes
+input-preserving Conditions, selectors restricted to current input, reusable
+content/skill/configuration bindings and direct all-required fork-and-join.
+These concrete rules remain proposed. Steering, first-satisfactory grouping,
+composition, approvals and complete integration contracts remain required
+release work. Configuration selection has a proposed c1 shape and still needs
+lifecycle evidence from consuming implementations. The experiment neither silently drops
+those directions nor supplies execution evidence.
