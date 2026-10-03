@@ -60,6 +60,13 @@ separate: a URI does not establish that content is available or permitted.
 The target directions allow multiple media types and optional output
 constraints, subject to the selected Engine and integration.
 
+Do not treat content applied before every old invocation as only the persistent
+Agent's initial prompt. Distinguish initial instructions from instructions or
+information that must accompany later Messages. Retain or explicitly remap
+application adapters, parameters, order, and 0017 instruction-slot identities;
+repeated applications must not be silently deduplicated. The next contract may
+not preserve each application mechanism.
+
 0.1 requires each Agent Definition to refer through `actsAs` to a Principal,
 and each invoke to agree with that Principal. The 0017 experiment removed the
 Principal catalog and approval-recipient lists. The next model uses one Agent
@@ -71,7 +78,7 @@ approval intent attached to the action in the target design.
 
 ## Re-map work, state, and configuration
 
-An 0.1 Graph schedules explicit `invoke` operations against an Agent Interface
+A 0.1 Graph schedules explicit `invoke` operations against an Agent Interface
 and Operation. Each invoke carries action, resource, principal, context and
 typed port references. The 0017 grammar also describes calls and explicit
 operations. In the next model, an Agent is a continuing participant across
@@ -84,12 +91,13 @@ automatically follow from naming an Agent.
 Record the old graph's intended order, branches, terminal outcomes, and failure
 paths before rewriting it. The next flow directions support deterministic
 conditions, routing decisions, parallel connections, explicit joins, loops,
-and recovery. Multiple outgoing connections activate their destinations; direct
-inputs to an Agent remain separate Messages unless a Join groups results. By
+and recovery. All connections from the selected output activate their
+destinations; other outputs remain inactive. Direct inputs to an Agent remain
+separate Messages unless a Join groups results. By
 default, transfer includes all user-visible text for the completed work,
 including progress text, and excludes reasoning and raw Tool exchanges. If the
-old graph relied on selected outputs, typed port bindings, failure-only
-availability, or a narrower transfer, state that intent explicitly in the new
+old graph relied on selected outputs, typed port bindings, success-edge-only
+output availability, or a narrower transfer, state that intent explicitly in the new
 flow design. Do not infer an implicit Join or iteration limit.
 
 0.1 `RuntimeDeclaration` binds configurations to graphs and assigns Engines,
@@ -121,7 +129,10 @@ new directions do not make an Engine or Model name proof of support.
 
 Before using a new edition, consult the preparation index for pending decisions
 about block contracts, protected actions, capability support, lifecycle,
-delivery, and migration scope. Decision 0012 retains protected-action control
-and support requirements in principle; the concrete syntax and integration
-contracts remain work for the next contract. Proposal 0021's Condition, Join,
-Prepare, Call, and composition forms are proposals, not adopted 0.2 syntax.
+delivery, and migration scope. [Decision 0010](../decisions/0010-human-and-software-agents.md)
+and [Decision 0011](../decisions/0011-message-based-agent-model.md) retain the
+shared Agent model and separate approval controls. [Proposal 0019](../../proposals/0019-agent-prompt-and-resources.md)
+records support declarations; [Proposal 0021](../../proposals/0021-logic-block-contract-0.2.md)
+retains protected-action and support requirements. Their concrete syntax and
+integration contracts remain pending for the next contract. Condition, Join,
+Prepare, Call, and composition forms remain proposed, not adopted 0.2 syntax.
