@@ -175,7 +175,7 @@ unchanged. Current results and blockers belong to the [0.1.1 release
 notes](../docs/releases/0.1.1.md), separate from the historical 0.1.0 results above.
 
 The [full verification command](../CONTRIBUTING.md#full-local-and-ci-verification)
-retains all three comparisons and checks all official report files against
+retains the historical, official and persistent-Agent candidate comparisons and checks all official report files against
 Draft 2020-12. `scripts/check-report-schemas.py` requires a complete unblocked
 summary and the exact expected response file set, so missing reports cannot
 silently reduce the schema-check sample. It also checks reports from a completed
