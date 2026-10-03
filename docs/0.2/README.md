@@ -20,6 +20,8 @@ separate frozen static-reader candidate.
 4. [Worked scenarios](worked-scenarios.md): follow a basic conversation, a
    deterministic test loop and two grouped reviews, then inspect a custom Call.
    These semantic walkthroughs are illustrative, not executable fixtures.
+5. [Migration guide](migration.md): carry intent forward from official 0.1 or
+   the frozen 0017 experiment without relabelling either edition.
 
 The [persistent-Agent candidate](../../experimental/agent-flow-0.2/README.md)
 now supplies JSON examples, a schema and a bounded static reader for the basic
