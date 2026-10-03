@@ -68,8 +68,12 @@ initialization failure does not authorize replacing a partially initialized
 instance or replaying effects; recovery needs the integration to report a usable
 instance or requires stop, edit and start.
 
-No initial prompt means no implicit initial task. A configuration's explicit
-Engine binding is required even when the Agent waits for its first Message.
+No initial prompt means no implicit initial task. A supplied initial prompt
+provides instructions; it does not by itself introduce an extra work occurrence.
+Work is activated through the [Message and flow rules](flow.md#flow-and-data),
+including [external delivery without a graph](flow.md#external-delivery-without-a-graph),
+and follows their admission rules. A configuration's explicit Engine binding
+is required even when the Agent waits for its first Message.
 Configuration has optional Model edition, Tool bindings, settings and capability
 requirements. No provider or Model default is inferred. The consumer enforces
 its declared access and delivery policy.

@@ -283,9 +283,13 @@ An Agent called `reviewer` is initialized with:
 | Resource `proposal_b` | The document at `./documents/b.pdf`, declared as `application/pdf`. |
 | Resource `criteria` | Inline structured data containing the budget and required features. |
 
-The integration makes both documents and the criteria available and applies the
-prompt. A later request, "Now compare their maintenance costs", addresses the
-same reviewer and continues its context. Another Agent can use the same prompt
+The integration makes both documents and the criteria available and supplies the
+prompt as initialization instructions. A first Message, "Review proposal_a and
+proposal_b against criteria", activates the review through the existing
+[Message delivery rules](../spec/0.2/flow.md#external-delivery-without-a-graph).
+The initial prompt alone creates no extra work occurrence. A later Message,
+"Now compare their maintenance costs", addresses the same reviewer and continues
+its context. Another Agent can use the same prompt
 and resources with an independent context. Changing Engine bindings changes how
 content is delivered, not whether it is an instruction or a resource. Declared
 content roles alone do not prove equivalent behavior across Engines.

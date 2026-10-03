@@ -234,8 +234,10 @@ override it. A selected Source must contain exactly one `value` or `uri`; a
 content-catalog `ref` is not a Source. Missing or malformed selections fail
 before delivery. Use several named resources to select several results. Authored prompt sources remain
 instructions. Preparation does not summarize, fetch, convert media or clear
-context. Its output is one Message to the next Agent. c1 does not implement
-these operations; it validates their declared shape and static references.
+context. Its output is one Message to the next Agent. The declaration reader
+validates the declared shape and static references. The pure supplied-data
+[`prepare_message` helper](validation.md#checking-prepared-content) evaluates
+selectors and constructs a Message without executing a graph, Agent or Call.
 
 ### Grouping, loops and failures
 
