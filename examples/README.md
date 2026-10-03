@@ -3,10 +3,11 @@
 For the published 0.1.0 contract, start with the
 [progressive Document/G/R examples](0.1.0/README.md). It is non-normative, uses the official
 edition marker and can be checked with both official readers. The
-conceptual examples below preserve their earlier proposal-era status.
+conceptual examples below preserve their earlier proposal-era status. For the
+next model, use the [0.2 worked scenarios](../docs/0.2/worked-scenarios.md).
 
 The first two examples originated in the AgSDL 0.0.1 conceptual release. The
-versions below follow the current proposed model, including the composition
+versions below follow proposals 0001–0004, including the composition
 and authorization directions in [Decision
 0004](../docs/decisions/0004-approved-design-directions.md). The `v0.0.1` tag
 preserves the released versions. These conceptual examples remain non-normative

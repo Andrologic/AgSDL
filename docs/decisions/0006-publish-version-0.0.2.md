@@ -7,7 +7,7 @@
 
 [Decision 0005](0005-version-0.0.2.md) authorized local preparation of a
 non-normative conceptual candidate. The preparation and closure are recorded in
-the [local work record](../plans/2026-09-05-version-0.0.2.md). The maintainer
+the [local work record](https://github.com/Andrologic/AgSDL/blob/ebe403905ad626fe9a63ff4e8d9fb87f8f2ece07/docs/plans/2026-09-05-version-0.0.2.md). The maintainer
 subsequently requested publication, integration on `main`, the version tag,
 and synchronization of the remote repository before work toward `0.1.0`.
 

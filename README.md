@@ -92,8 +92,17 @@ See the [project scope](docs/scope.md) and
 - `tooling/readers/` contains non-normative official-edition readers.
 - `experimental/` preserves candidate editions and their bounded evidence.
 - `proposals/` records proposed material changes and the adoption history.
-- `docs/` contains scope, decisions, plans, reviews, research and release notes.
+- `docs/` contains scope, decisions, research, review evidence and release notes.
+  The [0.2 index](docs/0.2/README.md) tracks current preparation; dated records
+  describe their historical revisions.
 - `scripts/` contains repository and source-verification checks.
+
+For background, the [proposal register](proposals/README.md) distinguishes
+adopted, proposed and frozen material. [Prior-art research](docs/research/prior-art.md)
+compares external concepts at the recorded source editions. The
+[examples index](examples/README.md) separates published examples from earlier
+conceptual illustrations. Neither research nor historical examples overrides
+the specification or the accepted 0.2 directions.
 
 ## Release status and history
 
@@ -121,7 +130,7 @@ by that decision remains proposed or experimental.
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing normative behavior or
-terminology. Run `./scripts/check.sh` before committing.
+terminology. [Governance](GOVERNANCE.md) defines proposal review and adoption. Run `./scripts/check.sh` before committing.
 
 ## License
 
