@@ -54,8 +54,16 @@ against a separate implementation:
 python3 experimental/agent-flow-0.2/test_reader.py --schema
 ```
 
-That comparison covers shapes only. It is not a second independent semantic
-reader and does not validate runtime behavior.
+That optional schema-library comparison covers shapes only. For independent
+declaration semantics, run:
+
+```sh
+node experimental/agent-flow-0.2/javascript/reader.mjs experimental/agent-flow-0.2/examples/test-loop.json
+./scripts/check-readers.sh --compare flow
+```
+
+The [corpus guide](conformance/README.md) specifies the oracles, report conventions,
+retained evidence and limits. Neither comparison validates runtime behavior.
 
 ## Supplied-record commands
 
@@ -87,7 +95,9 @@ or authorize actions.
 ## Evidence limits
 
 The named cases in [test_reader.py](test_reader.py) exercise the stated static
-and record checks. Independent semantic comparison is pending. The optional
+and record checks. The independent Python/JavaScript [declaration comparison](conformance/README.md)
+covers 107 contract-authored cases, with retained complete reports. Supplied-record
+checks remain separately scoped Python tooling. The optional
 schema-library comparison covers shapes only. Consult the
 [validation chapter](../../spec/0.2/validation.md) for each check's limits; no
 check establishes Agent continuity, actual delivery, effects or enforcement.

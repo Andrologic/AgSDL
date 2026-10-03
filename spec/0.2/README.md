@@ -31,8 +31,9 @@ stated boundaries; passing a static or supplied-record check does not demonstrat
 them in a running system.
 
 The validation chapter defines each available check's scope. Reports retain
-`executionSupport: not-assessed`. Schema comparison checks shapes only. An
-independent semantic reader and comparison are pending; existing 0.1 and frozen
+`executionSupport: not-assessed`. Schema comparison checks shapes only. The
+[independent declaration-reader comparison](../../experimental/agent-flow-0.2/conformance/README.md)
+covers 107 cases; existing 0.1 and frozen
 0017 evidence cannot be relabelled as evidence for this candidate. The
 [experiment guide](../../experimental/agent-flow-0.2/README.md) contains the
 examples, implementation commands and evidence references.
@@ -50,7 +51,7 @@ The following boundaries remain explicit for final review and adoption.
 | Protected actions | Gate chains, invocation capture and admission deadlines are specified; static structure and supplied record consistency are checked. Authority/enforcement needs consuming implementation evidence. |
 | Interfaces and support | Bounded value constraints, URI origins and scoped exact claims are specified and checked. URI payloads and core execution paths remain explicitly unassessed. |
 | Lifecycle integration evidence | Queue and steering obligations, text assembly, source selection and error inputs are defined. Static record checks do not prove attribution, delivery, correction or cancellation in an implementation. |
-| Validation and release | Independent semantic comparison, final review of graph and check coverage, migration guidance review, final edition allocation and explicit maintainer adoption remain pending. Publication requires a separate decision. |
+| Validation and release | Independent declaration comparison is available. Final review of graph and check coverage, migration guidance review, final edition allocation and explicit maintainer adoption remain pending. Publication requires a separate decision. |
 
 Execution evidence is required for the implementation support claimed, not for
 every possible Engine or Tool before publishing a language draft. No release

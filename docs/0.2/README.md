@@ -29,8 +29,9 @@ The following documents explain the accepted directions and their use:
    the frozen 0017 experiment without relabelling either edition.
 
 The [tooling guide](../../experimental/agent-flow-0.2/README.md) supplies JSON
-examples, a schema and a bounded static reader. Independent semantic comparison
-is pending. The [candidate boundaries](../../spec/0.2/README.md#remaining-release-scope)
+examples, a schema and independent Python/JavaScript declaration readers. The
+[107-case comparison](../../experimental/agent-flow-0.2/conformance/README.md)
+covers static semantics and complete reports. The [candidate boundaries](../../spec/0.2/README.md#remaining-release-scope)
 remain explicit; passing checks does not adopt the candidate or establish
 execution support.
 
@@ -128,8 +129,8 @@ not for every possible Engine or Tool before publishing a language draft.
 | Reviewed common block contract | Concrete bounded rules are in the candidate specification; final review and explicit adoption remain. |
 | Concrete new edition | Candidate requirements retain `agsdl-exp-flow-0.2-c1`; final edition allocation and adoption remain pending. |
 | Lifecycle and correlation rules | c1 now proposes FIFO admission, explicit steering ownership and acknowledgement, unchanged-origin delivery, exact text assembly, Source selection and closed recovery inputs. Recorded checks cover delivery/configuration and output assembly; independent review and consuming integration evidence remain distinct requirements. |
-| Modular contract and declarations | c1 proposes non-nested serial/conditional composition, protected Agent/Call admission, bounded structured results, explicit URI origins and exact scoped support claims. Examples and adverse static/record checks cover this bounded form; independent semantic comparison and adoption remain. |
-| Examples, schema and static readers | Examples, schema and one static reader are available in the persistent-Agent experiment. Independent semantic comparison and final coverage review remain pending. Existing 0.1/0017 evidence does not transfer. |
+| Modular contract and declarations | c1 proposes non-nested serial/conditional composition, protected Agent/Call admission, bounded structured results, explicit URI origins and exact scoped support claims. Examples and adverse static/record checks cover this bounded form; the independent declaration comparison covers 107 cases; final review and adoption remain. |
+| Examples, schema and static readers | Examples, schema and independent Python/JavaScript declaration readers are available, with a 107-case comparison. Final coverage review remains pending. Existing 0.1/0017 evidence does not transfer. |
 | Integration evidence | Exercise actual Agent continuity, Tool calls, effects, media, approvals and stop behavior in consuming software before claiming support for them. |
 | Migration and publication | The [migration guide](migration.md) addresses the concrete candidate; [release notes](../releases/0.2.0.md) are an unreleased draft. Final review, edition allocation and explicit adoption/publication decisions remain. No publication is part of this preparation. |
 
