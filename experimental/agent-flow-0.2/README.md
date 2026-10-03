@@ -96,7 +96,7 @@ or authorize actions.
 
 The named cases in [test_reader.py](test_reader.py) exercise the stated static
 and record checks. The independent Python/JavaScript [declaration comparison](conformance/README.md)
-covers 107 contract-authored cases, with retained complete reports. Supplied-record
+covers 111 contract-authored cases, with retained complete reports. Supplied-record
 checks remain separately scoped Python tooling. The optional
 schema-library comparison covers shapes only. Consult the
 [validation chapter](../../spec/0.2/validation.md) for each check's limits; no

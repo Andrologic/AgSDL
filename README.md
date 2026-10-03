@@ -36,7 +36,7 @@ scoped static and record checks. It retains `agsdl-exp-flow-0.2-c1` pending fina
 review, edition allocation and maintainer adoption. The
 [tooling guide](experimental/agent-flow-0.2/README.md) provides JSON examples, a
 schema and independent Python/JavaScript declaration readers. Their
-[107-case comparison](experimental/agent-flow-0.2/conformance/README.md) covers
+[111-case comparison](experimental/agent-flow-0.2/conformance/README.md) covers
 static semantics and reports, with execution support unassessed.
 [Draft release notes](docs/releases/0.2.0.md) describe the proposed scope.
 

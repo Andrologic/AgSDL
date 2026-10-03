@@ -11,7 +11,7 @@ serializer as lexical utilities. It does not import or invoke a Python reader,
 reuse Python graph/constraint/URI algorithms, or import official semantic rules.
 Python source was inspected afterward to diagnose proven report differences.
 
-[cases.py](cases.py) authors 107 reproducible cases independently of the readers,
+[cases.py](cases.py) authors 111 reproducible cases independently of the readers,
 including the 11 maintained examples. It constructs fixture bytes and explicit
 expected rule-code sets, plus selected source, support and expansion observations.
 Every one of the 18 document rule codes has a failing witness. The corpus covers
@@ -39,7 +39,12 @@ stream, each reader's stdout and stderr, input hashes, contract/schema/corpus
 source hashes, expected code sets, observation assertions and `summary.json`.
 A nonzero exit means an oracle failure, invalid response, reader failure,
 timeout or report disagreement. Malformed responses cannot prevent subsequent
-cases from running. Keep the tested Git revision and any uncommitted diff with
+cases from running. Unsupported report-number representations are rejected without
+rounding. Nested requirements and expanded step shapes, address Names, JSON
+Pointers and stage-dependent observation presence are checked independently,
+using the schema as data without importing either semantic reader. The expressly
+documented invalid-projection placeholders below remain permitted in invalid
+reports. Keep the tested Git revision and any uncommitted diff with
 these files. `scripts/check-full.sh` records the revision and dirty status.
 
 `./scripts/check-readers.sh --compare flow` selects this corpus. The unqualified

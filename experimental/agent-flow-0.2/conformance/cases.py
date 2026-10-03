@@ -191,6 +191,15 @@ def cases():
     mutate('composition-repeated-scope', lambda d: (composition(d),d['compositions']['part']['steps']['a'].update(scope={'action':'x','resources':['x','x'],'context':{'value':None}})), ['DUPLICATE'])
     mutate('composition-template-content', lambda d: (composition(d),d['compositions']['part']['steps'].update(a={'type':'prepare',
         'message':{'prompt':[{'ref':'missing'}]},'next':[{'output':'done'}]})), ['REFERENCE'])
+    for missing_name in ('constructor', 'toString'):
+        for explicit in (False, True):
+            doc = deepcopy(BASE)
+            if explicit:
+                doc['compositions'] = {}
+            doc['flow'] = {'entry': 'use', 'steps': {'use': {
+                'type': 'compose', 'composition': missing_name, 'agents': {}, 'next': {'done': []}}}}
+            add('absent-composition-' + missing_name + ('-explicit' if explicit else '-omitted'),
+                doc, ['REFERENCE'], {'/findings/0/code': 'REFERENCE'})
     raw=json.dumps(BASE,separators=(',',':')).encode()
     add('duplicate-key',raw=raw.replace(b'"id":"independent"',b'"id":"independent","id":"second"'),codes=['PARSE'])
     add('unpaired-surrogate',raw=raw.replace(b'"independent"',b'"\\ud800"'),codes=['PARSE'])

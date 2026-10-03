@@ -198,7 +198,9 @@ export function checkGraphs(doc, report, add) {
       )
         add('COMPOSITION', p, 'Composition cannot be a direct Join member');
       ref(compositions, s.composition, pointer(p, 'composition'));
-      const c = compositions[s.composition];
+      const c = own(compositions, s.composition)
+        ? compositions[s.composition]
+        : undefined;
       for (const [k, a] of entries(s.agents))
         ref(doc.agents, a, pointer(pointer(p, 'agents'), k));
       if (c) {
@@ -229,7 +231,9 @@ export function checkGraphs(doc, report, add) {
         invocation: null,
       });
     else {
-      const c = compositions[s.composition];
+      const c = own(compositions, s.composition)
+        ? compositions[s.composition]
+        : undefined;
       if (!c) continue;
       for (const [local, original] of entries(c.steps)) {
         const redirect = (x, error = false) =>

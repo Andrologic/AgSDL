@@ -39,7 +39,7 @@ satisfied, permissions hold or an implementation is available.
 The named cases in [test_reader.py](../../experimental/agent-flow-0.2/test_reader.py) exercise these rules without
 executing a described graph. The optional schema-library check cross-checks
 shape validation only. The [independent declaration-reader corpus](../../experimental/agent-flow-0.2/conformance/README.md)
-compares Python and JavaScript reports on 107 cases. Supplied-record checks below
+compares Python and JavaScript reports on 111 cases. Supplied-record checks below
 remain separately scoped Python tooling; independent review remains distinct
 from cross-reader agreement.
 

@@ -33,7 +33,7 @@ them in a running system.
 The validation chapter defines each available check's scope. Reports retain
 `executionSupport: not-assessed`. Schema comparison checks shapes only. The
 [independent declaration-reader comparison](../../experimental/agent-flow-0.2/conformance/README.md)
-covers 107 cases; existing 0.1 and frozen
+covers 111 cases; existing 0.1 and frozen
 0017 evidence cannot be relabelled as evidence for this candidate. The
 [experiment guide](../../experimental/agent-flow-0.2/README.md) contains the
 examples, implementation commands and evidence references.

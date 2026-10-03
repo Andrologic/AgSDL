@@ -213,3 +213,28 @@ test('duplicate decision choices fail once without inventing a route mismatch', 
     { code: 'DUPLICATE', path: '/flow/steps/a/decision/choices' },
   ]);
 });
+
+test('omitted composition catalogs never expose inherited object members', () => {
+  for (const missing of ['constructor', 'toString']) {
+    const doc = base();
+    doc.flow = {
+      entry: 'use',
+      steps: {
+        use: {
+          type: 'compose',
+          composition: missing,
+          agents: {},
+          next: { done: [] },
+        },
+      },
+    };
+    const omitted = report(doc);
+    doc.compositions = {};
+    assert.deepEqual(omitted, report(doc));
+    assert.equal(omitted.valid, false);
+    assert.deepEqual(
+      omitted.findings.map((x) => x.code),
+      ['REFERENCE', 'REFERENCE'],
+    );
+  }
+});
