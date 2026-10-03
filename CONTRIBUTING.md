@@ -1,7 +1,8 @@
 # Contributing to AgSDL
 
-AgSDL has a published, bounded 0.1.0 first-draft contract and continues to
-define the broader problem and vocabulary. Contributions should reduce ambiguity
+AgSDL has a published 0.2.0 contract and retains the 0.1.1
+maintenance release of the bounded 0.1.0 contract. It continues to define the
+broader problem and vocabulary. Contributions should reduce ambiguity
 and preserve the status of normative, proposed, experimental and illustrative
 material.
 
@@ -72,8 +73,8 @@ code blocks, multiline code spans, or destinations with nested parentheses.
 
 ### Reader commands
 
-`./scripts/check.sh` runs all three Python reader suites and the corpus checks.
-Node.js is not required for that command. From the repository root, run the six
+`./scripts/check.sh` runs the Python reader suites, the 0.2.0 checks, the declaration-comparator fault tests and the corpus checks.
+Node.js is not required for that command. From the repository root, run the eight
 Python and JavaScript reader suites with:
 
 ```sh
@@ -81,23 +82,23 @@ Python and JavaScript reader suites with:
 ```
 
 This separate command requires Python 3 and Node.js with `node --test` support.
-It uses their standard libraries and installs no packages. To compare all three
+It uses their standard libraries and installs no packages. To compare all four
 corpora, which additionally requires Python 3.9 or newer, run:
 
 ```sh
 ./scripts/check-readers.sh --compare
 ```
 
-The comparison mode covers candidate-2, modular candidate-1 and official 0.1.0
-in separate temporary report directories. Select one with `--compare
-candidate-2`, `--compare modular`, `--compare official` or `--compare 0.1.0`.
+The comparison mode covers candidate-2, modular candidate-1, official 0.1.0 and
+official 0.2.0 in separate temporary report directories. Select one with `--compare
+candidate-2`, `--compare modular`, `--compare official`, `--compare 0.1.0` or `--compare flow`.
 The command prints each summary, preserves a nonzero comparator exit and removes
 its temporary reports on exit unless `AGSDL_REPORTS_DIR` is set. It does not run the reader test suites. Use the
 [experimental guide](experimental/README.md#retain-comparison-reports) or
 [official corpus guide](conformance/README.md#reader-comparison) to retain raw
 reports.
 
-Run the official focused suites directly with:
+Run the 0.1.0 focused suites directly with:
 
 ```sh
 node --test tooling/readers/javascript/reader.test.mjs
@@ -117,10 +118,11 @@ in the active Python environment, use a new empty directory outside the checkout
 ./scripts/check-full.sh /tmp/agsdl-verification
 ```
 
-This runs `check.sh`, all six reader suites, all three corpus comparisons,
+This runs `check.sh`, all eight reader suites, all four corpus comparisons,
 `conformance/check-corpus.py --jsonschema`, Draft 2020-12 validation of every
-produced official report, and `scripts/check-examples.py --jsonschema` for the
-56 example responses. Checks run sequentially. Independent checks continue after
+produced 0.1.0 report, and `scripts/check-examples.py --jsonschema` for the
+56 example responses. It also compares the 0.2.0 shapes
+with `jsonschema`; this comparison is not a second semantic reader. Checks run sequentially. Independent checks continue after
 failure, and the command exits nonzero if any check fails. Logs, exit statuses,
 raw comparator responses, summaries, the tested SHA, dirty status and manifest
 SHA-256 remain in that directory. A dirty status means the SHA alone does not
@@ -132,7 +134,7 @@ upload runs even after a check fails. Running locally does not execute that
 workflow remotely or publish a release. `./scripts/check.sh` still requires
 only Python and its standard library, with Git provenance checked in checkouts.
 
-To retain just the three comparisons, run:
+To retain all four comparisons, run:
 
 ```sh
 AGSDL_REPORTS_DIR=/tmp/agsdl-comparisons ./scripts/check-readers.sh --compare

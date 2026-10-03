@@ -1,7 +1,7 @@
-# Implementation walkthrough for 0.1.1 preparation
+# Implementation walkthrough for 0.1.1
 
 This non-normative guide uses the published `agsdl-0.1.0` contract. Version
-0.1.1 is local maintenance work. See [release status](../README.md#release-status-and-history)
+0.1.1 is a published maintenance release. See [release status](../README.md#release-status-and-history)
 and the [specification](../spec/README.md) for their separate roles.
 
 ## 1. Load bytes and preserve opaque content

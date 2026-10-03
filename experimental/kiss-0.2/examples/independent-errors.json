@@ -1,0 +1,58 @@
+{
+  "edition": "agsdl-exp-0017-c1",
+  "agents": {
+    "writer": {
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "ref": "missing"
+          }
+        }
+      ],
+      "interface": {
+        "ref": "text"
+      }
+    }
+  },
+  "instructions": {
+    "draft": {
+      "target": "Agent",
+      "at": "before-invoke",
+      "format": {
+        "identity": "example/plain-text",
+        "version": "1"
+      },
+      "body": "Rewrite the input concisely without adding facts."
+    }
+  },
+  "interfaces": {
+    "text": {
+      "operations": {
+        "rewrite": {
+          "direction": "inbound",
+          "mode": "notifications",
+          "inputs": {
+            "text": "string"
+          },
+          "outputs": {
+            "text": "string"
+          },
+          "effects": "none"
+        }
+      }
+    }
+  },
+  "extensions": [
+    {
+      "edition": {
+        "identity": "private/required-semantics",
+        "version": "1"
+      },
+      "use": "required",
+      "payload": {
+        "note": "No interpreter exists in this candidate."
+      }
+    }
+  ]
+}

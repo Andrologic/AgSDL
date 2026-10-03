@@ -83,7 +83,8 @@ Tests cover positive and negative witnesses, syntax byte locations, decoded
 member duplicates, Unicode surrogates, exact safe integers, very large opaque
 numbers, partial malformed records, unknown information, phase differences,
 CLI preservation and direct versus unavailable/transitive dependencies. Shared
-corpus comparison with a second implementation has not been run in this lot.
+corpus comparison is recorded separately in the
+[integrated review](../../../docs/reviews/0006-candidate-0.1.0-adoption.md#final-experimental-comparison).
 Passing these tests is implementation evidence for these witnesses only.
 
 The reader performs static checks, not authentication, approval intake,

@@ -81,8 +81,8 @@ Request expense submission.
 
 ## Binding requirements
 
-The Expense renderer requirement selects the current production release
-`v0.9.1` in the stable A2UI `v0.9` protocol family. It pins the reviewed
+The Expense renderer requirement selects the reviewed A2UI release
+`v0.9.1` in the `v0.9` protocol family. It pins the reviewed
 upstream schemas and catalog by immutable identity. The selected format binding
 disables inline catalogs: the agent does not advertise acceptance, and the
 renderer supplies none. The binding also rejects `v1.0` candidate envelopes,

@@ -4,6 +4,10 @@ Status: research note, non-normative
 Source review date: 2026-09-02
 Comparative summary updated: 2026-09-04
 
+For the later comparison of concrete engine interfaces, see
+[Runtime engine interfaces](runtime-engine-interfaces.md). These studies retain
+their recorded source dates; they are not current support claims.
+
 ## Purpose and method
 
 This note surveys standards, protocols, formats, and implementation models that

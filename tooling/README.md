@@ -1,4 +1,10 @@
-# AgSDL 0.1.0 reference tooling
+# AgSDL reference tooling
+
+For the published 0.2.0 edition, use the [0.2 tools and examples](0.2/README.md)
+and [declaration comparison](0.2/conformance/README.md). The remainder of this
+guide documents the unchanged 0.1.0 reader contracts.
+
+## AgSDL 0.1.0 reference tooling
 
 Reference readers are non-normative static tools. The specification defines the
 operation contracts. A reader reports its observation of one requested
@@ -87,4 +93,4 @@ The current processor Editions announce 0.1.1 with unchanged identities. The
 contract and feature Editions remain 0.1.0. See the [0.1.1 delivery
 notes](../docs/releases/0.1.1.md) for local verification status and limitations,
 and [full verification](../CONTRIBUTING.md#full-local-and-ci-verification) to
-retain all three comparisons, schema checks and example checks.
+retain all four comparisons, schema checks and example checks.

@@ -1,6 +1,7 @@
 # AgSDL agent instructions
 
-AgSDL remains a bounded first draft with contract marker `agsdl-0.1.0`.
+AgSDL 0.2.0 uses contract marker `agsdl-0.2.0`.
+The published 0.1.1 release retains contract marker `agsdl-0.1.0`.
 It is neither stable nor universal.
 Read [release status](README.md#release-status-and-history) before stating
 publication status. Preserve the distinction between normative text,
@@ -35,7 +36,10 @@ execution support outside claims made from static reader evidence.
 
 ## Working rules
 
-- Write normative specification text in English.
+- Write repository documentation in English.
+- Keep session-specific reading guides, task plans, orchestration records and
+  raw logs outside the checkout. Commit maintained project documentation,
+  decisions and reproducible evidence.
 - Define a term once and reuse that exact term.
 - Label unresolved design questions explicitly. Do not turn assumptions into
   requirements.

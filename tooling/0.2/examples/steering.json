@@ -1,0 +1,95 @@
+{
+  "contract": "agsdl-0.2.0",
+  "id": "steering",
+  "bindings": {
+    "coding": {
+      "contract": {
+        "identity": "example/agent-engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "project": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-only"
+      }
+    }
+  },
+  "agents": {
+    "helper": {
+      "configuration": "project",
+      "prompt": [
+        {
+          "value": "Review the supplied project and account for any acknowledged follow-up request."
+        }
+      ]
+    }
+  },
+  "flow": {
+    "entry": "start",
+    "steps": {
+      "start": {
+        "type": "prepare",
+        "message": {
+          "resources": {
+            "project": {
+              "value": "Example project"
+            }
+          }
+        },
+        "next": [
+          "review",
+          "followup"
+        ]
+      },
+      "review": {
+        "type": "agent",
+        "agent": "helper"
+      },
+      "followup": {
+        "type": "prepare",
+        "message": {
+          "prompt": [
+            {
+              "value": "Also examine empty inputs."
+            }
+          ]
+        },
+        "next": [
+          "adjust"
+        ]
+      },
+      "adjust": {
+        "type": "agent",
+        "agent": "helper",
+        "delivery": "steering",
+        "steers": "review",
+        "onError": [
+          "report-error"
+        ]
+      },
+      "report-error": {
+        "type": "prepare",
+        "message": {
+          "resources": {
+            "delivery-error": {
+              "select": {
+                "path": [
+                  "error"
+                ]
+              },
+              "mediaType": "application/json"
+            }
+          }
+        }
+      }
+    }
+  }
+}

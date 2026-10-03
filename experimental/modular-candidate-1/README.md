@@ -67,11 +67,10 @@ candidate-2 checker and its 121 historical cases.
 An optional Draft 2020-12 pass uses an already installed `jsonschema` package:
 
 ```sh
-/private/tmp/agsdl-010-orchestration/schema-env/bin/python \
-  experimental/modular-candidate-1/check-fixtures.py --jsonschema
+python3 experimental/modular-candidate-1/check-fixtures.py --jsonschema
 ```
 
-The path above records the local preparation environment. The repository has no
+Select a Python environment with `jsonschema` installed. The repository has no
 runtime dependency on that package. The scoped checks validate the Document,
 Graphs, RuntimeDeclaration and reached modular payload entry points. A schema
 result checks shapes only.
@@ -158,29 +157,21 @@ deployment.
 
 ## Check both implementations
 
-Run all historical and modular reader tests:
-
-```sh
-./scripts/check-readers.sh
-```
-
-`./scripts/check.sh` runs both Python suites, including the 40 modular Python
-tests, and does not require Node.js. The reader-specific command also runs the
-two JavaScript suites.
+The [shared reader commands](../../CONTRIBUTING.md#reader-commands) cover the
+candidate-2, modular and official editions. Their Python and JavaScript tests
+remain separate. Use the reader guides above for modular-only tests.
 
 ## Compare the readers
 
-Compare both complete corpora, or select one:
+Compare this corpus with:
 
 ```sh
-./scripts/check-readers.sh --compare
 ./scripts/check-readers.sh --compare modular
-./scripts/check-readers.sh --compare candidate-2
 ```
 
-Comparison mode uses separate temporary report directories, prints each summary
-and preserves any nonzero comparator exit. It removes the temporary directories
-on exit. To retain modular reports, provide a new or empty destination directly:
+The [shared command guide](../../CONTRIBUTING.md#reader-commands) describes
+all-edition checks and temporary report retention. To retain only modular
+reports, provide a new or empty destination directly:
 
 ```sh
 agsdl_modular_reports=$(mktemp -d)
@@ -224,5 +215,6 @@ neither directory is overwritten by the integrated run.
 
 This evidence shows agreement for the bounded experimental corpus. It does not
 adopt proposal 0013, establish principal identity semantics, prove exhaustive
-correctness, execute a runtime or demonstrate interoperability. Normative
-application, adoption, release, publication and push remain separate work.
+correctness, execute a runtime or demonstrate interoperability. Subsequent limited adoption and publication are recorded separately in
+[Decision 0007](../../docs/decisions/0007-adopt-0.1.0-contract.md) and the
+[release history](../../README.md#release-status-and-history).

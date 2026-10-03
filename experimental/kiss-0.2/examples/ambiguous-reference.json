@@ -1,0 +1,61 @@
+{
+  "edition": "agsdl-exp-0017-c1",
+  "agents": {
+    "writer": {
+      "instructions": [
+        {
+          "id": "task",
+          "content": {
+            "ref": "draft"
+          }
+        }
+      ],
+      "interface": {
+        "ref": "text"
+      }
+    }
+  },
+  "instructions": {
+    "draft": {
+      "target": "Agent",
+      "at": "before-invoke",
+      "format": {
+        "identity": "example/plain-text",
+        "version": "1"
+      },
+      "body": "Rewrite the input concisely without adding facts."
+    }
+  },
+  "interfaces": {
+    "text": {
+      "operations": {
+        "rewrite": {
+          "direction": "inbound",
+          "mode": "request-response",
+          "inputs": {
+            "text": "string"
+          },
+          "outputs": {
+            "text": "string"
+          },
+          "effects": "none"
+        }
+      }
+    },
+    "draft": {
+      "operations": {
+        "rewrite": {
+          "direction": "inbound",
+          "mode": "request-response",
+          "inputs": {
+            "text": "string"
+          },
+          "outputs": {
+            "text": "string"
+          },
+          "effects": "none"
+        }
+      }
+    }
+  }
+}

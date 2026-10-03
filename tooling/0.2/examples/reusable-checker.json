@@ -1,0 +1,184 @@
+{
+  "contract": "agsdl-0.2.0",
+  "id": "reusable-checker",
+  "bindings": {
+    "engine": {
+      "contract": {
+        "identity": "example/engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    },
+    "checker": {
+      "contract": {
+        "identity": "example/checker",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-checker",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "review": {
+      "engine": "engine"
+    }
+  },
+  "agents": {
+    "reviewer": {
+      "configuration": "review"
+    },
+    "other-reviewer": {
+      "configuration": "review"
+    }
+  },
+  "compositions": {
+    "verify": {
+      "agentParameters": [
+        "reviewer"
+      ],
+      "entry": "review",
+      "outputs": [
+        "pass",
+        "revise"
+      ],
+      "steps": {
+        "review": {
+          "type": "agent",
+          "agent": {
+            "parameter": "reviewer"
+          },
+          "next": [
+            "check"
+          ]
+        },
+        "check": {
+          "type": "call",
+          "binding": "checker",
+          "next": [
+            "condition"
+          ],
+          "onError": [
+            {
+              "error": true
+            }
+          ]
+        },
+        "condition": {
+          "type": "condition",
+          "test": {
+            "equals": [
+              {
+                "path": [
+                  "data",
+                  "exitCode"
+                ]
+              },
+              {
+                "value": 0
+              }
+            ]
+          },
+          "next": {
+            "true": [
+              {
+                "output": "pass"
+              }
+            ],
+            "false": [
+              {
+                "output": "revise"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "flow": {
+    "entry": "first",
+    "steps": {
+      "first": {
+        "type": "compose",
+        "composition": "verify",
+        "agents": {
+          "reviewer": "reviewer"
+        },
+        "next": {
+          "pass": [
+            "second"
+          ],
+          "revise": [
+            "correction"
+          ]
+        },
+        "onError": [
+          "failure"
+        ]
+      },
+      "second": {
+        "type": "compose",
+        "composition": "verify",
+        "agents": {
+          "reviewer": "reviewer"
+        },
+        "next": {
+          "pass": [
+            "third"
+          ],
+          "revise": [
+            "correction"
+          ]
+        },
+        "onError": [
+          "failure"
+        ]
+      },
+      "third": {
+        "type": "compose",
+        "composition": "verify",
+        "agents": {
+          "reviewer": "other-reviewer"
+        },
+        "next": {
+          "pass": [],
+          "revise": [
+            "correction"
+          ]
+        },
+        "onError": [
+          "failure"
+        ]
+      },
+      "correction": {
+        "type": "prepare",
+        "message": {
+          "prompt": [
+            {
+              "value": "Correct the review and check again."
+            }
+          ]
+        },
+        "next": [
+          "first"
+        ]
+      },
+      "failure": {
+        "type": "prepare",
+        "message": {
+          "resources": {
+            "diagnostic": {
+              "select": {
+                "path": []
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

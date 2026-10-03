@@ -1,0 +1,30 @@
+{
+  "contract": "agsdl-0.2.0",
+  "id": "conversation",
+  "bindings": {
+    "coding": {
+      "contract": {
+        "identity": "example/agent-engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "project": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-only"
+      }
+    }
+  },
+  "agents": {
+    "helper": {
+      "configuration": "project"
+    }
+  }
+}

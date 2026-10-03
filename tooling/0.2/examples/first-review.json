@@ -1,0 +1,141 @@
+{
+  "contract": "agsdl-0.2.0",
+  "id": "first-review",
+  "bindings": {
+    "coding": {
+      "contract": {
+        "identity": "example/agent-engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    },
+    "review-choice": {
+      "contract": {
+        "identity": "example/review-decision",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/explicit-final-choice",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "project": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-write"
+      }
+    },
+    "review": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-only"
+      }
+    }
+  },
+  "agents": {
+    "developer": {
+      "configuration": "project",
+      "prompt": [
+        {
+          "value": "Implement the request and address review feedback."
+        }
+      ]
+    },
+    "code-reviewer": {
+      "configuration": "review",
+      "prompt": [
+        {
+          "value": "Review the code. Explain findings and choose accepted or changes_needed when finished."
+        }
+      ]
+    },
+    "test-reviewer": {
+      "configuration": "review",
+      "prompt": [
+        {
+          "value": "Review coverage. Explain findings and choose accepted or changes_needed when finished."
+        }
+      ]
+    }
+  },
+  "flow": {
+    "entry": "develop",
+    "steps": {
+      "develop": {
+        "type": "agent",
+        "agent": "developer",
+        "next": [
+          "code",
+          "coverage"
+        ]
+      },
+      "code": {
+        "type": "agent",
+        "agent": "code-reviewer",
+        "decision": {
+          "binding": "review-choice",
+          "choices": [
+            "accepted",
+            "changes_needed"
+          ]
+        },
+        "next": {
+          "accepted": [
+            "reviews"
+          ],
+          "changes_needed": [
+            "reviews"
+          ]
+        }
+      },
+      "coverage": {
+        "type": "agent",
+        "agent": "test-reviewer",
+        "decision": {
+          "binding": "review-choice",
+          "choices": [
+            "accepted",
+            "changes_needed"
+          ]
+        },
+        "next": {
+          "accepted": [
+            "reviews"
+          ],
+          "changes_needed": [
+            "reviews"
+          ]
+        }
+      },
+      "reviews": {
+        "type": "join",
+        "after": "develop",
+        "members": [
+          "code",
+          "coverage"
+        ],
+        "next": [],
+        "mode": "first",
+        "accept": {
+          "equals": [
+            {
+              "path": [
+                "choice"
+              ]
+            },
+            {
+              "value": "accepted"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

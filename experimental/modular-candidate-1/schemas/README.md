@@ -31,7 +31,6 @@ capability assessment and report aggregation need semantic checks outside JSON
 Schema. JSON Schema host numeric handling also cannot replace the inherited
 lossless JSON parser and mathematical uint/positive check.
 
-This lot checks schema JSON and reference integrity, without deriving or running
-a new corpus. Lot B must prepare independent examples and oracles from the exact
-proposal revision before either reader is adapted. Existing readers and the
-candidate-2 comparator do not claim support for this marker.
+The [modular corpus and reader guide](../README.md) covers the 26-case corpus,
+its semantic oracles and both modular readers. Candidate-2 readers and its
+comparator use their own marker.

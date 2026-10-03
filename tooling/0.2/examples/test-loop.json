@@ -1,0 +1,127 @@
+{
+  "contract": "agsdl-0.2.0",
+  "id": "test-loop",
+  "bindings": {
+    "coding": {
+      "contract": {
+        "identity": "example/agent-engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    },
+    "tests": {
+      "contract": {
+        "identity": "example/test-suite",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-tests",
+        "version": "1"
+      },
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "suite": "unit"
+      }
+    },
+    "edit": {
+      "contract": {
+        "identity": "example/edit-files",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/engine-edit",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "project": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-write"
+      },
+      "tools": {
+        "edit": "edit"
+      }
+    }
+  },
+  "agents": {
+    "developer": {
+      "configuration": "project",
+      "prompt": [
+        {
+          "value": "Make minimal changes and explain them."
+        }
+      ]
+    }
+  },
+  "flow": {
+    "entry": "develop",
+    "steps": {
+      "develop": {
+        "type": "agent",
+        "agent": "developer",
+        "next": [
+          "tests"
+        ]
+      },
+      "tests": {
+        "type": "call",
+        "binding": "tests",
+        "next": [
+          "passed"
+        ]
+      },
+      "passed": {
+        "type": "condition",
+        "test": {
+          "equals": [
+            {
+              "path": [
+                "data",
+                "exitCode"
+              ]
+            },
+            {
+              "value": 0
+            }
+          ]
+        },
+        "next": {
+          "true": [],
+          "false": [
+            "correction"
+          ]
+        }
+      },
+      "correction": {
+        "type": "prepare",
+        "message": {
+          "prompt": [
+            {
+              "value": "Fix the failures in the test report and explain your changes."
+            }
+          ],
+          "resources": {
+            "test-report": {
+              "select": {
+                "path": [
+                  "data",
+                  "report"
+                ]
+              },
+              "mediaType": "text/plain"
+            }
+          }
+        },
+        "next": [
+          "develop"
+        ]
+      }
+    }
+  }
+}

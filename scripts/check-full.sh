@@ -46,4 +46,5 @@ run_check comparisons env AGSDL_REPORTS_DIR="$verification_reports/comparisons" 
 run_check corpus-schemas python3 conformance/check-corpus.py --jsonschema
 run_check report-schemas python3 scripts/check-report-schemas.py "$verification_reports/comparisons/official-0.1.0"
 run_check examples python3 scripts/check-examples.py --jsonschema
+run_check agent-flow-schema python3 tooling/0.2/test_reader.py --schema
 exit "$verification_exit"

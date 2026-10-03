@@ -1,5 +1,14 @@
+# OS and editor files
 .DS_Store
 .idea/
 .vscode/
 *.swp
 *.tmp
+
+# Local Codex configuration
+/.codex/
+
+# Python environments and bytecode
+.venv/
+__pycache__/
+*.py[cod]

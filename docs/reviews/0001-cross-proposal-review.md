@@ -7,6 +7,9 @@
   `feature/conformance-and-versioning`, and
   `feature/trust-security-and-control`
 
+The [post-correction review](0002-post-correction-review.md) records the later
+resolution of these findings. They describe the reviewed historical state.
+
 ## Review basis
 
 This review compares the five deliverables with the repository scope, Decision

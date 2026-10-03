@@ -24,7 +24,7 @@ jobs:
           node-version: '22'
       - name: Install optional schema validator
         run: python3 -m pip install 'jsonschema==4.23.0'
-      - name: Check repository, six suites, three corpora, schemas and examples
+      - name: Check repository, reader suites, corpora, schemas and examples
         run: ./scripts/check-full.sh "$RUNNER_TEMP/agsdl-verification"
       - name: Retain logs, reports and summaries
         if: always()
