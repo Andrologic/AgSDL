@@ -115,7 +115,7 @@ not for every possible Engine or Tool before publishing a language draft.
 | Consistent Agent/content/flow directions | Recorded in 0019/0020 and their decisions. |
 | Reviewed common block contract | Proposed in 0021; resolve its remaining semantic choices before freezing a candidate. |
 | Concrete new edition | Bounded experiment `agsdl-exp-flow-0.2-c1` is available; no final edition allocated. Its remaining release scope must be completed or explicitly revised before adoption. |
-| Lifecycle and correlation rules | Define queue/steering boundaries, result grouping by current work, duplicate/late data and delivery acknowledgements. Output correction and waiting for stops are accepted directions; c1 proposes first-satisfactory ordering and exhaustion rules. |
+| Lifecycle and correlation rules | c1 now proposes FIFO admission, explicit steering ownership and acknowledgement, unchanged-origin delivery, exact text assembly, Source selection and closed recovery inputs. Recorded checks cover delivery/configuration and output assembly; independent review and consuming integration evidence remain distinct requirements. |
 | Examples, schema and static readers | New basic-flow examples, schema and one static reader are available in the persistent-Agent experiment. Broader coverage and an independent semantic reader remain. Existing 0.1/0017 evidence does not transfer. |
 | Integration evidence | Exercise actual Agent continuity, Tool calls, effects, media, approvals and stop behavior in consuming software before claiming support for them. |
 | Migration and publication | Review changes from 0.1 and 0017, pin the final scope, obtain adoption/publication decisions and prepare release artifacts. No publication is part of this preparation. |

@@ -342,3 +342,17 @@ a free reply, a constrained reply, and writable versus read-only workspace
 configurations without per-file resource declarations. Static comparison can
 establish declaration agreement; context continuity and actual access need
 runtime evidence from consuming implementations.
+
+## Proposed c1 input and response precision
+
+The [c1 candidate](../experimental/agent-flow-0.2/README.md) distinguishes a
+Message's authored content roles from flow-result data. Delivery adaptation
+occurs after the one-time configuration choice. Result objects cannot assign
+themselves instruction authority by containing `prompt` or `resources` keys.
+Explicit Prepare source selection preserves non-text references as information.
+
+Response text belongs to the current work occurrence, including acknowledged
+steering, rather than to the Agent's whole conversation. The candidate defines
+exact assembly and an optional recorded-parts check. Empty text is valid when
+required outputs are satisfied. It does not permit silently dropping media,
+claiming actual support or replacing a persistent Agent after correction.

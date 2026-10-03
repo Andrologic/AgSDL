@@ -16,7 +16,8 @@ def check_completion(document, step_name, result):
     if not validate(document)['valid']:
         return invalid_request('Validate the document before checking a completion.')
     step = document.get('flow', {}).get('steps', {}).get(step_name)
-    if step is None or step['type'] != 'agent':
+    if (step is None or step['type'] != 'agent' or
+            step.get('delivery', 'queue') == 'steering'):
         return invalid_request('Select a declared Agent step.')
     if not shape(result, SCHEMA['$defs']['Completion']):
         return {**report, 'error': {'code': 'INVALID_RECORD',
@@ -26,6 +27,15 @@ def check_completion(document, step_name, result):
         return {**report, 'error': {'code': 'INVALID_RECORD',
                 'message': 'This Agent step declares no decision; omit choice.', 'details': []}}
 
+    text = result.get('text', '')
+    if 'responseMessages' in result:
+        assembled = '\n'.join(part for message in result['responseMessages']
+                              if (part := ''.join(message)) != '')
+        if 'text' in result and text != assembled:
+            return {**report, 'error': {'code': 'INVALID_RECORD',
+                    'message': 'Text differs from the recorded response Message assembly.', 'details': []}}
+        text = assembled
+
     interface = document['agents'][step['agent']].get('interface', {})
     results = result.get('results', {})
     allowed = interface.get('outputMediaTypes')
@@ -34,7 +44,7 @@ def check_completion(document, step_name, result):
     def violation(location, rule, expected):
         details.append({'path': pointer(location), 'rule': rule, 'expected': expected})
 
-    if result.get('text', '') and allowed is not None and 'text/plain' not in allowed:
+    if text and allowed is not None and 'text/plain' not in allowed:
         violation(['text'], 'format', allowed)
     for name, source in results.items():
         if allowed is not None and source.get('mediaType') not in allowed:
@@ -53,7 +63,7 @@ def check_completion(document, step_name, result):
         return {**report, 'error': {'code': 'OUTPUT_CONSTRAINT',
                 'message': 'Complete or correct the required outputs for this work.',
                 'details': details}}
-    return {**report, 'valid': True}
+    return {**report, 'valid': True, 'text': text}
 
 
 def main():

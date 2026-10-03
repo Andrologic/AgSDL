@@ -422,6 +422,18 @@
             "select"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "source": {
+              "$ref": "#/$defs/Operand"
+            }
+          },
+          "required": [
+            "source"
+          ],
+          "additionalProperties": false
         }
       ]
     },
@@ -515,6 +527,15 @@
                 "choices"
               ],
               "additionalProperties": false
+            },
+            "delivery": {
+              "enum": [
+                "queue",
+                "steering"
+              ]
+            },
+            "steers": {
+              "$ref": "#/$defs/Name"
             }
           },
           "required": [
@@ -844,8 +865,107 @@
         },
         "choice": {
           "$ref": "#/$defs/Name"
+        },
+        "responseMessages": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       },
+      "additionalProperties": false
+    },
+    "Error": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "CONFIGURATION",
+            "INITIALIZATION",
+            "INPUT_CONSTRAINT",
+            "CONTENT_UNAVAILABLE",
+            "UNSUPPORTED",
+            "OPERAND",
+            "CALL_FAILED",
+            "CALL_RESULT",
+            "OUTPUT_CONSTRAINT",
+            "AGENT_FAILED",
+            "INTERRUPTED",
+            "CORRELATION",
+            "VISIT_LIMIT",
+            "MEMBER_FAILED",
+            "NO_ACCEPTABLE_RESULT",
+            "STEERING_UNSUPPORTED",
+            "STEERING_REJECTED",
+            "STEERING_LATE"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^(?:/(?:[^~/]|~[01])*)*(?![\\s\\S])"
+              },
+              "rule": {
+                "type": "string"
+              },
+              "expected": {}
+            },
+            "required": [
+              "path",
+              "rule",
+              "expected"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "details"
+      ],
+      "additionalProperties": false
+    },
+    "DeliveryRecord": {
+      "type": "object",
+      "properties": {
+        "origin": {
+          "enum": [
+            "entry",
+            "prepare",
+            "agent",
+            "call",
+            "join",
+            "error"
+          ]
+        },
+        "input": {},
+        "message": {
+          "$ref": "#/$defs/Message"
+        },
+        "configuration": {
+          "$ref": "#/$defs/Name"
+        },
+        "retainedConfiguration": {
+          "$ref": "#/$defs/Name"
+        }
+      },
+      "required": [
+        "origin",
+        "input",
+        "message",
+        "configuration"
+      ],
       "additionalProperties": false
     }
   }
