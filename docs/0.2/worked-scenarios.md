@@ -99,7 +99,8 @@ guarantee. A consuming system must arrange the access it declares.
 
 The Condition selects the path; it does not replace the report with a Boolean.
 Prepare's reference to the current Call result makes the report available on
-that path. Concrete reference syntax belongs to the future grammar.
+that path. The [bounded c1 contract](../../experimental/agent-flow-0.2/README.md#flow-and-data)
+proposes selectors into the current input; their syntax is not yet adopted.
 
 An illustrative traversal:
 
@@ -120,7 +121,8 @@ A missing or wrongly typed exit code follows the proposed Condition error rule.
 It does not count as a failed assertion or trigger a guessed model verdict.
 A launch failure stops this example with a diagnostic. Neither failure silently
 retries the Call. The loop has no authored iteration limit; an author can add one
-under 0020, with precise limit handling still requiring the candidate grammar.
+under 0020. The bounded c1 contract now proposes per-step visit counting and
+limit handling; these rules remain unadopted.
 
 **What this exercises:** one persistent Agent plus Call, Condition and Prepare
 can express the loop. An Agent judgment is unnecessary for the exit-code rule.
@@ -228,23 +230,15 @@ and explicitly binds the report for the correction path. Expanding it reveals
 the same graph. It neither creates an Agent nor resets `developer`. A custom
 scheduler or Agent-lifetime rule would need a separate semantic extension.
 
-## What remains before executable examples
+## Candidate coverage and remaining work
 
-These walkthroughs expose the declarations the next candidate must make precise:
+The [bounded candidate](../../experimental/agent-flow-0.2/README.md) supplies
+serialized examples and static checks for basic conversations, deterministic
+test loops, direct fork-and-join, output correction and first-satisfactory
+selection. These walkthroughs remain illustrations, not execution traces.
 
-| Remaining contract work | Concrete need shown here |
-| --- | --- |
-| Message and result serialization | Preserve roles and ordered visible response text; bind explicitly selected data without implicitly forwarding history. |
-| Completion and decision mapping | Associate a completed report and final choice with the right work without relying on arbitrary prose. |
-| References and grouping | Bind the current test report and each review result, including across repeated visits. |
-| Block and composition grammar | Express the small comparison, preparation, Call binding and expandable local composition. |
-| Diagnostics and support | Distinguish malformed data, unavailable implementation, technical failure and completed negative result. |
-
-Queue/steering overlap and exact text assembly remain open in 0020/0021.
-Output correction and waiting for stops are now accepted directions; the
-[bounded candidate](../../experimental/agent-flow-0.2/README.md) proposes
-first-satisfactory ordering and exhaustion rules. These scenarios deliberately use sequential
-requests, visible reports and all-required Join; they do not settle those cases.
-Next, derive serialized examples and positive/negative conformance cases from a
-reviewed candidate. Repository checks on this document verify its maintenance,
-not the runtime behavior described in its tables.
+The [preparation index](README.md#before-a-02-release) tracks the remaining
+contract and adoption work. In particular, queue/steering overlap, exact text
+assembly, composition and the protected-action binding are not settled by these
+sequential-request scenarios. Repository checks on this document verify its
+maintenance, not the runtime behavior described in its tables.

@@ -91,8 +91,8 @@ arrives, before initializing the Agent. Evaluate it once for that instance;
 later Messages use the retained configuration without evaluating the selector
 again. They need not repeat the selection data. Even a later value naming a
 different case is ordinary input, not a reconfiguration request. A fixed
-configuration can be prepared before its first Message. This is the proposed concrete rule for the
-accepted pre-initialization direction. An Agent can add `prompt`, `resources`, `skills`
+configuration can be prepared before its first Message. This is the proposed
+concrete rule for the accepted pre-initialization direction. An Agent can add `prompt`, `resources`, `skills`
 and an `interface`. The Agent is one persistent participant, including human
 participation where the integration supplies it. Visiting an Agent step again
 uses its existing instance and context. There is no per-visit initialization,
@@ -103,6 +103,13 @@ a dynamic configuration could select `project` from the first Message's
 `resources.mode.value`. The correction Message contains only `output-errors`:
 it reaches the same Agent using `project`, with no selection data to reconstruct.
 A later Message carrying a different mode still cannot change that instance.
+
+Open c1 question: when a Call result reaches an Agent through a Condition,
+does configuration selection read that flow value or the Message after delivery
+adaptation? The same boundary determines default delivery through intermediate
+blocks. This is not yet settled; static acceptance of such a path does not
+establish its portable Agent input. One-time selection and configuration
+persistence remain fixed in either case.
 
 No initial prompt means no implicit initial task. A configuration's explicit
 Engine binding is required even when the Agent waits for its first Message.
@@ -242,7 +249,12 @@ This is not a distributed clock requirement. Retain the winner; subsequent
 results cannot replace it. A completed negative result is not a technical error.
 If all members end without a qualifying result, fail with `NO_ACCEPTABLE_RESULT`.
 A member failure cannot be a winner, but another member may still qualify.
-A malformed acceptance input is a group error, not a false comparison.
+Before selection, a malformed acceptance input is a group error, not a false
+comparison. Once a winner is retained, stop evaluating `accept`. Remaining
+member results cannot invalidate it; their terminal status only resolves the
+stop/completion wait. A failed remaining member still reports its diagnostic
+and must be known to have ended; it is neither a successful result nor a stop
+confirmation.
 
 With default `stop-and-wait`, request stop of unfinished, unnecessary member
 work and hold the winner until that work is confirmed stopped or finishes.
@@ -275,10 +287,13 @@ For a first-satisfactory Join with `maxVisits: 1`, this proposed timeline applie
 | --- | --- | --- |
 | First anchor completion | 1 | Admit the group, then start its members. |
 | One member supplies an acceptable result | 1 | Retain the winner. With `finish`, continue now; otherwise request stop and wait. |
-| Remaining work confirms stop or completes | 1 | Release a waiting winner; do not repeat an earlier continuation. |
+| Remaining work confirms stop or completes | 1 | Release a waiting winner; do not evaluate `accept` again or repeat an earlier continuation. |
 | A loop produces another anchor completion | 1 | Reject the next group before dispatching its members, even if an earlier loser is still running under `finish`. |
 
-This is a contract example, not execution evidence.
+For example, after a result with `data.eligible: true` wins, a later conforming
+Call result without `eligible` only establishes that the remaining work finished.
+It does not trigger a missing-operand error in the now-inactive acceptance rule.
+These are contract examples, not execution evidence.
 
 Technical failure or a visit-limit breach follows `onError`, if supplied, with
 diagnostic information as its input. Otherwise the affected path stops with a
@@ -351,15 +366,18 @@ remain necessary before claiming cross-reader agreement for this new model.
 ## Remaining release scope
 
 This c1 is a testable foundation, not a proposal to silently remove accepted
-features from 0.2. Unknown syntax is rejected rather than ignored.
+features from 0.2. Unknown syntax is rejected rather than ignored. The
+[preparation index](../../docs/0.2/README.md#before-a-02-release) tracks completion;
+this table identifies c1's boundaries. Proposed forms still need adoption.
+Execution evidence is required only for the implementation support claimed.
 
 | Direction outside c1 | Remaining work before the complete 0.2 candidate |
 | --- | --- |
 | Steering | Delivery acknowledgement, attribution to active work and interaction with graph continuations. |
-| Composition | Local reusable graph expansion and parameter binding with stable Agent identity. |
+| Proposed composition | Review and adopt a local reusable graph form with parameter binding and stable Agent identity. |
 | Protected actions | Explicit approval admission bound to the action, scope and actual invocation. |
 | Interfaces and support | Structured-value constraints, support claims/evidence, delivery paths and relative URI bases. |
-| Completion and errors | Exact visible-text assembly, non-text transfer selection and remaining failure-kind contracts. Recorded output constraints have a checker; delivery and correction still need consuming implementation evidence. |
+| Completion and errors | Exact visible-text assembly, non-text transfer selection and remaining failure-kind contracts. Recorded output constraints have a checker; claims of actual delivery and correction need consuming implementation evidence. |
 | Validation and release | Broader graph rules, an independent semantic reader, review, migration guidance and adoption decision. |
 
 No release tag, official contract replacement or publication follows from this

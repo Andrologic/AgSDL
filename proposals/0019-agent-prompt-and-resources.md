@@ -7,8 +7,10 @@ The directions cover persistent Agents, distinct prompt and resources,
 multimodal Messages, optional initial prompt and output constraints, and
 configured workspace access.
 Concrete shapes and binding rules below remain proposed for the next candidate.
-[0017](0017-agent-only-kiss-0.2.md) remains the implemented experimental contract;
-[release status](../README.md#release-status-and-history) remains authoritative.
+The [bounded flow candidate](../experimental/agent-flow-0.2/README.md) provides
+partial static checks of these directions. [0017](0017-agent-only-kiss-0.2.md)
+remains a separate frozen experiment; neither is a normative adoption.
+[Release status](../README.md#release-status-and-history) remains authoritative.
 
 ## Problem and scope
 

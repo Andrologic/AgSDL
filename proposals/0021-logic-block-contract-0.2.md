@@ -291,11 +291,13 @@ comparisons cannot validate this contract. Current extension declarations do
 not supply an interpreter for these blocks. A new edition, grammar and scoped
 validation rules are required before reader support can be claimed.
 
-The next review must settle predicate syntax, selector placement, composition
-bindings, versioned custom contracts and diagnostics. It must also resolve work
-correlation, Join ties and exhausted alternatives, queue/steering boundaries,
-text assembly, output-correction bindings and approval admission for the new calls. An author may
-not resolve these silently through an implementation default.
+The [bounded c1 contract](../experimental/agent-flow-0.2/README.md) proposes
+predicate syntax, current-input selectors, versioned bindings, Join ties and
+exhaustion, and output-correction diagnostics. Those choices still need final
+adoption. Work correlation, composition bindings, queue/steering boundaries,
+text assembly and approval admission remain to be completed. An author may
+not resolve them silently through an implementation default. The
+[preparation index](../docs/0.2/README.md#before-a-02-release) tracks completion.
 
 At minimum, the future conformance material should distinguish:
 
@@ -323,7 +325,12 @@ The [c1 contract](../experimental/agent-flow-0.2/README.md) makes the basic
 walkthroughs testable with declarations and a static reader. It proposes
 input-preserving Conditions, selectors restricted to current input, reusable
 content/skill/configuration bindings and direct fork-and-join with all-required or first-satisfactory selection.
-These concrete rules remain proposed. Steering, composition, approvals and complete integration contracts remain required
-release work. Configuration selection has a proposed c1 shape and still needs
-lifecycle evidence from consuming implementations. The experiment neither silently drops
-those directions nor supplies execution evidence.
+These concrete rules remain proposed. Complete the accepted steering direction,
+the retained protected-action control and the portable input/completion/error
+boundary. Local composition is the proposed realization of reusable graphs,
+subject to review and adoption with the block contract. External contracts may
+supply integration-specific details without redefining that portable boundary.
+Configuration selection has a proposed c1 shape; claims about actual lifecycle
+support require evidence from consuming implementations. Such evidence is not a
+universal prerequisite to publishing the language draft. The experiment neither
+silently drops accepted directions nor supplies execution evidence.
