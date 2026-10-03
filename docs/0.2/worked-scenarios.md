@@ -155,7 +155,7 @@ flowchart TD
 ```
 
 Both reviewer steps start from the same developer completion. Each receives the
-developer's default visible result as its current input, with its review task
+developer's default visible result as information in its current Message, with its review task
 provided by its own instructions. The reviewers inspect the workspace through
 their configured access. In this example, the workspace remains unchanged until
 both reviews complete, and no unrelated requests enter these Agents.
@@ -246,7 +246,3 @@ requests, visible reports and all-required Join; they do not settle those cases.
 Next, derive serialized examples and positive/negative conformance cases from a
 reviewed candidate. Repository checks on this document verify its maintenance,
 not the runtime behavior described in its tables.
-
-[Proposal 0022](../../proposals/0022-concrete-flow-notation-0.2.md) provides the
-first concrete JSON sketches for these scenarios and identifies the notation
-choices still requiring review.
