@@ -55,9 +55,9 @@ configurations for the same graph, and selection is explicit or absent. Engine
 and adapter identities are open Edition values, so custom names receive no
 special trust.
 
-## Reader operations
+## 0.1.0 reader operations
 
-The adopted contract names seven independent operation contracts:
+The adopted 0.1.0 contract names seven independent operation contracts:
 
 | Operation | Purpose |
 | --- | --- |
@@ -87,7 +87,9 @@ See the [project scope](docs/scope.md) and
 - `spec/` contains the adopted normative 0.1.0 text; `spec/0.2/` contains the adopted 0.2.0 contract.
 - `schemas/` contains derived JSON Schema shapes; the specification controls.
 - `examples/0.1.0/` contains official but non-normative examples of that text.
-- `tooling/readers/` contains non-normative official-edition readers.
+- `tooling/readers/` contains non-normative 0.1.0 readers.
+- `tooling/0.2/` contains the 0.2.0 derived schema, examples, declaration readers
+  and supplied-record checks.
 - `experimental/` preserves candidate editions and their bounded evidence.
 - `proposals/` records proposed material changes and the adoption history.
 - `docs/` contains scope, decisions, research, review evidence and release notes.

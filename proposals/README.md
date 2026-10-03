@@ -11,7 +11,8 @@ change must be applied separately and reviewed against the accepted proposal.
 
 For the current edition, start with the [0.2 guide](../docs/0.2/README.md).
 It distinguishes accepted directions, the [normative 0.2.0 requirements](../spec/0.2/README.md),
-the proposed block contract and historical experiments.
+the adopted bounded block forms, remaining proposal alternatives and historical
+experiments.
 
 ## Adopted sources for 0.2.0
 
@@ -54,8 +55,8 @@ Agent/Message contract and have not been collectively adopted or rejected.
 
 | Proposals | Disposition |
 | --- | --- |
-| [0014](0014-minimal-core-0.2.md) | Proposed smaller core and composable format for 0.2, with [candidate examples](../docs/research/0.2-design-examples.md); not adopted or implemented. The current contract remains `agsdl-0.1.0`. |
-| [0015](0015-validation-reports-0.2.md) | Proposed lightweight validation reports and diagnostic agreement for 0.2; not adopted or implemented. The current contract remains `agsdl-0.1.0`. |
+| [0014](0014-minimal-core-0.2.md) | Proposed smaller core and composable format for 0.2, with [candidate examples](../docs/research/0.2-design-examples.md); not adopted or implemented. |
+| [0015](0015-validation-reports-0.2.md) | Proposed lightweight validation reports and diagnostic agreement for 0.2; not adopted or implemented. |
 | [0016](0016-kiss-experiment-0.2.md) | Historical bounded candidate under [Decision 0008](../docs/decisions/0008-0.2-experiment-directions.md). Its c2 readers, examples and 38-case assessment remain in Git at `f2a20f28f8d03baa1f7cb1bb4f477ea4dd3706b0`. Not normatively adopted or published; superseded for the active experiment by 0017. |
 | [0017](0017-agent-only-kiss-0.2.md) | Frozen agent-only experiment under [Decision 0009](../docs/decisions/0009-agent-only-experiment.md), removing Principal and approval recipient lists. The [42-case comparison](../experimental/kiss-0.2/ASSESSMENT.md) covers the updated static readers. Not normative adoption, publication or execution support. |
 | [0018](0018-human-and-software-agents.md) | Accepted 0.2 design direction under [Decision 0010](../docs/decisions/0010-human-and-software-agents.md): common Agent definition for software and human work, with [static feasibility examples](../experimental/kiss-0.2/human-participation/README.md). Its definition-oriented framing is superseded for the next model by 0019 under Decision 0011. No new grammar, candidate edition, normative adoption or execution support. |
