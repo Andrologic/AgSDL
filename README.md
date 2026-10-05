@@ -110,8 +110,9 @@ the specification or the accepted 0.2 directions.
 This section is the current publication-status reference. AgSDL 0.2.0 is the
 latest published release, tagged
 [`v0.2.0`](https://github.com/Andrologic/AgSDL/releases/tag/v0.2.0), with contract
-marker `agsdl-0.2.0`. It is a GitHub pre-release and a bounded, unstable language
-draft. See its [release notes](docs/releases/0.2.0.md) for scope and evidence.
+marker `agsdl-0.2.0`. It is a regular GitHub release of a bounded language
+draft. The contract remains under development, without a stable compatibility
+guarantee. See its [release notes](docs/releases/0.2.0.md) for scope and evidence.
 
 Version 0.1.1 was published as [`v0.1.1`](https://github.com/Andrologic/AgSDL/releases/tag/v0.1.1)
 for documentation, corpus and reader maintenance, as described in the
