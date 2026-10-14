@@ -18,6 +18,7 @@ required_files=(
   scripts/verify-a2a-1.0.1-sources.sh
   scripts/test-verify-a2a-1.0.1-sources.sh
   scripts/check-markdown-links.py
+  scripts/check-trailing-whitespace.py
   scripts/test-check-markdown-links.py
   conformance/README.md
   conformance/COVERAGE.md
@@ -38,12 +39,8 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
-if command -v rg >/dev/null 2>&1; then
-  if rg -n '[[:blank:]]+$' --glob '*.md' --glob '*.toml' --glob '*.yaml' .; then
-    echo "Trailing whitespace found." >&2
-    exit 1
-  fi
-fi
+python3 scripts/test-check-trailing-whitespace.py
+python3 scripts/check-trailing-whitespace.py
 
 git_available=false
 if command -v git >/dev/null 2>&1 && [[ -e .git ]]; then
