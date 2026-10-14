@@ -64,6 +64,20 @@ node tooling/0.2/javascript/reader.mjs tooling/0.2/examples/test-loop.json
 The [corpus guide](conformance/README.md) specifies the oracles, report conventions,
 retained evidence and limits. Neither comparison validates runtime behavior.
 
+## View a flow
+
+Render the top-level flow of a valid document as a Mermaid flowchart:
+
+```sh
+python3 tooling/0.2/render_mermaid.py tooling/0.2/examples/test-loop.json
+python3 tooling/0.2/test_render_mermaid.py -v
+```
+
+The view is static and non-normative. It shows declared steps, routes, error
+routes, steering and approval targets. It does not expand compositions, evaluate
+conditions or describe runtime ordering. Invalid or unreadable documents exit
+with 1; usage and file-access failures exit with 2.
+
 ## Supplied-record commands
 
 The [completion check contract](../../spec/0.2/validation.md#checking-recorded-outputs)
