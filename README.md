@@ -4,6 +4,57 @@ AgSDL is the Agentic Systems Definition Language, an open,
 implementation-independent specification for describing agentic systems in a
 form that people and software can read, validate, exchange and version.
 
+## At a glance
+
+An AgSDL document names the Agents of a system, the explicit configuration
+each one uses and, optionally, the flow of work between them. This complete
+0.2.0 document declares one persistent Agent and the Engine contract it needs:
+
+```json
+{
+  "contract": "agsdl-0.2.0",
+  "id": "conversation",
+  "bindings": {
+    "coding": {
+      "contract": {
+        "identity": "example/agent-engine",
+        "version": "1"
+      },
+      "implementation": {
+        "identity": "example/local-engine",
+        "version": "1"
+      }
+    }
+  },
+  "configurations": {
+    "project": {
+      "engine": "coding",
+      "settings": {
+        "workspace": "file:///workspace/project",
+        "access": "read-only"
+      }
+    }
+  },
+  "agents": {
+    "helper": {
+      "configuration": "project"
+    }
+  }
+}
+```
+
+Check it with the reference reader, using Python 3 and its standard library:
+
+```sh
+python3 tooling/0.2/reader.py tooling/0.2/examples/conversation.json
+```
+
+The report states whether these declarations are valid. It never claims that
+an Engine exists or that the Agent can run. The [0.2.0 quickstart](docs/0.2/quickstart.md)
+walks through a first document, a finding and a flow view.
+
+## Current edition
+
 AgSDL 0.2.0 is published as a bounded language draft under
 [`v0.2.0`](https://github.com/Andrologic/AgSDL/releases/tag/v0.2.0). Start with the
 [0.2.0 specification](spec/0.2/README.md), [tools and examples](tooling/0.2/README.md)

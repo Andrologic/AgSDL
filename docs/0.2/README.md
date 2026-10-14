@@ -7,6 +7,7 @@ The separate 0.1.0 specification and frozen 0017 experiment retain their meaning
 
 ## Read the current model
 
+For a hands-on first document, follow the [quickstart](quickstart.md).
 Start with the [normative specification](../../spec/0.2/README.md). Its chapters
 cover content and configuration, flow and lifecycle, and static and supplied-record
 checks. Then read the [worked scenarios](worked-scenarios.md),
