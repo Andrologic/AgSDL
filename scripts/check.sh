@@ -83,4 +83,5 @@ PYTHONDONTWRITEBYTECODE=1 python3 -m unittest \
   conformance/test_compare_readers.py -v
 PYTHONDONTWRITEBYTECODE=1 python3 tooling/0.2/test_reader.py -v
 python3 tooling/0.2/conformance/test_compare.py -v
+python3 tooling/0.2/conformance/coverage.py --check
 echo "AgSDL repository checks passed."
