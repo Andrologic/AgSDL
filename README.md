@@ -28,7 +28,7 @@ records its additional evidence limits.
 The [0.2 guide](docs/0.2/README.md) explains the model and source hierarchy.
 The normative chapters define content and configuration, flow and lifecycle,
 composition and protected admission, and scoped static and supplied-record
-checks. Independent Python and JavaScript declaration readers use a 112-case
+checks. Independent Python and JavaScript declaration readers use a 129-case
 corpus. Agreement is bounded to those inputs; record consistency and schema
 validation do not establish execution support.
 

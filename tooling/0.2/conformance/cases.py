@@ -201,6 +201,39 @@ def cases():
                 'type': 'compose', 'composition': missing_name, 'agents': {}, 'next': {'done': []}}}}
             add('absent-composition-' + missing_name + ('-explicit' if explicit else '-omitted'),
                 doc, ['REFERENCE'], {'/findings/0/code': 'REFERENCE'})
+    # 0.2.1 coverage additions: second and third witnesses for weakly covered rule codes.
+    mutate('resource-collision-between-skills', lambda d: (d.update(skills={'first': {'resources': {'x': {'value': 1}}},
+        'second': {'resources': {'x': {'value': 2}}}}), d['agents']['worker'].update(skills=['first', 'second'])), ['RESOURCE_COLLISION'])
+    mutate('resource-distinct-names', lambda d: (d.update(skills={'guide': {'resources': {'x': {'value': 1}}}}),
+        d['agents']['worker'].update(skills=['guide'], resources={'y': {'value': 2}})))
+    mutate('result-format-partial-overlap', lambda d: d['agents']['worker'].update(interface={'outputMediaTypes': ['application/json'],
+        'results': {'report': {'mediaTypes': ['application/json', 'text/csv']}}}), ['OUTPUT_FORMAT'])
+    mutate('result-format-subset', lambda d: d['agents']['worker'].update(interface={'outputMediaTypes': ['application/json', 'text/plain'],
+        'results': {'report': {'mediaTypes': ['application/json']}}}))
+    mutate('result-format-unrestricted', lambda d: d['agents']['worker'].update(interface={
+        'results': {'report': {'mediaTypes': ['text/csv']}}}))
+    mutate('choice-map-without-decision', lambda d: d.update(flow={'entry': 'a', 'steps': {'a': {'type': 'agent', 'agent': 'worker',
+        'next': {'yes': []}}}}), ['ROUTES'])
+    mutate('decision-extra-route', lambda d: d.update(flow={'entry': 'a', 'steps': {'a': {'type': 'agent', 'agent': 'worker',
+        'decision': {'binding': 'engine', 'choices': ['yes']}, 'next': {'yes': [], 'no': []}}}}), ['ROUTES'])
+    mutate('decision-list-routes', lambda d: d.update(flow={'entry': 'a', 'steps': {'a': {'type': 'agent', 'agent': 'worker',
+        'decision': {'binding': 'engine', 'choices': ['yes']}, 'next': []}}}), ['ROUTES'])
+    mutate('join-default-mode-accept', lambda d: (join(d), d['flow']['steps']['join'].update(accept=PREDICATE)), ['JOIN_POLICY'])
+    mutate('join-all-remaining-finish', lambda d: (join(d), d['flow']['steps']['join'].update(remaining='finish')), ['JOIN_POLICY'])
+    mutate('join-explicit-all', lambda d: (join(d), d['flow']['steps']['join'].update(mode='all')))
+    mutate('join-first-remaining-finish', lambda d: (join(d), d['flow']['steps']['join'].update(mode='first', accept=PREDICATE,
+        remaining='finish')))
+    mutate('literal-source-not-source', lambda d: d.update(flow={'entry': 'p', 'steps': {'p': {'type': 'prepare',
+        'message': {'resources': {'x': {'source': {'value': {'unexpected': 1}}}}}}}}), ['SOURCE'])
+    mutate('literal-source-scalar', lambda d: d.update(flow={'entry': 'p', 'steps': {'p': {'type': 'prepare',
+        'message': {'resources': {'x': {'source': {'value': 42}}}}}}}), ['SOURCE'])
+    mutate('binding-duplicate-claim', lambda d: d['bindings']['engine'].update(requires=[requirement], claims=[
+        {'requirement': deepcopy(requirement), 'status': 'supported', 'evidence': 'a' * 64},
+        {'requirement': deepcopy(requirement), 'status': 'supported', 'evidence': 'a' * 64}]), ['CLAIM'])
+    mutate('unknown-effect-scope', lambda d: (d['bindings']['engine'].update(effects='unknown'), d.update(flow={'entry': 'act',
+        'steps': {'act': {'type': 'call', 'binding': 'engine'}}})), ['SCOPE'])
+    mutate('external-effect-with-scope', lambda d: (d['bindings']['engine'].update(effects='external'), d.update(flow={'entry': 'act',
+        'steps': {'act': {'type': 'call', 'binding': 'engine', 'scope': deepcopy(SCOPE)}}})))
     raw=json.dumps(BASE,separators=(',',':')).encode()
     add('duplicate-key',raw=raw.replace(b'"id":"independent"',b'"id":"independent","id":"second"'),codes=['PARSE'])
     add('unpaired-surrogate',raw=raw.replace(b'"independent"',b'"\\ud800"'),codes=['PARSE'])

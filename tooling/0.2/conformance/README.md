@@ -12,10 +12,10 @@ serializer as lexical utilities. It does not import or invoke a Python reader,
 reuse Python graph/constraint/URI algorithms, or import 0.1 semantic rules.
 Python source was inspected afterward to diagnose proven report differences.
 
-[cases.py](cases.py) authors 112 reproducible cases independently of the readers,
+[cases.py](cases.py) authors 129 reproducible cases independently of the readers,
 including the 11 maintained examples. It constructs fixture bytes and explicit
 expected rule-code sets, plus selected source, support and expansion observations.
-Every one of the 18 document rule codes has a failing witness. The corpus covers
+Every one of the 18 document rule codes has at least two failing witnesses. The corpus covers
 literal/reference boundaries, exact numbers, malformed Unicode, special object
 keys, steering and Join declarations, composition origins, gate chains,
 constraints, URI bases and exact support claims. Cases are not generated from

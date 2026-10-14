@@ -15,7 +15,7 @@ checks. Then read the [worked scenarios](worked-scenarios.md),
 implementations and proposals do not override the normative requirements.
 
 The independent Python and JavaScript declaration readers use a
-[112-case corpus](../../tooling/0.2/conformance/README.md). It includes the reviewed
+[129-case corpus](../../tooling/0.2/conformance/README.md). It includes the reviewed
 candidate cases promoted to 0.2.0 and rejection of the old candidate marker.
 Agreement covers those declarations and reports, not runtime support.
 
