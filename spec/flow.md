@@ -546,16 +546,19 @@ failure; it is information, never an instruction.
   work cancelled by a join's `remaining` follows neither.
 - A step that fails without `onError` fails its join branch, or follows the
   `onError` of its compose step, whichever encloses it more closely. At the
-  top level, it follows the flow's `onError`; without one, its path ends and
-  the run will fail. The host reports the failure.
+  top level, it follows the flow's `onError` when that route covers it, as
+  below; otherwise its path ends and the run will fail. The host reports the
+  failure.
 - The flow's `onError` is a shorthand: it acts as the `onError` of every
   top-level step without one that is reachable from `entry` through normal or
   error routes, without following the flow's `onError`. A run behaves the same
-  when those routes are written on the steps. Steps reachable only through the
-  flow's `onError` do not use it, so a handler that fails is not routed back
-  to itself. A route from the handler back into the flow is a loop like any
-  other; `maxVisits` bounds it. Steps inside a join branch do not use it
-  either; their failure reaches the join first.
+  when those routes are written on the steps. The steps it targets, and the
+  steps reachable only through it, do not use it, so a handler that fails is
+  never routed back to itself. A route from the handler back into the flow is
+  a loop like any other. `maxVisits` bounds it on a step the shorthand does
+  not cover, such as the handler: a covered step would route its own
+  `VISIT_LIMIT` failure to the handler. Steps inside a join branch do not use
+  the flow's `onError` either; their failure reaches the join first.
 - A failure never undoes effects already made, and never retries on its own.
   Only [corrections](agents.md#corrections) continue an agent's work.
 
