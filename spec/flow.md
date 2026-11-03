@@ -51,8 +51,10 @@ decide it.
 1. **A step is one unit of work.** When a message starts a step, the step does
    one work and ends with exactly one outcome: a normal route, a failure, or a
    cancellation by a join. A compose step is no exception: its body is its
-   work, and it leaves at most once, through one output or as a failure. A
-   join does no work of its own; it closes a group (rule 3).
+   work, and it leaves at most once, through one output or as a failure; a
+   body path that ends without reaching an output ends the compose step's
+   path, as an empty route does. A join does no work of its own; it closes a
+   group (rule 3).
 2. **A failure goes to the nearest handler.** A failing step follows its
    `onError`. Without one, the failure goes to what encloses the step most
    closely: its join branch, which fails; otherwise its compose step, which
@@ -376,9 +378,10 @@ its output routes and its `onError`.
 - A branch is named after its first step. A direct route is named after the
   origin.
 
-Each time the origin follows a route, normal or error, a new **group** opens.
-The group waits only for the branches the origin actually started; when a
-choice starts some branches only, the group waits for those. Each branch
+Each time the origin follows a route, normal or error, that starts at least
+one branch, a new **group** opens. The group waits only for the branches the
+origin actually started; when a choice starts some branches only, the group
+waits for those. A route that starts no branch opens no group. Each branch
 delivers at most one result per group.
 
 ### Shape rules
@@ -561,8 +564,9 @@ A composition is a reusable flow fragment.
 A route may return to an earlier step. `maxVisits`, a positive integer, limits
 how many times a step starts work in one run. Starting work beyond the limit
 fails the step with `VISIT_LIMIT`, without doing the work. For a join,
-`maxVisits` counts groups: when its origin follows a route and the limit is
-reached, the branches do not start and the join fails with `VISIT_LIMIT`.
+`maxVisits` counts groups: when its origin follows a route that starts
+branches and the limit is reached, the branches do not start and the join
+fails with `VISIT_LIMIT`.
 Without `maxVisits`, there is no limit.
 
 ## Failures
