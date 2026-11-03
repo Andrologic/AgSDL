@@ -98,7 +98,7 @@ Each entry of `permissions` gives, for one action, how each effect is enforced:
 
 | Value | Meaning |
 | --- | --- |
-| `sandbox` | Enforced by the operating system, around everything the agent runs. |
+| `sandbox` | Enforced by the operating system, around everything the agent runs. MCP servers are not part of it: an `mcp` permission covers what they do. |
 | `harness` | Enforced by the harness's own rules before each action. |
 | `absent` | Not enforced. |
 

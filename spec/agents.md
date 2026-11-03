@@ -129,6 +129,14 @@ A preset name alone, such as `"read-only"`, is short for `{ "preset": "read-only
 | `mcp` | A server name, or `server/tool`. |
 | `delegate` | Omitted. Starting sub-agents inside the harness. |
 
+An MCP server is equipment with effects of its own: a `github` server exists to
+reach GitHub. An `mcp` permission covers everything the server does for the
+agent. `read`, `write`, `shell` and `network` apply to the agent's own tools
+and commands, not to the MCP servers it may use; to restrict a server, write
+`mcp` rules on `server/tool`, such as
+`{ "action": "mcp", "match": "files/read_file", "effect": "deny" }`. A host MAY
+confine a server further.
+
 `match` uses `*` for any sequence of characters; for paths, `**` also crosses
 directory separators. A rule without `match` covers every use of its action.
 
