@@ -587,5 +587,12 @@
     "description": "An onError route that starts several targets opens a group like a normal route.",
     "errors": [],
     "warnings": []
+  },
+  "join-finish-shared": {
+    "description": "A step after a finish join waits for a branch still using its instance.",
+    "errors": [],
+    "warnings": [
+      "SHARED_INSTANCE_PARALLEL"
+    ]
   }
 }

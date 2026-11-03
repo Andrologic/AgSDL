@@ -75,7 +75,7 @@ A report is a JSON object:
 | `HARNESS_APPROXIMATE` | The harness supports a property approximately. The module's note is given. |
 | `HARNESS_VERSION` | Support depends on the harness version. |
 | `HARNESS_UNVERIFIED` | No module is known for the agent's harness. |
-| `SHARED_INSTANCE_PARALLEL` | Two steps that can run at the same time share an instance, and neither declares `delivery`. |
+| `SHARED_INSTANCE_PARALLEL` | Two steps that can run at the same time share an instance, and neither declares `delivery`; or a step after a join with `remaining: "finish"` shares an instance with one of its branches and does not declare `delivery: "queue"`. |
 
 ## What validators do not check
 

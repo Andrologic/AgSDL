@@ -43,6 +43,10 @@ def expanded(addr):
     return list(addr)
 
 
+def instance_label(instance):
+    return f"instance '{instance}'" if instance else "shared instance"
+
+
 def scope_member(addr, prefix):
     """The step of the scope with this prefix that is, or contains, the step at addr."""
     if len(addr) > len(prefix) and addr[: len(prefix)] == prefix:
@@ -627,6 +631,7 @@ class Checker:
     def check_shared_instances(self, graph, infos):
         for addr, info in infos.items():
             seen = {}
+            finishing = {}
             for start, members in info["branches"].items():
                 for member in sorted(graph.nodes):
                     if scope_member(member, info["prefix"]) not in members:
@@ -635,20 +640,43 @@ class Checker:
                     if node.type != "agent" or node.agent is None:
                         continue
                     instance = node.decl.get("instance")
-                    if instance == "new" or "delivery" in node.decl:
+                    if instance == "new":
                         continue
                     key = (node.agent, instance)
+                    finishing.setdefault(key, start)
+                    if "delivery" in node.decl:
+                        continue
                     other = seen.get(key)
                     if other is not None and other[0] != start:
-                        what = f"instance '{instance}'" if instance else "shared instance"
                         self.report.warning(
                             "SHARED_INSTANCE_PARALLEL",
                             node.pointer,
-                            f"steps '{other[1]}' and '{node.name}' use the {what} of agent '{node.agent}' in parallel branches; their work will be serialized",
+                            f"steps '{other[1]}' and '{node.name}' use the {instance_label(instance)} of agent '{node.agent}' in parallel branches; their work will be serialized",
                             expanded(member),
                         )
                     else:
                         seen.setdefault(key, (start, node.name))
+            if graph.nodes[addr].decl.get("remaining") == "finish":
+                self.check_after_finish(graph, addr, finishing)
+
+    def check_after_finish(self, graph, join, finishing):
+        """Steps after a finish join wait for the branches still using their instance."""
+        for later in sorted(graph.reachable(join) - {join}):
+            node = graph.nodes[later]
+            if node.type != "agent" or node.agent is None:
+                continue
+            instance = node.decl.get("instance")
+            if instance == "new" or node.decl.get("delivery") == "queue":
+                continue
+            branch = finishing.get((node.agent, instance))
+            if branch is None:
+                continue
+            self.report.warning(
+                "SHARED_INSTANCE_PARALLEL",
+                node.pointer,
+                f"step '{node.name}' uses the {instance_label(instance)} of agent '{node.agent}', which branch '{branch}' of join '{graph.nodes[join].name}' may still use while it finishes; its work will wait",
+                expanded(later),
+            )
 
     # Harnesses ------------------------------------------------------------
 

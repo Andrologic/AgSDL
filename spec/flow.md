@@ -26,7 +26,8 @@ messages from one step to the next.
 
 A **run** starts when the host delivers its entry message to the entry step. It
 ends when no work is active or waiting. It **fails** if a failure was not
-handled by any error route; otherwise it succeeds. Every step MUST be reachable
+handled by any error route, other than in a branch that finishes after its
+join decided (see [`remaining`](#waiting-modes)); otherwise it succeeds. Every step MUST be reachable
 from `entry`, or from the flow's `onError`, through normal or error routes.
 
 ### Step types
@@ -201,7 +202,9 @@ reaches it.
 When two steps that share an instance can run at the same time, for example in
 two branches of one join, and neither declares `delivery`, validators warn that
 their work will be serialized (`SHARED_INSTANCE_PARALLEL`). Declaring
-`delivery` explicitly states the intent and silences the warning.
+`delivery` explicitly states the intent and silences the warning. A branch
+that finishes after its join decided is a special case: see
+[`remaining`](#waiting-modes).
 
 ## Call
 
@@ -412,6 +415,17 @@ branch never routes outside itself: a cancelled work follows neither `next` nor
 `onError`, and a finishing branch that fails ends there. Its results never
 count for a later group of the join. Works of other steps on the same
 instances are not affected.
+
+`finish` lets work with effects, such as edits or a deployment, complete
+instead of being cut off. A finishing branch no longer counts for the flow:
+
+- A `steer` message does not join its work: the message waits for that work
+  to end, then starts its own work. Validators warn when a step after the join
+  shares an instance with one of its branches and does not declare
+  `delivery: "queue"` (`SHARED_INSTANCE_PARALLEL`).
+- When it fails, the host reports the failure; the run does not fail for it.
+- The run does not end before it does, and its works count toward
+  `maxVisits`.
 
 ### Join output
 
