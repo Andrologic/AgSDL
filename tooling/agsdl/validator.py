@@ -449,12 +449,16 @@ class Checker:
                 label = addr[0] if key is None else f"{key}/{addr[0]}"
                 self.report.joins[label] = {"origin": info["origin"][0], "branches": list(branches)}
         # Messages and instances are followed across compositions, on expanded graphs.
+        in_branch = {
+            key: {member for info in found.values() for members in info["branches"].values() for member in members}
+            for key, found in joins.items()
+        }
         graphs = []
         if None in scopes:
-            graphs.append(Graph.for_flow(self.doc))
+            graphs.append(Graph.for_flow(self.doc, in_branch))
         for name in self.compositions:
             if name in scopes:
-                graphs.append(Graph.for_composition(self.doc, name))
+                graphs.append(Graph.for_composition(self.doc, name, in_branch))
         for index, graph in enumerate(graphs):
             infos = {}
             for addr, node in graph.nodes.items():

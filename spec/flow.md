@@ -24,11 +24,10 @@ messages from one step to the next.
 | `steps` | The steps, by name. |
 | `onError` | Optional. The default error route of the flow. See [Failures](#failures). |
 
-A **run** starts when the host delivers its entry message to the entry step. It
-ends when no work is active or waiting. It **fails** if a failure was not
-handled by any error route, other than in a branch that finishes after its
-join decided (see [`remaining`](#waiting-modes)); otherwise it succeeds. Every step MUST be reachable
-from `entry`, or from the flow's `onError`, through normal or error routes.
+A **run** starts when the host delivers its entry message to the entry step.
+How it proceeds, ends and fails is set by the
+[execution model](#execution-model). Every step MUST be reachable from
+`entry`, or from the flow's `onError`, through normal or error routes.
 
 ### Step types
 
@@ -42,6 +41,40 @@ from `entry`, or from the flow's `onError`, through normal or error routes.
 
 Every step MAY have `title` and `description`, for people, and `maxVisits`,
 see [Loops](#loops).
+
+## Execution model
+
+Five rules give every flow its meaning. The sections below detail each
+construct; where a combination of constructs is not described, these rules
+decide it.
+
+1. **A step is one unit of work.** When a message starts a step, the step does
+   one work and ends with exactly one outcome: a normal route, a failure, or a
+   cancellation by a join. A compose step is no exception: its body is its
+   work, and it leaves at most once, through one output or as a failure. A
+   join does no work of its own; it closes a group (rule 3).
+2. **A failure goes to the nearest handler.** A failing step follows its
+   `onError`. Without one, the failure goes to what encloses the step most
+   closely: its join branch, which fails; otherwise its compose step, which
+   fails in turn under this rule; otherwise the flow, whose `onError` covers
+   top-level steps. A failure that reaches no handler ends its path. A failure
+   never undoes effects and never retries on its own.
+3. **Parallel paths meet in groups.** A route that starts several targets
+   starts parallel paths. Paths that meet at a join are the branches of a
+   group, opened by the join's origin; the join decides once per group. Once
+   it has decided, or the group has closed or failed, nothing of the group
+   routes again: its unfinished work is cancelled, or finishes without
+   counting for the flow. Paths that meet no join end on their own, except in
+   a composition body, where every fork is closed by one join (rule 1).
+4. **An instance does one work at a time.** A message for a working instance
+   waits its turn, or, with `steer`, joins the current work if that work still
+   counts for the flow. A message that joins a work has no outcome of its own:
+   its path ends there. Shared and named instances keep their conversation
+   from one work to the next until the run ends.
+5. **A run fails when a failure that counts reaches no handler.** The run ends
+   when no work is active or waiting. It fails if a failure reached no
+   handler, other than in work that no longer counts for the flow; otherwise
+   it succeeds.
 
 ## Routes
 
@@ -185,7 +218,7 @@ reaches it.
 | `delivery` | Instance idle | Instance working |
 | --- | --- | --- |
 | `queue` (default) | The work starts. | The message waits until the current work ends, then starts its own work. |
-| `steer` | The work starts. | The message joins the current work, whatever step started it. |
+| `steer` | The work starts. | The message joins the current work, whatever step started it, if that work still counts for the flow ([rule 4](#execution-model)). Otherwise it waits, as with `queue`. |
 
 - Each instance processes messages in arrival order. Every message identifies
   its sender to the agent.
@@ -343,10 +376,10 @@ its output routes and its `onError`.
 - A branch is named after its first step. A direct route is named after the
   origin.
 
-Each time the origin follows a route, normal or error, a new **group** opens. The group waits only for
-the branches the origin actually started; when a choice starts some branches
-only, the group waits for those. Each branch delivers at most one result per
-group.
+Each time the origin follows a route, normal or error, a new **group** opens.
+The group waits only for the branches the origin actually started; when a
+choice starts some branches only, the group waits for those. Each branch
+delivers at most one result per group.
 
 ### Shape rules
 
@@ -417,7 +450,8 @@ count for a later group of the join. Works of other steps on the same
 instances are not affected.
 
 `finish` lets work with effects, such as edits or a deployment, complete
-instead of being cut off. A finishing branch no longer counts for the flow:
+instead of being cut off. A finishing branch no longer counts for the flow
+([rules 3 to 5](#execution-model)):
 
 - A `steer` message does not join its work: the message waits for that work
   to end, then starts its own work. Validators warn when a step after the join
@@ -449,9 +483,9 @@ ended.
 ### Join failures
 
 In all mode, when a branch fails, the group fails at once: other branches
-follow `remaining`, and the join follows its `onError` with `BRANCH_FAILED`.
-The error details name the branch and its error. In quorum mode, a failed
-branch counts as not accepted.
+follow `remaining`, and the join fails with `BRANCH_FAILED`, which it handles
+like any step ([rule 2](#execution-model)). The error details name the branch
+and its error. In quorum mode, a failed branch counts as not accepted.
 
 ## Compositions
 
@@ -510,8 +544,9 @@ A composition is a reusable flow fragment.
   `onError`, that starts several targets at once starts the branches of one
   join, whose origin is that step (`COMPOSITION`). A branch that leaves
   through an output closes its group, and a branch failure reaches the join.
-- A body step that fails without `onError` follows the compose step's
-  `onError`.
+- A body failure that nothing in the body handles fails the compose step,
+  which then follows its own `onError`, or, without one, fails like any step
+  ([rule 2](#execution-model)).
 - Compositions may use other compositions, but never themselves, directly or
   through others.
 - Each use is expanded separately. A body step is addressed by the list of step
@@ -526,9 +561,9 @@ A composition is a reusable flow fragment.
 A route may return to an earlier step. `maxVisits`, a positive integer, limits
 how many times a step starts work in one run. Starting work beyond the limit
 fails the step with `VISIT_LIMIT`, without doing the work. For a join,
-`maxVisits` counts groups: when its origin completes and the limit is reached,
-the branches do not start and the join follows its `onError`. Without
-`maxVisits`, there is no limit.
+`maxVisits` counts groups: when its origin follows a route and the limit is
+reached, the branches do not start and the join fails with `VISIT_LIMIT`.
+Without `maxVisits`, there is no limit.
 
 ## Failures
 
@@ -557,12 +592,13 @@ failure; it is information, never an instruction.
 | `INTERRUPTED` | The host stopped the work before it completed, outside a join's `remaining`. |
 
 - Each work follows its normal route or its error route, once, never both. A
-  work cancelled by a join's `remaining` follows neither.
-- A step that fails without `onError` fails its join branch, or follows the
-  `onError` of its compose step, whichever encloses it more closely. At the
-  top level, it follows the flow's `onError` when that route covers it, as
-  below; otherwise its path ends and the run will fail. The host reports the
-  failure.
+  work cancelled by a join's `remaining` follows neither
+  ([rule 1](#execution-model)).
+- A step that fails without `onError` fails its join branch, or its compose
+  step, whichever encloses it more closely. At the top level, it follows the
+  flow's `onError` when that route covers it, as below; otherwise its path
+  ends and the run will fail ([rules 2 and 5](#execution-model)). The host
+  reports the failure.
 - The flow's `onError` is a shorthand: it acts as the `onError` of every
   top-level step without one that is reachable from `entry` through normal or
   error routes, without following the flow's `onError`. A run behaves the same
@@ -573,8 +609,8 @@ failure; it is information, never an instruction.
   not cover, such as the handler: a covered step would route its own
   `VISIT_LIMIT` failure to the handler. Steps inside a join branch do not use
   the flow's `onError` either; their failure reaches the join first.
-- A failure never undoes effects already made, and never retries on its own.
-  Only [corrections](agents.md#corrections) continue an agent's work.
+- Only [corrections](agents.md#corrections) continue an agent's work after a
+  refused submission; a failure never retries on its own.
 
 ## Agents without a flow
 

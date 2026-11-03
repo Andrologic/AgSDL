@@ -13,6 +13,7 @@ sys.path.insert(0, TOOLING)
 
 from agsdl import jsoninput, load_modules, validate_bytes  # noqa: E402
 from agsdl.permissions import effect_for, effects_in_use, glob_matches  # noqa: E402
+from agsdl.graph import Graph  # noqa: E402
 from agsdl.mermaid import render  # noqa: E402
 from agsdl.validator import load_module  # noqa: E402
 
@@ -123,6 +124,16 @@ class ReportTest(unittest.TestCase):
     def test_shape_failure_stops_checks(self):
         report = validate_bytes(b'{"contract": "agsdl-0.3.0", "id": "x"}', {})
         self.assertEqual(codes(report, "error"), ["SHAPE"])
+
+
+class GraphTest(unittest.TestCase):
+    def test_body_failure_reaches_its_branch_first(self):
+        with open(os.path.join(EXAMPLES, "reusable-review.json")) as handle:
+            document = json.load(handle)
+        document["flow"]["steps"]["review"]["onError"] = "write"
+        graph = Graph.for_flow(document, {"triple-review": {"first", "second", "third"}})
+        failing = sorted("/".join(edge.src) for edge in graph.edges if edge.kind == "error")
+        self.assertEqual(failing, ["review/spread", "review/vote"])
 
 
 class MermaidTest(unittest.TestCase):

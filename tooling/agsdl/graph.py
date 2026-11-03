@@ -78,8 +78,10 @@ def step_routes(decl, pointer):
 class Graph:
     """The expanded graph of a flow, or of one composition analysed on its own."""
 
-    def __init__(self, document):
+    def __init__(self, document, in_branch=None):
         self.document = document
+        # Names of the steps inside a join branch, per scope (None for the flow).
+        self.in_branch = in_branch or {}
         self.compositions = document.get("compositions", {})
         self.nodes = {}
         self.composes = {}
@@ -89,8 +91,8 @@ class Graph:
     # Construction -------------------------------------------------------
 
     @classmethod
-    def for_flow(cls, document):
-        graph = cls(document)
+    def for_flow(cls, document, in_branch=None):
+        graph = cls(document, in_branch)
         flow = document["flow"]
         scope = Scope(flow["steps"], ["flow", "steps"], ())
         graph._add_scope(scope, ())
@@ -151,8 +153,8 @@ class Graph:
         return addr
 
     @classmethod
-    def for_composition(cls, document, name):
-        graph = cls(document)
+    def for_composition(cls, document, name, in_branch=None):
+        graph = cls(document, in_branch)
         composition = graph.compositions[name]
         scope = Scope(composition["steps"], ["compositions", name, "steps"], ("#" + name,), composition=name)
         graph._add_scope(scope, (name,))
@@ -228,13 +230,17 @@ class Graph:
             messages.extend(self._outer_message(parent, kind2, name2, message2))
         return messages
 
-    def _inherited_error(self, scope):
-        """Error routes a body step inherits from the compose steps enclosing it."""
+    def _inherited_error(self, scope, name):
+        """The error route of a body step without onError: the nearest enclosing
+        join branch takes its failure first, then the compose step, in turn."""
         while scope.compose is not None:
+            if name in self.in_branch.get(scope.composition, ()):
+                return None
             decl, _, parent = self.composes[scope.compose]
             if "onError" in decl:
                 pointer = parent.pointer + [scope.compose[-1], "onError"]
                 return parent, decl["onError"], pointer
+            name = scope.compose[-1]
             scope = parent
         return None
 
@@ -244,7 +250,7 @@ class Graph:
                 continue
             routes = list(step_routes(node.decl, node.pointer))
             if "onError" not in node.decl:
-                inherited = self._inherited_error(node.scope)
+                inherited = self._inherited_error(node.scope, node.name)
                 if inherited is not None:
                     routes.append(("error", None, inherited[1], inherited[2], inherited[0]))
             for entry in routes:
