@@ -1,4 +1,10 @@
-"""Flow graphs: composition expansion, dominators and join analysis."""
+"""Flow graphs: composition expansion, dominators and join analysis.
+
+Two kinds of graph are built. An expanded graph replaces each compose step by
+its body; it follows messages and instances across compositions. A scope graph
+keeps the steps of one scope, the flow or one composition body, with each
+compose step as one step; joins are deduced there.
+"""
 
 from collections import deque
 
@@ -102,6 +108,47 @@ class Graph:
                 graph.edges.append(Edge(START, dst, "error", None, message, where))
         graph.root = START
         return graph
+
+    @classmethod
+    def for_scope(cls, document, composition=None):
+        """The steps of the flow, or of one composition body, with compose steps as one step."""
+        graph = cls(document)
+        if composition is None:
+            container = document["flow"]
+            pointer = ["flow", "steps"]
+        else:
+            container = graph.compositions[composition]
+            pointer = ["compositions", composition, "steps"]
+        scope = Scope(container["steps"], pointer, (), composition=composition)
+        for name, decl in scope.steps.items():
+            graph.nodes[(name,)] = Node((name,), decl, scope, name)
+        for node in list(graph.nodes.values()):
+            for kind, key, route, rpointer in step_routes(node.decl, node.pointer):
+                for tkind, tname, message, where in route_targets(route, rpointer):
+                    dst = graph._local_target(scope, tkind, tname)
+                    if dst is not None:
+                        graph.edges.append(Edge(node.addr, dst, kind, key, message, where))
+        entry = (container["entry"],)
+        graph.root = entry if entry in graph.nodes else None
+        if composition is None and "onError" in container and graph.root is not None:
+            graph.nodes[START] = Node(START, None, scope, "start")
+            graph.edges.append(Edge(START, entry, "entry", None, None, ["flow", "entry"]))
+            for tkind, tname, message, where in route_targets(container["onError"], ["flow", "onError"]):
+                dst = graph._local_target(scope, tkind, tname)
+                if dst is not None:
+                    graph.edges.append(Edge(START, dst, "error", None, message, where))
+            graph.root = START
+        return graph
+
+    def _local_target(self, scope, kind, name):
+        if kind == "step":
+            return (name,) if (name,) in self.nodes else None
+        if scope.composition is None:
+            return None
+        addr = ("#exit", name)
+        if addr not in self.nodes:
+            self.nodes[addr] = Node(addr, None, scope, name)
+        return addr
 
     @classmethod
     def for_composition(cls, document, name):
@@ -288,48 +335,38 @@ def local_name(addr, prefix):
     return addr[-1]
 
 
-def open_body_forks(graph, name):
-    """Forks of a composition body whose targets are not all branches of its joins.
+def open_body_forks(graph, infos):
+    """Forks of a composition body that do not start the branches of one join.
 
-    Returns (pointer, address, message) problems; graph is the composition's own graph.
+    graph is the body's scope graph and infos its joins, from analyse_joins.
+    Returns (pointer, address, message) problems.
     """
     if graph.root is None:
         return []
-    idom = graph.immediate_dominators()
     succ = graph.successors()
-    reach = graph.reachable(graph.root)
     problems = []
-    for addr in reach:
+    for addr in sorted(graph.reachable(graph.root)):
         node = graph.nodes[addr]
-        if node.decl is None or addr[:1] != ("#" + name,) or len(addr) != 2:
+        if node.decl is None:
             continue
         for dsts in route_groups(graph, addr, succ).values():
-            if len(set(dsts)) < 2:
+            targets = set(dsts)
+            if len(targets) < 2:
                 continue
-            # Every target must be a branch of one of the fork's joins: a branch
-            # that leaves closes its group, and a branch failure reaches the join,
-            # so the composition leaves once. A free target could leave, or fail
-            # through the compose step's onError, a second time.
-            closers = {k for k, n in graph.nodes.items() if n.type == "join" and idom.get(k) == addr}
-            free = []
-            for dst in sorted(set(dsts)):
-                if not graph.reachable(dst, blocked={addr}) & closers:
-                    free.append(dst)
-            if free:
-                names = ", ".join(
-                    f"output '{d[1]}'" if d[0] == "#exit" else f"'{graph.nodes[d].name}'" for d in free
-                )
-                problems.append((node.pointer, addr, f"the fork at '{node.name}' starts {names} outside a join of its own; a composition leaves once"))
-                break
+            # One join closes the fork: a branch that leaves closes its group,
+            # and a branch failure reaches the join, so the body leaves once.
+            if any(info["origin"] == addr and targets <= set(info["branches"]) for info in infos.values()):
+                continue
+            problems.append((node.pointer, addr, f"the fork at '{node.name}' does not start the branches of one join; a composition leaves at most once"))
+            break
     return problems
 
 
 def route_groups(graph, addr, succ):
-    """Normal routes leaving a node, as lists of destinations per route."""
+    """Routes leaving a node, normal or error, as lists of destinations per route."""
     groups = {}
     for edge in succ[addr]:
-        if edge.kind == "normal":
-            groups.setdefault(edge.key, []).append(edge.dst)
+        groups.setdefault((edge.kind, edge.key), []).append(edge.dst)
     return groups
 
 
@@ -365,8 +402,7 @@ def analyse_joins(graph):
             else:
                 forward = graph.reachable(start, blocked={origin, addr})
                 branches[start] = forward & (joins_to_j | {start})
-        # A branch is named after its first step in the join's own scope: a
-        # branch that starts inside a composition is named after the compose step.
+        # A branch is named after its first step; a direct route after the origin.
         prefix = node.scope.prefix
         name_of = {s: local_name(origin if s == addr else s, prefix) for s in starts}
         infos[addr] = {"origin": origin, "branches": branches, "names": name_of}
@@ -389,7 +425,7 @@ def analyse_joins(graph):
                 for edge in pred[member]:
                     if edge.src in members:
                         continue
-                    if edge.src == origin and member == start and edge.kind == "normal":
+                    if edge.src == origin and member == start:
                         continue
                     problems.append(("JOIN", edge.pointer, edge.src, f"a route from '{edge.src[-1]}' enters branch '{name_of[start]}' of join '{addr[-1]}' from outside"))
         # Join inputs.

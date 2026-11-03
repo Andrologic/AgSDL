@@ -67,6 +67,6 @@ that every [example](../examples/README.md) is valid.
 | `agsdl/schemacheck.py` | The subset of JSON Schema the AgSDL schemas use. |
 | `agsdl/valueschema.py` | Value schemas: consistency, validation, path checks. |
 | `agsdl/permissions.py` | Permission presets, rules and pattern matching. |
-| `agsdl/graph.py` | Composition expansion, dominators and join analysis. |
+| `agsdl/graph.py` | Composition expansion, scope graphs, dominators and join analysis. |
 | `agsdl/validator.py` | All checks, harness modules and the report. |
 | `agsdl/mermaid.py` | The Mermaid renderer. |

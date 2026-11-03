@@ -326,19 +326,21 @@ flowchart LR
 
 ### Origin and branches
 
-A join does not list what it waits for. Validators deduce it from the graph:
+A join does not list what it waits for. Validators deduce it from the graph
+of the join's **scope**: the flow's steps, or the body of the composition that
+contains the join. In that graph, a compose step is one step, whose routes are
+its output routes and its `onError`.
 
-- The **origin** of a join is the last step that every path from `entry` to
-  the join passes through (its immediate dominator, counting normal and error
-  routes). Here: `analyze`. Validators report the origin they deduce.
+- The **origin** of a join is the last step that every path from the scope's
+  entry to the join passes through (its immediate dominator, counting normal
+  and error routes). Here: `analyze`. Validators report the origin they deduce.
 - A **branch** starts at a target of the origin and contains the steps that lie
   on a path from that target to the join. A route from the origin straight to
   the join is a branch without steps.
-- A branch is named after its first step in the join's scope: a branch that
-  starts inside a composition is named after the compose step. A direct route
-  is named after the origin.
+- A branch is named after its first step. A direct route is named after the
+  origin.
 
-Each time the origin completes, a new **group** opens. The group waits only for
+Each time the origin follows a route, normal or error, a new **group** opens. The group waits only for
 the branches the origin actually started; when a choice starts some branches
 only, the group waits for those. Each branch delivers at most one result per
 group.
@@ -489,11 +491,11 @@ A composition is a reusable flow fragment.
   composition through the compose step's route for that output. An output
   target carries no message: the compose step's route carries it.
 - Every output is used by at least one body route.
-- A composition leaves once per entry, like a step: through one output, or
-  through the compose step's `onError`. So every target of a body route that
-  starts several targets at once is a branch of a join whose origin is that
-  step (`COMPOSITION`). A branch that leaves through an output closes its
-  group, and a branch failure reaches the join.
+- A composition leaves at most once per entry, like a step: through one
+  output, or through the compose step's `onError`. So a body route, normal or
+  `onError`, that starts several targets at once starts the branches of one
+  join, whose origin is that step (`COMPOSITION`). A branch that leaves
+  through an output closes its group, and a branch failure reaches the join.
 - A body step that fails without `onError` follows the compose step's
   `onError`.
 - Compositions may use other compositions, but never themselves, directly or

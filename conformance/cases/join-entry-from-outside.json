@@ -16,14 +16,14 @@
         "next": [
           "x",
           "y"
-        ],
-        "onError": "y"
+        ]
       },
       "x": {
         "type": "agent",
         "agent": "a",
         "instance": "new",
-        "next": "j"
+        "next": "j",
+        "onError": "y"
       },
       "y": {
         "type": "agent",

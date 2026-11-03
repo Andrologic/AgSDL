@@ -43,6 +43,13 @@ def expanded(addr):
     return list(addr)
 
 
+def scope_member(addr, prefix):
+    """The step of the scope with this prefix that is, or contains, the step at addr."""
+    if len(addr) > len(prefix) and addr[: len(prefix)] == prefix:
+        return addr[len(prefix)]
+    return None
+
+
 def is_json_media(media_type):
     return media_type == "application/json" or media_type.endswith("+json")
 
@@ -416,25 +423,41 @@ class Checker:
     # Graphs ---------------------------------------------------------------
 
     def check_graphs(self):
-        graphs = []
+        scopes = {}
         if "flow" in self.doc and self.doc["flow"]["entry"] in self.doc["flow"]["steps"]:
-            graphs.append(Graph.for_flow(self.doc))
+            scopes[None] = Graph.for_scope(self.doc)
         for name, composition in self.compositions.items():
             if composition["entry"] in composition["steps"]:
-                graphs.append(Graph.for_composition(self.doc, name))
-        for index, graph in enumerate(graphs):
+                scopes[name] = Graph.for_scope(self.doc, name)
+        # Joins are deduced in their own scope, where a compose step is one step.
+        joins = {}
+        for key, graph in scopes.items():
             infos, problems = analyse_joins(graph)
             for code, parts, addr, message in problems:
-                self.report.error(code, parts, message, expanded(addr))
-            if graph.root is not None and graph.root[0].startswith("#") and graph.root[0] != "#start":
-                for parts, addr, message in open_body_forks(graph, graph.root[0][1:]):
+                self.report.error(code, parts, message)
+            if key is not None:
+                for parts, addr, message in open_body_forks(graph, infos):
                     self.report.error("COMPOSITION", parts, message)
-            if index == 0 and "flow" in self.doc:
-                for addr, info in infos.items():
-                    self.report.joins["/".join(addr)] = {
-                        "origin": "/".join(info["origin"]),
-                        "branches": [info["names"][s] for s in info["branches"]],
-                    }
+            joins[key] = {}
+            for addr, info in infos.items():
+                branches = {info["names"][start]: {m[0] for m in members} for start, members in info["branches"].items()}
+                joins[key][addr[0]] = {"origin": info["origin"][0], "branches": branches}
+                label = addr[0] if key is None else f"{key}/{addr[0]}"
+                self.report.joins[label] = {"origin": info["origin"][0], "branches": list(branches)}
+        # Messages and instances are followed across compositions, on expanded graphs.
+        graphs = []
+        if None in scopes:
+            graphs.append(Graph.for_flow(self.doc))
+        for name in self.compositions:
+            if name in scopes:
+                graphs.append(Graph.for_composition(self.doc, name))
+        for index, graph in enumerate(graphs):
+            infos = {}
+            for addr, node in graph.nodes.items():
+                info = joins.get(node.scope.composition, {}).get(node.name) if node.type == "join" else None
+                if info is not None:
+                    infos[addr] = dict(info, prefix=node.scope.prefix)
+            if index == 0 and None in scopes:
                 self.record_uses(graph)
             self.record_choices(graph)
             self.check_selections(graph, infos)
@@ -584,17 +607,17 @@ class Checker:
                 return "'outcome' is a string"
             info = infos.get(node.addr)
             if head == "branches" and len(path) > 1 and info is not None:
-                starts = [start for start, name in info["names"].items() if name == path[1]]
-                if not starts:
+                if path[1] not in info["branches"]:
                     return f"join '{node.name}' has no branch {path[1]!r}"
                 if len(path) > 2:
                     # The branch output is the output of the step that reached the join.
-                    members = set().union(*(info["branches"][start] for start in starts))
+                    members = info["branches"][path[1]]
                     for producer in graph.edges:
                         if producer.dst != node.addr or producer.kind != "normal":
                             continue
-                        direct = producer.src == info["origin"] and node.addr in starts
-                        if producer.src in members or direct:
+                        local = scope_member(producer.src, info["prefix"])
+                        direct = local == info["origin"] == path[1]
+                        if local in members or direct:
                             reason = self.selection_problem(graph, producer, path[2:], infos)
                             if reason:
                                 return f"branch {path[1]!r}: {reason}"
@@ -605,7 +628,9 @@ class Checker:
         for addr, info in infos.items():
             seen = {}
             for start, members in info["branches"].items():
-                for member in members:
+                for member in sorted(graph.nodes):
+                    if scope_member(member, info["prefix"]) not in members:
+                        continue
                     node = graph.nodes[member]
                     if node.type != "agent" or node.agent is None:
                         continue

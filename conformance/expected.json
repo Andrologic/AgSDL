@@ -461,7 +461,7 @@
     "warnings": []
   },
   "join-foreign-input": {
-    "description": "A join receives routes only from its origin and its branches.",
+    "description": "A join receives only normal routes, from its origin and its branches.",
     "errors": [
       "JOIN"
     ],
@@ -554,6 +554,37 @@
   },
   "compose-branch-exit": {
     "description": "A join branch may leave a composition through an output: its group closes.",
+    "errors": [],
+    "warnings": []
+  },
+  "compose-two-joins": {
+    "description": "A body fork starts the branches of one join, not of two joins that could each leave.",
+    "errors": [
+      "COMPOSITION"
+    ],
+    "warnings": []
+  },
+  "compose-error-fork": {
+    "description": "A body onError that starts several targets is a fork like any other.",
+    "errors": [
+      "COMPOSITION"
+    ],
+    "warnings": []
+  },
+  "compose-nested-fork": {
+    "description": "A fork on the output route of a nested compose step is checked in its own body.",
+    "errors": [
+      "COMPOSITION"
+    ],
+    "warnings": []
+  },
+  "join-compose-origin": {
+    "description": "A compose step is one step for joins, whatever its body looks like.",
+    "errors": [],
+    "warnings": []
+  },
+  "join-error-fork": {
+    "description": "An onError route that starts several targets opens a group like a normal route.",
     "errors": [],
     "warnings": []
   }
