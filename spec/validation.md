@@ -60,7 +60,7 @@ A report is a JSON object:
 | `PROMPT` | An agent step receives a prompt on some routes but not on others, and has no default prompt. |
 | `DELIVERY` | `delivery` is used with `"instance": "new"`. |
 | `JOIN` | A join breaks a [shape rule](flow.md#shape-rules). |
-| `COMPOSITION` | Parameters, outputs or nesting of a composition are inconsistent, a compose step's `agents` or `next` keys differ from the composition's parameters or outputs, or compositions form a cycle. |
+| `COMPOSITION` | Parameters, outputs or nesting of a composition are inconsistent, a compose step's `agents` or `next` keys differ from the composition's parameters or outputs, a body fork has a target outside its joins, or compositions form a cycle. |
 | `SCHEMA` | A value schema is inconsistent: a keyword on the wrong type, an `enum` value of the wrong type or repeated, a `required` name that is not a declared property; or a result has a schema without a JSON media type. An unknown keyword is a `SHAPE` error. |
 | `PERMISSIONS` | A completion check command is denied by the agent's own permissions, or a `read-only` agent has a `"write"` directory. |
 | `RESULT_NAME` | An agent declares a result named `text`, which collides with the default message. |

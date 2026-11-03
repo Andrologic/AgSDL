@@ -5,7 +5,7 @@ import os
 from collections import deque
 
 from . import jsoninput, valueschema
-from .graph import Graph, analyse_joins, route_targets, step_routes
+from .graph import Graph, analyse_joins, open_body_forks, route_targets, step_routes
 from .permissions import effect_for, effects_in_use, normalize, outside, shell_denied
 from .schemacheck import SchemaChecker, pointer
 
@@ -426,6 +426,9 @@ class Checker:
             infos, problems = analyse_joins(graph)
             for code, parts, addr, message in problems:
                 self.report.error(code, parts, message, expanded(addr))
+            if graph.root is not None and graph.root[0].startswith("#") and graph.root[0] != "#start":
+                for parts, addr, message in open_body_forks(graph, graph.root[0][1:]):
+                    self.report.error("COMPOSITION", parts, message)
             if index == 0 and "flow" in self.doc:
                 for addr, info in infos.items():
                     self.report.joins["/".join(addr)] = {

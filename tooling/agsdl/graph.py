@@ -288,6 +288,42 @@ def local_name(addr, prefix):
     return addr[-1]
 
 
+def open_body_forks(graph, name):
+    """Forks of a composition body whose targets are not all branches of its joins.
+
+    Returns (pointer, address, message) problems; graph is the composition's own graph.
+    """
+    if graph.root is None:
+        return []
+    idom = graph.immediate_dominators()
+    succ = graph.successors()
+    reach = graph.reachable(graph.root)
+    problems = []
+    for addr in reach:
+        node = graph.nodes[addr]
+        if node.decl is None or addr[:1] != ("#" + name,) or len(addr) != 2:
+            continue
+        for dsts in route_groups(graph, addr, succ).values():
+            if len(set(dsts)) < 2:
+                continue
+            # Every target must be a branch of one of the fork's joins: a branch
+            # that leaves closes its group, and a branch failure reaches the join,
+            # so the composition leaves once. A free target could leave, or fail
+            # through the compose step's onError, a second time.
+            closers = {k for k, n in graph.nodes.items() if n.type == "join" and idom.get(k) == addr}
+            free = []
+            for dst in sorted(set(dsts)):
+                if not graph.reachable(dst, blocked={addr}) & closers:
+                    free.append(dst)
+            if free:
+                names = ", ".join(
+                    f"output '{d[1]}'" if d[0] == "#exit" else f"'{graph.nodes[d].name}'" for d in free
+                )
+                problems.append((node.pointer, addr, f"the fork at '{node.name}' starts {names} outside a join of its own; a composition leaves once"))
+                break
+    return problems
+
+
 def route_groups(graph, addr, succ):
     """Normal routes leaving a node, as lists of destinations per route."""
     groups = {}

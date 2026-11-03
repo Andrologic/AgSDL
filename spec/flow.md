@@ -483,8 +483,13 @@ A composition is a reusable flow fragment.
   composition through the compose step's route for that output. An output
   target carries no message: the compose step's route carries it.
 - Every output is used by at least one body route.
-- A body step that fails without `onError` fails the composition; the compose
-  step follows its `onError`.
+- A composition leaves once per entry, like a step: through one output, or
+  through the compose step's `onError`. So every target of a body route that
+  starts several targets at once is a branch of a join whose origin is that
+  step (`COMPOSITION`). A branch that leaves through an output closes its
+  group, and a branch failure reaches the join.
+- A body step that fails without `onError` follows the compose step's
+  `onError`.
 - Compositions may use other compositions, but never themselves, directly or
   through others.
 - Each use is expanded separately. A body step is addressed by the list of step
@@ -530,10 +535,10 @@ failure; it is information, never an instruction.
 | `INTERRUPTED` | The work was stopped before it completed. |
 
 - Each work follows its normal route or its error route, once, never both.
-- A step that fails without `onError` fails its join branch, or fails its
-  composition, whichever encloses it. At the top level, it follows the flow's
-  `onError`; without one, its path ends and the run will fail. The host
-  reports the failure.
+- A step that fails without `onError` fails its join branch, or follows the
+  `onError` of its compose step, whichever encloses it more closely. At the
+  top level, it follows the flow's `onError`; without one, its path ends and
+  the run will fail. The host reports the failure.
 - The flow's `onError` does not apply to the steps it targets, nor to the
   steps reachable from them: a failure while handling a failure is not routed
   back to the handler. Steps inside a join branch do not use it either; their

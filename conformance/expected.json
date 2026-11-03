@@ -544,5 +544,17 @@
     "description": "Branches that start in compositions are named after their compose steps.",
     "errors": [],
     "warnings": []
+  },
+  "compose-open-fork": {
+    "description": "A composition leaves once: a body fork without its own join is an error.",
+    "errors": [
+      "COMPOSITION"
+    ],
+    "warnings": []
+  },
+  "compose-branch-exit": {
+    "description": "A join branch may leave a composition through an output: its group closes.",
+    "errors": [],
+    "warnings": []
   }
 }
