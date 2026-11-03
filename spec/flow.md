@@ -402,8 +402,14 @@ decided, or once the group closes or fails:
 
 | `remaining` | Effect |
 | --- | --- |
-| `stop` (default) | Their current work is stopped. The run continues when they have stopped. Stopping ends a work, not a shared or named instance; a `"new"` instance is discarded. |
-| `finish` | The run continues at once. They finish, and their results are discarded. |
+| `stop` (default) | Their work is cancelled: current works stop, their messages still waiting in an instance queue are withdrawn, and their pending approvals and calls are cancelled. The run continues once they have stopped. Cancelling ends a work, not a shared or named instance, which keeps its conversation; a `"new"` instance is discarded. |
+| `finish` | The run continues at once. They go on, loops included, and end when they would reach the join or leave the branch. Nothing they produce is used. |
+
+Once the join has decided, or the group has closed or failed, an unfinished
+branch never routes outside itself: a cancelled work follows neither `next` nor
+`onError`, and a finishing branch that fails ends there. Its results never
+count for a later group of the join. Works of other steps on the same
+instances are not affected.
 
 ### Join output
 
@@ -532,9 +538,10 @@ failure; it is information, never an instruction.
 | `APPROVAL_TIMEOUT` | An approval received no answer in time. |
 | `BRANCH_FAILED` | A branch of an all-mode join failed. |
 | `VISIT_LIMIT` | Starting the step would exceed `maxVisits`. |
-| `INTERRUPTED` | The work was stopped before it completed. |
+| `INTERRUPTED` | The host stopped the work before it completed, outside a join's `remaining`. |
 
-- Each work follows its normal route or its error route, once, never both.
+- Each work follows its normal route or its error route, once, never both. A
+  work cancelled by a join's `remaining` follows neither.
 - A step that fails without `onError` fails its join branch, or follows the
   `onError` of its compose step, whichever encloses it more closely. At the
   top level, it follows the flow's `onError`; without one, its path ends and
