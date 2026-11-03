@@ -1,58 +1,66 @@
-# AgSDL 0.1.0
+# AgSDL 0.3.0 specification
 
-This is the adopted normative AgSDL 0.1.0 contract, with document and report
-marker `agsdl-0.1.0`. Adoption is recorded in
-[Decision 0007](../docs/decisions/0007-adopt-0.1.0-contract.md). Adoption does not
-state that a release has been published or that any implementation conforms.
+Status: **draft, not published.** The contract marker is `agsdl-0.3.0`.
+Earlier editions are available from their Git tags (`v0.2.0`, `v0.1.1`, …).
+AgSDL 0.3.0 is not compatible with them.
 
-The normative specification consists of this index and the following chapters.
-Requirements stated in declarative form are binding within their named scope.
-Examples illustrate those requirements. Historical proposals, schemas, fixtures
-and implementations do not add requirements or resolve contradictions in them.
-A schema mismatch is a defect; the normative text controls.
+AgSDL describes **agents** and the **flows** that connect them. A document
+says what each agent is, what it may do, which harness runs it, and how work
+moves between agents. A harness is the program that runs an agent: Codex,
+Claude Code, opencode, pi, Macro and others.
 
-| Chapter | Scope |
+AgSDL documents are data. Readers validate them; they never run them.
+
+## Chapters
+
+| Chapter | Content |
 | --- | --- |
-| [Model and vocabulary](model.md) | Definition identity, ownership, actors and fixed configurations. |
-| [Serialization and operations](serialization.md) | Shared closed notation, JSON, host requests, phases and prerequisites. |
-| [D: document declarations](document.md) | Envelope, relations, minima, dependencies, deferrals and extensions. |
-| [G: simple graphs](graph.md) | Explicit Interface operations, data flow and sequential human gates. |
-| [R: configurations](runtime.md) | Per-Agent engines, tools, content and declared compatibility. |
-| [Reports](reports.md) | Closed report grammar, diagnostics, inventory, rule execution and preservation. |
+| [Document](document.md) | Document shape, names, content, skills, MCP servers. |
+| [Agents](agents.md) | Agent definitions, model, permissions, results, how an agent conducts its work, instances. |
+| [Flow](flow.md) | Steps, routes, messages, delivery, joins, compositions, approvals, failures and corrections. |
+| [Harnesses](harnesses.md) | Harness modules, support levels and the diagnostic policy. |
+| [Validation](validation.md) | Static checks, diagnostic codes and the report format. |
+| [Open questions](open-questions.md) | Design questions not settled in this edition. |
 
-## Edition and feature identities
+The [JSON Schema](../schema/agsdl.schema.json) enforces the shapes described
+here. It creates no meaning on its own: when the schema and this text
+disagree, this text wins and the schema is a defect.
 
-The official specification Edition is `{"identity":"agsdl/spec","version":"0.1.0"}`.
-The report contract Edition is `{"identity":"agsdl/report","version":"0.1.0"}`.
-Both are denoted by `contract:"agsdl-0.1.0"` in their respective closed records;
-neither requires an extra field. Rule identifiers in Reports are scoped to this
-report contract. Processor Edition identifies the reporting implementation.
+## Principles
 
-An implementation feature is one named operation contract below. Each feature
-has version `0.1.0`, and includes its full input, inventory, output, diagnostic,
-prerequisite and exclusion rules from these chapters. There is no selectable
-subset of rules within a feature. Features may be implemented separately.
+1. **The graph links missions; the agent conducts its mission.** A flow step
+   gives a mission to an agent. Planning, executing and checking that mission
+   happen inside the agent. Different missions are different agents. Agents
+   share files and messages, never their conversation.
+2. **A step works or routes. A router never judges.** Agents, calls,
+   approvals and compositions do work. Routing reads only explicit,
+   mechanical signals: an agent's declared choice, an approval decision, a
+   join outcome, or a test on a call result.
+3. **The document asks, the host grants.** A document may come from anyone.
+   It requests permissions; the host that runs it decides what to grant.
+   Nothing in a document or in a message can grant itself rights.
+4. **No false guarantee.** When a harness cannot do what a document asks, the
+   validator says so. Harness support is declared by
+   [harness modules](harnesses.md), never assumed.
+5. **AgSDL covers what harnesses actually do.** Agent properties standardize
+   features that exist in real harnesses, even in only one of them. AgSDL does
+   not invent harness features.
 
-| Feature identity | Operation | Validation unit and phase |
-| --- | --- | --- |
-| `agsdl/inspect` | inspect | Inventory only, phase null. |
-| `agsdl/validateD` | validateD | D, unresolved-document. |
-| `agsdl/validateG` | validateG | G with D prerequisite, unresolved-document. |
-| `agsdl/resolveG` | resolveG | G with primary/required-annex D prerequisites, resolved-graph. |
-| `agsdl/validateR` | validateR | R with D prerequisite, unresolved-document. |
-| `agsdl/exchange` | exchange | Exact preservation, phase null. |
-| `agsdl/lossyExchange` | lossyExchange | Mandatory refusal and prospective loss inventory, phase null. |
+## Conventions
 
-A feature claim identifies its processor Edition, these exact feature Editions
-and the evidence inputs/procedure used. A Report identifies one operation and
-its input hashes; it is an observation, not a certificate of every implementation
-behavior. A positive D/G/R Result covers only the unit and phase in that Result.
-No general conformance profile, execution feature, runtime readiness feature or
-whole-model conformance claim is defined by this edition. Inspection success
-and byte-preserving exchange are independent of document validity.
+The key words MUST, MUST NOT, SHOULD and MAY are used as in
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
 
-There is no version ordering, automatic upgrade or compatibility inference from
-these identities. Documents validated together by resolveG use this exact
-marker. Other markers fail validation shape; exact exchange may preserve their
-bytes without relabelling them. Experimental reports remain historical evidence
-for their own editions and cannot be relabelled as official results.
+- **Document**: one JSON file with contract `agsdl-0.3.0`.
+- **Host**: the software that runs a document, for example Macro.
+- **Harness**: the software that runs one agent's loop.
+- **Validator**: software that checks a document without running it.
+- **Agent definition**: an entry of `agents`. It is configuration, without
+  state.
+- **Instance**: a running agent, with its own conversation.
+- **Step**: an entry of a flow or composition `steps` map.
+- **Work**: one activation of an agent instance, from the message that starts
+  it to its accepted result.
+
+JSON examples in this specification are illustrative. Model and harness names
+such as `example/large` are fictional.

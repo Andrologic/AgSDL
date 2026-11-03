@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Report trailing blanks in Markdown, TOML and YAML files without external tools."""
+"""Report trailing blanks in text files without external tools."""
 import os
 import sys
 from pathlib import Path
 
-SUFFIXES = {'.md', '.toml', '.yaml'}
+SUFFIXES = {'.md', '.toml', '.yaml', '.yml', '.json', '.py', '.sh'}
 SKIPPED = {'.git', '.venv', '.codex', '__pycache__', 'node_modules'}
 
 

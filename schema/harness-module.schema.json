@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Andrologic/AgSDL/schema/harness-module.schema.json",
+  "title": "AgSDL 0.3.0 harness module",
+  "type": "object",
+  "required": [
+    "name",
+    "version",
+    "contract",
+    "harnessVersions",
+    "properties",
+    "permissions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "name": {
+      "$ref": "#/$defs/name"
+    },
+    "title": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
+    },
+    "contract": {
+      "const": "agsdl-0.3.0"
+    },
+    "harnessVersions": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "properties": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "resources",
+          "model.name",
+          "model.effort",
+          "skills",
+          "mcpServers",
+          "plan",
+          "planFirst.auto",
+          "planFirst.ask",
+          "reviewer.person",
+          "reviewer.model",
+          "directories",
+          "instance.new",
+          "delivery.steer"
+        ]
+      },
+      "properties": {
+        "planFirst.ask": {
+          "$ref": "#/$defs/support",
+          "properties": {
+            "support": {
+              "enum": [
+                "native",
+                "absent"
+              ]
+            }
+          }
+        }
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/support"
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "propertyNames": {
+        "enum": [
+          "read",
+          "write",
+          "shell",
+          "network",
+          "mcp",
+          "delegate"
+        ]
+      },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "allow": {
+            "$ref": "#/$defs/enforcement"
+          },
+          "ask": {
+            "$ref": "#/$defs/enforcement"
+          },
+          "deny": {
+            "$ref": "#/$defs/enforcement"
+          },
+          "note": {
+            "type": "string"
+          },
+          "outside": {
+            "$ref": "#/$defs/enforcement"
+          }
+        }
+      }
+    },
+    "settings": {
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "name": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+    },
+    "enforcement": {
+      "enum": [
+        "sandbox",
+        "harness",
+        "absent"
+      ]
+    },
+    "support": {
+      "type": "object",
+      "required": [
+        "support"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "support": {
+          "enum": [
+            "native",
+            "approximate",
+            "absent"
+          ]
+        },
+        "note": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "suggestions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "versions": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

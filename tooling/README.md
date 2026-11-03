@@ -1,96 +1,72 @@
-# AgSDL reference tooling
+# Tooling
 
-For the published 0.2.0 edition, use the [0.2 tools and examples](0.2/README.md)
-and [declaration comparison](0.2/conformance/README.md). The remainder of this
-guide documents the unchanged 0.1.0 reader contracts.
+The reference validator and a Mermaid renderer for AgSDL 0.3.0. They need
+Python 3.9 or newer and its standard library only. They read documents; they
+never run agents, calls or flows.
 
-## AgSDL 0.1.0 reference tooling
+Run the commands from this directory, or add it to `PYTHONPATH`.
 
-Reference readers are non-normative static tools. The specification defines the
-operation contracts. A reader reports its observation of one requested
-operation; it does not execute an Agent, engine, Tool, approval service or graph.
+## Validate
 
-For a first implementation, follow the
-[byte-to-report walkthrough](../docs/implementation-guide.md) and
-[progressive examples](../examples/0.1.0/README.md). Reader-specific details are
-in the [Python guide](readers/python/README.md) and
-[JavaScript guide](readers/javascript/README.md).
+```sh
+python3 -m agsdl ../examples/write-and-review.json
+```
 
-## Included readers and evidence
+```text
+../examples/write-and-review.json: valid (0 errors, 0 warnings)
+```
 
-| Component | Current local status |
+| Option | Effect |
 | --- | --- |
-| Python reader | Integrated with a focused standard-library suite. |
-| JavaScript reader | Integrated with a focused standard-library suite. |
-| Official corpus and comparator | Integrated with 148 pinned cases, including 11 native cases. |
-| 0.1.0 delivery comparison | 137 cases, no blocked case, failure or mismatch at that delivery. |
+| `--json` | Print the [JSON report](../spec/validation.md#report). |
+| `--modules DIR` | Use the harness modules in `DIR` instead of [`../harnesses`](../harnesses/README.md). |
 
-The CLI entry points are `tooling/readers/python/cli.py` and
-`tooling/readers/javascript/cli.mjs`. Their implementations are independent and
-use the same request boundary and official corpus. Agreement on that corpus is
-bounded evidence, not exhaustive correctness or runtime interoperability.
-The [0.1.1 dossier](../docs/reviews/0009-0.1.1-diagnostic-expectations.md) records
-additional malformed-field diagnostic differences and an unresolved Unicode
-ordering boundary. Do not extrapolate the delivery comparison to those inputs.
+Exit status: `0` when every document is valid, `1` when one is invalid, `2`
+when a file or a module cannot be read.
 
-## Prepare a request without installation
+The checks and diagnostic codes are listed in
+[Validation](../spec/validation.md). Join reports give the origin and branches
+the validator deduced for each join.
 
-From the repository root, this command encodes the official example's original
-bytes and writes a `validateD` request:
+## Draw
 
 ```sh
-agsdl_request=$(mktemp)
-node - examples/0.1.0/general-purpose-system.json validateD > "$agsdl_request" <<'JS'
-const fs = require('node:fs');
-const [path, operation] = process.argv.slice(2);
-const primary = fs.readFileSync(path).toString('base64');
-process.stdout.write(JSON.stringify({ operation, primary, annexes: {} }));
-JS
-python3 tooling/readers/python/cli.py < "$agsdl_request"
-node tooling/readers/javascript/cli.mjs < "$agsdl_request"
-rm "$agsdl_request"
+python3 -m agsdl.mermaid ../examples/parallel-review.json
+python3 -m agsdl.mermaid ../examples/reusable-review.json --composition triple-review
 ```
 
-Replace `validateD` with `inspect`, `validateG`, `validateR`, `exchange` or
-`lossyExchange` when that operation fits the intended observation. `resolveG`
-also accepts base64 annex bytes keyed by dependency id. The complete request
-boundary is in [serialization](../spec/serialization.md#operations-phases-and-supplied-inputs).
+The output is a Mermaid flowchart of the authored steps and routes. Joins are
+drawn as stadiums, compositions as subroutine boxes, error routes as dotted
+lines, and choices and outcomes as edge labels. The flow's `onError` is a
+dotted line from the start. A choice or outcome with an empty route leads to
+an end node.
 
-Each CLI writes `{report,artifacts}`. Exit status 0 means that a response was
-produced, including when a Result verdict is `fail`. Inspect the Result unit,
-phase, verdict, findings, checks and states instead of treating the process exit
-as conformance.
+## Use from Python
 
-## Run the checks
+```python
+from agsdl import load_modules, validate_bytes
+
+report = validate_bytes(open("document.json", "rb").read(), load_modules())
+print(report.valid, report.as_json()["diagnostics"])
+```
+
+## Tests
 
 ```sh
-./scripts/check.sh
-./scripts/check-readers.sh
-./scripts/check-readers.sh --compare
+python3 -m unittest discover -s tests
 ```
 
-Use `--compare official` or `--compare 0.1.0` to select only the official
-corpus. The unqualified comparison also preserves the historical candidate-2
-and modular comparisons. It uses temporary report directories. Follow the
-[conformance guide](../conformance/README.md#reader-comparison) when retaining
-official evidence.
+The tests run every [conformance case](../conformance/README.md) and check
+that every [example](../examples/README.md) is valid.
 
-Direct Draft 2020-12 schema checks are optional. They may use a project-local
-environment:
+## Layout
 
-```sh
-python3 -m venv .venv
-. .venv/bin/activate
-python3 -m pip install jsonschema
-python3 conformance/check-corpus.py --jsonschema
-```
-
-Neither reader, `./scripts/check.sh` nor the normal corpus check requires that
-package. Historical candidate reports keep their historical markers and cannot
-be relabelled as official 0.1.0 evidence.
-
-The current processor Editions announce 0.1.1 with unchanged identities. The
-contract and feature Editions remain 0.1.0. See the [0.1.1 delivery
-notes](../docs/releases/0.1.1.md) for local verification status and limitations,
-and [full verification](../CONTRIBUTING.md#full-local-and-ci-verification) to
-retain all four comparisons, schema checks and example checks.
+| File | Role |
+| --- | --- |
+| `agsdl/jsoninput.py` | Strict JSON input. |
+| `agsdl/schemacheck.py` | The subset of JSON Schema the AgSDL schemas use. |
+| `agsdl/valueschema.py` | Value schemas: consistency, validation, path checks. |
+| `agsdl/permissions.py` | Permission presets, rules and pattern matching. |
+| `agsdl/graph.py` | Composition expansion, dominators and join analysis. |
+| `agsdl/validator.py` | All checks, harness modules and the report. |
+| `agsdl/mermaid.py` | The Mermaid renderer. |

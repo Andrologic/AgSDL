@@ -1,27 +1,22 @@
 # Roadmap
 
-Publication status and release history are maintained in the
-[root README](README.md#release-status-and-history). The
-[repository scope](docs/scope.md) defines what belongs here.
+## 0.3.0
 
-## Current edition: AgSDL 0.2.0
+- Review the draft as a whole, and decide which
+  [open questions](spec/open-questions.md), if any, block release.
+- Review every harness module against its harness, and record the versions
+  covered.
+- Run 0.3 documents end to end in Macro.
 
-The [0.2.0 specification](spec/0.2/README.md) is adopted under
-[Decision 0013](docs/decisions/0013-adopt-0.2.0-contract.md). The reviewed bounded
-contract, migration guide and independent declaration readers are integrated.
-[Release notes](docs/releases/0.2.0.md) describe the published `v0.2.0` draft.
-Execution support claims need evidence from consuming implementations.
+## Toward 1.0
 
-## Maintenance: AgSDL 0.1
-
-Keep the published `agsdl-0.1.0` specification, derived schemas, official
-readers and corpus aligned. Resolve maintenance defects within that contract;
-propose semantic changes separately. The [diagnostic dossier](docs/reviews/0009-0.1.1-diagnostic-expectations.md)
-records the remaining diagnostic questions and their evidence limits.
-
-## Later work
-
-External protocol mappings and broader interoperability remain proposals and
-research. Add a binding only with a defined scope, source edition and relevant
-conformance evidence. Define broader governance before a stable release.
-These are future directions, not additional gates for 0.2.
+- A second, independent validator that agrees with the reference validator on
+  every conformance case.
+- At least two hosts running the same documents across several harnesses.
+- Exporters and adapters for the main harnesses, maintained beside their
+  modules.
+- More agent properties where harnesses share a meaning: limits, compaction,
+  tool allow-lists.
+- A dynamic number of workers in a flow.
+- A governance model for a stable release: maintainers, decision rules and
+  versioning authority.

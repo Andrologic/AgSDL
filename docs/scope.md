@@ -2,68 +2,49 @@
 
 ## Problem
 
-Agent frameworks describe systems through framework-specific code and
-configuration. The same concepts are represented differently or left implicit.
-This makes systems difficult to inspect, compare, validate, migrate, and govern.
+Agent harnesses configure agents in their own formats, and multi-agent work is
+usually wired in code. The same concepts — instructions, models, permissions,
+handing work from one agent to another — are expressed differently by each
+tool, or left implicit. Agent setups are hard to inspect, compare, move between
+harnesses and review for safety.
 
-AgSDL aims to define a framework-independent model for an agentic system. The
-model must represent both individual agents and the system-level relationships
-that determine behavior.
+AgSDL defines one harness-independent language for agents and the flows that
+connect them.
 
-## Repository outputs
+## What this repository maintains
 
-As established by [Decision 0003](decisions/0003-repository-boundary.md), this
-repository maintains:
+- the specification of the current edition, in `spec/`;
+- the JSON Schemas that enforce its shapes, in `schema/`;
+- harness modules, one per supported harness, in `harnesses/`;
+- examples and conformance cases;
+- reference tooling that reads, validates and draws documents;
+- the decisions that explain the design, and the project's governance.
 
-- repository governance, contribution, licensing, publication, automation, and
-  verification material;
-- research, decisions, proposals, and the AgSDL specification;
-- schemas, examples, fixtures, and conformance material;
-- versioned mappings for external formats and protocols;
-- non-normative reference tooling for reading, transforming, and analyzing
-  AgSDL artifacts.
-
-Planned tooling operations include parsing, validation, normalization,
-reference resolution, and static inspection. Their precise behavior remains
-subject to accepted decisions and the normative specification. Documentation
-for a reference-tooling report identifies its input and the checks or
-transformations it covers.
+Only the current edition is kept in the tree. Earlier editions remain
+available from their Git tags.
 
 ## In scope
 
-- system identity, boundaries, goals, ownership, and interfaces;
-- agent definitions and reusable agent components;
-- models, prompts, tools, skills, memory, knowledge, and state;
-- orchestration, topology, routing, delegation, handoffs, and protocols;
-- permissions, credentials references, policy, guardrails, and approvals;
-- declarative runtime and deployment requirements without prescribing an
-  implementation;
-- observability, evaluation, testing, conformance, and lifecycle metadata;
-- references, packages, profiles, extensions, and version compatibility.
+- agent definitions: identity, instructions, model, skills, MCP servers,
+  permissions, results and how an agent conducts its work;
+- flows: steps, routes, messages, delivery to running agents, parallel
+  branches, approvals, reusable compositions and failures;
+- harness modules: what each harness supports, and how it enforces
+  permissions;
+- static validation and its diagnostics.
 
-## Implementation boundary
+## Out of scope
 
-Reference tooling may return transformed artifacts, diagnostics, and reports.
-It does not execute the systems described by AgSDL artifacts. Conformance
-material may include tests and harnesses that exercise implementations against
-adopted requirements. Runtime and deployment remain declarative subjects of the
-language.
-
-External systems are described through the interfaces and documented behavior
-relevant to AgSDL mappings and conformance.
-
-## Out of scope for the first draft
-
-- a universal agent runtime;
-- a new agent communication transport;
-- a model-provider API;
-- a graphical editor contract;
-- framework-specific behavior presented as portable semantics;
-- claims of interoperability without executable conformance tests.
+- running agents or flows. Tooling here reads documents; it never executes
+  them. Hosts such as Macro run them;
+- exporters that write a harness's native files, and adapters that connect a
+  harness to a host. They live beside the modules, in the projects that need
+  them;
+- a model-provider API, a transport protocol or a graphical editor contract;
+- features that no harness has. AgSDL standardizes what harnesses do.
 
 ## Success condition
 
-The first public draft succeeds when two independent implementations can parse
-the same conforming document, agree on its portable meaning, report the same
-structural validation failures, and identify every implementation-specific
-extension.
+AgSDL 1.0 succeeds when two independent validators agree on every
+conformance case, and when at least two hosts run the same documents across
+several harnesses with the meaning the specification gives them.

@@ -1,4 +1,4 @@
-name: Repository and reader verification
+name: Repository checks
 
 on:
   push:
@@ -9,27 +9,16 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  check:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.12']
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install optional schema validator
-        run: python3 -m pip install 'jsonschema==4.23.0'
-      - name: Check repository, reader suites, corpora, schemas and examples
-        run: ./scripts/check-full.sh "$RUNNER_TEMP/agsdl-verification"
-      - name: Retain logs, reports and summaries
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: agsdl-verification
-          path: ${{ runner.temp }}/agsdl-verification
-          if-no-files-found: warn
+          python-version: ${{ matrix.python-version }}
+      - name: Check repository, validator, conformance cases and examples
+        run: ./scripts/check.sh
