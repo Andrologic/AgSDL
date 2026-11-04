@@ -65,10 +65,12 @@ decide it.
    or one target once per element of a list, starts parallel paths. Paths
    that meet at a join are the branches of a group, opened by the join's
    origin; the join decides once per group. Once it has decided, or the group
-   has closed or failed, nothing of the group routes again: its unfinished
-   work is cancelled, or finishes without counting for the flow, and its work
-   not yet started never starts. Paths that meet no join end on their own, except in
-   a composition body, where every fork is closed by one join (rule 1).
+   has closed or failed, nothing of the group routes outside its branches
+   again: its unfinished branches are cancelled, or finish inside themselves
+   without counting for the flow, as the join's `remaining` says, and its
+   fan-out elements not yet started never start. Paths that meet no join end
+   on their own, except in a composition body, where every fork is closed by
+   one join (rule 1).
 4. **An instance does one work at a time.** A message for a working instance
    waits its turn, or, with `steer`, joins the current work if that work still
    counts for the flow. A message that joins a work has no outcome of its own:
