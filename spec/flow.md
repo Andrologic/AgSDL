@@ -248,10 +248,10 @@ The receiving agent's standing `instructions` apply above any prompt.
 
 A route **brings a prompt** when its explicit `message` has one, when it leaves
 an instructing agent without an explicit `message`, or when it leaves an
-approval that every arriving route brings a prompt to. When some routes to an
-agent step bring a prompt and others do not, the step MUST have a default
-`prompt` (`PROMPT`), so that its mission never depends on where the flow came
-from. When every route brings one, or none does, a default prompt is optional.
+approval that at least one route reaches and every route that reaches it
+brings a prompt. When some routes to an agent step bring a prompt and others
+do not, the step MUST have a default `prompt` (`PROMPT`), so that its mission
+never depends on where the flow came from. When every route brings one, or none does, a default prompt is optional.
 The message the host delivers at entry is not a route.
 
 ## Agent
@@ -290,8 +290,9 @@ reaches it.
 | `queue` (default) | The work starts. | The message waits until the current work ends, then starts its own work. |
 | `steer` | The work starts. | The message joins the current work, whatever step started it, if that work still counts for the flow ([rule 4](#execution-model)). Otherwise it waits, as with `queue`. |
 
-- Each instance processes messages in arrival order. Every message identifies
-  its sender to the agent.
+- Each instance processes waiting messages in arrival order. A `steer`
+  message that joins the current work does not wait behind them. Every
+  message identifies its sender to the agent.
 - A queued message starts a work of its own: it has its own output and follows
   its own routes.
 - A steered message that joins a current work has no output of its own. The
@@ -342,7 +343,7 @@ MCP server.
 | `arguments` | For `mcp`: argument name to [operand](#operands). |
 | `timeoutMs` | The most time the call may take. See [Time limits](#time-limits). |
 | `next` | A route, taken whatever the outcome, or a map with exactly `passed` and `failed`. |
-| `onError` | A route, taken when the call cannot run. |
+| `onError` | A route, taken when the call fails, not when its outcome is `failed`. |
 
 A call has exactly one of `command` or `mcp`. Its **outcome** is `passed` or
 `failed`:
@@ -604,7 +605,7 @@ each branch's output, or `{ "ended": "without-result" }`, or
 `{ "ended": "absorbed", "by": "<step>" }`, or, in quorum mode and with
 `failures: "keep"`, `{ "ended": "failed", "error": { ... } }`. With `reached`,
 it holds the accepted results only. With `done`, `incomplete` and `missed`, it
-holds every branch that ended.
+holds every branch that had ended when the join decided.
 
 A fan-out branch holds a list, one entry per path that ended, in the order of
 the elements. Each entry also has `item`, the element:
@@ -742,7 +743,8 @@ A person's slowness is never a `TIMEOUT`. To bound how long an agent's work
 waits for a person, use the agent's
 [`answerTimeoutMs`](agents.md#waiting-for-a-person). An
 [approval](#approval) has its own `timeoutMs`, since waiting for a person is
-its work.
+its work. A call has no `answerTimeoutMs`: a request to a person during a
+call, such as an MCP server's question, waits for the person.
 
 ## Failures
 
