@@ -547,7 +547,9 @@ accepted result.
   `accept`.
 - `reached`: `count` accepted results arrived.
 - `missed`: reaching `count` is no longer possible. This is a normal outcome,
-  not a failure.
+  not a failure. When the paths a route starts cannot reach `count`, as when
+  a choice starts one branch of a quorum of two, the join decides `missed` as
+  the group opens, and none of them start.
 - A branch that ends without a result counts as not accepted.
 - "First acceptable result" is a quorum with `count: 1`.
 - `next` is a map with exactly `reached` and `missed`.
