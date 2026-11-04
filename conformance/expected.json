@@ -703,5 +703,31 @@
       "ROUTES"
     ],
     "warnings": []
+  },
+  "fanout-instructions": {
+    "description": "An instructing agent gives each path of a fan-out its own mission.",
+    "errors": [],
+    "warnings": []
+  },
+  "fanout-item-path": {
+    "description": "item reads in the element of a fan-out, as declared, and only there.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "fanout-item-prompt": {
+    "description": "Only an element of instructions is a mission.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "fanout-instructions-shared": {
+    "description": "Instructions that a route fans out over are a list, not one prompt for its other targets.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
   }
 }

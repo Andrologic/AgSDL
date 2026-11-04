@@ -542,6 +542,7 @@ class Checker:
                 self.report.error("PROMPT", node.pointer, f"step '{node.name}' receives a prompt on some routes but not from {sources}; give it a default prompt", expanded(addr))
 
     def check_selections(self, graph, infos):
+        self.check_instruction_fanouts(graph)
         for edge in graph.edges:
             if edge.each is not None:
                 reason = self.selection_problem(graph, edge, edge.each, infos) or self.fanout_problem(graph, edge, infos)
@@ -558,8 +559,9 @@ class Checker:
                 if edge.kind == "error" or not (
                     (source.type == "agent" and path == ["instructions"])
                     or (source.type == "join" and len(path) == 3 and path[0] == "branches" and path[2] == "instructions")
+                    or (path == ["item"] and edge.each is not None and list(edge.each) == ["instructions"])
                 ):
-                    self.report.error("MESSAGE_PATH", at, "a prompt selects only the instructions of an agent, or of a join branch", expanded(edge.src))
+                    self.report.error("MESSAGE_PATH", at, "a prompt selects only the instructions of an agent or of a join branch, or an element of instructions in a fan-out", expanded(edge.src))
                 else:
                     reason = self.selection_problem(graph, edge, path, infos)
                     if reason:
@@ -575,6 +577,13 @@ class Checker:
         if not path:
             return None
         head = path[0]
+        if head == "item":
+            # The element of a fan-out: read below the list the fan-out reads.
+            if edge.each is None:
+                return "'item' exists only in the message of a fan-out"
+            if list(edge.each) == ["instructions"]:
+                return None if len(path) == 1 else "'item' is an instruction, a string"
+            return self.selection_problem(graph, edge, list(edge.each) + [0] + list(path[1:]), infos)
         if edge.kind == "error":
             if head != "error":
                 return "an error route carries only 'error'"
@@ -669,8 +678,35 @@ class Checker:
         """The max of the authored fan-out target behind an edge."""
         return edge.fanout.get("max") if edge.fanout is not None else None
 
+    def check_instruction_fanouts(self, graph):
+        """A route that fans out over instructions makes them a list: none of its
+        other targets can use them as one prompt."""
+        routes = {}
+        for edge in graph.edges:
+            routes.setdefault((edge.src, edge.kind, edge.key), []).append(edge)
+        for edges in routes.values():
+            if not any(e.each is not None and list(e.each) == ["instructions"] for e in edges):
+                continue
+            for edge in edges:
+                if edge.each is not None and list(edge.each) == ["instructions"]:
+                    continue
+                target = graph.nodes[edge.dst]
+                if edge.message is None:
+                    uses = target.type in ("agent", "approval")
+                else:
+                    uses = edge.message.get("prompt") == {"from": ["instructions"]}
+                if uses:
+                    self.report.error(
+                        "MESSAGE_PATH",
+                        edge.pointer,
+                        f"this route fans out over the instructions of '{graph.nodes[edge.src].name}', so they are a list; '{target.name}' cannot receive them as one prompt",
+                        expanded(edge.src),
+                    )
+
     def fanout_problem(self, graph, edge, infos):
         """Whether the value a fan-out reads is declared as something other than a list."""
+        if list(edge.each) == ["instructions"]:
+            return None
         kind = self.declared_kind(graph, edge, edge.each, infos)
         if kind is not None and kind != "array":
             return f"a fan-out reads a list, and this value is declared as {article(kind)}"

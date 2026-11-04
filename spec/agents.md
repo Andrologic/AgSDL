@@ -306,7 +306,7 @@ Agents submit their result with a standard tool:
 | Name | `agsdl_submit_result` |
 | `results` | An object: result name to value. |
 | `choice` | One of the current step's [choices](flow.md#routes), when the step routes by choice. |
-| `instructions` | A string: the mission for the next step, when the agent [instructs](#instructing-other-agents). |
+| `instructions` | A string: the mission for the next step, when the agent [instructs](#instructing-other-agents). A list of strings, one mission per element, when the chosen route [fans out](flow.md#fan-out) over them. |
 
 The host provides the tool to every agent, through MCP or natively. A harness
 module MAY use the harness's native structured output instead, if it gives the
@@ -315,7 +315,9 @@ can correct it.
 
 The host checks a submission immediately. An unknown result name, a missing
 required result, a value that violates its schema or media type, a missing or
-unknown choice, missing instructions that the chosen route expects: each is
+unknown choice, missing instructions that the chosen route expects, or
+instructions that are not a list when it fans out over them, or a list when it
+does not: each is
 refused with a precise error that the agent sees in
 its conversation. The agent can then submit again.
 
@@ -380,6 +382,15 @@ them: when the agent's choice leads to such a route, a submission without
 `instructions` is refused, as a [correction](#corrections). Which prompt a
 step finally receives is set out in
 [The mission of a step](flow.md#the-mission-of-a-step).
+
+To start several workers with different missions, the agent submits a list,
+and the route fans out over it with `"each": ["instructions"]`. Each element
+is the mission of one path:
+
+```json
+{ "choice": "split",
+  "instructions": ["Add the orders table.", "Write the POST /orders endpoint."] }
+```
 
 Instructions carry the authority the document gives them, never more:
 

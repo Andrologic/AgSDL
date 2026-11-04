@@ -114,7 +114,17 @@ target starts once per element, at once, in list order: a **fan-out**.
 ```
 
 - Each start receives the route's message, default or explicit, plus
-  `resources.item`, the element.
+  `resources.item`, the element. In that message, a selection that starts
+  with `"item"` reads in the element, for example
+  `{ "from": ["item", "file"] }`; validators check it against the list's
+  declared schema.
+- An element is information, like the output it comes from. When the fan-out
+  reads the `instructions` of an agent that
+  [instructs](agents.md#instructing-other-agents), `"each": ["instructions"]`,
+  each element is a mission instead: it is the prompt of the default message
+  of its path, and an explicit message can select it with
+  `"prompt": { "from": ["item"] }`. The other targets of that route cannot use
+  the instructions as one prompt (`MESSAGE_PATH`).
 - `concurrency`, a positive integer, is the most paths of this fan-out that
   run at once. Elements start in list order as paths end. Without it, the
   document sets no limit. Like permissions, it is a ceiling: a host MAY run
@@ -208,9 +218,10 @@ When a route has no `message`, the target receives the **default message**:
 | Error route | `resources.error` with the [error](#failures). |
 
 An explicit `message` replaces the default message entirely. A prompt
-selection reads `["instructions"]` from an instructing agent, or
+selection reads `["instructions"]` from an instructing agent,
 `["branches", "<branch>", "instructions"]` from a join, since no prompt
-crosses a join by itself.
+crosses a join by itself, or `["item"]` in a
+[fan-out over instructions](#fan-out).
 
 A message can target an agent, an approval or a composition. A message on a
 route to a call or a join is an error: they have nothing to deliver it to.
@@ -228,7 +239,7 @@ the first available of:
 | Rank | Prompt |
 | --- | --- |
 | 1 | The prompt of the route's explicit `message`. |
-| 2 | The prompt of the default message, when the route has no explicit `message`: the `instructions` of the previous step's agent when it instructs, or the prompt an approval passes on. |
+| 2 | The prompt of the default message, when the route has no explicit `message`: the `instructions` of the previous step's agent when it instructs, or its element of them in a fan-out over them, or the prompt an approval passes on. |
 | 3 | The step's default `prompt`. |
 
 The receiving agent's standing `instructions` apply above any prompt.

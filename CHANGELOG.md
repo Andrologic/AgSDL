@@ -37,6 +37,8 @@ A redesign. Documents written for 0.2 must be rewritten. See
   and a join gathers the paths as one list, with each element. An empty list
   completes the join's group at once. `concurrency` caps the paths running
   at once, and `max` the elements, with the `FANOUT_LIMIT` failure.
+  Selections read the element with `item`; an instructing agent gives each
+  path its own mission by submitting its instructions as a list.
 - `minItems` and `maxItems` in value schemas.
 - Calls to commands and MCP tools.
 - A flow-level `onError`, and a failed run when a failure is not handled.
