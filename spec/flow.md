@@ -555,7 +555,7 @@ decided, or once the group closes or fails:
 
 | `remaining` | Effect |
 | --- | --- |
-| `stop` (default) | Their work is cancelled: current works stop, their messages still waiting in an instance queue are withdrawn, and their pending approvals and calls are cancelled. The run continues once they have stopped. Cancelling ends a work, not a shared or named instance, which keeps its conversation; a `"new"` instance is discarded. |
+| `stop` (default) | Their work is cancelled: current works stop, with everything they started, such as background commands and sub-agents; their messages still waiting in an instance queue are withdrawn, and their pending approvals and calls are cancelled. The run continues once they have stopped. Cancelling ends a work, not a shared or named instance, which keeps its conversation; a `"new"` instance is discarded. |
 | `finish` | The run continues at once. They go on, loops included, and end when they would reach the join or leave the branch. Nothing they produce is used. |
 | `wait` | As with `finish`, but the run continues only once they have ended. |
 
