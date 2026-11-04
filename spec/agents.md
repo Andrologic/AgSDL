@@ -228,7 +228,7 @@ refusal. A `planFirst: "ask"` plan is refused without comment, which fails the
 work with `PLAN_REJECTED`. Without `answerTimeoutMs`, the host waits for the
 person. A request that counts for several works, because the harness does not
 say which one it is for (see [Time limits](flow.md#time-limits)), gets "no"
-after the shortest `answerTimeoutMs` among them.
+after the shortest `answerTimeoutMs` among those works that declare one.
 
 ```json
 "releaser": {
