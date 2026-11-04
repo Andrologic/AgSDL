@@ -208,37 +208,33 @@ class Graph:
         return addr if addr in self.nodes else None
 
     def _resolve_target(self, scope, kind, name):
+        return [dst for dst, _, _, _ in self._targets(scope, kind, name, None, None, None)]
+
+    def _targets(self, scope, kind, name, message, pointer, fanout):
+        """Resolve one authored target to (address, message, pointer, fanout).
+
+        A body route that leaves through a compose output carries no message:
+        the compose step's route for that output gives the targets, with their
+        messages, fan-outs and pointers."""
         if kind == "step":
             addr = self.resolve(scope, name)
-            return [addr] if addr is not None else []
+            return [(addr, message, pointer, fanout)] if addr is not None else []
         if scope.compose is None:
             if scope.composition is None:
                 return []
             exit_addr = ("#exit", name)
             if exit_addr not in self.nodes:
                 self.nodes[exit_addr] = Node(exit_addr, None, scope, name)
-            return [exit_addr]
+            return [(exit_addr, message, pointer, fanout)]
         decl, _, parent = self.composes[scope.compose]
         route = decl.get("next", {}).get(name)
         if route is None:
             return []
         found = []
-        for kind2, name2, _, _ in route_targets(route, []):
-            found.extend(self._resolve_target(parent, kind2, name2))
+        outer = parent.pointer + [scope.compose[-1], "next", name]
+        for kind2, name2, message2, where2, fanout2 in route_items(route, outer):
+            found.extend(self._targets(parent, kind2, name2, message2, where2, fanout2))
         return found
-
-    def _outer_message(self, scope, kind, name, message):
-        """The message carried when a body route leaves through a compose output."""
-        if kind != "output" or scope.compose is None:
-            return [message]
-        decl, _, parent = self.composes[scope.compose]
-        route = decl.get("next", {}).get(name)
-        if route is None:
-            return []
-        messages = []
-        for kind2, name2, message2, _ in route_targets(route, []):
-            messages.extend(self._outer_message(parent, kind2, name2, message2))
-        return messages
 
     def _inherited_error(self, scope, name):
         """The error route of a body step without onError: the nearest enclosing
@@ -267,11 +263,8 @@ class Graph:
                 kind, key, route, pointer = entry[:4]
                 scope = entry[4] if len(entry) > 4 else node.scope
                 for tkind, tname, message, where, each in route_items(route, pointer):
-                    dsts = self._resolve_target(scope, tkind, tname)
-                    messages = self._outer_message(scope, tkind, tname, message)
-                    for index, dst in enumerate(dsts):
-                        carried = messages[index] if index < len(messages) else None
-                        self.edges.append(Edge(node.addr, dst, kind, key, carried, where, each))
+                    for dst, carried, at, fanout in self._targets(scope, tkind, tname, message, where, each):
+                        self.edges.append(Edge(node.addr, dst, kind, key, carried, at, fanout))
 
     # Queries ------------------------------------------------------------
 

@@ -765,5 +765,15 @@
       "SHAPE"
     ],
     "warnings": []
+  },
+  "compose-output-fanout": {
+    "description": "A fan-out on a compose step's output route reads the body step that left: item paths, maxVisits and instances are checked as on any fan-out.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": [
+      "FANOUT_VISITS",
+      "SHARED_INSTANCE_PARALLEL"
+    ]
   }
 }
