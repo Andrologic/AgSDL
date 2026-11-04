@@ -4,7 +4,7 @@
   "title": "Claude Code",
   "version": "1.0.0",
   "contract": "agsdl-0.3.0",
-  "harnessVersions": ">=2.1.111",
+  "harnessVersions": ">=2.1.257",
   "sources": [
     "https://code.claude.com/docs/en/auto-mode-config",
     "https://code.claude.com/docs/en/permissions",
@@ -30,7 +30,10 @@
     "https://code.claude.com/docs/en/agent-sdk/todo-tracking",
     "https://code.claude.com/docs/en/agent-sdk/structured-outputs",
     "https://code.claude.com/docs/en/agent-sdk/typescript",
-    "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md"
+    "https://raw.githubusercontent.com/anthropics/claude-code/main/CHANGELOG.md",
+    "https://code.claude.com/docs/en/workflows",
+    "https://code.claude.com/docs/en/agent-sdk/python",
+    "https://code.claude.com/docs/en/agent-sdk/agent-loop"
   ],
   "properties": {
     "resources": {
@@ -72,11 +75,11 @@
     },
     "plan": {
       "support": "native",
-      "note": "Maps to TodoWrite, or to the TaskCreate/TaskUpdate tools that replace it by default on newer models; each update appears as a tool_use block in the message stream."
+      "note": "Maps to TaskCreate/TaskUpdate, or to TodoWrite; each update appears as a tool_use block in the message stream. The tools are offered by default only on some models, so the host sets CLAUDE_CODE_ENABLE_TODO_TOOLS=1."
     },
     "planFirst.auto": {
       "support": "native",
-      "note": "Maps to plan mode. The host keeps plan mode's lock by giving no allow rules during it, so every call that is not read-only reaches its canUseTool callback, and by setting useAutoModeDuringPlan to false in local settings so the auto mode classifier approves no command while planning; plan mode keeps its blocks in Agent SDK sessions. A PreToolUse hook on ExitPlanMode allows the plan at once, then the host calls setPermissionMode."
+      "note": "Maps to plan mode. The host keeps plan mode's lock by giving no allow rules during it, so every call that is not read-only reaches its canUseTool callback, and by setting useAutoModeDuringPlan to false in local settings so the auto mode classifier approves no command while planning; plan mode keeps its blocks in Agent SDK sessions. A PreToolUse hook on ExitPlanMode returns allow with updatedInput, so the plan is accepted at once, then the host calls setPermissionMode."
     },
     "planFirst.ask": {
       "support": "native",
@@ -100,7 +103,7 @@
     },
     "directories": {
       "support": "native",
-      "note": "Maps to additionalDirectories for the file tools, and to sandbox allowWrite for writable directories."
+      "note": "Maps to additionalDirectories for the file tools, and to sandbox allowWrite for writable directories. Added directories are writable by sandboxed commands and editable by the file tools, so read directories also get Edit deny rules, merged into denyWrite."
     }
   },
   "permissions": {
@@ -109,7 +112,7 @@
       "ask": "sandbox",
       "deny": "sandbox",
       "outside": "sandbox",
-      "note": "Read rules govern the file tools and recognized Bash file commands; Read deny paths are merged into the sandbox denyRead list, which covers every Bash subprocess when sandbox.enabled, sandbox.failIfUnavailable and allowUnsandboxedCommands false are set (macOS and Linux only); ask paths also go to denyRead so that only the Read tool, which asks, can reach them. Reads outside the zone are denied the same way, with allowRead for the zone."
+      "note": "Read rules govern the file tools and recognized Bash file commands; Read deny paths are merged into the sandbox denyRead list, which covers every Bash subprocess when sandbox.enabled, sandbox.failIfUnavailable and allowUnsandboxedCommands false are set (macOS and Linux only); ask paths also go to denyRead so that only the Read tool, which asks, can reach them. sandbox.excludedCommands stays empty. Reads outside the zone: permissions.blockReadsOutsideWorkingDirectories makes the file tools refuse them, and denyRead with allowRead for the zone covers Bash."
     },
     "write": {
       "allow": "sandbox",
@@ -127,7 +130,7 @@
       "allow": "sandbox",
       "ask": "sandbox",
       "deny": "sandbox",
-      "note": "The sandbox proxy refuses Bash connections to hosts outside allowedDomains or in deniedDomains, WebFetch(domain:...) rules govern WebFetch, and WebSearch must be denied unless network is fully allowed; ask hosts go to deniedDomains so that only WebFetch, which asks, can reach them; requires the sandbox settings listed under read."
+      "note": "The sandbox proxy refuses Bash connections to hosts outside allowedDomains or in deniedDomains, WebFetch(domain:...) rules govern WebFetch, and WebSearch must be denied unless network is fully allowed; ask hosts go to deniedDomains so that only WebFetch, which asks, can reach them; requires the sandbox settings listed under read. Hosts outside the allowlist are denied rather than prompted only with sandbox.network.strictAllowlist true, read from user or managed settings. Monitor must be denied unless network is fully allowed: its WebSocket source is limited by deniedDomains, not by allowedDomains."
     },
     "mcp": {
       "allow": "harness",
@@ -139,7 +142,7 @@
       "allow": "harness",
       "ask": "harness",
       "deny": "harness",
-      "note": "Agent rules (formerly Task) govern subagents, which inherit the parent's permission rules and its deny and ask rules in every mode; subagent definitions must not set permissionMode, which applies when the parent runs in default or dontAsk mode and can allow calls the parent would deny."
+      "note": "Agent rules (formerly Task) and Workflow rules govern subagents, which inherit the parent's permission rules and its deny and ask rules in every mode; subagent definitions must not set permissionMode, which applies when the parent runs in default or dontAsk mode and can allow calls the parent would deny."
     }
   },
   "settings": {
@@ -152,7 +155,7 @@
       },
       "alwaysThinkingEnabled": {
         "type": "boolean",
-        "description": "Settings key alwaysThinkingEnabled; false turns extended thinking off."
+        "description": "Settings key alwaysThinkingEnabled; false turns extended thinking off. No effect on models that always think, such as Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable."
       },
       "maxTurns": {
         "type": "integer",
