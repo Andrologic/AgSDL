@@ -598,6 +598,10 @@
             "each": {
               "$ref": "#/$defs/path"
             },
+            "concurrency": {
+              "type": "integer",
+              "minimum": 1
+            },
             "message": {
               "$ref": "#/$defs/message"
             }

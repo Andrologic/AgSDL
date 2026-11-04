@@ -39,7 +39,8 @@
             "each": [
               "results",
               "files"
-            ]
+            ],
+            "concurrency": 4
           },
           "none": []
         }

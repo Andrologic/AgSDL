@@ -689,5 +689,12 @@
       "SCHEMA"
     ],
     "warnings": []
+  },
+  "concurrency-without-each": {
+    "description": "concurrency limits a fan-out and requires each.",
+    "errors": [
+      "ROUTES"
+    ],
+    "warnings": []
   }
 }

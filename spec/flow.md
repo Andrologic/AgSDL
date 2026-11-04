@@ -62,11 +62,12 @@ decide it.
    top-level steps. A failure that reaches no handler ends its path. A failure
    never undoes effects and never retries on its own.
 3. **Parallel paths meet in groups.** A route that starts several targets,
-   or one target once per element of a list, starts parallel paths. Paths that meet at a join are the branches of a
-   group, opened by the join's origin; the join decides once per group. Once
-   it has decided, or the group has closed or failed, nothing of the group
-   routes again: its unfinished work is cancelled, or finishes without
-   counting for the flow. Paths that meet no join end on their own, except in
+   or one target once per element of a list, starts parallel paths. Paths
+   that meet at a join are the branches of a group, opened by the join's
+   origin; the join decides once per group. Once it has decided, or the group
+   has closed or failed, nothing of the group routes again: its unfinished
+   work is cancelled, or finishes without counting for the flow, and its work
+   not yet started never starts. Paths that meet no join end on their own, except in
    a composition body, where every fork is closed by one join (rule 1).
 4. **An instance does one work at a time.** A message for a working instance
    waits its turn, or, with `steer`, joins the current work if that work still
@@ -114,6 +115,12 @@ target starts once per element, at once, in list order: a **fan-out**.
 
 - Each start receives the route's message, default or explicit, plus
   `resources.item`, the element.
+- `concurrency`, a positive integer, is the most paths of this fan-out that
+  run at once. Elements start in list order as paths end. Without it, the
+  document sets no limit. Like permissions, it is a ceiling: a host MAY run
+  fewer paths at once, never more. `concurrency: 1` runs the elements one
+  after the other, each seeing what the previous one did. `concurrency`
+  requires `each` (`ROUTES`).
 - An empty list starts nothing. A join that closes the fan-out still decides
   at once: `done` in all mode, `missed` for a quorum it cannot reach, with an
   empty list for the branch. To refuse an empty list, declare `minItems` in
@@ -123,7 +130,8 @@ target starts once per element, at once, in list order: a **fan-out**.
 - `each` targets an agent, an approval or a compose step. A call or a join
   receives no message, so it cannot tell elements apart (`ROUTES`).
 - Each start is a visit of the steps it reaches: with 30 elements, `fix`
-  starts 30 times toward its `maxVisits`. To bound how often the work is
+  starts 30 times toward its `maxVisits`. An element that never starts is
+  not a visit. To bound how often the work is
   started again, put `maxVisits` on the step that fans out.
 - The paths of a fan-out are parallel paths ([rule 3](#execution-model)).
   They meet at a join as one [fan-out branch](#origin-and-branches).
@@ -506,8 +514,10 @@ decided, or once the group closes or fails:
 Once the join has decided, or the group has closed or failed, an unfinished
 branch never routes outside itself: a cancelled work follows neither `next` nor
 `onError`, and a finishing branch, under `finish` or `wait`, that fails ends
-there. Its results never
-count for a later group of the join. Works of other steps on the same
+there. Its results never count for a later group of the join. An element of a
+fan-out that has not started never starts, whatever `remaining` says: with
+`concurrency: 1` and a quorum of one, elements are tried in order until one is
+accepted. Works of other steps on the same
 instances are not affected.
 
 `finish` and `wait` let work with effects, such as edits or a deployment,

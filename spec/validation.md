@@ -54,7 +54,7 @@ A report is a JSON object:
 | `SHAPE` | The document does not match the schema or the contract marker. |
 | `REFERENCE` | A name refers to nothing: agent, step, content, skill, MCP server, composition, parameter, output, choice. |
 | `DUPLICATE` | A target appears twice in one route. |
-| `ROUTES` | A route does not fit its step: wrong outcome keys, an approval without choices, a message or a fan-out to a step that cannot receive one, a message on an output target, an output outside a composition, an entry that is a join. |
+| `ROUTES` | A route does not fit its step: wrong outcome keys, an approval without choices, a message or a fan-out to a step that cannot receive one, `concurrency` without `each`, a message on an output target, an output outside a composition, an entry that is a join. |
 | `UNREACHABLE` | A step cannot be reached from the entry, or from the flow's `onError`. |
 | `MESSAGE_PATH` | A selection path does not exist in the declared output it reads, a fan-out reads a declared value that is not a list, or a prompt selects something other than instructions. |
 | `PROMPT` | An agent step receives a prompt on some routes but not on others, and has no default prompt. |

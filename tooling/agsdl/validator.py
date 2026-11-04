@@ -343,6 +343,11 @@ class Checker:
             self.check_route(route, where, steps, outputs, composition)
 
     def check_route(self, route, where, steps, outputs, composition):
+        items = route if isinstance(route, list) else [route]
+        for index, item in enumerate(items):
+            if isinstance(item, dict) and "concurrency" in item and "each" not in item:
+                at = where + [index] if isinstance(route, list) else where
+                self.report.error("ROUTES", at + ["concurrency"], "concurrency limits a fan-out; it requires each")
         seen = set()
         for tkind, target, message, at, each in route_items(route, where):
             if (tkind, target) in seen:
@@ -355,6 +360,7 @@ class Checker:
                     self.report.error("ROUTES", at + ["message"], f"{article(steps[target]['type'])} cannot receive a message")
                 elif each is not None and steps[target]["type"] in NO_MESSAGE_TYPES:
                     self.report.error("ROUTES", at + ["each"], f"{article(steps[target]['type'])} receives no message, so it cannot tell the elements of a fan-out apart")
+
             else:
                 if composition is None:
                     self.report.error("ROUTES", at, "outputs exist only inside compositions")
