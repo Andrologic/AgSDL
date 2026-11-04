@@ -599,5 +599,31 @@
     "description": "Nothing after a wait join runs while its branches finish.",
     "errors": [],
     "warnings": []
+  },
+  "join-keep-failures": {
+    "description": "A join that keeps failures routes done or incomplete.",
+    "errors": [],
+    "warnings": []
+  },
+  "join-keep-done-only": {
+    "description": "A join that keeps failures routes with both done and incomplete.",
+    "errors": [
+      "ROUTES"
+    ],
+    "warnings": []
+  },
+  "join-max-failures-alone": {
+    "description": "maxFailures requires failures: keep.",
+    "errors": [
+      "JOIN"
+    ],
+    "warnings": []
+  },
+  "join-keep-quorum": {
+    "description": "A quorum join already keeps failed branches.",
+    "errors": [
+      "JOIN"
+    ],
+    "warnings": []
   }
 }

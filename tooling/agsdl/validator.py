@@ -327,8 +327,16 @@ class Checker:
             if "quorum" in step:
                 if not is_map or set(nxt) != {"reached", "missed"}:
                     self.report.error("ROUTES", parts + ["next"], "a quorum join routes with exactly reached and missed")
+            elif step.get("failures") == "keep":
+                if is_map and set(nxt) != {"done", "incomplete"}:
+                    self.report.error("ROUTES", parts + ["next"], "a join that keeps failures routes with a route, or a map with exactly done and incomplete")
             elif is_map and set(nxt) != {"done"}:
                 self.report.error("ROUTES", parts + ["next"], "a join without quorum routes with a route, or a map with only done")
+        if kind == "join":
+            if "quorum" in step and ("failures" in step or "maxFailures" in step):
+                self.report.error("JOIN", parts + ["failures" if "failures" in step else "maxFailures"], "failures and maxFailures apply to all mode only; a quorum already keeps failed branches")
+            elif "maxFailures" in step and step.get("failures") != "keep":
+                self.report.error("JOIN", parts + ["maxFailures"], 'maxFailures requires failures: "keep"')
         if kind == "agent" and is_map and isinstance(step["agent"], str) and step["agent"] in self.agents:
             self.uses[step["agent"]]["choices"].update(nxt)
         for _, _, route, where in step_routes(step, parts):

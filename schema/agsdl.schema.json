@@ -1001,6 +1001,16 @@
             "wait"
           ]
         },
+        "failures": {
+          "enum": [
+            "fail",
+            "keep"
+          ]
+        },
+        "maxFailures": {
+          "type": "integer",
+          "minimum": 1
+        },
         "next": {
           "oneOf": [
             {

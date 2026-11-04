@@ -394,6 +394,7 @@ delivers at most one result per group.
 | Real fork | At least one route of the origin starts two branches or more at once. |
 | Join inputs | Every route into a join is a normal route from one of its branches or from its origin. |
 | Reachable quorum | A quorum `count` does not exceed the number of branches. |
+| Failure handling | `failures` and `maxFailures` apply to all mode only; `maxFailures` requires `failures: "keep"`. |
 
 Two joins can be nested: a join inside a branch has its own origin inside that
 branch.
@@ -414,8 +415,19 @@ target with the route's message only.
 
 ### Waiting modes
 
-**All** (default): the join waits for every started branch. Its route is a
-target or list, or a map with the single key `done`.
+**All** (default): the join waits for every started branch. `failures` says
+what a branch failure does:
+
+| `failures` | Effect |
+| --- | --- |
+| `fail` (default) | The group fails at once: see [join failures](#join-failures). |
+| `keep` | The failure is kept in the join output, and the join goes on waiting for the other branches. With `maxFailures`, a positive integer, the failure that exceeds it fails the group as with `fail`. |
+
+Its route is a target or list, or a map with the single key `done`. With
+`failures: "keep"`, the map has exactly `done` and `incomplete`: `done` when
+no branch failed, `incomplete` when at least one did. `incomplete` is a normal
+outcome, not a failure: a later step can start the failed work again, as a
+loop. A failure never retries on its own.
 
 **Quorum**: the join continues as soon as enough branches have delivered an
 accepted result.
@@ -481,19 +493,23 @@ have ended. A finishing branch no longer counts for the flow
 }
 ```
 
-`outcome` is `done`, `reached` or `missed`. `branches` holds each branch's
-output, or `{ "ended": "without-result" }`, or
-`{ "ended": "absorbed", "by": "<step>" }`, or, in quorum mode,
-`{ "ended": "failed", "error": { ... } }`. With `reached`, it holds the
-accepted results only. With `done` and `missed`, it holds every branch that
-ended.
+`outcome` is `done`, `incomplete`, `reached` or `missed`. `branches` holds
+each branch's output, or `{ "ended": "without-result" }`, or
+`{ "ended": "absorbed", "by": "<step>" }`, or, in quorum mode and with
+`failures: "keep"`, `{ "ended": "failed", "error": { ... } }`. With `reached`,
+it holds the accepted results only. With `done`, `incomplete` and `missed`, it
+holds every branch that ended.
 
 ### Join failures
 
-In all mode, when a branch fails, the group fails at once: other branches
-follow `remaining`, and the join fails with `BRANCH_FAILED`, which it handles
-like any step ([rule 2](#execution-model)). The error details name the branch
-and its error. In quorum mode, a failed branch counts as not accepted.
+A branch failure reaches its join first ([rule 2](#execution-model)). In all
+mode with `failures: "fail"`, the group fails at once: other branches follow
+`remaining`, and the join fails with `BRANCH_FAILED`, which it handles like
+any step. The error details name the branch and its error. With
+`failures: "keep"`, the same happens to the failure that exceeds
+`maxFailures`; earlier failures are kept. In quorum mode, a failed branch
+counts as not accepted. A kept failure is handled: it does not fail the run
+([rule 5](#execution-model)).
 
 ## Compositions
 
@@ -596,7 +612,7 @@ failure; it is information, never an instruction.
 | `OPERAND` | A selection or operand path cannot be read. |
 | `CONTENT_UNAVAILABLE` | Content needed for a message cannot be obtained. |
 | `APPROVAL_TIMEOUT` | An approval received no answer in time. |
-| `BRANCH_FAILED` | A branch of an all-mode join failed. |
+| `BRANCH_FAILED` | A branch of an all-mode join failed, beyond what `failures` and `maxFailures` keep. |
 | `VISIT_LIMIT` | Starting the step would exceed `maxVisits`. |
 | `INTERRUPTED` | The host stopped the work before it completed, outside a join's `remaining`. |
 

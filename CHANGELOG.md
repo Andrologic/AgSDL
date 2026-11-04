@@ -30,7 +30,9 @@ A redesign. Documents written for 0.2 must be rewritten. See
   `+json` types, strings for `text/*`, file URIs otherwise.
 - Agents that instruct: `instructs`, an `instructions` field in the result
   tool, and a default `prompt` on agent steps.
-- Joins deduced from the graph, quorum joins, branch exits.
+- Joins deduced from the graph, quorum joins, branch exits, and all-mode
+  joins that keep failed branches (`failures`, `maxFailures`, outcome
+  `incomplete`).
 - Calls to commands and MCP tools.
 - A flow-level `onError`, and a failed run when a failure is not handled.
 - Nested compositions with joins and parallel routes.
