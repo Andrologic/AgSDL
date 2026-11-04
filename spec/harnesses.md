@@ -21,7 +21,7 @@ never run it. Modules are maintained in this repository under
   "version": "1.0.0",
   "contract": "agsdl-0.3.0",
   "harnessVersions": ">=0.152.0",
-  "sources": ["https://developers.openai.com/codex/config-reference"],
+  "sources": ["https://learn.chatgpt.com/docs/config-file/config-reference"],
   "properties": {
     "model.effort": { "support": "native", "suggestions": ["low", "medium", "high", "xhigh"] },
     "plan": { "support": "native", "note": "Maps to update_plan." },
