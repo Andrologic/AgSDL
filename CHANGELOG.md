@@ -46,6 +46,8 @@ A redesign. Documents written for 0.2 must be rewritten. See
   `TIMEOUT` failure; `answerTimeoutMs` on agents for requests to a person.
 - A flow-level `onError`, and a failed run when a failure is not handled.
 - Nested compositions with joins and parallel routes.
+- Run scenarios in `conformance/runs`: scripted runs with what a host must
+  do, for hosts to check themselves. The repository still runs no flow.
 
 ### Changed
 

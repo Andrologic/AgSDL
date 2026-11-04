@@ -76,7 +76,7 @@ The validator checks the document and compares each agent with its
 | See complete documents | [Examples](examples/README.md) |
 | Know what a harness supports | [Harness modules](harnesses/README.md) |
 | Validate or draw a document | [Tooling](tooling/README.md) |
-| Test another implementation | [Conformance cases](conformance/README.md) |
+| Test another implementation | [Conformance cases and run scenarios](conformance/README.md) |
 | Know what is still open | [Open questions](spec/open-questions.md) and [roadmap](ROADMAP.md) |
 | Contribute | [Contributing](CONTRIBUTING.md) |
 
@@ -89,7 +89,7 @@ The validator checks the document and compares each agent with its
 | `harnesses/` | One module per supported harness. |
 | `examples/` | Complete, valid documents. |
 | `tooling/` | The reference validator and a Mermaid renderer. |
-| `conformance/` | Test documents with their expected diagnostics. |
+| `conformance/` | Test documents with their expected diagnostics, and run scenarios for hosts. |
 | `docs/` | Scope, quickstart and design decisions. |
 
 Earlier editions, their reports and their history are available from their
