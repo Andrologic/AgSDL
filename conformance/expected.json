@@ -782,5 +782,12 @@
       "JOIN"
     ],
     "warnings": []
+  },
+  "compose-output-prompt": {
+    "description": "A compose step's route brings a prompt when the body step that left instructs, so a step it shares with a route without one needs a default prompt.",
+    "errors": [
+      "PROMPT"
+    ],
+    "warnings": []
   }
 }

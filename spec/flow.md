@@ -679,6 +679,11 @@ A composition is a reusable flow fragment.
 - A body route targets a body step or `{ "output": "name" }`, which leaves the
   composition through the compose step's route for that output. An output
   target carries no message: the compose step's route carries it.
+- That route leaves, in effect, the body step that left the composition. Its
+  selections read that step's output, its default message is that step's
+  default message, and it [brings a prompt](#the-mission-of-a-step) when a
+  route from that step would. The output of a compose step is the output of
+  that body step.
 - Every output is used by at least one body route.
 - A composition leaves at most once per entry, like a step: through one
   output, or through the compose step's `onError`. So a body route, normal or
