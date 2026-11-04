@@ -498,6 +498,9 @@ def analyse_joins(graph):
             for member in members:
                 for (kind, key), dsts in route_groups(graph, member, succ).items():
                     inside = [d for d in dsts if d in members or d == addr]
+                    if inside and len(inside) < len(dsts):
+                        problems.append(("JOIN", graph.nodes[member].pointer, member, f"a route of '{member[-1]}' starts targets inside and outside branch '{name_of[start]}' of join '{addr[-1]}' at once"))
+                        continue
                     fans = any(e.each is not None and e.dst in inside for e in succ[member] if (e.kind, e.key) == (kind, key))
                     if len(set(inside)) < 2 and not fans:
                         continue

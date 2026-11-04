@@ -775,5 +775,12 @@
       "FANOUT_VISITS",
       "SHARED_INSTANCE_PARALLEL"
     ]
+  },
+  "join-mixed-exit": {
+    "description": "A branch route cannot both reach the join and leave the branch at once.",
+    "errors": [
+      "JOIN"
+    ],
+    "warnings": []
   }
 }

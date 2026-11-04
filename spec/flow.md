@@ -489,7 +489,7 @@ delivers at most one result per group.
 | --- | --- |
 | Single entry | No route from outside a branch enters it, except the origin's route to its first step. |
 | Disjoint branches | Two branches of one join share no step. They may share an instance. |
-| Closed forks | A branch that starts several targets at once closes them with its own join before reaching the outer join. |
+| Closed forks | A branch that starts several targets at once closes them with its own join before reaching the outer join. A route of a branch never starts targets inside and outside the branch at once. |
 | Real fork | At least one route of the origin starts two branches or more at once, or a fan-out branch. |
 | Fan-out | A branch started with `each` by one route of the origin is started with `each` by every route that starts it. |
 | Join inputs | Every route into a join is a normal route from one of its branches or from its origin. |
