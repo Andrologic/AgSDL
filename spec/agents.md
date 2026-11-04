@@ -226,7 +226,9 @@ has put to a person for this agent's work, left unanswered that long, gets the
 answer "no". An `ask` is refused, and the agent continues, as after any
 refusal. A `planFirst: "ask"` plan is refused without comment, which fails the
 work with `PLAN_REJECTED`. Without `answerTimeoutMs`, the host waits for the
-person.
+person. A request that counts for several works, because the harness does not
+say which one it is for (see [Time limits](flow.md#time-limits)), gets "no"
+after the shortest `answerTimeoutMs` among them.
 
 ```json
 "releaser": {

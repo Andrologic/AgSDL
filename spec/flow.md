@@ -721,6 +721,10 @@ The clock measures the work, not waits that are not its own:
   presents these requests, so it knows when each opens and closes. While at
   least one is open, the clock stands still. An `ask` answered by a model is
   machine time.
+- When the harness does not say which work a request is for, as when an MCP
+  server asks a question, the host counts it as open for each work that has a
+  call to that server in progress, for as long as the call lasts. Failing
+  that, it counts it for each work whose agent uses that server.
 - Corrections and `steer` messages belong to the same work and do not restart
   it.
 
