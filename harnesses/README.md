@@ -14,7 +14,6 @@ validator reads them and never runs anything.
 | Claude Code | 1.0.0 | `>=2.1.257` |
 | opencode | 1.0.0 | `>=2.0.28 <3.0.0` |
 | pi | 1.0.0 | `>=1.2.0 <2.0.0` |
-| Macro | 1.0.0 | `0.1.8` |
 
 Each module lists, in `sources`, the code and documentation its claims rest
 on, and explains every approximation in a `note`. Each has its own
@@ -22,34 +21,34 @@ on, and explains every approximation in a `note`. Each has its own
 
 ## Support at a glance
 
-| Property | [Codex](codex/module.json) | [Claude Code](claude-code/module.json) | [opencode](opencode/module.json) | [pi](pi/module.json) | [Macro](macro/module.json) |
-| --- | --- | --- | --- | --- | --- |
-| Resources | approx. | approx. | approx. | approx. | approx. |
-| Model name | native | native | native | native | native |
-| Effort | native | native | native | native | approx. |
-| Skills | native | native | native | native | — |
-| MCP servers | native | native | native | native | — |
-| Plan | native | native | native, 2.1+ | — | — |
-| Plan first, auto | approx. | native | approx. | — | — |
-| Plan first, ask | — | native | — | — | — |
-| Reviewer, person | native | native | native | — | — |
-| Reviewer, model | native | approx. | — | — | — |
-| Added directories | native | native | native | native | — |
-| New instance per work | native | native | native | native | — |
-| Steer | native | native | native | native | — |
+| Property | [Codex](codex/module.json) | [Claude Code](claude-code/module.json) | [opencode](opencode/module.json) | [pi](pi/module.json) |
+| --- | --- | --- | --- | --- |
+| Resources | approx. | approx. | approx. | approx. |
+| Model name | native | native | native | native |
+| Effort | native | native | native | native |
+| Skills | native | native | native | native |
+| MCP servers | native | native | native | native |
+| Plan | native | native | native, 2.1+ | — |
+| Plan first, auto | approx. | native | approx. | — |
+| Plan first, ask | — | native | — | — |
+| Reviewer, person | native | native | native | — |
+| Reviewer, model | native | approx. | — | — |
+| Added directories | native | native | native | native |
+| New instance per work | native | native | native | native |
+| Steer | native | native | native | native |
 
 "approx." means the harness does something close; the validator warns and
 shows the module's note. "—" means absent: using the property is an error.
 
-| Permission `deny` | Codex | Claude Code | opencode | pi | Macro |
-| --- | --- | --- | --- | --- | --- |
-| `read` | sandbox | sandbox | harness | — | — |
-| `write` | sandbox | sandbox | harness | — | — |
-| `shell` | harness | harness | harness | — | harness |
-| `network` | sandbox | sandbox | harness | harness | harness |
-| `mcp` | harness | harness | harness | harness | harness |
-| `delegate` | harness | harness | harness | harness | harness |
-| `read` outside the zone | sandbox | sandbox | harness | — | harness |
+| Permission `deny` | Codex | Claude Code | opencode | pi |
+| --- | --- | --- | --- | --- |
+| `read` | sandbox | sandbox | harness | — |
+| `write` | sandbox | sandbox | harness | — |
+| `shell` | harness | harness | harness | — |
+| `network` | sandbox | sandbox | harness | harness |
+| `mcp` | harness | harness | harness | harness |
+| `delegate` | harness | harness | harness | harness |
+| `read` outside the zone | sandbox | sandbox | harness | — |
 
 Permissions are enforced or they are not. A `deny` that a harness cannot
 enforce makes the agent invalid; `full` requests no `deny` at all. For `read`,

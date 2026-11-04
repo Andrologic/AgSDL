@@ -10,7 +10,7 @@ A redesign. Documents written for 0.2 must be rewritten. See
 ### Added
 
 - Harness modules: `harness` on each agent, with modules for Codex, Claude
-  Code, opencode, pi and Macro, and a diagnostic policy for unsupported,
+  Code, opencode and pi, and a diagnostic policy for unsupported,
   approximate and unverified support.
 - Standard agent properties: `model`, `skills`, `mcpServers`, `permissions`,
   `results`, `plan`, `planFirst`, `completionCheck`, `maxCorrections`,

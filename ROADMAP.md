@@ -6,7 +6,8 @@
   [open questions](spec/open-questions.md), if any, block release.
 - Review every harness module against its harness, and record the versions
   covered.
-- Run 0.3 documents end to end in Macro.
+- Run 0.3 documents end to end in Macro, and add its module once a Macro
+  release reads 0.3.
 
 ## Toward 1.0
 
