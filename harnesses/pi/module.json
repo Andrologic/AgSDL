@@ -21,7 +21,10 @@
     "pi:packages/coding-agent/examples/extensions/todo.ts",
     "pi:packages/coding-agent/examples/extensions/plan-mode",
     "pi:packages/coding-agent/examples/extensions/permission-gate.ts",
-    "pi:packages/coding-agent/examples/extensions/subagent"
+    "pi:packages/coding-agent/examples/extensions/subagent",
+    "pi:packages/coding-agent/docs/rpc-extension-ui.md",
+    "pi:packages/coding-agent/src/modes/rpc/rpc-mode.ts",
+    "pi:packages/coding-agent/src/core/tools/index.ts"
   ],
   "properties": {
     "resources": {
@@ -47,7 +50,7 @@
     },
     "skills": {
       "support": "native",
-      "note": "--no-skills with one --skill per named skill. pi lists the skills in the system prompt and the agent reads SKILL.md with the read tool."
+      "note": "--no-skills with one --skill <path> per named skill. pi lists the skills in the system prompt and the agent reads SKILL.md with the read tool."
     },
     "mcpServers": {
       "support": "native",
@@ -104,7 +107,7 @@
       "allow": "harness",
       "ask": "absent",
       "deny": "absent",
-      "note": "pi has no permission rules. Only the bash tool as a whole can be removed, so a command-matched deny is not enforced. No operating-system sandbox."
+      "note": "pi has no permission rules. Only the bash and powershell tools as a whole can be removed, so a command-matched deny is not enforced. No operating-system sandbox."
     },
     "network": {
       "allow": "absent",
