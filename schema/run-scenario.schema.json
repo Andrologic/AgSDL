@@ -87,7 +87,7 @@
           "additionalProperties": false,
           "properties": {
             "elapse": {
-              "description": "Milliseconds of machine time pass for every running work.",
+              "description": "Milliseconds pass, for every work running or waiting for a person. Each time limit counts them as the specification says.",
               "type": "integer",
               "minimum": 1
             }

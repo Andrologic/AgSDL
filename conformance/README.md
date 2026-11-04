@@ -64,7 +64,7 @@ joins and answers expired requests. Then:
 | `{ "work": "fix", "fails": "AGENT_FAILED" }` | The work fails with this code. |
 | `{ "work": "release", "request": "ask" }` | The work opens a request that the host puts to a person: an `ask`, a `plan` or a `question`. |
 | `{ "work": "release", "answer": "yes" }` | A person answers the work's oldest open request. |
-| `{ "elapse": 60000 }` | That many milliseconds pass for every running work. |
+| `{ "elapse": 60000 }` | That many milliseconds pass, for every work running or waiting for a person. Each time limit counts them as the specification says: `timeoutMs` not while a person is asked, `answerTimeoutMs` and an approval's `timeoutMs` only then. |
 | `{ "running": [{ "step": "fix", "item": 0 }] }` | A check: exactly these works are running, or waiting for a person, now. |
 
 `work` names a step, or a composition body step by the names leading to it,
