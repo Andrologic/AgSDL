@@ -357,6 +357,10 @@
         "maxCorrections": {
           "type": "integer",
           "minimum": 0
+        },
+        "answerTimeoutMs": {
+          "type": "integer",
+          "minimum": 1
         }
       }
     },
@@ -739,6 +743,10 @@
         "maxVisits": {
           "$ref": "#/$defs/maxVisits"
         },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1
+        },
         "agent": {
           "oneOf": [
             {
@@ -803,6 +811,10 @@
         },
         "maxVisits": {
           "$ref": "#/$defs/maxVisits"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1
         },
         "command": {
           "type": "string",

@@ -48,6 +48,7 @@ runs it. A definition has no state: running agents are
 | `planFirst` | no | `"auto"` or `"ask"`. See [Plan first](#plan-first). |
 | `completionCheck` | no | A command that must succeed before a result is accepted. See [Completion check](#completion-check). |
 | `maxCorrections` | no | How many refused submissions an agent may correct per work. Default: `2`. |
+| `answerTimeoutMs` | no | How long a request to a person may stay unanswered. See [Waiting for a person](#waiting-for-a-person). |
 
 All properties are standard AgSDL properties. A harness supports each of them
 natively, approximately or not at all; its module declares which. An
@@ -215,6 +216,28 @@ denial. When no rule matches, the preset and the zone decide.
 `reviewer.person` and `reviewer.model` as properties, with support levels,
 not as permission enforcement. A host MAY have a person answer instead of a
 model, never the reverse.
+
+### Waiting for a person
+
+A person may take hours to answer an `ask` or to review a plan. That time is
+not the machine's, and a step's [`timeoutMs`](flow.md#time-limits) does not
+count it. `answerTimeoutMs`, a positive integer, bounds it: a request the host
+has put to a person for this agent's work, left unanswered that long, gets the
+answer "no". An `ask` is refused, and the agent continues, as after any
+refusal. A `planFirst: "ask"` plan is refused without comment, which fails the
+work with `PLAN_REJECTED`. Without `answerTimeoutMs`, the host waits for the
+person.
+
+```json
+"releaser": {
+  "harness": "codex",
+  "permissions": { "preset": "workspace", "reviewer": "person", "rules": [{ "action": "shell", "match": "npm publish*", "effect": "ask" }] },
+  "answerTimeoutMs": 3600000
+}
+```
+
+The host presents these requests and answers them for the person, so
+`answerTimeoutMs` asks nothing new of the harness.
 
 ### Rules for hosts
 

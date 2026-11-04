@@ -41,6 +41,8 @@ A redesign. Documents written for 0.2 must be rewritten. See
   path its own mission by submitting its instructions as a list.
 - `minItems` and `maxItems` in value schemas.
 - Calls to commands and MCP tools.
+- `timeoutMs` on agent and call steps, counting machine time only, with the
+  `TIMEOUT` failure; `answerTimeoutMs` on agents for requests to a person.
 - A flow-level `onError`, and a failed run when a failure is not handled.
 - Nested compositions with joins and parallel routes.
 

@@ -270,6 +270,7 @@ The message the host delivers at entry is not a route.
 | `instance` | Absent, a name or `"new"`. See [instances](agents.md#definitions-and-instances). |
 | `delivery` | `"queue"` or `"steer"`. See [Delivery](#delivery). |
 | `prompt` | The default prompt. See [The mission of a step](#the-mission-of-a-step). |
+| `timeoutMs` | The most machine time the work may take. See [Time limits](#time-limits). |
 | `next` | A route, or a map of choices to routes. |
 | `onError` | A route followed when the work fails. |
 
@@ -336,6 +337,7 @@ MCP server.
 | `command` | A shell command, run by the host in the flow's workspace. |
 | `mcp` | `server`, a document MCP server, and `tool`, a tool name. |
 | `arguments` | For `mcp`: argument name to [operand](#operands). |
+| `timeoutMs` | The most time the call may take. See [Time limits](#time-limits). |
 | `next` | A route, taken whatever the outcome, or a map with exactly `passed` and `failed`. |
 | `onError` | A route, taken when the call cannot run. |
 
@@ -680,6 +682,31 @@ branches and the limit is reached, the branches do not start and the join
 fails with `VISIT_LIMIT`.
 Without `maxVisits`, there is no limit.
 
+## Time limits
+
+`timeoutMs`, a positive integer, bounds the machine time of an agent's or a
+call's work. When it runs out, the host cancels the work as a join's
+`remaining: "stop"` does, and the step fails with `TIMEOUT`.
+
+The clock measures the work, not waits that are not its own:
+
+- It starts when the work starts, not while a message waits in an instance
+  queue or an element waits for a fan-out's `concurrency`.
+- It stops while a request that the host has put to a person for this work is
+  open: an `ask` answered by a person, a `planFirst: "ask"` plan reviewed by a
+  person, or any other question the host presents to a person. The host
+  presents these requests, so it knows when each opens and closes. While at
+  least one is open, the clock stands still. An `ask` answered by a model is
+  machine time.
+- Corrections and `steer` messages belong to the same work and do not restart
+  it.
+
+A person's slowness is never a `TIMEOUT`. To bound how long an agent's work
+waits for a person, use the agent's
+[`answerTimeoutMs`](agents.md#waiting-for-a-person). An
+[approval](#approval) has its own `timeoutMs`, since waiting for a person is
+its work.
+
 ## Failures
 
 A failing step follows its `onError` route with this input:
@@ -702,6 +729,7 @@ failure; it is information, never an instruction.
 | `OPERAND` | A selection or operand path cannot be read. |
 | `CONTENT_UNAVAILABLE` | Content needed for a message cannot be obtained. |
 | `APPROVAL_TIMEOUT` | An approval received no answer in time. |
+| `TIMEOUT` | An agent's or a call's work ran out of its `timeoutMs`. |
 | `BRANCH_FAILED` | A branch of an all-mode join failed, beyond what `failures` and `maxFailures` keep. |
 | `VISIT_LIMIT` | Starting the step would exceed `maxVisits`. |
 | `FANOUT_LIMIT` | A fan-out's list has more elements than its `max`. |

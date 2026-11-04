@@ -729,5 +729,10 @@
       "MESSAGE_PATH"
     ],
     "warnings": []
+  },
+  "time-limits": {
+    "description": "Agent and call steps bound their machine time; an agent bounds how long a person may take to answer.",
+    "errors": [],
+    "warnings": []
   }
 }
