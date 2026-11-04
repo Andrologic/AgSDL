@@ -40,7 +40,8 @@
               "results",
               "files"
             ],
-            "concurrency": 4
+            "concurrency": 4,
+            "max": 50
           },
           "none": []
         }

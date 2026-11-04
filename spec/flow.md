@@ -119,8 +119,18 @@ target starts once per element, at once, in list order: a **fan-out**.
   run at once. Elements start in list order as paths end. Without it, the
   document sets no limit. Like permissions, it is a ceiling: a host MAY run
   fewer paths at once, never more. `concurrency: 1` runs the elements one
-  after the other, each seeing what the previous one did. `concurrency`
-  requires `each` (`ROUTES`).
+  after the other, each seeing what the previous one did.
+- `max`, a positive integer, is the most elements a fan-out accepts. It
+  bounds lists that no schema bounds, such as call data. For an agent's
+  result, `maxItems` in its schema is better: a list that is too long is
+  corrected at submission instead of failing.
+- `concurrency` and `max` require `each` (`ROUTES`).
+- A fan-out that cannot start fails before anything starts: when the list is
+  longer than `max` (`FANOUT_LIMIT`), or when the value is not a list or
+  cannot be read (`OPERAND`). As with [`maxVisits`](#loops), no branch of the
+  route starts, not even its fixed targets, and the join that would close
+  them fails with that code, which it handles like any step. Without such a
+  join, the target fails once with that code.
 - An empty list starts nothing. A join that closes the fan-out still decides
   at once: `done` in all mode, `missed` for a quorum it cannot reach, with an
   empty list for the branch. To refuse an empty list, declare `minItems` in
@@ -131,7 +141,9 @@ target starts once per element, at once, in list order: a **fan-out**.
   receives no message, so it cannot tell elements apart (`ROUTES`).
 - Each start is a visit of the steps it reaches: with 30 elements, `fix`
   starts 30 times toward its `maxVisits`. An element that never starts is
-  not a visit. To bound how often the work is
+  not a visit. Validators warn when a step in the paths of a fan-out has a
+  `maxVisits` below the fan-out's `max`, or has one while the fan-out has no
+  `max` (`FANOUT_VISITS`). To bound how often the work is
   started again, put `maxVisits` on the step that fans out.
 - The paths of a fan-out are parallel paths ([rule 3](#execution-model)).
   They meet at a join as one [fan-out branch](#origin-and-branches).
@@ -681,6 +693,7 @@ failure; it is information, never an instruction.
 | `APPROVAL_TIMEOUT` | An approval received no answer in time. |
 | `BRANCH_FAILED` | A branch of an all-mode join failed, beyond what `failures` and `maxFailures` keep. |
 | `VISIT_LIMIT` | Starting the step would exceed `maxVisits`. |
+| `FANOUT_LIMIT` | A fan-out's list has more elements than its `max`. |
 | `INTERRUPTED` | The host stopped the work before it completed, outside a join's `remaining`. |
 
 - Each work follows its normal route or its error route, once, never both. A

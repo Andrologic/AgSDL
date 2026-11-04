@@ -345,9 +345,12 @@ class Checker:
     def check_route(self, route, where, steps, outputs, composition):
         items = route if isinstance(route, list) else [route]
         for index, item in enumerate(items):
-            if isinstance(item, dict) and "concurrency" in item and "each" not in item:
-                at = where + [index] if isinstance(route, list) else where
-                self.report.error("ROUTES", at + ["concurrency"], "concurrency limits a fan-out; it requires each")
+            if not isinstance(item, dict) or "each" in item:
+                continue
+            at = where + [index] if isinstance(route, list) else where
+            for key in ("concurrency", "max"):
+                if key in item:
+                    self.report.error("ROUTES", at + [key], f"{key} limits a fan-out; it requires each")
         seen = set()
         for tkind, target, message, at, each in route_items(route, where):
             if (tkind, target) in seen:
@@ -661,6 +664,11 @@ class Checker:
             return None
         return None
 
+    @staticmethod
+    def fanout_max(edge):
+        """The max of the authored fan-out target behind an edge."""
+        return edge.fanout.get("max") if edge.fanout is not None else None
+
     def fanout_problem(self, graph, edge, infos):
         """Whether the value a fan-out reads is declared as something other than a list."""
         kind = self.declared_kind(graph, edge, edge.each, infos)
@@ -749,6 +757,7 @@ class Checker:
     def check_fanout_instances(self, graph, infos):
         """A step in the paths of a fan-out runs once per element, at the same time."""
         warned = set()
+        bounded = set()
         for edge in graph.edges:
             if edge.each is None:
                 continue
@@ -757,8 +766,19 @@ class Checker:
                 if info["origin"] == scope_member(edge.src, info["prefix"])
                 and scope_member(edge.dst, info["prefix"]) in info.get("fanout", ())
             }
+            limit = self.fanout_max(edge)
             for member in sorted(graph.reachable(edge.dst, blocked=closing)):
                 node = graph.nodes[member]
+                visits = node.decl.get("maxVisits") if node.decl is not None else None
+                if visits is not None and member not in bounded and (limit is None or visits < limit):
+                    bounded.add(member)
+                    reason = f"below the fan-out's max of {limit}" if limit is not None else "while the fan-out has no max"
+                    self.report.warning(
+                        "FANOUT_VISITS",
+                        node.pointer + ["maxVisits"],
+                        f"step '{node.name}' runs once per element of the fan-out from '{graph.nodes[edge.src].name}', and its maxVisits is {reason}; bound the step that fans out instead",
+                        expanded(member),
+                    )
                 if member in warned or node.type != "agent" or node.agent is None:
                     continue
                 instance = node.decl.get("instance")

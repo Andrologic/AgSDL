@@ -40,26 +40,28 @@ class Node:
 
 
 class Edge:
-    def __init__(self, src, dst, kind, key, message, pointer, each=None):
+    def __init__(self, src, dst, kind, key, message, pointer, fanout=None):
         self.src = src
         self.dst = dst
         self.kind = kind
         self.key = key
         self.message = message
         self.pointer = pointer
-        # The selection path of a fan-out, or None.
-        self.each = each
+        # The authored fan-out target, with each, concurrency and max, or None.
+        self.fanout = fanout
+        self.each = fanout["each"] if fanout is not None else None
 
 
 def route_items(route, pointer):
-    """Yield (kind, name, message, pointer, each) for each target of an authored route."""
+    """Yield (kind, name, message, pointer, fanout) for each target of an authored
+    route; fanout is the target object when it has each, otherwise None."""
     items = route if isinstance(route, list) else [route]
     for index, item in enumerate(items):
         where = pointer + [index] if isinstance(route, list) else pointer
         if isinstance(item, str):
             yield "step", item, None, where, None
         elif "step" in item:
-            yield "step", item["step"], item.get("message"), where, item.get("each")
+            yield "step", item["step"], item.get("message"), where, item if "each" in item else None
         else:
             yield "output", item["output"], item.get("message"), where, None
 

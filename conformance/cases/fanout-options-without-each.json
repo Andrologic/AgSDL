@@ -1,6 +1,6 @@
 {
   "contract": "agsdl-0.3.0",
-  "id": "concurrency-without-each",
+  "id": "fanout-options-without-each",
   "agents": {
     "lead": {
       "harness": "example",
@@ -36,7 +36,8 @@
         "next": {
           "split": {
             "step": "fix",
-            "concurrency": 2
+            "concurrency": 2,
+            "max": 10
           },
           "none": "fix"
         }

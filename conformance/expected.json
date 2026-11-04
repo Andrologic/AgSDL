@@ -690,8 +690,15 @@
     ],
     "warnings": []
   },
-  "concurrency-without-each": {
-    "description": "concurrency limits a fan-out and requires each.",
+  "fanout-visits": {
+    "description": "Each element of a fan-out is a visit: a maxVisits below max on a step in its paths is likely a mistake.",
+    "errors": [],
+    "warnings": [
+      "FANOUT_VISITS"
+    ]
+  },
+  "fanout-options-without-each": {
+    "description": "concurrency and max limit a fan-out and require each.",
     "errors": [
       "ROUTES"
     ],
