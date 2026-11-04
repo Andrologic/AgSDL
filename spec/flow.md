@@ -777,8 +777,9 @@ failure; it is information, never an instruction.
 - A step that fails without `onError` fails its join branch, or its compose
   step, whichever encloses it more closely. At the top level, it follows the
   flow's `onError` when that route covers it, as below; otherwise its path
-  ends and the run will fail ([rules 2 and 5](#execution-model)). The host
-  reports the failure.
+  ends and the run will fail ([rules 2 and 5](#execution-model)).
+- The host reports every failure, with its step and code, whether a route
+  handles it or not.
 - The flow's `onError` is a shorthand: it acts as the `onError` of every
   top-level step without one that is reachable from `entry` through normal or
   error routes, without following the flow's `onError`. A run behaves the same
