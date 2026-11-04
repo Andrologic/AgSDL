@@ -30,7 +30,8 @@ A redesign. Documents written for 0.2 must be rewritten. See
   `+json` types, strings for `text/*`, file URIs otherwise.
 - Agents that instruct: `instructs`, an `instructions` field in the result
   tool, and a default `prompt` on agent steps.
-- Joins deduced from the graph, quorum joins, branch exits, and all-mode
+- Joins deduced from the graph, quorum joins, branch exits, `remaining`
+  modes `stop`, `finish` and `wait` for unfinished branches, and all-mode
   joins that keep failed branches (`failures`, `maxFailures`, outcome
   `incomplete`).
 - Fan-out: `each` on a route target starts it once per element of a list,
