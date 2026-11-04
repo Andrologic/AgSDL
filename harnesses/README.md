@@ -29,7 +29,7 @@ on, and explains every approximation in a `note`. Each has its own
 | Effort | native | native | native | native | approx. |
 | Skills | native | native | native | native | — |
 | MCP servers | native | native | native | native | — |
-| Plan | native | native | — | — | — |
+| Plan | native | native | native, 2.1+ | — | — |
 | Plan first, auto | approx. | native | approx. | — | — |
 | Plan first, ask | — | native | — | — | — |
 | Reviewer, person | native | native | native | — | — |
