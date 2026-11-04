@@ -81,7 +81,7 @@ work; a host for which it names none, or several, fails the scenario.
 | `messages` | Delivered these messages. `nth` counts the messages to the step, and `item` selects a fan-out path. |
 | `joins` | Made exactly these join decisions, in timeline order. |
 | `failures` | Reported exactly these failures, in any order. |
-| `cancelled` | Cancelled exactly these works, in any order. |
+| `cancelled` | Cancelled exactly these works for a group that decided, closed or failed, in any order. A work that runs out of its `timeoutMs` is a failure, not listed here. |
 | `answers` | Answered these requests itself, after `answerTimeoutMs`. |
 
 Fields that are absent are not checked. In `messages`, only the fields given

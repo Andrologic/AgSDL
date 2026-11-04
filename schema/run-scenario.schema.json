@@ -325,7 +325,7 @@
           }
         },
         "cancelled": {
-          "description": "Every work the host cancels, in any order.",
+          "description": "Every work the host cancels for a group that decided, closed or failed, in any order.",
           "type": "array",
           "items": {
             "$ref": "#/$defs/workRef"
