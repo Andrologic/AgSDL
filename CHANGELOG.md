@@ -40,7 +40,8 @@ A redesign. Documents written for 0.2 must be rewritten. See
   Selections read the element with `item`; an instructing agent gives each
   path its own mission by submitting its instructions as a list.
 - `minItems` and `maxItems` in value schemas.
-- Calls to commands and MCP tools.
+- Calls to commands and MCP tools. A command can read its standard output
+  as lines or as JSON with `parse`, giving `data.value`.
 - `timeoutMs` on agent and call steps, counting machine time only, with the
   `TIMEOUT` failure; `answerTimeoutMs` on agents for requests to a person.
 - A flow-level `onError`, and a failed run when a failure is not handled.

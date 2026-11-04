@@ -820,6 +820,12 @@
           "type": "string",
           "minLength": 1
         },
+        "parse": {
+          "enum": [
+            "lines",
+            "json"
+          ]
+        },
         "mcp": {
           "type": "object",
           "required": [
@@ -882,8 +888,17 @@
             "mcp"
           ],
           "not": {
-            "required": [
-              "command"
+            "anyOf": [
+              {
+                "required": [
+                  "command"
+                ]
+              },
+              {
+                "required": [
+                  "parse"
+                ]
+              }
             ]
           }
         }

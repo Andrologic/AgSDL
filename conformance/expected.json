@@ -734,5 +734,36 @@
     "description": "Agent and call steps bound their machine time; an agent bounds how long a person may take to answer.",
     "errors": [],
     "warnings": []
+  },
+  "fanout-command-lines": {
+    "description": "A command reads its standard output as lines, and a route fans out over them.",
+    "errors": [],
+    "warnings": []
+  },
+  "fanout-command-json": {
+    "description": "A command reads its standard output as JSON, whatever its outcome; an element's fields are not declared.",
+    "errors": [],
+    "warnings": []
+  },
+  "call-value-without-parse": {
+    "description": "A command result has a value only when the call declares parse.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "fanout-line-field": {
+    "description": "A line read from a command is a string and has no fields.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "shape-parse-mcp": {
+    "description": "Only a command declares parse.",
+    "errors": [
+      "SHAPE"
+    ],
+    "warnings": []
   }
 }

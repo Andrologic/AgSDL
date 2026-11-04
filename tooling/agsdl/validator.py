@@ -630,8 +630,18 @@ class Checker:
             if head != "data":
                 return "a call output has only 'outcome' and 'data'"
             if "command" in node.decl and len(path) > 1:
+                parse = node.decl.get("parse")
+                if path[1] == "value":
+                    if parse is None:
+                        return f"step '{node.name}' declares no parse, so its result has no value"
+                    if parse == "lines" and len(path) > 2:
+                        if not valueschema.is_index(path[2]):
+                            return "'value' is a list of lines: select a line by its index"
+                        if len(path) > 3:
+                            return "a line is a string"
+                    return None
                 if path[1] not in ("exitCode", "output"):
-                    return f"a command result has exitCode and output, not {path[1]!r}"
+                    return f"a command result has exitCode, output and, with parse, value, not {path[1]!r}"
                 if len(path) > 2:
                     return f"'{path[1]}' has no fields"
             return None
@@ -743,6 +753,8 @@ class Checker:
             if "command" in node.decl:
                 if len(path) == 1:
                     return "object"
+                if path[1] == "value" and node.decl.get("parse") == "lines":
+                    return "array" if len(path) == 2 else "string"
                 return {"exitCode": "integer", "output": "string"}.get(path[1])
             return None
         if node.type == "approval":

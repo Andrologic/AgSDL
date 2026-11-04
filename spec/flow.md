@@ -335,6 +335,7 @@ MCP server.
 | Field | Content |
 | --- | --- |
 | `command` | A shell command, run by the host in the flow's workspace. |
+| `parse` | For `command`: `"lines"` or `"json"`, how to read its standard output as `data.value`. |
 | `mcp` | `server`, a document MCP server, and `tool`, a tool name. |
 | `arguments` | For `mcp`: argument name to [operand](#operands). |
 | `timeoutMs` | The most time the call may take. See [Time limits](#time-limits). |
@@ -352,9 +353,31 @@ A call has exactly one of `command` or `mcp`. Its **outcome** is `passed` or
 The output is `{ "outcome": "passed", "data": ... }`:
 
 - **Command**: `data` is `{ "exitCode": 0, "output": "..." }`, where `output`
-  combines standard output and standard error.
+  combines standard output and standard error. With `parse`, `data` also has
+  `value`, read from standard output alone:
+
+  | `parse` | `value` |
+  | --- | --- |
+  | `"lines"` | A list of strings: the lines of standard output, without their line endings (`\n` or `\r\n`), in order, with empty lines left out. |
+  | `"json"` | Standard output parsed as one JSON value. |
+
+  `value` exists whatever the outcome: a test runner that exits with `1`
+  can still report in JSON. When standard output is not valid JSON, the call
+  fails with `OUTPUT_INVALID`.
 - **MCP**: `data` holds the tool result's structured content, or its text
   content when it has none.
+
+```json
+"changed": {
+  "type": "call",
+  "command": "git diff --name-only main",
+  "parse": "lines",
+  "next": {
+    "passed": { "step": "review", "each": ["data", "value"], "max": 100 },
+    "failed": "report"
+  }
+}
+```
 
 A `failed` outcome is a normal result, not a failure. A call that cannot run,
 because the command cannot start or the MCP server cannot be reached, fails
@@ -722,7 +745,7 @@ failure; it is information, never an instruction.
 | --- | --- |
 | `AGENT_FAILED` | The agent's work failed, without a more precise code. |
 | `HARNESS_REFUSED` | The harness refused what the document asks, at run time. |
-| `OUTPUT_INVALID` | The agent needed more than `maxCorrections` corrections of its submissions. |
+| `OUTPUT_INVALID` | The agent needed more than `maxCorrections` corrections of its submissions, or a command's standard output is not the JSON its `parse` declares. |
 | `CHECK_FAILED` | The completion check failed more than `maxFailures` times. |
 | `PLAN_REJECTED` | A `planFirst: "ask"` plan was refused without comment. |
 | `CALL_FAILED` | A call could not run. |
