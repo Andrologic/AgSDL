@@ -12,12 +12,6 @@ with its own status. A call could declare its outcomes, for example one name
 per exit status, with `passed` and `failed` as defaults. No use case requires
 it yet.
 
-## Dynamic number of workers
-
-An orchestrator may decide how many workers to start, for example one per file.
-This needs either destinations chosen at run time or a fan-out over a list,
-with a join that waits for that many branches.
-
 ## Forking an instance
 
 A step could start a new instance that copies an existing instance's

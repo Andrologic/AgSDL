@@ -11,7 +11,7 @@ import argparse
 import sys
 
 from . import jsoninput
-from .graph import route_targets, step_routes
+from .graph import route_items, route_targets, step_routes
 
 SHAPES = {
     "join": ('(["', '"])'),
@@ -42,7 +42,7 @@ def render(steps, entry, on_error=None):
                     ended.append(True)
                     lines.append('  finish((("end")))')
                 lines.append(f"  {ids[name]} -- {label(key)} --> finish")
-            for tkind, target, _, _ in route_targets(route, []):
+            for tkind, target, _, _, each in route_items(route, []):
                 if tkind == "output":
                     if target not in exits:
                         exits[target] = f"o{len(exits)}"
@@ -52,12 +52,14 @@ def render(steps, entry, on_error=None):
                     destination = ids[target]
                 else:
                     continue
+                # A fan-out starts its target once per element: drawn as a thick arrow.
+                arrow = "==>" if each is not None else "-->"
                 if kind == "error":
                     lines.append(f"  {ids[name]} -. error .-> {destination}")
                 elif key is not None:
-                    lines.append(f"  {ids[name]} -- {label(key)} --> {destination}")
+                    lines.append(f"  {ids[name]} -- {label(key)} {arrow} {destination}")
                 else:
-                    lines.append(f"  {ids[name]} --> {destination}")
+                    lines.append(f"  {ids[name]} {arrow} {destination}")
     return "\n".join(lines) + "\n"
 
 

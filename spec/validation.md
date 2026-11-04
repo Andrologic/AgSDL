@@ -54,9 +54,9 @@ A report is a JSON object:
 | `SHAPE` | The document does not match the schema or the contract marker. |
 | `REFERENCE` | A name refers to nothing: agent, step, content, skill, MCP server, composition, parameter, output, choice. |
 | `DUPLICATE` | A target appears twice in one route. |
-| `ROUTES` | A route does not fit its step: wrong outcome keys, an approval without choices, a message to a step that cannot receive one or on an output target, an output outside a composition, an entry that is a join. |
+| `ROUTES` | A route does not fit its step: wrong outcome keys, an approval without choices, a message or a fan-out to a step that cannot receive one, a message on an output target, an output outside a composition, an entry that is a join. |
 | `UNREACHABLE` | A step cannot be reached from the entry, or from the flow's `onError`. |
-| `MESSAGE_PATH` | A selection path does not exist in the declared output it reads, or a prompt selects something other than instructions. |
+| `MESSAGE_PATH` | A selection path does not exist in the declared output it reads, a fan-out reads a declared value that is not a list, or a prompt selects something other than instructions. |
 | `PROMPT` | An agent step receives a prompt on some routes but not on others, and has no default prompt. |
 | `DELIVERY` | `delivery` is used with `"instance": "new"`. |
 | `JOIN` | A join breaks a [shape rule](flow.md#shape-rules). |
@@ -75,7 +75,7 @@ A report is a JSON object:
 | `HARNESS_APPROXIMATE` | The harness supports a property approximately. The module's note is given. |
 | `HARNESS_VERSION` | Support depends on the harness version. |
 | `HARNESS_UNVERIFIED` | No module is known for the agent's harness. |
-| `SHARED_INSTANCE_PARALLEL` | Two steps that can run at the same time share an instance, and neither declares `delivery`; or a step after a join with `remaining: "finish"` shares an instance with one of its branches and does not declare `delivery: "queue"`. |
+| `SHARED_INSTANCE_PARALLEL` | Two steps that can run at the same time share an instance, or one step can run in several paths of a fan-out, and no step involved declares `delivery`; or a step after a join with `remaining: "finish"` shares an instance with one of its branches and does not declare `delivery: "queue"`. |
 
 ## What validators do not check
 

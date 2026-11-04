@@ -61,8 +61,8 @@ decide it.
    fails in turn under this rule; otherwise the flow, whose `onError` covers
    top-level steps. A failure that reaches no handler ends its path. A failure
    never undoes effects and never retries on its own.
-3. **Parallel paths meet in groups.** A route that starts several targets
-   starts parallel paths. Paths that meet at a join are the branches of a
+3. **Parallel paths meet in groups.** A route that starts several targets,
+   or one target once per element of a list, starts parallel paths. Paths that meet at a join are the branches of a
    group, opened by the join's origin; the join decides once per group. Once
    it has decided, or the group has closed or failed, nothing of the group
    routes again: its unfinished work is cancelled, or finishes without
@@ -95,6 +95,34 @@ A route is a target, or a list of targets. A list starts every target at once:
 ```
 
 An empty list, or an absent `next`, ends this path of the run.
+
+### Fan-out
+
+A target object MAY have `each`, a selection path into the output of the step
+the route leaves, as in [`from`](#messages). The value there is a list. The
+target starts once per element, at once, in list order: a **fan-out**.
+
+```json
+"plan": {
+  "type": "agent",
+  "agent": "lead",
+  "next": { "split": { "step": "fix", "each": ["results", "files"] } }
+},
+"fix":    { "type": "agent", "agent": "worker", "instance": "new", "next": "gather" },
+"gather": { "type": "join", "failures": "keep", "next": { "done": "summary", "incomplete": "plan" } }
+```
+
+- Each start receives the route's message, default or explicit, plus
+  `resources.item`, the element.
+- `each` targets an agent, an approval or a compose step. A call or a join
+  receives no message, so it cannot tell elements apart (`ROUTES`).
+- Each start is a visit of the steps it reaches: with 30 elements, `fix`
+  starts 30 times toward its `maxVisits`. To bound how often the work is
+  started again, put `maxVisits` on the step that fans out.
+- The paths of a fan-out are parallel paths ([rule 3](#execution-model)).
+  They meet at a join as one [fan-out branch](#origin-and-branches).
+  Validators check `each` like a selection, and report a declared value that
+  is not a list (`MESSAGE_PATH`).
 
 ### Choices
 
@@ -234,9 +262,10 @@ reaches it.
 - `delivery` MUST NOT be used with `"instance": "new"`: a fresh instance is
   never working.
 
-When two steps that share an instance can run at the same time, for example in
-two branches of one join, and neither declares `delivery`, validators warn that
-their work will be serialized (`SHARED_INSTANCE_PARALLEL`). Declaring
+When two works on one instance can run at the same time, for example two steps
+in two branches of one join, or one step in the paths of a fan-out, and no
+step involved declares `delivery`, validators warn that their work will be
+serialized (`SHARED_INSTANCE_PARALLEL`). Declaring
 `delivery` explicitly states the intent and silences the warning. A branch
 that finishes after its join decided is a special case: see
 [`remaining`](#waiting-modes).
@@ -372,11 +401,17 @@ its output routes and its `onError`.
 - The **origin** of a join is the last step that every path from the scope's
   entry to the join passes through (its immediate dominator, counting normal
   and error routes). Here: `analyze`. Validators report the origin they deduce.
+  Steps in the paths of a [fan-out](#fan-out) do not count, since each element
+  runs them separately: a join after them closes the fan-out, and its origin
+  is the step that fans out, unless the join closes a fork inside one path.
 - A **branch** starts at a target of the origin and contains the steps that lie
   on a path from that target to the join. A route from the origin straight to
   the join is a branch without steps.
 - A branch is named after its first step. A direct route is named after the
   origin.
+- A branch that the origin starts with [`each`](#fan-out) is a **fan-out
+  branch**: each element starts one path of it in the group, and the join
+  waits for each path, as for a branch of its own.
 
 Each time the origin follows a route, normal or error, that starts at least
 one branch, a new **group** opens. The group waits only for the branches the
@@ -391,9 +426,10 @@ delivers at most one result per group.
 | Single entry | No route from outside a branch enters it, except the origin's route to its first step. |
 | Disjoint branches | Two branches of one join share no step. They may share an instance. |
 | Closed forks | A branch that starts several targets at once closes them with its own join before reaching the outer join. |
-| Real fork | At least one route of the origin starts two branches or more at once. |
+| Real fork | At least one route of the origin starts two branches or more at once, or a fan-out branch. |
+| Fan-out | A branch started with `each` by one route of the origin is started with `each` by every route that starts it. |
 | Join inputs | Every route into a join is a normal route from one of its branches or from its origin. |
-| Reachable quorum | A quorum `count` does not exceed the number of branches. |
+| Reachable quorum | A quorum `count` does not exceed the number of branches. Without a fan-out branch, this is checked statically; with one, each path counts as a branch. |
 | Failure handling | `failures` and `maxFailures` apply to all mode only; `maxFailures` requires `failures: "keep"`. |
 
 Two joins can be nested: a join inside a branch has its own origin inside that
@@ -500,6 +536,19 @@ each branch's output, or `{ "ended": "without-result" }`, or
 it holds the accepted results only. With `done`, `incomplete` and `missed`, it
 holds every branch that ended.
 
+A fan-out branch holds a list, one entry per path that ended, in the order of
+the elements. Each entry also has `item`, the element:
+
+```json
+"fix": [
+  { "item": "src/a.ts", "text": "...", "results": {} },
+  { "item": "src/b.ts", "ended": "failed", "error": { "code": "AGENT_FAILED", "message": "..." } }
+]
+```
+
+A selection reads one entry by its index, for example
+`["branches", "fix", 0, "results"]`.
+
 ### Join failures
 
 A branch failure reaches its join first ([rule 2](#execution-model)). In all
@@ -565,8 +614,8 @@ A composition is a reusable flow fragment.
 - Every output is used by at least one body route.
 - A composition leaves at most once per entry, like a step: through one
   output, or through the compose step's `onError`. So a body route, normal or
-  `onError`, that starts several targets at once starts the branches of one
-  join, whose origin is that step (`COMPOSITION`). A branch that leaves
+  `onError`, that starts several targets at once, or a fan-out, starts the
+  branches of one join, whose origin is that step (`COMPOSITION`). A branch that leaves
   through an output closes its group, and a branch failure reaches the join.
 - A body failure that nothing in the body handles fails the compose step,
   which then follows its own `onError`, or, without one, fails like any step

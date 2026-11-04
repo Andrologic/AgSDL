@@ -587,6 +587,9 @@
             "step": {
               "$ref": "#/$defs/name"
             },
+            "each": {
+              "$ref": "#/$defs/path"
+            },
             "message": {
               "$ref": "#/$defs/message"
             }

@@ -94,3 +94,19 @@ def descend(schema, path):
         else:
             return False, f"cannot select {part!r} in a value of type {kind}"
     return True, None
+
+
+def kind_at(schema, path):
+    """The declared type of the value at path below a schema, or None when undeclared."""
+    node = schema
+    for part in path:
+        if node is None or "type" not in node:
+            return None
+        kind = node["type"]
+        if kind == "object" and isinstance(part, str):
+            node = (node.get("properties") or {}).get(part)
+        elif kind == "array" and is_index(part):
+            node = node.get("items")
+        else:
+            return None
+    return node.get("type") if node is not None else None

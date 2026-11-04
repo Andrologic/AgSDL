@@ -625,5 +625,62 @@
       "JOIN"
     ],
     "warnings": []
+  },
+  "fanout": {
+    "description": "A fan-out starts one branch per element; the join lists them with their items.",
+    "errors": [],
+    "warnings": []
+  },
+  "fanout-not-list": {
+    "description": "A fan-out reads a list.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "fanout-entry-index": {
+    "description": "A fan-out branch is a list: a selection reads an entry by index.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "fanout-to-call": {
+    "description": "A call receives no message, so it cannot be the target of a fan-out.",
+    "errors": [
+      "ROUTES"
+    ],
+    "warnings": []
+  },
+  "fanout-mixed": {
+    "description": "A fan-out branch is started with each on every route.",
+    "errors": [
+      "JOIN"
+    ],
+    "warnings": []
+  },
+  "fanout-shared-instance": {
+    "description": "A shared instance in the paths of a fan-out serializes their work.",
+    "errors": [],
+    "warnings": [
+      "SHARED_INSTANCE_PARALLEL"
+    ]
+  },
+  "fanout-quorum": {
+    "description": "Each path of a fan-out counts for a quorum; the count is not checked statically.",
+    "errors": [],
+    "warnings": []
+  },
+  "compose-fanout-open": {
+    "description": "A fan-out in a composition body is closed by a join.",
+    "errors": [
+      "COMPOSITION"
+    ],
+    "warnings": []
+  },
+  "fanout-nested": {
+    "description": "A fan-out inside a fan-out path closes with its own join; the outer join closes the outer fan-out.",
+    "errors": [],
+    "warnings": []
   }
 }

@@ -5,7 +5,7 @@ import os
 from collections import deque
 
 from . import jsoninput, valueschema
-from .graph import Graph, analyse_joins, open_body_forks, route_targets, step_routes
+from .graph import Graph, analyse_joins, open_body_forks, route_items, route_targets, step_routes
 from .permissions import effect_for, effects_in_use, normalize, outside, shell_denied
 from .schemacheck import SchemaChecker, pointer
 
@@ -344,7 +344,7 @@ class Checker:
 
     def check_route(self, route, where, steps, outputs, composition):
         seen = set()
-        for tkind, target, message, at in route_targets(route, where):
+        for tkind, target, message, at, each in route_items(route, where):
             if (tkind, target) in seen:
                 self.report.error("DUPLICATE", at, f"'{target}' appears twice in this route")
             seen.add((tkind, target))
@@ -353,6 +353,8 @@ class Checker:
                     self.report.error("REFERENCE", at, f"no step named '{target}'")
                 elif message is not None and steps[target]["type"] in NO_MESSAGE_TYPES:
                     self.report.error("ROUTES", at + ["message"], f"{article(steps[target]['type'])} cannot receive a message")
+                elif each is not None and steps[target]["type"] in NO_MESSAGE_TYPES:
+                    self.report.error("ROUTES", at + ["each"], f"{article(steps[target]['type'])} receives no message, so it cannot tell the elements of a fan-out apart")
             else:
                 if composition is None:
                     self.report.error("ROUTES", at, "outputs exist only inside compositions")
@@ -453,7 +455,8 @@ class Checker:
             joins[key] = {}
             for addr, info in infos.items():
                 branches = {info["names"][start]: {m[0] for m in members} for start, members in info["branches"].items()}
-                joins[key][addr[0]] = {"origin": info["origin"][0], "branches": branches}
+                fanout = {info["names"][start] for start in info["fanout"]}
+                joins[key][addr[0]] = {"origin": info["origin"][0], "branches": branches, "fanout": fanout}
                 label = addr[0] if key is None else f"{key}/{addr[0]}"
                 self.report.joins[label] = {"origin": info["origin"][0], "branches": list(branches)}
         # Messages and instances are followed across compositions, on expanded graphs.
@@ -531,6 +534,10 @@ class Checker:
 
     def check_selections(self, graph, infos):
         for edge in graph.edges:
+            if edge.each is not None:
+                reason = self.selection_problem(graph, edge, edge.each, infos) or self.fanout_problem(graph, edge, infos)
+                if reason:
+                    self.report.error("MESSAGE_PATH", edge.pointer + ["each"], reason, expanded(edge.src))
             message = edge.message
             if not message:
                 continue
@@ -625,7 +632,15 @@ class Checker:
             if head == "branches" and len(path) > 1 and info is not None:
                 if path[1] not in info["branches"]:
                     return f"join '{node.name}' has no branch {path[1]!r}"
-                if len(path) > 2:
+                rest = path[2:]
+                if path[1] in info.get("fanout", ()) and rest:
+                    # A fan-out branch is a list of entries, each with its item.
+                    if not valueschema.is_index(rest[0]):
+                        return f"branch {path[1]!r} is a fan-out: select an entry by its index"
+                    rest = rest[1:]
+                    if rest and rest[0] == "item":
+                        return None
+                if rest:
                     # The branch output is the output of the step that reached the join.
                     members = info["branches"][path[1]]
                     for producer in graph.edges:
@@ -634,9 +649,62 @@ class Checker:
                         local = scope_member(producer.src, info["prefix"])
                         direct = local == info["origin"] == path[1]
                         if local in members or direct:
-                            reason = self.selection_problem(graph, producer, path[2:], infos)
+                            reason = self.selection_problem(graph, producer, rest, infos)
                             if reason:
                                 return f"branch {path[1]!r}: {reason}"
+            return None
+        return None
+
+    def fanout_problem(self, graph, edge, infos):
+        """Whether the value a fan-out reads is declared as something other than a list."""
+        kind = self.declared_kind(graph, edge, edge.each, infos)
+        if kind is not None and kind != "array":
+            return f"a fan-out reads a list, and this value is declared as {article(kind)}"
+        return None
+
+    def declared_kind(self, graph, edge, path, infos):
+        """The declared JSON type at a selection path, or None when it is not declared."""
+        if not path:
+            return "object"
+        if edge.kind == "error":
+            if path == ["error", "details"]:
+                return "array"
+            return "object" if len(path) == 1 else ("string" if len(path) == 2 else None)
+        node = graph.nodes[edge.src]
+        head = path[0]
+        if node.type == "agent":
+            if head in ("text", "choice", "instructions"):
+                return "string"
+            agent = self.agents.get(node.agent) or {}
+            if len(path) == 1:
+                return "object"
+            result = agent.get("results", {}).get(path[1])
+            if result is None:
+                return None
+            media = result.get("mediaType", "application/json")
+            if not is_json_media(media):
+                return "string"
+            if "schema" not in result:
+                return None
+            return valueschema.kind_at(result["schema"], path[2:])
+        if node.type == "call":
+            if head == "outcome":
+                return "string"
+            if "command" in node.decl:
+                if len(path) == 1:
+                    return "object"
+                return {"exitCode": "integer", "output": "string"}.get(path[1])
+            return None
+        if node.type == "approval":
+            return "string"
+        if node.type == "join":
+            if head == "outcome":
+                return "string"
+            if len(path) == 1:
+                return "object"
+            info = infos.get(node.addr)
+            if len(path) == 2 and info is not None:
+                return "array" if path[1] in info.get("fanout", ()) else "object"
             return None
         return None
 
@@ -670,6 +738,33 @@ class Checker:
                         seen.setdefault(key, (start, node.name))
             if graph.nodes[addr].decl.get("remaining") == "finish":
                 self.check_after_finish(graph, addr, finishing)
+        self.check_fanout_instances(graph, infos)
+
+    def check_fanout_instances(self, graph, infos):
+        """A step in the paths of a fan-out runs once per element, at the same time."""
+        warned = set()
+        for edge in graph.edges:
+            if edge.each is None:
+                continue
+            closing = {
+                addr for addr, info in infos.items()
+                if info["origin"] == scope_member(edge.src, info["prefix"])
+                and scope_member(edge.dst, info["prefix"]) in info.get("fanout", ())
+            }
+            for member in sorted(graph.reachable(edge.dst, blocked=closing)):
+                node = graph.nodes[member]
+                if member in warned or node.type != "agent" or node.agent is None:
+                    continue
+                instance = node.decl.get("instance")
+                if instance == "new" or "delivery" in node.decl:
+                    continue
+                warned.add(member)
+                self.report.warning(
+                    "SHARED_INSTANCE_PARALLEL",
+                    node.pointer,
+                    f"step '{node.name}' uses the {instance_label(instance)} of agent '{node.agent}' in every path of the fan-out from '{graph.nodes[edge.src].name}'; their work will be serialized",
+                    expanded(member),
+                )
 
     def check_after_finish(self, graph, join, finishing):
         """Steps after a finish join wait for the branches still using their instance."""

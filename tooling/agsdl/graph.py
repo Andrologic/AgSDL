@@ -40,26 +40,34 @@ class Node:
 
 
 class Edge:
-    def __init__(self, src, dst, kind, key, message, pointer):
+    def __init__(self, src, dst, kind, key, message, pointer, each=None):
         self.src = src
         self.dst = dst
         self.kind = kind
         self.key = key
         self.message = message
         self.pointer = pointer
+        # The selection path of a fan-out, or None.
+        self.each = each
 
 
-def route_targets(route, pointer):
-    """Yield (kind, name, message, pointer) for each target of an authored route."""
+def route_items(route, pointer):
+    """Yield (kind, name, message, pointer, each) for each target of an authored route."""
     items = route if isinstance(route, list) else [route]
     for index, item in enumerate(items):
         where = pointer + [index] if isinstance(route, list) else pointer
         if isinstance(item, str):
-            yield "step", item, None, where
+            yield "step", item, None, where, None
         elif "step" in item:
-            yield "step", item["step"], item.get("message"), where
+            yield "step", item["step"], item.get("message"), where, item.get("each")
         else:
-            yield "output", item["output"], item.get("message"), where
+            yield "output", item["output"], item.get("message"), where, None
+
+
+def route_targets(route, pointer):
+    """Yield (kind, name, message, pointer) for each target of an authored route."""
+    for kind, name, message, where, _ in route_items(route, pointer):
+        yield kind, name, message, where
 
 
 def step_routes(decl, pointer):
@@ -105,9 +113,9 @@ class Graph:
         # entry and, through an error route, to the handler.
         graph.nodes[START] = Node(START, None, scope, "start")
         graph.edges.append(Edge(START, entry, "entry", None, None, ["flow", "entry"]))
-        for tkind, tname, message, where in route_targets(flow["onError"], ["flow", "onError"]):
+        for tkind, tname, message, where, each in route_items(flow["onError"], ["flow", "onError"]):
             for dst in graph._resolve_target(scope, tkind, tname):
-                graph.edges.append(Edge(START, dst, "error", None, message, where))
+                graph.edges.append(Edge(START, dst, "error", None, message, where, each))
         graph.root = START
         return graph
 
@@ -126,19 +134,19 @@ class Graph:
             graph.nodes[(name,)] = Node((name,), decl, scope, name)
         for node in list(graph.nodes.values()):
             for kind, key, route, rpointer in step_routes(node.decl, node.pointer):
-                for tkind, tname, message, where in route_targets(route, rpointer):
+                for tkind, tname, message, where, each in route_items(route, rpointer):
                     dst = graph._local_target(scope, tkind, tname)
                     if dst is not None:
-                        graph.edges.append(Edge(node.addr, dst, kind, key, message, where))
+                        graph.edges.append(Edge(node.addr, dst, kind, key, message, where, each))
         entry = (container["entry"],)
         graph.root = entry if entry in graph.nodes else None
         if composition is None and "onError" in container and graph.root is not None:
             graph.nodes[START] = Node(START, None, scope, "start")
             graph.edges.append(Edge(START, entry, "entry", None, None, ["flow", "entry"]))
-            for tkind, tname, message, where in route_targets(container["onError"], ["flow", "onError"]):
+            for tkind, tname, message, where, each in route_items(container["onError"], ["flow", "onError"]):
                 dst = graph._local_target(scope, tkind, tname)
                 if dst is not None:
-                    graph.edges.append(Edge(START, dst, "error", None, message, where))
+                    graph.edges.append(Edge(START, dst, "error", None, message, where, each))
             graph.root = START
         return graph
 
@@ -256,12 +264,12 @@ class Graph:
             for entry in routes:
                 kind, key, route, pointer = entry[:4]
                 scope = entry[4] if len(entry) > 4 else node.scope
-                for tkind, tname, message, where in route_targets(route, pointer):
+                for tkind, tname, message, where, each in route_items(route, pointer):
                     dsts = self._resolve_target(scope, tkind, tname)
                     messages = self._outer_message(scope, tkind, tname, message)
                     for index, dst in enumerate(dsts):
                         carried = messages[index] if index < len(messages) else None
-                        self.edges.append(Edge(node.addr, dst, kind, key, carried, where))
+                        self.edges.append(Edge(node.addr, dst, kind, key, carried, where, each))
 
     # Queries ------------------------------------------------------------
 
@@ -355,9 +363,10 @@ def open_body_forks(graph, infos):
         node = graph.nodes[addr]
         if node.decl is None:
             continue
-        for dsts in route_groups(graph, addr, succ).values():
+        for (kind, key), dsts in route_groups(graph, addr, succ).items():
             targets = set(dsts)
-            if len(targets) < 2:
+            fans = any(e.each is not None for e in succ[addr] if (e.kind, e.key) == (kind, key))
+            if len(targets) < 2 and not fans:
                 continue
             # One join closes the fork: a branch that leaves closes its group,
             # and a branch failure reaches the join, so the body leaves once.
@@ -376,6 +385,45 @@ def route_groups(graph, addr, succ):
     return groups
 
 
+def join_origin(graph, join, idom, succ):
+    """The origin of a join: its immediate dominator, unless that step lies in
+    the paths of a fan-out, which run once per element. Then the origin is the
+    step whose fan-out the join closes, found by walking up the dominators and
+    pairing each join met on the way with the fork it closes."""
+    first = idom[join]
+    chain = []
+    current = first
+    while current is not None:
+        chain.append(current)
+        current = idom.get(current)
+    dominators = set(chain)
+
+    def fork(step, fanout_only=False):
+        groups = {}
+        for edge in succ[step]:
+            groups.setdefault((edge.kind, edge.key), []).append(edge)
+        for edges in groups.values():
+            if any(e.each is not None and (e.dst in dominators or e.dst == join) for e in edges):
+                return True
+            if not fanout_only:
+                reaching = {e.dst for e in edges if e.dst == join or join in graph.reachable(e.dst, blocked={step})}
+                if len(reaching) >= 2:
+                    return True
+        return False
+
+    if fork(first):
+        return first
+    closed = 0
+    for step in chain:
+        if graph.nodes[step].type == "join":
+            closed += 1
+        elif fork(step):
+            if closed == 0:
+                return step if fork(step, fanout_only=True) else first
+            closed -= 1
+    return first
+
+
 def analyse_joins(graph):
     """Deduce origin and branches of every join.
 
@@ -389,10 +437,13 @@ def analyse_joins(graph):
     succ = graph.successors()
     pred = graph.predecessors()
     reach = graph.reachable(graph.root)
-    for addr, node in graph.nodes.items():
-        if node.type != "join" or addr not in reach or addr not in idom:
-            continue
-        origin = idom[addr]
+    origins = {
+        addr: join_origin(graph, addr, idom, succ)
+        for addr, node in graph.nodes.items()
+        if node.type == "join" and addr in reach and addr in idom
+    }
+    for addr, origin in origins.items():
+        node = graph.nodes[addr]
         joins_to_j = graph.reaching(addr, blocked={origin})
         starts = []
         for dsts in route_groups(graph, origin, succ).values():
@@ -411,12 +462,19 @@ def analyse_joins(graph):
         # A branch is named after its first step; a direct route after the origin.
         prefix = node.scope.prefix
         name_of = {s: local_name(origin if s == addr else s, prefix) for s in starts}
-        infos[addr] = {"origin": origin, "branches": branches, "names": name_of}
+        # Fan-out branches: started with each, once per element.
+        started = [e for e in succ[origin] if e.dst in branches]
+        fanout = {e.dst for e in started if e.each is not None}
+        infos[addr] = {"origin": origin, "branches": branches, "names": name_of, "fanout": fanout}
 
         # Real fork.
         groups = route_groups(graph, origin, succ)
-        if not any(len({d for d in dsts if d in branches}) >= 2 for dsts in groups.values()):
+        if not fanout and not any(len({d for d in dsts if d in branches}) >= 2 for dsts in groups.values()):
             problems.append(("JOIN", node.pointer, addr, f"no route of the origin '{origin[-1]}' starts two branches or more at once"))
+        # Fan-out branches are always started with each.
+        for edge in started:
+            if edge.dst in fanout and edge.each is None:
+                problems.append(("JOIN", edge.pointer, origin, f"branch '{name_of[edge.dst]}' of join '{addr[-1]}' is a fan-out on another route; start it with each on every route"))
         # Disjoint branches.
         listed = list(branches.items())
         for i, (s1, b1) in enumerate(listed):
@@ -443,11 +501,12 @@ def analyse_joins(graph):
         # Closed forks.
         for start, members in branches.items():
             for member in members:
-                for dsts in route_groups(graph, member, succ).values():
+                for (kind, key), dsts in route_groups(graph, member, succ).items():
                     inside = [d for d in dsts if d in members or d == addr]
-                    if len(set(inside)) < 2:
+                    fans = any(e.each is not None and e.dst in inside for e in succ[member] if (e.kind, e.key) == (kind, key))
+                    if len(set(inside)) < 2 and not fans:
                         continue
-                    closers = {k for k in members if graph.nodes[k].type == "join" and idom.get(k) == member}
+                    closers = {k for k in members if origins.get(k) == member}
                     open_fork = any(
                         d == addr or addr in graph.reachable(d, blocked=closers | {origin})
                         for d in inside
@@ -456,6 +515,6 @@ def analyse_joins(graph):
                         problems.append(("JOIN", graph.nodes[member].pointer, member, f"the fork at '{member[-1]}' is not closed by its own join before join '{addr[-1]}'"))
         # Quorum count.
         quorum = node.decl.get("quorum")
-        if quorum and quorum["count"] > len(starts):
+        if quorum and not fanout and quorum["count"] > len(starts):
             problems.append(("JOIN", node.pointer + ["quorum", "count"], addr, f"count {quorum['count']} exceeds the {len(starts)} branches of join '{addr[-1]}'"))
     return infos, problems

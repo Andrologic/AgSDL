@@ -17,7 +17,7 @@ AgSDL documents are data. Readers validate them; they never run them.
 | --- | --- |
 | [Document](document.md) | Document shape, names, content, skills, MCP servers. |
 | [Agents](agents.md) | Agent definitions, model, permissions, results, how an agent conducts its work, instances. |
-| [Flow](flow.md) | Execution model, steps, routes, messages, delivery, joins, compositions, approvals and failures. |
+| [Flow](flow.md) | Execution model, steps, routes, fan-out, messages, delivery, joins, compositions, approvals and failures. |
 | [Harnesses](harnesses.md) | Harness modules, support levels and the diagnostic policy. |
 | [Validation](validation.md) | Static checks, diagnostic codes and the report format. |
 | [Open questions](open-questions.md) | Design questions not settled in this edition. |
