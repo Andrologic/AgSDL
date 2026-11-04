@@ -445,21 +445,26 @@ decided, or once the group closes or fails:
 | --- | --- |
 | `stop` (default) | Their work is cancelled: current works stop, their messages still waiting in an instance queue are withdrawn, and their pending approvals and calls are cancelled. The run continues once they have stopped. Cancelling ends a work, not a shared or named instance, which keeps its conversation; a `"new"` instance is discarded. |
 | `finish` | The run continues at once. They go on, loops included, and end when they would reach the join or leave the branch. Nothing they produce is used. |
+| `wait` | As with `finish`, but the run continues only once they have ended. |
 
 Once the join has decided, or the group has closed or failed, an unfinished
 branch never routes outside itself: a cancelled work follows neither `next` nor
-`onError`, and a finishing branch that fails ends there. Its results never
+`onError`, and a finishing branch, under `finish` or `wait`, that fails ends
+there. Its results never
 count for a later group of the join. Works of other steps on the same
 instances are not affected.
 
-`finish` lets work with effects, such as edits or a deployment, complete
-instead of being cut off. A finishing branch no longer counts for the flow
+`finish` and `wait` let work with effects, such as edits or a deployment,
+complete instead of being cut off, and keep the results of late branches in
+the run's record. With `finish`, steps after the join run at the same time as
+the finishing branches; with `wait`, nothing after the join starts until they
+have ended. A finishing branch no longer counts for the flow
 ([rules 3 to 5](#execution-model)):
 
 - A `steer` message does not join its work: the message waits for that work
-  to end, then starts its own work. Validators warn when a step after the join
-  shares an instance with one of its branches and does not declare
-  `delivery: "queue"` (`SHARED_INSTANCE_PARALLEL`).
+  to end, then starts its own work. Validators warn when a step after a
+  `finish` join shares an instance with one of its branches and does not
+  declare `delivery: "queue"` (`SHARED_INSTANCE_PARALLEL`).
 - When it fails, the host reports the failure; the run does not fail for it.
 - The run does not end before it does, and its works count toward
   `maxVisits`.

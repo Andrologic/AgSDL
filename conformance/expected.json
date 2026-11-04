@@ -594,5 +594,10 @@
     "warnings": [
       "SHARED_INSTANCE_PARALLEL"
     ]
+  },
+  "join-wait-shared": {
+    "description": "Nothing after a wait join runs while its branches finish.",
+    "errors": [],
+    "warnings": []
   }
 }

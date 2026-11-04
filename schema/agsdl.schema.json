@@ -997,7 +997,8 @@
         "remaining": {
           "enum": [
             "stop",
-            "finish"
+            "finish",
+            "wait"
           ]
         },
         "next": {
