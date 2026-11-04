@@ -16,6 +16,8 @@ python3 -m agsdl ../examples/*.json
 | [release-approval](release-approval.json) | A selected result in a message, an approval, an MCP call. | Codex |
 | [reusable-review](reusable-review.json) | A composition with a join, bound to an agent. | Claude Code, opencode |
 | [plan-and-build](plan-and-build.json) | An agent that instructs another; a default prompt for routes that bring none. | Claude Code, Codex |
+| [fix-each-file](fix-each-file.json) | A fan-out over a result list, four workers at a time; failed files kept and sent back; time limits; a person's answer bounded; the flow's error route. | Codex, Claude Code |
+| [review-changed-files](review-changed-files.json) | A command's output read as lines; one reviewer per changed file; a quorum of one that waits for the other reviewers. | opencode, Claude Code |
 | [assistant](assistant.json) | One fully configured agent without a flow: skills, MCP, permission rules, plan, plan first, completion check. | Claude Code |
 
 Draw any flow with:

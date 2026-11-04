@@ -115,6 +115,6 @@ empty leads to the end.
 
 ## Next
 
-- The [examples](../examples/README.md) show parallel reviews, steering,
-  calls, approvals and compositions.
+- The [examples](../examples/README.md) show parallel reviews, one worker
+  per file, steering, calls, approvals and compositions.
 - The [specification](../spec/README.md) defines every field.
