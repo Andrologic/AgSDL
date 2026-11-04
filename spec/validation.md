@@ -61,7 +61,7 @@ A report is a JSON object:
 | `DELIVERY` | `delivery` is used with `"instance": "new"`. |
 | `JOIN` | A join breaks a [shape rule](flow.md#shape-rules). |
 | `COMPOSITION` | Parameters, outputs or nesting of a composition are inconsistent, a compose step's `agents` or `next` keys differ from the composition's parameters or outputs, a body fork does not start the branches of one join, or compositions form a cycle. |
-| `SCHEMA` | A value schema is inconsistent: a keyword on the wrong type, an `enum` value of the wrong type or repeated, a `required` name that is not a declared property; or a result has a schema without a JSON media type. An unknown keyword is a `SHAPE` error. |
+| `SCHEMA` | A value schema is inconsistent: a keyword on the wrong type, an `enum` value of the wrong type or repeated, a `required` name that is not a declared property, `minItems` above `maxItems`; or a result has a schema without a JSON media type. An unknown keyword is a `SHAPE` error. |
 | `PERMISSIONS` | A completion check command is denied by the agent's own permissions, or a `read-only` agent has a `"write"` directory. |
 | `RESULT_NAME` | An agent declares a result named `text`, which collides with the default message. |
 | `HARNESS_UNSUPPORTED` | The agent uses a property, or needs a permission effect enforced, that its harness module declares absent, or enforces only by harness rules that the agent's shell commands could bypass. |

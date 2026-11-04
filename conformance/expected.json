@@ -682,5 +682,12 @@
     "description": "A fan-out inside a fan-out path closes with its own join; the outer join closes the outer fan-out.",
     "errors": [],
     "warnings": []
+  },
+  "schema-item-bounds": {
+    "description": "minItems and maxItems apply to arrays, and minItems does not exceed maxItems.",
+    "errors": [
+      "SCHEMA"
+    ],
+    "warnings": []
   }
 }

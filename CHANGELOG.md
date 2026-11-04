@@ -34,7 +34,9 @@ A redesign. Documents written for 0.2 must be rewritten. See
   joins that keep failed branches (`failures`, `maxFailures`, outcome
   `incomplete`).
 - Fan-out: `each` on a route target starts it once per element of a list,
-  and a join gathers the paths as one list, with each element.
+  and a join gathers the paths as one list, with each element. An empty list
+  completes the join's group at once.
+- `minItems` and `maxItems` in value schemas.
 - Calls to commands and MCP tools.
 - A flow-level `onError`, and a failed run when a failure is not handled.
 - Nested compositions with joins and parallel routes.

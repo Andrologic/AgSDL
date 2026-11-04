@@ -114,6 +114,12 @@ target starts once per element, at once, in list order: a **fan-out**.
 
 - Each start receives the route's message, default or explicit, plus
   `resources.item`, the element.
+- An empty list starts nothing. A join that closes the fan-out still decides
+  at once: `done` in all mode, `missed` for a quorum it cannot reach, with an
+  empty list for the branch. To refuse an empty list, declare `minItems` in
+  the result's [schema](agents.md#value-schemas): the agent's submission is
+  then corrected before the flow goes on. To route "nothing to do" elsewhere,
+  give the agent a choice for it.
 - `each` targets an agent, an approval or a compose step. A call or a join
   receives no message, so it cannot tell elements apart (`ROUTES`).
 - Each start is a visit of the steps it reaches: with 30 elements, `fix`
@@ -413,10 +419,12 @@ its output routes and its `onError`.
   branch**: each element starts one path of it in the group, and the join
   waits for each path, as for a branch of its own.
 
-Each time the origin follows a route, normal or error, that starts at least
+Each time the origin follows a route, normal or error, that targets at least
 one branch, a new **group** opens. The group waits only for the branches the
 origin actually started; when a choice starts some branches only, the group
-waits for those. A route that starts no branch opens no group. Each branch
+waits for those. A route that targets no branch opens no group. A fan-out
+targets its branch even over an empty list: the group then waits for no path
+of it, and a group that waits for nothing is complete at once. Each branch
 delivers at most one result per group.
 
 ### Shape rules
@@ -634,7 +642,7 @@ A composition is a reusable flow fragment.
 A route may return to an earlier step. `maxVisits`, a positive integer, limits
 how many times a step starts work in one run. Starting work beyond the limit
 fails the step with `VISIT_LIMIT`, without doing the work. For a join,
-`maxVisits` counts groups: when its origin follows a route that starts
+`maxVisits` counts groups: when its origin follows a route that targets
 branches and the limit is reached, the branches do not start and the join
 fails with `VISIT_LIMIT`.
 Without `maxVisits`, there is no limit.

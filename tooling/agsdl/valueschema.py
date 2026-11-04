@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from .schemacheck import json_equal, json_type_matches, pointer
 
-ARRAY_ONLY = ("items",)
+ARRAY_ONLY = ("items", "minItems", "maxItems")
 OBJECT_ONLY = ("properties", "required", "additionalProperties")
 
 
@@ -39,6 +39,8 @@ def consistency(schema, path):
                 problems.append((pointer(path + ["required", index]), f"{name!r} is not a declared property"))
         for name, child in declared.items():
             problems.extend(consistency(child, path + ["properties", name]))
+    if schema.get("minItems", 0) > schema.get("maxItems", schema.get("minItems", 0)):
+        problems.append((pointer(path + ["minItems"]), "minItems exceeds maxItems"))
     if kind == "array" and "items" in schema:
         problems.extend(consistency(schema["items"], path + ["items"]))
     return problems
@@ -53,6 +55,10 @@ def validate(value, schema, path):
     if "enum" in schema and not any(json_equal(value, item) for item in schema["enum"]):
         allowed = ", ".join(repr(item) for item in schema["enum"])
         problems.append((pointer(path), f"expected one of {allowed}"))
+    if kind == "array" and len(value) < schema.get("minItems", 0):
+        problems.append((pointer(path), f"expected at least {schema['minItems']} item{'' if schema['minItems'] == 1 else 's'}"))
+    if kind == "array" and "maxItems" in schema and len(value) > schema["maxItems"]:
+        problems.append((pointer(path), f"expected at most {schema['maxItems']} item{'' if schema['maxItems'] == 1 else 's'}"))
     if kind == "array" and "items" in schema:
         for index, item in enumerate(value):
             problems.extend(validate(item, schema["items"], path + [index]))

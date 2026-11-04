@@ -288,6 +288,7 @@ A value schema is a closed subset of JSON Schema. Every node has `type`: one of
 | --- | --- | --- |
 | `enum` | any type | A nonempty list of distinct allowed values, each of the node's type. |
 | `items` | `array` | The schema of every element. |
+| `minItems`, `maxItems` | `array` | The least and the most elements, non-negative integers; `minItems` does not exceed `maxItems`. |
 | `properties` | `object` | Schemas of named properties. |
 | `required` | `object` | Distinct names of declared properties that must be present. |
 | `additionalProperties` | `object` | `false` to reject undeclared properties. Default: `true`. |
