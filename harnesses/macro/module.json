@@ -23,7 +23,10 @@
     "macro:src-tauri/src/agsdl_host_provider.rs",
     "macro:src-tauri/src/agsdl_host_tools.rs",
     "macro:src-tauri/src/core/tool_policy.rs",
-    "macro:src-tauri/src/db/agsdl_execution/mod.rs"
+    "macro:src-tauri/src/db/agsdl_execution/mod.rs",
+    "macro:src-tauri/src/core/workspace_execution/mod.rs",
+    "macro:src-tauri/src/db/agsdl_execution/approvals.rs",
+    "macro:src-tauri/src/commands/agsdl_execution.rs"
   ],
   "properties": {
     "resources": {
@@ -36,7 +39,7 @@
     },
     "model.effort": {
       "support": "approximate",
-      "values": [
+      "suggestions": [
         "none",
         "minimal",
         "low",
@@ -77,11 +80,11 @@
     },
     "reviewer.person": {
       "support": "absent",
-      "note": "Macro has no ask effect."
+      "note": "Macro cannot apply an ask rule; it asks a person according to its own tool risk level."
     },
     "reviewer.model": {
       "support": "absent",
-      "note": "Macro has no ask effect."
+      "note": "Macro cannot apply an ask rule; it asks a person according to its own tool risk level."
     },
     "directories": {
       "support": "absent",
@@ -142,7 +145,7 @@
           "Chat",
           "Architect"
         ],
-        "description": "Macro tool mode. Default: Implement. Chat removes write tools; Architect limits writes to Macro metadata files."
+        "description": "Macro tool mode. Default: Implement. Chat gives the agent no workspace tools; Architect limits writes to Macro metadata files."
       },
       "maxTurns": {
         "type": "integer",
