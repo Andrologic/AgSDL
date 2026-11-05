@@ -47,6 +47,13 @@ Markdown links, runs the validator tests and conformance cases, checks the run
 scenarios, and validates the examples. A change is complete when it passes and
 the diff contains nothing unrelated.
 
+## Licensing and sign-off
+
+Contributions are accepted under the [Apache License 2.0](LICENSE). Sign off
+each commit with `git commit -s`. The `Signed-off-by` line certifies the
+[Developer Certificate of Origin](https://developercertificate.org/): you have
+the right to submit the change under the Apache License 2.0.
+
 ## Git workflow
 
 Stable history lives on `main`; integration happens on `develop`. Work on a

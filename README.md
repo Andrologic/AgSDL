@@ -169,4 +169,11 @@ Git tags.
 
 ## License
 
-See [LICENSE](LICENSE).
+AgSDL is licensed under the [Apache License 2.0](LICENSE). The copyright
+notice is in [NOTICE](NOTICE).
+
+The license grants no right to the AgSDL name. Only this repository defines
+AgSDL editions, and a modified specification must use another name. A tool or
+harness may say that it implements an edition, for example "implements
+AgSDL 0.3.0". The [conformance cases and run scenarios](conformance/README.md)
+let it check that claim.
