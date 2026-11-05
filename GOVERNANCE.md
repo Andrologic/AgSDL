@@ -14,5 +14,6 @@ A change of meaning requires:
    cases and examples, in the same pull request.
 
 Before a stable 1.0 release, the project will define a broader governance
-model: maintainership, decision rules, versioning authority, appeals and the
-licensing of normative and executable material.
+model: maintainership, decision rules, versioning authority and appeals.
+Licensing and contributions are settled in
+[decision 0017](docs/decisions/0017-licensing-and-contributions.md).
