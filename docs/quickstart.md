@@ -34,6 +34,13 @@ messages to. `harness` says which program runs the agent; the validator checks
 the agent against the
 [Claude Code module](../harnesses/claude-code/module.json).
 
+For completion and checks while you type, add the schema at the top of the
+document, in any editor that reads JSON Schema:
+
+```json
+"$schema": "https://raw.githubusercontent.com/Andrologic/AgSDL/v0.3.0/schema/agsdl.schema.json",
+```
+
 ## 2. A diagnostic
 
 Ask for an effort level Claude Code does not have:

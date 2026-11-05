@@ -16,7 +16,7 @@ A document is a JSON object:
 
 | Field | Required | Content |
 | --- | --- | --- |
-| `$schema` | no | The URI of a JSON Schema, for editors. It has no effect on behavior. |
+| `$schema` | no | The URI of a JSON Schema, for editors, such as `https://raw.githubusercontent.com/Andrologic/AgSDL/v0.3.0/schema/agsdl.schema.json`. It has no effect on behavior. |
 | `contract` | yes | Exactly `agsdl-0.3.0`. |
 | `id` | yes | Document identifier, a [name](#names). |
 | `title`, `description` | no | Text for people. They have no effect on behavior. |

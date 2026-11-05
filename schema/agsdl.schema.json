@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/Andrologic/AgSDL/schema/agsdl.schema.json",
+  "$id": "https://raw.githubusercontent.com/Andrologic/AgSDL/v0.3.0/schema/agsdl.schema.json",
   "title": "AgSDL 0.3.0 document",
   "type": "object",
   "required": [
