@@ -218,9 +218,6 @@ class Graph:
             return self.resolve(child, self.compositions[decl["composition"]]["entry"])
         return addr if addr in self.nodes else None
 
-    def _resolve_target(self, scope, kind, name):
-        return [dst for dst, _, _, _ in self._targets(scope, kind, name, None, None, None)]
-
     def _targets(self, scope, kind, name, message, pointer, fanout):
         """Resolve one authored target to (address, message, pointer, fanout).
 

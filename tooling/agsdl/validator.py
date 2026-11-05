@@ -58,10 +58,6 @@ def is_json_media(media_type):
     return media_type == "application/json" or media_type.endswith("+json")
 
 
-def is_text_media(media_type):
-    return media_type.startswith("text/")
-
-
 # Modules ------------------------------------------------------------------
 
 
