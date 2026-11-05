@@ -858,5 +858,10 @@
       "SHAPE"
     ],
     "warnings": []
+  },
+  "mcp-empty-argument": {
+    "description": "A local MCP server's arguments may be empty strings; only its program must not be.",
+    "errors": [],
+    "warnings": []
   }
 }

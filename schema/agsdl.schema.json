@@ -236,9 +236,14 @@
           "properties": {
             "command": {
               "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
               "items": {
-                "type": "string",
-                "minLength": 1
+                "type": "string"
               },
               "minItems": 1
             }

@@ -125,7 +125,7 @@ Servers declared here can be given to agents and used by
 
 | Field | Content |
 | --- | --- |
-| `command` | A local server: the program and its arguments, as a nonempty list of strings. |
+| `command` | A local server: the program, a nonempty string, then its arguments, as a list of strings. |
 | `url` | A remote server, reached over MCP Streamable HTTP. |
 
 A server has exactly one of `command` or `url`. Credentials are not part of a

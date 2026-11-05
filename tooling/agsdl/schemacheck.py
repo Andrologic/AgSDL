@@ -1,7 +1,7 @@
 """A small JSON Schema checker for the keywords the AgSDL schemas use.
 
 It supports: $ref (local), type, const, enum, pattern, minLength, minimum,
-minItems, maxItems, uniqueItems, items, properties, required,
+minItems, maxItems, uniqueItems, prefixItems, items, properties, required,
 additionalProperties, propertyNames, oneOf, anyOf and not. Annotations are
 ignored. It is not a general JSON Schema implementation.
 """
@@ -147,8 +147,11 @@ class SchemaChecker:
                     if json_equal(value[i], value[j]):
                         errors.append((pointer(path + [i]), "duplicate item"))
                         break
-        if "items" in schema:
-            for index, item in enumerate(value):
+        prefix = schema.get("prefixItems", [])
+        for index, item in enumerate(value):
+            if index < len(prefix):
+                self._check(item, prefix[index], path + [index], errors)
+            elif "items" in schema:
                 self._check(item, schema["items"], path + [index], errors)
 
     def _check_object(self, value, schema, path, errors):
