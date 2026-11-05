@@ -764,8 +764,10 @@ The clock measures the work, not waits that are not its own:
 - When the harness does not say which work a request is for, as when an MCP
   server asks a question, the host counts it as open for each work that has a
   call to that server in progress, for as long as the call lasts. When no
-  work has such a call in progress, it counts it for each work whose agent
-  uses that server.
+  work has such a call in progress, no work waits for the answer: the request
+  counts for none, and waits for the person. When the host cannot see the
+  harness's calls to that server, it counts the request for each work whose
+  agent uses that server.
 - Corrections and `steer` messages belong to the same work and do not restart
   it.
 
