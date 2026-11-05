@@ -30,8 +30,8 @@ anything runs.
 
 | Edition | Status |
 | --- | --- |
-| **0.3.0** | Draft. Not published. Not compatible with earlier editions. |
-| 0.2.0 | Last published edition, tag [`v0.2.0`](https://github.com/Andrologic/AgSDL/tree/v0.2.0). |
+| **0.3.0** | Current edition, tag [`v0.3.0`](https://github.com/Andrologic/AgSDL/tree/v0.3.0) (2026-11-05). Not compatible with earlier editions. |
+| 0.2.0 | Previous edition, tag [`v0.2.0`](https://github.com/Andrologic/AgSDL/tree/v0.2.0). |
 
 AgSDL is not stable. Expect breaking changes until 1.0.
 

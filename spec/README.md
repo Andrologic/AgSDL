@@ -1,8 +1,8 @@
 # AgSDL 0.3.0 specification
 
-Status: **draft, not published.** The contract marker is `agsdl-0.3.0`.
-Earlier editions are available from their Git tags (`v0.2.0`, `v0.1.1`, …).
-AgSDL 0.3.0 is not compatible with them.
+Status: **published 2026-11-05, not stable.** The contract marker is
+`agsdl-0.3.0`. Earlier editions are available from their Git tags (`v0.2.0`,
+`v0.1.1`, …). AgSDL 0.3.0 is not compatible with them.
 
 AgSDL describes **agents** and the **flows** that connect them. A document
 says what each agent is, what it may do, which harness runs it, and how work

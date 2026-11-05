@@ -2,7 +2,7 @@
 
 Harness modules keep their own changelogs, in `harnesses/<name>/CHANGELOG.md`.
 
-## 0.3.0 (unreleased)
+## 0.3.0 (2026-11-05)
 
 A redesign. Documents written for 0.2 must be rewritten. See
 [decision 0014](docs/decisions/0014-agsdl-0.3-model.md) for the reasons.
