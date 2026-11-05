@@ -7,6 +7,23 @@ Complete AgSDL 0.3.0 documents. Each one is valid. Validate them all from
 python3 -m agsdl ../examples/*.json
 ```
 
+## Which one to read
+
+| You want to | Read |
+| --- | --- |
+| Send work back and forth until a reviewer is satisfied | [write-and-review](write-and-review.json) |
+| Get several independent opinions and decide by vote | [parallel-review](parallel-review.json) |
+| Let the tests, not the agent, decide when the work is done | [fix-until-green](fix-until-green.json) |
+| Tell a working agent about something that happens outside, such as CI | [ci-watcher](ci-watcher.json) |
+| Have a person approve before anything is published | [release-approval](release-approval.json) |
+| Reuse the same review process in several flows | [reusable-review](reusable-review.json) |
+| Plan with one agent and build with another, the plan as its mission | [plan-and-build](plan-and-build.json) |
+| Spread work over many files with a bounded number of workers | [fix-each-file](fix-each-file.json) |
+| Review each changed file of a pull request, and stop at the first blocker | [review-changed-files](review-changed-files.json) |
+| Configure one agent precisely, without any flow | [assistant](assistant.json) |
+
+## What each one shows
+
 | Example | Shows | Harnesses |
 | --- | --- | --- |
 | [write-and-review](write-and-review.json) | A loop by choice; a fresh reviewer each time; a completion check. | Codex, Claude Code |

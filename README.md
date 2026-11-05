@@ -9,6 +9,21 @@ and how work moves between agents. A harness is the program that runs an
 agent: Codex, Claude Code, opencode, pi and others. One flow can mix
 harnesses.
 
+## Why
+
+Each harness configures agents in its own format, and work between several
+agents is usually wired in code. So:
+
+- what a set of agents does, and in which order, is hidden in that code;
+- moving an agent to another harness means rewriting it;
+- a promise such as "the reviewer never writes" holds only if the harness can
+  enforce it, and nothing checks that it can.
+
+AgSDL puts the agents and the flow between them in one document that people
+can review, tools can check and draw, and hosts can run on several harnesses.
+Its validator compares each agent with what its harness actually does, before
+anything runs.
+
 ## Status
 
 | Edition | Status |
@@ -58,6 +73,19 @@ until it is ready.
 ```
 
 It is [`examples/write-and-review.json`](examples/write-and-review.json).
+The renderer draws its flow:
+
+```mermaid
+flowchart LR
+  start(( )) --> s0
+  s0["develop"]
+  s1["review"]
+  s0 --> s1
+  s1 -- revise --> s0
+  finish((("end")))
+  s1 -- ready --> finish
+```
+
 Validate it with Python 3.9 or newer, without any package to install:
 
 ```sh
@@ -67,6 +95,32 @@ python3 -m agsdl ../examples/write-and-review.json
 
 The validator checks the document and compares each agent with its
 [harness module](harnesses/README.md). It never runs anything.
+
+## What the validator catches
+
+The reviewer is `read-only`: it may read, never write or run commands. Move it
+to pi, which has no permission rules:
+
+```json
+"reviewer": {
+  "harness": "pi",
+  "instructions": "Review the change. Choose ready or revise.",
+  "permissions": "read-only"
+}
+```
+
+```text
+review-on-pi.json: invalid (3 errors, 0 warnings)
+  error    HARNESS_UNSUPPORTED      /agents/reviewer/permissions  pi cannot enforce 'deny' for 'write'
+  error    HARNESS_UNSUPPORTED      /agents/reviewer/permissions  pi cannot enforce 'deny' for 'shell'
+  error    HARNESS_UNSUPPORTED      /agents/reviewer/permissions  pi cannot deny reads outside the zone; set "outside": "read" or use another harness
+```
+
+The document asks for a guarantee that pi cannot give, so the validator
+refuses it, instead of letting the reviewer run with more rights than it
+seems to have. The same check tells you which `deny` rules Codex can enforce,
+whether a model can be the reviewer on a given harness, or which effort
+levels a harness accepts.
 
 ## Where to go next
 
