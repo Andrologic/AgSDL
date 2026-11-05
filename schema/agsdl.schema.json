@@ -821,6 +821,11 @@
           "type": "integer",
           "minimum": 1
         },
+        "answerTimeoutMs": {
+          "description": "For mcp: how long a request to a person during the call may stay unanswered before the host declines it.",
+          "type": "integer",
+          "minimum": 1
+        },
         "command": {
           "type": "string",
           "minLength": 1
@@ -883,6 +888,11 @@
               {
                 "required": [
                   "arguments"
+                ]
+              },
+              {
+                "required": [
+                  "answerTimeoutMs"
                 ]
               }
             ]

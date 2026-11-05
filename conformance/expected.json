@@ -776,6 +776,13 @@
     ],
     "warnings": []
   },
+  "call-answer-timeout-command": {
+    "description": "answerTimeoutMs bounds requests an MCP server makes during a call; a command makes none.",
+    "errors": [
+      "SHAPE"
+    ],
+    "warnings": []
+  },
   "fanout-line-field": {
     "description": "A line read from a command is a string and has no fields.",
     "errors": [

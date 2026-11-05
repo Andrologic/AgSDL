@@ -346,6 +346,7 @@ MCP server.
 | `mcp` | `server`, a document MCP server, and `tool`, a tool name. |
 | `arguments` | For `mcp`: argument name to [operand](#operands). |
 | `timeoutMs` | The most time the call may take. See [Time limits](#time-limits). |
+| `answerTimeoutMs` | For `mcp`: how long a request to a person during the call may stay unanswered. See [Time limits](#time-limits). |
 | `next` | A route, taken whatever the outcome, or a map with exactly `passed` and `failed`. |
 | `onError` | A route, taken when the call fails, not when its outcome is `failed`. |
 
@@ -775,8 +776,10 @@ A person's slowness is never a `TIMEOUT`. To bound how long an agent's work
 waits for a person, use the agent's
 [`answerTimeoutMs`](agents.md#waiting-for-a-person). An
 [approval](#approval) has its own `timeoutMs`, since waiting for a person is
-its work. A call has no `answerTimeoutMs`: a request to a person during a
-call, such as an MCP server's question, waits for the person.
+its work. A call to an MCP tool MAY have `answerTimeoutMs`, a positive
+integer: a request to a person that the server makes during the call, left
+unanswered that long, is declined, and the tool goes on with that refusal.
+Without it, the host waits for the person.
 
 ## Failures
 

@@ -48,7 +48,8 @@ A redesign. Documents written for 0.2 must be rewritten. See
 - Calls to commands and MCP tools. A command can read its standard output
   as lines or as JSON with `parse`, giving `data.value`.
 - `timeoutMs` on agent and call steps, counting machine time only, with the
-  `TIMEOUT` failure; `answerTimeoutMs` on agents for requests to a person.
+  `TIMEOUT` failure; `answerTimeoutMs` on agents and MCP calls for requests to
+  a person.
 - A flow-level `onError`, and a failed run when a failure is not handled.
 - Nested compositions with joins and parallel routes.
 - Run scenarios in `conformance/runs`: scripted runs with what a host must
