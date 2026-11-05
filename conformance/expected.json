@@ -76,6 +76,23 @@
     ],
     "warnings": []
   },
+  "approval-entry": {
+    "description": "An approval at the flow's entry receives the host's message, which no document declares: its resources are not checked.",
+    "errors": [],
+    "warnings": []
+  },
+  "approval-composition-entry": {
+    "description": "An approval at a composition's entry is checked in each use, against the messages that reach the compose step.",
+    "errors": [],
+    "warnings": []
+  },
+  "approval-composition-entry-resource": {
+    "description": "An approval at a composition's entry receives no resource that the messages reaching the compose step lack.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
   "agent-conduct": {
     "description": "Plan, plan first, completion check limited to a choice, permission rules and a reviewer.",
     "errors": [],

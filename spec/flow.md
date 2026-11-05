@@ -187,7 +187,8 @@ A message has a `prompt`, the mission, and `resources`, information. What
 the host adds to a message on its way is information kept apart from the
 resources, under fields of its own: `item`, the element of a
 [fan-out](#fan-out), and `comments`, the comments of
-[approvals](#approval). A resource name never meets a name the host adds.
+[approvals](#approval). Each is absent when the host has added nothing. A
+resource name never meets a name the host adds.
 
 ```json
 "message": {

@@ -553,7 +553,6 @@ class Checker:
         for edge in graph.edges:
             incoming.setdefault(edge.dst, []).append(edge)
         for addr, edges in incoming.items():
-            edges = [e for e in edges if e.kind != "entry"]
             node = graph.nodes[addr]
             if node.type != "agent" or "prompt" in node.decl:
                 continue
@@ -811,6 +810,9 @@ class Checker:
     def received_resources(self, graph, addr, infos, seen):
         """The names of the resources a step can receive, or None when they
         are not all known: from the host, a parameter, or a loop of approvals."""
+        if addr == graph.root:
+            # The entry receives the host's message, which no document declares.
+            return None
         names = set()
         for edge in graph.edges:
             if edge.dst != addr:
@@ -818,8 +820,6 @@ class Checker:
             if edge.message is not None:
                 names |= set(edge.message.get("resources", {}))
                 continue
-            if edge.kind == "entry":
-                return None
             if edge.kind == "error":
                 names.add("error")
                 continue

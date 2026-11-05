@@ -174,11 +174,6 @@
             "comment": "Shorter."
           }
         ]
-      },
-      {
-        "to": "release",
-        "nth": 2,
-        "comments": []
       }
     ]
   }
