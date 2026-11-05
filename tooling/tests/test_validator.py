@@ -121,6 +121,14 @@ class ReportTest(unittest.TestCase):
             report = validate_bytes(handle.read(), load_modules(os.path.join(CONFORMANCE, "modules")))
         self.assertEqual(report.as_json()["joins"], {"merge": {"origin": "one", "branches": ["two", "one"]}})
 
+    def test_composition_join_report(self):
+        # A join in a composition is addressed by the step path of its use.
+        with open(os.path.join(CONFORMANCE, "cases", "nested-compositions.json"), "rb") as handle:
+            report = validate_bytes(handle.read(), load_modules(os.path.join(CONFORMANCE, "modules")))
+        self.assertEqual(report.as_json()["joins"], {
+            "review/check/vote": {"origin": "review/check/spread", "branches": ["r1", "r2", "r3"]},
+        })
+
     def test_shape_failure_stops_checks(self):
         report = validate_bytes(b'{"contract": "agsdl-0.3.0", "id": "x"}', {})
         self.assertEqual(codes(report, "error"), ["SHAPE"])

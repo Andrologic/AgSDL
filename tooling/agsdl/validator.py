@@ -472,8 +472,8 @@ class Checker:
                 branches = {info["names"][start]: {m[0] for m in members} for start, members in info["branches"].items()}
                 fanout = {info["names"][start] for start in info["fanout"]}
                 joins[key][addr[0]] = {"origin": info["origin"][0], "branches": branches, "fanout": fanout}
-                label = addr[0] if key is None else f"{key}/{addr[0]}"
-                self.report.joins[label] = {"origin": info["origin"][0], "branches": list(branches)}
+                if key is None:
+                    self.report.joins[addr[0]] = {"origin": info["origin"][0], "branches": list(branches)}
         # Messages and instances are followed across compositions, on expanded graphs.
         in_branch = {
             key: {member for info in found.values() for members in info["branches"].values() for member in members}
@@ -482,6 +482,15 @@ class Checker:
         graphs = []
         if None in scopes:
             graphs.append(Graph.for_flow(self.doc, in_branch, covered))
+            # A join in a composition is reported once per use, by its step path.
+            for use, (decl, child, _) in sorted(graphs[0].composes.items()):
+                if child is None:
+                    continue
+                for name, info in joins.get(decl["composition"], {}).items():
+                    self.report.joins["/".join(use + (name,))] = {
+                        "origin": "/".join(use + (info["origin"],)),
+                        "branches": list(info["branches"]),
+                    }
         for name in self.compositions:
             if name in scopes:
                 graphs.append(Graph.for_composition(self.doc, name, in_branch))
