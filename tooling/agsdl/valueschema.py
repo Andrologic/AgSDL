@@ -87,15 +87,15 @@ def descend(schema, path):
             return None, None
         kind = node["type"]
         if kind == "object" and isinstance(part, str):
-            declared = node.get("properties")
-            if declared is None:
-                return None, None
+            declared = node.get("properties", {})
             if part not in declared:
                 if node.get("additionalProperties") is False:
                     return False, f"{part!r} is not a declared property"
                 return None, None
             node = declared[part]
         elif kind == "array" and is_index(part):
+            if "maxItems" in node and int(part) >= node["maxItems"]:
+                return False, f"index {int(part)} is beyond the {node['maxItems']} items the list may have"
             node = node.get("items")
         else:
             return False, f"cannot select {part!r} in a value of type {kind}"

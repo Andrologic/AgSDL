@@ -611,6 +611,11 @@ class Checker:
             if head == "instructions":
                 if not agent.get("instructs"):
                     return f"agent '{node.agent}' does not instruct"
+                if edge.each is not None and list(edge.each) == ["instructions"]:
+                    # A route that fans out over them receives a list of strings.
+                    if len(path) > 1 and not valueschema.is_index(path[1]):
+                        return "'instructions' is a list here: select one by its index"
+                    return None if len(path) <= 2 else "an instruction is a string"
                 return None if len(path) == 1 else "'instructions' is a string"
             if head in ("text", "choice"):
                 if len(path) > 1:
@@ -680,7 +685,13 @@ class Checker:
                         return f"branch {path[1]!r} is a fan-out: select an entry by its index"
                     rest = rest[1:]
                     if rest and rest[0] == "item":
-                        return None
+                        return self.branch_item_problem(graph, node, info, path[1], rest, infos)
+                if rest and rest[0] in ("ended", "by"):
+                    return f"'{rest[0]}' is a string" if len(rest) > 1 else None
+                if rest and rest[0] == "error":
+                    if "quorum" not in node.decl and node.decl.get("failures") != "keep":
+                        return 'only a quorum or failures: "keep" keeps a failed branch'
+                    return self.error_path_problem(rest)
                 if rest:
                     # The branch output is the output of the step that reached the join.
                     members = info["branches"][path[1]]
@@ -696,6 +707,21 @@ class Checker:
             return None
         return None
 
+    def branch_item_problem(self, graph, join, info, branch, rest, infos):
+        """Check a path below `item` in an entry of a fan-out branch: the
+        element of the list that the origin fans out over."""
+        for edge in graph.edges:
+            if edge.each is None:
+                continue
+            if scope_member(edge.src, info["prefix"]) != info["origin"]:
+                continue
+            if scope_member(edge.dst, info["prefix"]) != branch:
+                continue
+            reason = self.selection_problem(graph, edge, rest, infos)
+            if reason:
+                return f"branch {branch!r}: {reason}"
+        return None
+
     @staticmethod
     def error_path_problem(path):
         """Check a path in the input of an error route: code and message are
@@ -709,7 +735,7 @@ class Checker:
             return f"an error has no field {field!r}"
         if field in ("code", "message"):
             return f"'{field}' is a string" if len(path) > 2 else None
-        if len(path) > 2 and (not isinstance(path[2], int) or isinstance(path[2], bool)):
+        if len(path) > 2 and not valueschema.is_index(path[2]):
             return "'details' is a list: select an entry by its index"
         return None
 

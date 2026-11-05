@@ -815,5 +815,36 @@
       "SHAPE"
     ],
     "warnings": []
+  },
+  "join-kept-failure": {
+    "description": "A join that keeps failures lets a selection read a failed branch's error.",
+    "errors": [],
+    "warnings": []
+  },
+  "join-item-field": {
+    "description": "The item of a fan-out branch entry has the type of the list's elements.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "schema-closed-object": {
+    "description": "An object schema without properties and with additionalProperties false has no fields to select.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "schema-max-items-index": {
+    "description": "A selection index at or beyond a declared maxItems cannot exist.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "fanout-instructions-index": {
+    "description": "On a route that fans out over instructions, they are a list a resource can index.",
+    "errors": [],
+    "warnings": []
   }
 }
