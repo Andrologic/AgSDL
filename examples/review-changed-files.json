@@ -2,7 +2,7 @@
   "contract": "agsdl-0.3.0",
   "id": "review-changed-files",
   "title": "Review each changed file",
-  "description": "One reviewer per changed file posts its comments on the pull request; the first blocker requests changes, once every reviewer has finished posting.",
+  "description": "One reviewer per changed file, eight at a time, posts its comments on the pull request. The first blocker starts no further review and requests changes once the started reviewers have finished posting.",
   "mcpServers": {
     "github": {
       "command": [
