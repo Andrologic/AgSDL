@@ -4,7 +4,7 @@
   "title": "Claude Code",
   "version": "1.0.0",
   "contract": "agsdl-0.3.0",
-  "harnessVersions": ">=2.1.257",
+  "harnessVersions": ">=2.1.257 <3.0.0",
   "sources": [
     "https://code.claude.com/docs/en/auto-mode-config",
     "https://code.claude.com/docs/en/permissions",

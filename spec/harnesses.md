@@ -20,7 +20,7 @@ never run it. Modules are maintained in this repository under
   "title": "Codex",
   "version": "1.0.0",
   "contract": "agsdl-0.3.0",
-  "harnessVersions": ">=0.152.0",
+  "harnessVersions": ">=0.152.0 <1.0.0",
   "sources": ["https://learn.chatgpt.com/docs/config-file/config-reference"],
   "properties": {
     "model.effort": { "support": "native", "suggestions": ["low", "medium", "high", "xhigh"] },
@@ -44,7 +44,7 @@ never run it. Modules are maintained in this repository under
 | `title` | Optional. A display name. |
 | `version` | The module's own version, independent of AgSDL. |
 | `contract` | The AgSDL contract the module targets. |
-| `harnessVersions` | The harness versions the module covers. |
+| `harnessVersions` | The harness versions the module covers. The range ends before the next major version, or before `1.0.0` for a harness in `0.x`: a module covers a new major version only once it has been checked against it. |
 | `sources` | The code and documentation each claim rests on. Optional for the schema, expected for every module maintained here. |
 | `properties` | Support for each standard property. |
 | `permissions` | Enforcement of each permission action and effect. |
@@ -152,8 +152,8 @@ There is no approximate enforcement: a permission is guaranteed or it is not.
   validators say so.
 
 Code that turns a document into a harness's native files (an exporter), or
-that runs an agent and connects it to a flow (an adapter), lives beside the
-modules. It is not part of the specification.
+that runs an agent and connects it to a flow (an adapter), lives in the
+projects that need it, such as hosts. It is not part of the specification.
 
 ## Diagnostic policy
 
