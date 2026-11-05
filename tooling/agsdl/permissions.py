@@ -30,8 +30,14 @@ def outside(permissions):
 
 
 def covers_all(rule):
-    """Whether a rule covers every use of its action: no match, or only `*`."""
-    return "match" not in rule or set(rule["match"]) == {"*"}
+    """Whether a rule covers every use of its action: no match, or only `*`.
+    A path pattern is relative to the workspace, so `**` covers the
+    workspace only; `/**` covers every path."""
+    if "match" not in rule:
+        return True
+    if rule["action"] in ("read", "write"):
+        return rule["match"] == "/**"
+    return set(rule["match"]) == {"*"}
 
 
 def shell_denied(permissions):
@@ -84,8 +90,7 @@ def effects_in_use(permissions):
     result = {}
     for action in ACTIONS:
         effects = {rule["effect"] for rule in rules if rule["action"] == action}
-        covers_all = any(rule["action"] == action and "match" not in rule for rule in rules)
-        if not covers_all:
+        if not any(rule["action"] == action and covers_all(rule) for rule in rules):
             default = "deny" if preset is None else PRESETS[preset][action]
             effects.add(default)
             if preset == "workspace" and action == "write":

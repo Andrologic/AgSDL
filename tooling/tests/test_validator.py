@@ -113,6 +113,10 @@ class PermissionsTest(unittest.TestCase):
         self.assertEqual(effects["write"], {"deny"})
         self.assertEqual(effects_in_use("workspace")["write"], {"allow", "deny"})
         self.assertEqual(effects_in_use("full")["network"], {"allow"})
+        # A universal pattern covers every use; a relative one only the workspace.
+        self.assertEqual(effects_in_use({"rules": [{"action": "network", "match": "*", "effect": "allow"}]})["network"], {"allow"})
+        self.assertEqual(effects_in_use({"rules": [{"action": "read", "match": "/**", "effect": "allow"}]})["read"], {"allow"})
+        self.assertEqual(effects_in_use({"rules": [{"action": "read", "match": "**", "effect": "allow"}]})["read"], {"allow", "deny"})
 
 
 class ReportTest(unittest.TestCase):
