@@ -57,8 +57,8 @@ them:
 ^[a-z][a-z0-9_]{0,63}$
 ```
 
-`step`, `output` and `message` are reserved: they are not valid choices,
-because a route object uses them as fields.
+`step`, `output` and `message` are reserved: they are not valid choices or
+composition outputs, because a route object uses them as fields.
 
 Agent names and step names have separate scopes. A step may have the same
 name as an agent.

@@ -808,5 +808,12 @@
     "description": "The flow's onError acts as if written on each step it covers: here it starts the same branches as the origin's normal route, so the join keeps its origin.",
     "errors": [],
     "warnings": []
+  },
+  "shape-reserved-output": {
+    "description": "step, output and message are not valid composition outputs: a compose step's next would read as a route object.",
+    "errors": [
+      "SHAPE"
+    ],
+    "warnings": []
   }
 }

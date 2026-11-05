@@ -1099,7 +1099,14 @@
         "outputs": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/name"
+            "$ref": "#/$defs/name",
+            "not": {
+              "enum": [
+                "step",
+                "output",
+                "message"
+              ]
+            }
           },
           "minItems": 1,
           "uniqueItems": true
