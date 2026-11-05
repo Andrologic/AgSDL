@@ -53,7 +53,8 @@ it launches the document.
 
 ## 3. A flow
 
-Add a writer and route the work between the two agents:
+Add a writer and route the work between the two agents. Replace the content
+of `/tmp/hello.json` with:
 
 ```json
 {
