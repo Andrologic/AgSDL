@@ -447,8 +447,14 @@ class Checker:
 
     def check_graphs(self):
         scopes = {}
+        covered = set()
         if "flow" in self.doc and self.doc["flow"]["entry"] in self.doc["flow"]["steps"]:
-            scopes[None] = Graph.for_scope(self.doc)
+            # The flow's onError acts as the onError of the steps it covers,
+            # which excludes join branches: find them without it first.
+            infos, _ = analyse_joins(Graph.for_scope(self.doc))
+            members = {m[0] for info in infos.values() for found in info["branches"].values() for m in found}
+            covered = Graph.flow_error_covered(self.doc, members)
+            scopes[None] = Graph.for_scope(self.doc, covered=covered)
         for name, composition in self.compositions.items():
             if composition["entry"] in composition["steps"]:
                 scopes[name] = Graph.for_scope(self.doc, name)
@@ -475,7 +481,7 @@ class Checker:
         }
         graphs = []
         if None in scopes:
-            graphs.append(Graph.for_flow(self.doc, in_branch))
+            graphs.append(Graph.for_flow(self.doc, in_branch, covered))
         for name in self.compositions:
             if name in scopes:
                 graphs.append(Graph.for_composition(self.doc, name, in_branch))

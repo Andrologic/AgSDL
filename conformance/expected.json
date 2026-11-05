@@ -803,5 +803,10 @@
       "MESSAGE_PATH"
     ],
     "warnings": []
+  },
+  "flow-error-fork": {
+    "description": "The flow's onError acts as if written on each step it covers: here it starts the same branches as the origin's normal route, so the join keeps its origin.",
+    "errors": [],
+    "warnings": []
   }
 }

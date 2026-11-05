@@ -22,16 +22,13 @@ class Scope:
         self.parent = parent
 
 
-START = ("#start",)
-
-
 class Node:
     def __init__(self, addr, decl, scope, name):
         self.addr = addr
         self.decl = decl
         self.scope = scope
         self.name = name
-        self.type = decl["type"] if decl is not None else ("start" if addr == START else "exit")
+        self.type = decl["type"] if decl is not None else "exit"
         self.pointer = scope.pointer + [name] if decl is not None else []
         self.agent = None
         if self.type == "agent":
@@ -88,10 +85,12 @@ def step_routes(decl, pointer):
 class Graph:
     """The expanded graph of a flow, or of one composition analysed on its own."""
 
-    def __init__(self, document, in_branch=None):
+    def __init__(self, document, in_branch=None, covered=None):
         self.document = document
         # Names of the steps inside a join branch, per scope (None for the flow).
         self.in_branch = in_branch or {}
+        # Top-level steps that use the flow's onError as their own.
+        self.covered = covered or set()
         self.compositions = document.get("compositions", {})
         self.nodes = {}
         self.composes = {}
@@ -101,30 +100,45 @@ class Graph:
     # Construction -------------------------------------------------------
 
     @classmethod
-    def for_flow(cls, document, in_branch=None):
-        graph = cls(document, in_branch)
+    def for_flow(cls, document, in_branch=None, covered=None):
+        """The flow expanded across compositions. `covered` names the top-level
+        steps that use the flow's onError (see flow_error_covered)."""
+        graph = cls(document, in_branch, covered)
         flow = document["flow"]
         scope = Scope(flow["steps"], ["flow", "steps"], ())
         graph._add_scope(scope, ())
         graph._connect()
-        entry = graph.resolve(scope, flow["entry"])
-        if "onError" not in flow or entry is None:
-            graph.root = entry
-            return graph
-        # The flow's onError is a second root: a virtual start leads to the
-        # entry and, through an error route, to the handler.
-        graph.nodes[START] = Node(START, None, scope, "start")
-        graph.edges.append(Edge(START, entry, "entry", None, None, ["flow", "entry"]))
-        for tkind, tname, message, where, each in route_items(flow["onError"], ["flow", "onError"]):
-            for dst in graph._resolve_target(scope, tkind, tname):
-                graph.edges.append(Edge(START, dst, "error", None, message, where, each))
-        graph.root = START
+        graph.root = graph.resolve(scope, flow["entry"])
         return graph
 
+    @staticmethod
+    def flow_error_covered(document, branch_members=()):
+        """The top-level steps that the flow's onError acts for, as if written
+        on each: reachable from the entry without following it, not its
+        targets, not in a join branch, and without an onError of their own."""
+        flow = document["flow"]
+        steps = flow["steps"]
+        if "onError" not in flow or flow["entry"] not in steps:
+            return set()
+        targets = {name for kind, name, _, _ in route_targets(flow["onError"], []) if kind == "step"}
+        seen = {flow["entry"]}
+        queue = deque(seen)
+        while queue:
+            current = queue.popleft()
+            for _, _, route, _ in step_routes(steps[current], []):
+                for kind, name, _, _ in route_targets(route, []):
+                    if kind == "step" and name in steps and name not in seen:
+                        seen.add(name)
+                        queue.append(name)
+        return {
+            name for name in seen
+            if name not in targets and name not in branch_members and "onError" not in steps[name]
+        }
+
     @classmethod
-    def for_scope(cls, document, composition=None):
+    def for_scope(cls, document, composition=None, covered=None):
         """The steps of the flow, or of one composition body, with compose steps as one step."""
-        graph = cls(document)
+        graph = cls(document, covered=covered if composition is None else None)
         if composition is None:
             container = document["flow"]
             pointer = ["flow", "steps"]
@@ -140,16 +154,13 @@ class Graph:
                     dst = graph._local_target(scope, tkind, tname)
                     if dst is not None:
                         graph.edges.append(Edge(node.addr, dst, kind, key, message, where, each))
-        entry = (container["entry"],)
-        graph.root = entry if entry in graph.nodes else None
-        if composition is None and "onError" in container and graph.root is not None:
-            graph.nodes[START] = Node(START, None, scope, "start")
-            graph.edges.append(Edge(START, entry, "entry", None, None, ["flow", "entry"]))
+        for name in sorted(graph.covered):
             for tkind, tname, message, where, each in route_items(container["onError"], ["flow", "onError"]):
                 dst = graph._local_target(scope, tkind, tname)
                 if dst is not None:
-                    graph.edges.append(Edge(START, dst, "error", None, message, where, each))
-            graph.root = START
+                    graph.edges.append(Edge((name,), dst, "error", None, message, where, each))
+        entry = (container["entry"],)
+        graph.root = entry if entry in graph.nodes else None
         return graph
 
     def _local_target(self, scope, kind, name):
@@ -248,6 +259,8 @@ class Graph:
                 return parent, decl["onError"], pointer
             name = scope.compose[-1]
             scope = parent
+        if scope.composition is None and name in self.covered:
+            return scope, self.document["flow"]["onError"], ["flow", "onError"]
         return None
 
     def _connect(self):
