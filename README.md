@@ -28,6 +28,7 @@ until it is ready.
   "contract": "agsdl-0.3.0",
   "id": "write-and-review",
   "title": "Write and review",
+  "description": "A developer writes a change; a fresh reviewer sends it back until it is ready.",
   "agents": {
     "developer": {
       "harness": "codex",
@@ -85,7 +86,7 @@ The validator checks the document and compares each agent with its
 | Directory | Content |
 | --- | --- |
 | `spec/` | The specification of the current edition. |
-| `schema/` | JSON Schemas for documents and harness modules. |
+| `schema/` | JSON Schemas for documents, harness modules and run scenarios. |
 | `harnesses/` | One module per supported harness. |
 | `examples/` | Complete, valid documents. |
 | `tooling/` | The reference validator and a Mermaid renderer. |

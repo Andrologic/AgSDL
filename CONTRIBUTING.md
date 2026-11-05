@@ -43,8 +43,8 @@ Run, from the repository root:
 ```
 
 It needs Python 3.9 or newer and nothing else. It checks whitespace and local
-Markdown links, runs the validator tests and conformance cases, and validates
-the examples. A change is complete when it passes and the diff contains
+Markdown links, runs the validator tests and conformance cases, checks the run
+scenarios, and validates the examples. A change is complete when it passes and the diff contains
 nothing unrelated.
 
 ## Git workflow

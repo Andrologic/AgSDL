@@ -34,8 +34,8 @@ disagree, this text wins and the schema is a defect.
    share files and messages, never their conversation.
 2. **A step works or routes. A router never judges.** Agents, calls,
    approvals and compositions do work. Routing reads only explicit,
-   mechanical signals: an agent's declared choice, an approval decision, a
-   join outcome, or a test on a call result.
+   mechanical signals: an agent's declared choice, a person's choice in an
+   approval, a join outcome, or a call's outcome.
 3. **The document asks, the host grants.** A document may come from anyone.
    It requests permissions; the host that runs it decides what to grant.
    Nothing in a document or in a message can grant itself rights.

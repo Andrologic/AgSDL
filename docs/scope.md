@@ -16,7 +16,7 @@ connect them.
 - the specification of the current edition, in `spec/`;
 - the JSON Schemas that enforce its shapes, in `schema/`;
 - harness modules, one per supported harness, in `harnesses/`;
-- examples and conformance cases;
+- examples, conformance cases and run scenarios;
 - reference tooling that reads, validates and draws documents;
 - the decisions that explain the design, and the project's governance.
 

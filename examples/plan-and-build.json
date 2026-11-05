@@ -2,6 +2,7 @@
   "contract": "agsdl-0.3.0",
   "id": "plan-and-build",
   "title": "Plan, build and review",
+  "description": "An architect plans and instructs a builder; a fresh reviewer sends the change back until it is approved.",
   "agents": {
     "architect": {
       "harness": "claude-code",

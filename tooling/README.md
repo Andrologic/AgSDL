@@ -56,8 +56,9 @@ print(report.valid, report.as_json()["diagnostics"])
 python3 -m unittest discover -s tests
 ```
 
-The tests run every [conformance case](../conformance/README.md) and check
-that every [example](../examples/README.md) is valid.
+The tests run every [conformance case](../conformance/README.md), check that
+every run scenario is well formed and names existing steps, and check that
+every [example](../examples/README.md) is valid.
 
 ## Layout
 

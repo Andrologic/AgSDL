@@ -2,6 +2,7 @@
   "contract": "agsdl-0.3.0",
   "id": "write-and-review",
   "title": "Write and review",
+  "description": "A developer writes a change; a fresh reviewer sends it back until it is ready.",
   "agents": {
     "developer": {
       "harness": "codex",

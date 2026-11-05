@@ -2,6 +2,7 @@
   "contract": "agsdl-0.3.0",
   "id": "release-approval",
   "title": "Release notes with approval",
+  "description": "A writer drafts the release notes; a person approves them, and the approved notes are published, or sent back with the person's comment.",
   "mcpServers": {
     "releases": {
       "command": [

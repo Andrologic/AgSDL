@@ -2,6 +2,7 @@
   "contract": "agsdl-0.3.0",
   "id": "reusable-review",
   "title": "Reusable triple review",
+  "description": "A writer's document goes through a reusable composition of three fresh reviews; two approvals pass it, otherwise the reviews go back to the writer.",
   "agents": {
     "writer": {
       "harness": "claude-code",
