@@ -529,17 +529,23 @@ class Checker:
         return node.type == "agent" and bool(self.agents.get(node.agent, {}).get("instructs"))
 
     def brings_prompt(self, graph, edge, incoming, seen):
-        """Whether a route always delivers a prompt to its target."""
+        """Whether a route always delivers a prompt to its target, or None when
+        that depends on an agent parameter not bound in this graph."""
         if edge.message is not None:
             return "prompt" in edge.message
         if edge.kind == "error":
             return False
         node = graph.nodes[edge.src]
+        if node.type == "agent" and node.agent is None:
+            return None
         if self.instructs(node):
             return True
         if node.type == "approval" and node.addr not in seen:
             arriving = incoming.get(node.addr, [])
-            return bool(arriving) and all(self.brings_prompt(graph, e, incoming, seen | {node.addr}) for e in arriving)
+            found = [self.brings_prompt(graph, e, incoming, seen | {node.addr}) for e in arriving]
+            if None in found:
+                return None
+            return bool(arriving) and all(found)
         return False
 
     def check_missions(self, graph):
@@ -551,7 +557,11 @@ class Checker:
             node = graph.nodes[addr]
             if node.type != "agent" or "prompt" in node.decl:
                 continue
-            missing = [e for e in edges if not self.brings_prompt(graph, e, incoming, frozenset())]
+            brings = [self.brings_prompt(graph, e, incoming, frozenset()) for e in edges]
+            if None in brings:
+                # Checked in each use, where the parameter is bound.
+                continue
+            missing = [e for e, found in zip(edges, brings) if not found]
             if missing and len(missing) < len(edges):
                 sources = ", ".join(sorted({graph.nodes[e.src].name for e in missing}))
                 self.report.error("PROMPT", node.pointer, f"step '{node.name}' receives a prompt on some routes but not from {sources}; give it a default prompt", expanded(addr))

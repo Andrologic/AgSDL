@@ -846,5 +846,10 @@
     "description": "On a route that fans out over instructions, they are a list a resource can index.",
     "errors": [],
     "warnings": []
+  },
+  "compose-parameter-prompt": {
+    "description": "Whether a body route brings a prompt can depend on the agent bound to a parameter: it is checked in each use.",
+    "errors": [],
+    "warnings": []
   }
 }
