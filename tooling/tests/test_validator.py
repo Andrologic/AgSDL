@@ -64,6 +64,13 @@ class ModulesTest(unittest.TestCase):
             self.assertIn(module["name"], modules)
             self.assertTrue(os.path.isfile(os.path.join(os.path.dirname(path), "CHANGELOG.md")))
 
+    def test_module_settings_use_the_value_schema_subset(self):
+        schemas = {}
+        for name in ("agsdl", "harness-module"):
+            with open(os.path.join(REPOSITORY, "schema", f"{name}.schema.json"), encoding="utf-8") as handle:
+                schemas[name] = json.load(handle)
+        self.assertEqual(schemas["harness-module"]["$defs"]["valueSchema"], schemas["agsdl"]["$defs"]["valueSchema"])
+
 
 class JsonInputTest(unittest.TestCase):
     def reject(self, data):
