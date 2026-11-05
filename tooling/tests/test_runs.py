@@ -39,6 +39,8 @@ def addressed(scenario):
     for event in scenario["timeline"]:
         if "work" in event:
             yield event["work"], "work"
+        for work in event.get("running", []):
+            yield work["step"], "work"
     expect = scenario["expect"]
     for address in expect.get("starts", {}):
         yield address, "work"
