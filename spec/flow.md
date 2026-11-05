@@ -722,8 +722,9 @@ A composition is a reusable flow fragment.
   `onError`, that starts several targets at once, or a fan-out, starts the
   branches of one join, whose origin is that step (`COMPOSITION`). A branch that leaves
   through an output closes its group, and a branch failure reaches the join.
-- A body failure that nothing in the body handles fails the compose step,
-  which then follows its own `onError`, or, without one, fails like any step
+- A body failure that nothing in the body handles fails the compose step
+  with the same error, since the body is its work. The compose step then
+  follows its own `onError`, or, without one, fails like any step
   ([rule 2](#execution-model)).
 - Compositions may use other compositions, but never themselves, directly or
   through others.
