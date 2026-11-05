@@ -60,6 +60,8 @@ A redesign. Documents written for 0.2 must be rewritten. See
   `next`.
 - Approvals offer a person the choices of their `next` map and pass on the
   person's comment, in the message's `comments`, apart from its resources.
+  An approval's output holds the message it received, so the steps after it
+  read what was approved.
   A fan-out's element arrives likewise in the message's `item`.
 - Calls route on their outcome, `passed` or `failed`. The condition step is
   removed.

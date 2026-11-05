@@ -63,6 +63,13 @@
                   "from": [
                     "comment"
                   ]
+                },
+                "notes": {
+                  "from": [
+                    "message",
+                    "resources",
+                    "notes"
+                  ]
                 }
               }
             }
@@ -78,6 +85,13 @@
         "arguments": {
           "channel": {
             "value": "stable"
+          },
+          "notes": {
+            "path": [
+              "message",
+              "resources",
+              "notes"
+            ]
           }
         }
       }

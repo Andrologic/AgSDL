@@ -398,7 +398,8 @@ run them, as for permissions.
 ### Operands
 
 An operand is `{ "value": ... }`, a literal, or `{ "path": [...] }`, a value
-read from the step's input: the output of the previous step.
+read from the step's input: the output of the previous step. Validators check
+a path like a [selection](#messages).
 
 ## Approval
 
@@ -430,12 +431,23 @@ The host shows the person the message the approval received, its `title` and
 comment. The output of the step is:
 
 ```json
-{ "choice": "revise", "comment": "Section 3 is out of date." }
+{
+  "choice": "revise",
+  "comment": "Section 3 is out of date.",
+  "message": { "prompt": "Approve these notes.", "resources": { "notes": "..." } }
+}
 ```
 
 `comment` is always present, and empty when the person wrote nothing. Every
 choice is a normal answer, not a failure: `approved` and `denied` are only a
 common naming.
+
+`message` is the message the approval received, what the person was shown and
+decided on, with its `item` and `comments` when it has them. The steps after
+it read what was approved there, for example
+`{ "path": ["message", "resources", "notes"] }` in a call that publishes the
+notes. Validators check a resource name against the messages that can reach
+the approval, as far as declarations allow.
 
 The approval passes on the message it received. When the person wrote a
 comment, it adds an entry to the message's `comments`, a list in the order

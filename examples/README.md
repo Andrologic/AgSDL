@@ -13,7 +13,7 @@ python3 -m agsdl ../examples/*.json
 | [parallel-review](parallel-review.json) | Three parallel reviews, a quorum vote, a result schema, branch results sent back. | Claude Code, opencode |
 | [fix-until-green](fix-until-green.json) | A command call routed on its outcome, the test output sent to the same developer. | pi |
 | [ci-watcher](ci-watcher.json) | A watcher that steers a working developer; a join; an MCP permission. | Claude Code, Codex |
-| [release-approval](release-approval.json) | A selected result in a message, an approval, an MCP call. | Codex |
+| [release-approval](release-approval.json) | A selected result in a message, an approval, an MCP call that publishes what was approved. | Codex |
 | [reusable-review](reusable-review.json) | A composition with a join, bound to an agent. | Claude Code, opencode |
 | [plan-and-build](plan-and-build.json) | An agent that instructs another; a default prompt for routes that bring none. | Claude Code, Codex |
 | [fix-each-file](fix-each-file.json) | A fan-out over a result list, four workers at a time; failed files kept and sent back; time limits; a person's answer bounded; the flow's error route. | Codex, Claude Code |

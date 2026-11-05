@@ -568,7 +568,19 @@ class Checker:
 
     def check_selections(self, graph, infos):
         self.check_instruction_fanouts(graph)
+        reported = set()
         for edge in graph.edges:
+            target = graph.nodes[edge.dst]
+            if target.type == "call":
+                # An operand reads the output of the step the route leaves.
+                for name, operand in target.decl.get("arguments", {}).items():
+                    if "path" not in operand:
+                        continue
+                    reason = self.selection_problem(graph, edge, operand["path"], infos, in_message=False)
+                    at = target.pointer + ["arguments", name, "path"]
+                    if reason and (tuple(at), reason) not in reported:
+                        reported.add((tuple(at), reason))
+                        self.report.error("MESSAGE_PATH", at, reason, expanded(edge.src))
             if edge.each is not None:
                 reason = self.selection_problem(graph, edge, edge.each, infos, in_message=False) or self.fanout_problem(graph, edge, infos)
                 if reason:
@@ -674,10 +686,18 @@ class Checker:
                     return f"'{path[1]}' has no fields"
             return None
         if node.type == "approval":
-            if head not in ("choice", "comment"):
-                return f"an approval output has choice and comment, not {head!r}"
-            if len(path) > 1:
-                return f"'{head}' is a string"
+            if head not in ("choice", "comment", "message"):
+                return f"an approval output has choice, comment and message, not {head!r}"
+            if head != "message":
+                return f"'{head}' is a string" if len(path) > 1 else None
+            if len(path) == 1:
+                return None
+            if path[1] not in ("prompt", "resources", "item", "comments"):
+                return f"a message has prompt, resources, item and comments, not {path[1]!r}"
+            if path[1] == "resources" and len(path) > 2:
+                names = self.received_resources(graph, node.addr, infos, frozenset())
+                if names is not None and path[2] not in names:
+                    return f"approval '{node.name}' receives no resource {path[2]!r}"
             return None
         if node.type == "join":
             if head not in ("outcome", "branches"):
@@ -788,6 +808,40 @@ class Checker:
             return f"a fan-out reads a list, and this value is declared as {article(kind)}"
         return None
 
+    def received_resources(self, graph, addr, infos, seen):
+        """The names of the resources a step can receive, or None when they
+        are not all known: from the host, a parameter, or a loop of approvals."""
+        names = set()
+        for edge in graph.edges:
+            if edge.dst != addr:
+                continue
+            if edge.message is not None:
+                names |= set(edge.message.get("resources", {}))
+                continue
+            if edge.kind == "entry":
+                return None
+            if edge.kind == "error":
+                names.add("error")
+                continue
+            node = graph.nodes[edge.src]
+            if node.type == "agent":
+                agent = self.agents.get(node.agent)
+                if agent is None:
+                    return None
+                names |= {"text"} | set(agent.get("results", {}))
+            elif node.type == "call":
+                names.add("result")
+            elif node.type == "join" and node.addr in infos:
+                names |= set(infos[node.addr]["branches"])
+            elif node.type == "approval" and node.addr not in seen:
+                found = self.received_resources(graph, node.addr, infos, seen | {addr})
+                if found is None:
+                    return None
+                names |= found
+            else:
+                return None
+        return names
+
     def declared_kind(self, graph, edge, path, infos):
         """The declared JSON type at a selection path, or None when it is not declared."""
         if not path:
@@ -824,7 +878,13 @@ class Checker:
                 return {"exitCode": "integer", "output": "string"}.get(path[1])
             return None
         if node.type == "approval":
-            return "string"
+            if head != "message":
+                return "string"
+            if len(path) == 1 or path[1:] == ["resources"]:
+                return "object"
+            if path[1:] == ["comments"]:
+                return "array"
+            return None
         if node.type == "join":
             if head == "outcome":
                 return "string"

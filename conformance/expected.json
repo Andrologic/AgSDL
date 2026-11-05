@@ -64,6 +64,18 @@
     "errors": [],
     "warnings": []
   },
+  "approval-message": {
+    "description": "The steps after an approval read the message it received.",
+    "errors": [],
+    "warnings": []
+  },
+  "approval-message-resource": {
+    "description": "An approval's message holds only the resources that can reach it.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
   "agent-conduct": {
     "description": "Plan, plan first, completion check limited to a choice, permission rules and a reviewer.",
     "errors": [],

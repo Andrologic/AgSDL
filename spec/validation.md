@@ -56,7 +56,7 @@ A report is a JSON object:
 | `DUPLICATE` | A target appears twice in one route. |
 | `ROUTES` | A route does not fit its step: wrong outcome keys, an approval without choices, a message or a fan-out to a step that cannot receive one, `concurrency` or `max` without `each`, a message on an output target, an output outside a composition, an entry that is a join. |
 | `UNREACHABLE` | A step cannot be reached from the entry, or from the flow's `onError`. |
-| `MESSAGE_PATH` | A selection path does not exist in the declared output it reads, a fan-out reads a declared value that is not a list, a selection reads `item` outside a fan-out, a prompt selects something other than instructions, or a route fans out over instructions while another of its targets uses them as one prompt. |
+| `MESSAGE_PATH` | A selection or operand path does not exist in the declared output it reads, a fan-out reads a declared value that is not a list, a selection reads `item` outside a fan-out, a prompt selects something other than instructions, or a route fans out over instructions while another of its targets uses them as one prompt. |
 | `PROMPT` | An agent step receives a prompt on some routes but not on others, and has no default prompt. |
 | `DELIVERY` | `delivery` is used with `"instance": "new"`. |
 | `JOIN` | A join breaks a [shape rule](flow.md#shape-rules). |
