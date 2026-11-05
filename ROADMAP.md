@@ -18,6 +18,5 @@
   modules.
 - More agent properties where harnesses share a meaning: limits, compaction,
   tool allow-lists.
-- A dynamic number of workers in a flow.
 - A governance model for a stable release: maintainers, decision rules and
   versioning authority.
