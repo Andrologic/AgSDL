@@ -46,14 +46,15 @@ runs it. A definition has no state: running agents are
 | `instructs` | no | `true` to let the agent write the mission of the steps it leads to. See [Instructing other agents](#instructing-other-agents). |
 | `plan` | no | `true` to give the agent a work plan visible to the host. |
 | `planFirst` | no | `"auto"` or `"ask"`. See [Plan first](#plan-first). |
-| `completionCheck` | no | A command that must succeed before a result is accepted. See [Completion check](#completion-check). |
-| `maxCorrections` | no | How many refused submissions an agent may correct per work. Default: `2`. |
+| `completionCheck` | no | A command that must succeed before a submission is accepted. See [Completion check](#completion-check). |
+| `maxCorrections` | no | How many refused or missing submissions an agent may correct per work. Default: `2`. |
 | `answerTimeoutMs` | no | How long a request to a person may stay unanswered. See [Waiting for a person](#waiting-for-a-person). |
 
-All properties are standard AgSDL properties. A harness supports each of them
-natively, approximately or not at all; its module declares which. An
-unsupported property is an error, never silently dropped. See
-[Harnesses](harnesses.md).
+Apart from `harnessSettings`, these are standard AgSDL properties. For those
+that depend on the harness, its module declares whether it supports each one
+natively, approximately or not at all; the host provides the others (see
+[standard property keys](harnesses.md#standard-property-keys)). An
+unsupported property is an error, never silently dropped.
 
 ## Identity
 
@@ -121,7 +122,8 @@ document is written rather than when the agent fails to act.
 | `rules` | Rules for actions and paths. See [Evaluation](#evaluation). |
 | `reviewer` | Who answers `ask` actions. See [Reviewer](#reviewer). |
 
-A preset name alone, such as `"read-only"`, is short for `{ "preset": "read-only" }`.
+A preset name alone, such as `"read-only"`, is short for `{ "preset":
+"read-only" }`.
 
 ### Actions and effects
 
@@ -257,13 +259,12 @@ The host presents these requests and answers them for the person, so
 3. **A sub-agent can only narrow.** When a harness lets an agent delegate, the
    sub-agent never has more rights than the agent.
 4. **No false guarantee.** Each harness module declares how its harness
-   enforces each action and effect: by an operating-system sandbox, by
-   harness rules, or not at all. Permissions are enforced or they are not;
-   there is no approximate enforcement. A `deny` or `ask` that the harness
-   cannot enforce is an error, including one that the agent's shell commands
-   could bypass (see [Permission enforcement](harnesses.md#permission-enforcement)).
-   An agent without MCP servers needs no `mcp` enforcement: the host gives it
-   none.
+   enforces each action and effect: by an operating-system sandbox, by harness
+   rules, or not at all. Permissions are enforced or they are not; there is no
+   approximate enforcement. A `deny` or `ask` that the harness cannot enforce
+   is an error, including one that the agent's shell commands could bypass (see
+   [Permission enforcement](harnesses.md#permission-enforcement)). An agent
+   without MCP servers needs no `mcp` enforcement: the host gives it none.
 
 The `ask` effect acts on one action during the agent's work. It is distinct
 from an [approval step](flow.md#approval), which lets a person choose how the
@@ -296,7 +297,7 @@ An agent declares the named results it produces. They are submitted with the
 
 | Field | Content |
 | --- | --- |
-| `required` | `true` if every accepted result must include it. Default: `false`. |
+| `required` | `true` if every accepted submission must include it. Default: `false`. |
 | `mediaType` | Default: `application/json`. |
 | `description` | Text for people and for the agent: what the result holds. |
 | `schema` | A [value schema](#value-schemas), only for a JSON media type. |
@@ -337,7 +338,7 @@ Agents submit their result with a standard tool:
 | --- | --- |
 | Name | `agsdl_submit_result` |
 | `results` | An object: result name to value. |
-| `choice` | One of the current step's [choices](flow.md#routes), when the step routes by choice. |
+| `choice` | One of the current step's [choices](flow.md#choices), when the step routes by choice. |
 | `instructions` | A string: the mission for the next step, when the agent [instructs](#instructing-other-agents). A list of strings, one mission per element, when the chosen route [fans out](flow.md#fan-out) over them. |
 
 The host provides the tool to every agent, through MCP or natively. A harness
@@ -345,19 +346,17 @@ module MAY use the harness's native structured output instead, if it gives the
 same guarantees: the result is checked before it is accepted, and the agent
 can correct it.
 
-The host checks a submission immediately. An unknown result name, a missing
-required result, a value that violates its schema or media type, a missing or
-unknown choice, missing instructions that the chosen route expects, or
-instructions that are not a list when it fans out over them, or a list when it
-does not: each is
-refused with a precise error that the agent sees in
-its conversation. The agent can then submit again.
+The host checks a submission immediately and refuses it, with a precise error
+that the agent sees in its conversation, when it has an unknown result name, a
+missing required result, a value that violates its schema or media type, or a
+missing or unknown choice. It also refuses missing instructions that the
+chosen route expects, and instructions that are not a list when the route fans
+out over them, or a list when it does not. The agent can then submit again.
 
 A submission is required when the step routes by choice, when the agent
 declares a required result, when the agent has a `completionCheck`, or when
-the step's route expects the agent's instructions. In
-other cases, the work also completes when the agent ends its turn without
-submitting.
+the step's route expects the agent's instructions. In other cases, the work
+also completes when the agent ends its turn without submitting.
 
 The output of an agent's work is:
 
@@ -491,15 +490,17 @@ workspace before accepting the result. The check belongs to the host, like
 the validation of the result, so it works the same way with every harness.
 
 - If the command exits with status 0, the result is accepted.
-- Otherwise, the submission is refused. The agent receives the command's
-  output as a [correction](#corrections) and continues.
+- Otherwise, the result is not accepted. The agent receives the command's
+  output as a [correction](#corrections) and continues. This counts toward
+  `maxFailures`, not `maxCorrections`.
 - `maxFailures`, an integer of at least `0`, limits failed checks per work.
   Default: `3`. One more failure fails the work with `CHECK_FAILED`.
 
 `choices` limits the check to submissions with one of these choices. Each of
 them must be a choice of a step that uses the agent. Without
-`choices`, every submission is checked. A choice such as `blocked` can then
-report that the work cannot be done without running checks that cannot pass.
+`choices`, every submission is checked. A choice left out of `choices`, such
+as `blocked`, is accepted without the check, so the agent can report that the
+work cannot be done.
 
 The command runs code the agent may have written, so it MUST run with no more
 rights than the agent: the host confines it to the agent's permissions, and a
@@ -527,14 +528,14 @@ writer receiving corrections in a loop. Two different missions use two
 different definitions, or two named instances.
 
 - The shared instance and named instances are created on first use and live
-  until the flow run ends.
+  until the run ends.
 - A step never modifies a definition. Every instance of a definition has the
   same configuration.
 - The same rule applies in [compositions](flow.md#compositions): using a
   composition creates no instance of its own.
 - `"instance": "new"` needs a harness that can create a fresh instance per
   work: a module that does not declare `instance.new` supported makes it an
-  error, for example when a person operates the harness.
+  error.
 
 When a message reaches an instance that is already working, the step's
 [`delivery`](flow.md#delivery) decides what happens.

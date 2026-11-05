@@ -1,9 +1,8 @@
 # Open questions
 
 These questions are not settled in AgSDL 0.3.0. Nothing in this page is a
-requirement. Where the specification needs a rule today, it states a
-provisional one and links here. Each question can be settled later by an
-optional addition, without changing the meaning of a 0.3 document.
+requirement. Each question can be settled later by an optional addition,
+without changing the meaning of a 0.3 document.
 
 ## Declared call outcomes
 

@@ -8,8 +8,8 @@ A change of meaning requires:
 1. an issue describing the problem;
 2. enough review time to examine its consequences for documents, harness
    modules and implementations;
-3. an explicit maintainer decision, recorded in [decisions](docs/decisions/README.md)
-   when the change is significant;
+3. an explicit maintainer decision, recorded in
+   [decisions](docs/decisions/README.md) when the change is significant;
 4. the matching updates to the specification, schema, validator, conformance
    cases and examples, in the same pull request.
 

@@ -6,7 +6,7 @@ validate and version.
 
 A document says what each agent is, what it may do, which harness runs it,
 and how work moves between agents. A harness is the program that runs an
-agent: Codex, Claude Code, opencode, pi, Macro and others. One flow can mix
+agent: Codex, Claude Code, opencode, pi and others. One flow can mix
 harnesses.
 
 ## Status

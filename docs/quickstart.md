@@ -31,7 +31,8 @@ python3 -m agsdl /tmp/hello.json
 
 This document has no flow. It defines one agent that a host can start and send
 messages to. `harness` says which program runs the agent; the validator checks
-the agent against the [Claude Code module](../harnesses/claude-code/module.json).
+the agent against the
+[Claude Code module](../harnesses/claude-code/module.json).
 
 ## 2. A diagnostic
 

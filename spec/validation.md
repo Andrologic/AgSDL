@@ -7,7 +7,8 @@ exist, that the host grants the permissions, or that the flow terminates.
 
 ## Order of checks
 
-1. **Parse**: the input is JSON as required by [Document](document.md#json-input).
+1. **Parse**: the input is JSON as required by
+   [Document](document.md#json-input).
 2. **Shape**: the document matches the [schema](../schema/agsdl.schema.json).
    A shape failure stops the checks.
 3. **Semantics**: references, routes, messages, joins, compositions,
@@ -37,8 +38,9 @@ A report is a JSON object:
 ```
 
 - `valid` is `false` when at least one diagnostic has severity `error`.
-- `path` is a JSON Pointer into the document. Diagnostics about an expanded
-  composition step also give `step`, the list of step names leading to it.
+- `path` is a JSON Pointer into the document. Diagnostics about a body step of
+  an expanded composition also give `step`, the list of step names leading to
+  it.
 - `joins` reports the deduced origin and branches of every join in the flow.
   Steps inside compositions are addressed by their step path joined with `/`,
   for example `review/vote`; names cannot contain `/`.
@@ -64,7 +66,7 @@ A report is a JSON object:
 | `SCHEMA` | A value schema is inconsistent: a keyword on the wrong type, an `enum` value of the wrong type or repeated, a `required` name that is not a declared property, `minItems` above `maxItems`; or a result has a schema without a JSON media type. An unknown keyword is a `SHAPE` error. |
 | `PERMISSIONS` | A completion check command is denied by the agent's own permissions, or a `read-only` agent has a `"write"` directory. |
 | `RESULT_NAME` | An agent declares a result named `text`, which collides with the default message. |
-| `HARNESS_UNSUPPORTED` | The agent uses a property, or needs a permission effect enforced, that its harness module declares absent, or enforces only by harness rules that the agent's shell commands could bypass, or a `shell` pattern its harness cannot match. |
+| `HARNESS_UNSUPPORTED` | The agent uses a property, or needs a permission effect enforced, that its harness module declares absent. Or the module enforces that effect only by harness rules that the agent's shell commands could bypass. Or a `deny` or `ask` uses a `shell` pattern that the harness cannot match. |
 | `HARNESS_VALUE` | A value is outside the module's closed vocabulary. |
 | `HARNESS_SETTINGS` | `harnessSettings` violate the module's settings schema, or the module defines no settings. |
 
@@ -85,7 +87,6 @@ A report is a JSON object:
 - Whether a selection path exists below an undeclared value. Paths into
   results without a schema, call data and composition outputs are checked as
   far as declarations go.
-- Whether paths in call `arguments` exist. They are read when the call runs.
 - Whether loops terminate.
 - Whether a harness actually behaves as its module declares. Modules are
   maintained against harness documentation and code; they are claims, not

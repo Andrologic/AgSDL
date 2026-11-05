@@ -13,37 +13,41 @@ A redesign. Documents written for 0.2 must be rewritten. See
   Code, opencode and pi, and a diagnostic policy for unsupported,
   approximate and unverified support.
 - Standard agent properties: `model`, `skills`, `mcpServers`, `permissions`,
-  `results`, `plan`, `planFirst`, `completionCheck`, `maxCorrections`,
-  `harnessSettings`.
+  `results`, `plan`, `planFirst`, `completionCheck`, `maxCorrections`; and
+  `harnessSettings` for settings specific to one harness.
 - Permissions with actions, effects and presets, required on every agent; a
   zone made of the workspace and added `directories`, with reads outside it
-  denied by default; home-relative and absolute paths in rules; and
-  `reviewer` to choose whether a person or a model answers `ask` actions.
-  Harness rules count for reads, writes and network access only when the
-  agent cannot run shell commands.
-  A `shell` pattern ending in ` *` covers the command with any arguments,
-  none included; a module whose harness matches commands by their leading
-  words says so with `"match": "prefix"`, and enforces `deny` and `ask` only
-  on such patterns.
+  denied by default; home-relative and absolute paths in rules; and `reviewer`
+  to choose whether a person or a model answers `ask` actions. Harness rules
+  count for reads, writes and network access only when the agent cannot run
+  shell commands. A `shell` pattern ending in ` *` covers the command with any
+  arguments, none included; a module whose harness matches commands by their
+  leading words says so with `"match": "prefix"`, and enforces `deny` and `ask`
+  only on such patterns.
 - The `agsdl_submit_result` tool and automatic corrections, bounded by
   `maxCorrections` and `completionCheck.maxFailures`.
 - Instances: shared, named and `new`.
 - Delivery modes `queue` and `steer`.
-- Messages carried by routes, with `from` selections.
+- Messages carried by routes, with `from` selections. What the host adds to
+  a message, a fan-out's `item` and the approvals' `comments`, stays apart
+  from its resources, and an agent receives the resources of its definition
+  apart from those of a message.
 - Results typed by media type: JSON values for `application/json` and
-  `+json` types, strings for `text/*`, file URIs otherwise.
+  `+json` types, strings for `text/*`, otherwise an absolute URI to the
+  produced file.
 - Agents that instruct: `instructs`, an `instructions` field in the result
   tool, and a default `prompt` on agent steps.
-- Joins deduced from the graph, quorum joins, branch exits, `remaining`
-  modes `stop`, `finish` and `wait` for unfinished branches, and all-mode
-  joins that keep failed branches (`failures`, `maxFailures`, outcome
-  `incomplete`).
+- Joins deduced from the graph, quorum joins, routes that leave a branch and
+  close its group, `remaining` modes `stop`, `finish` and `wait` for unfinished
+  branches, and all-mode joins that keep failed branches (`failures`,
+  `maxFailures`, outcome `incomplete`).
 - Fan-out: `each` on a route target starts it once per element of a list,
   and a join gathers the paths as one list, with each element. An empty list
   completes the join's group at once. `concurrency` caps the paths running
   at once, and `max` the elements, with the `FANOUT_LIMIT` failure.
-  Selections read the element with `item`; an instructing agent gives each
-  path its own mission by submitting its instructions as a list.
+  Each path receives its element as the message's `item`, which selections
+  read; an instructing agent gives each path its own mission by submitting
+  its instructions as a list.
 - `minItems` and `maxItems` in value schemas.
 - Calls to commands and MCP tools. A command can read its standard output
   as lines or as JSON with `parse`, giving `data.value`.
@@ -60,10 +64,8 @@ A redesign. Documents written for 0.2 must be rewritten. See
 - Routing after an agent always uses its choice; the choices are the keys of
   `next`.
 - Approvals offer a person the choices of their `next` map and pass on the
-  person's comment, in the message's `comments`, apart from its resources.
-  An approval's output holds the message it received, so the steps after it
-  read what was approved.
-  A fan-out's element arrives likewise in the message's `item`.
+  person's comment, in the message's `comments`. An approval's output holds
+  the message it received, so the steps after it read what was approved.
 - Calls route on their outcome, `passed` or `failed`. The condition step is
   removed.
 - A single validator with JSON reports, and a Mermaid renderer.
@@ -75,9 +77,10 @@ A redesign. Documents written for 0.2 must be rewritten. See
   states.
 - Join `after`, `members`, `mode`, the join-level `accept` (now inside
   `quorum`) and the `NO_ACCEPTABLE_RESULT` error.
-- Protected approval chains.
-- The 0.1 specification, experimental prototypes and earlier reader corpora
-  from the tree. They remain in the tags below.
+- Approvals that protected a named action.
+- The 0.1 specification, the 0.2 `schemas/` directory (now `schema/`),
+  proposals, experimental prototypes and earlier reader corpora from the
+  tree. They remain in the tags below.
 
 ## Earlier editions
 

@@ -35,9 +35,10 @@ Unknown fields are invalid, except inside `harnessSettings` and inside literal
 
 ## JSON input
 
-A document is UTF-8 JSON as defined by [RFC 8259](https://www.rfc-editor.org/rfc/rfc8259).
-Readers MUST reject a byte order mark, duplicate object keys, invalid UTF-8,
-unpaired surrogate escapes and values that are not JSON, such as `NaN`. Readers keep numbers exact.
+A document is UTF-8 JSON as defined by
+[RFC 8259](https://www.rfc-editor.org/rfc/rfc8259). Readers MUST reject a byte
+order mark, duplicate object keys, invalid UTF-8, unpaired surrogate escapes
+and values that are not JSON, such as `NaN`. Readers keep numbers exact.
 
 ## Names
 

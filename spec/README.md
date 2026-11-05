@@ -7,7 +7,7 @@ AgSDL 0.3.0 is not compatible with them.
 AgSDL describes **agents** and the **flows** that connect them. A document
 says what each agent is, what it may do, which harness runs it, and how work
 moves between agents. A harness is the program that runs an agent: Codex,
-Claude Code, opencode, pi, Macro and others.
+Claude Code, opencode, pi and others.
 
 AgSDL documents are data. Readers validate them; they never run them.
 
@@ -59,8 +59,8 @@ The key words MUST, MUST NOT, SHOULD and MAY are used as in
   state.
 - **Instance**: a running agent, with its own conversation.
 - **Step**: an entry of a flow or composition `steps` map.
-- **Work**: one activation of an agent instance, from the message that starts
-  it to its accepted result.
+- **Work**: what one step does once a message starts it, until it ends. For an
+  agent step, one activation of its instance.
 
 JSON examples in this specification are illustrative. Model and harness names
 such as `example/large` are fictional.

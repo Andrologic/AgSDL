@@ -78,29 +78,35 @@ A property missing from `properties` is `absent`.
 
 | Key | Property |
 | --- | --- |
-| `resources` | Identity |
-| `model.name`, `model.effort` | Model |
-| `skills`, `mcpServers` | Equipment |
-| `plan`, `planFirst.auto`, `planFirst.ask` | Conduct of the work |
-| `reviewer.person`, `reviewer.model` | Who answers `ask` actions |
-| `directories` | Directories added to the zone |
-| `instance.new` | Fresh instance per work |
-| `delivery.steer` | Joining a current work |
+| `resources` | [Identity](agents.md#identity) |
+| `model.name`, `model.effort` | [Model](agents.md#model) |
+| `skills`, `mcpServers` | [Skills](document.md#skills) and [MCP servers](document.md#mcp-servers) |
+| `plan`, `planFirst.auto`, `planFirst.ask` | [Conducting the work](agents.md#conducting-the-work) |
+| `reviewer.person`, `reviewer.model` | [Reviewer](agents.md#reviewer): who answers `ask` actions |
+| `directories` | [Zone](agents.md#zone): directories added to it |
+| `instance.new` | [Instances](agents.md#definitions-and-instances): a fresh instance per work |
+| `delivery.steer` | [Delivery](flow.md#delivery): joining a current work |
 
-`results`, `instructs`, `maxCorrections`, `completionCheck` and
-`delivery.queue` rely on the [result tool](agents.md#the-result-tool) and on
-the host. The host gives every agent the result tool, through an MCP server
-or a tool of the harness's own, so modules do not declare these properties.
+Modules do not declare the other agent properties:
+
+- `instructions` reach every harness.
+- `results`, `instructs`, `maxCorrections` and `completionCheck` rely on the
+  [result tool](agents.md#the-result-tool), which the host gives every agent,
+  through an MCP server or a tool of the harness's own.
+- `answerTimeoutMs` and `delivery.queue` rely on the host alone: it answers
+  the requests it presents, and keeps waiting messages.
+- `harnessSettings` are checked against the module's `settings`.
 
 ### Permission enforcement
 
-Each entry of `permissions` gives, for one action, how each effect is enforced:
+Each entry of `permissions` gives, for one action, how each effect is
+enforced, and MAY add a `note`, shown with diagnostics:
 
 | Value | Meaning |
 | --- | --- |
 | `sandbox` | Enforced by the operating system, around everything the agent runs. MCP servers are not part of it: an `mcp` permission covers what they do. |
 | `harness` | Enforced by the harness's own rules before each action. |
-| `absent` | Not enforced. |
+| `absent` | Not enforced. For `allow`, the harness has no such action at all. |
 
 A `deny` or `ask` declared as `sandbox` or `harness` holds for every rule of
 that action, with or without `match`, and for the presets, except for the

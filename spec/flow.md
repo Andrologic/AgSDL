@@ -49,7 +49,7 @@ construct; where a combination of constructs is not described, these rules
 decide it.
 
 1. **A step is one unit of work.** When a message starts a step, the step does
-   one work and ends with exactly one outcome: a normal route, a failure, or a
+   one work and ends in exactly one way: a normal route, a failure, or a
    cancellation by a join. A compose step is no exception: its body is its
    work, and it leaves at most once, through one output or as a failure; a
    body path that ends without reaching an output ends the compose step's
@@ -61,19 +61,19 @@ decide it.
    fails in turn under this rule; otherwise the flow, whose `onError` covers
    top-level steps. A failure that reaches no handler ends its path. A failure
    never undoes effects and never retries on its own.
-3. **Parallel paths meet in groups.** A route that starts several targets,
-   or one target once per element of a list, starts parallel paths. Paths
-   that meet at a join are the branches of a group, opened by the join's
-   origin; the join decides once per group. Once it has decided, or the group
-   has closed or failed, nothing of the group routes outside its branches
-   again: its unfinished branches are cancelled, or finish inside themselves
-   without counting for the flow, as the join's `remaining` says, and its
-   fan-out elements not yet started never start. Paths that meet no join end
-   on their own, except in a composition body, where every fork is closed by
-   one join (rule 1).
+3. **Parallel paths meet in groups.** A route that starts several targets, or
+   one target once per element of a list, starts parallel paths. Paths that
+   meet at a join are the branches of a group, opened by the join's origin; the
+   join decides once per group. Once it has decided, or the group has closed or
+   failed, nothing of the group routes outside its branches again: its
+   unfinished branches are cancelled, or finish inside themselves without
+   counting for the flow ([waiting modes](#waiting-modes)), as the join's
+   `remaining` says, and its fan-out elements not yet started never start.
+   Paths that meet no join end on their own, except in a composition body,
+   where every fork is closed by one join (rule 1).
 4. **An instance does one work at a time.** A message for a working instance
    waits its turn, or, with `steer`, joins the current work if that work still
-   counts for the flow. A message that joins a work has no outcome of its own:
+   counts for the flow. A message that joins a work starts nothing of its own:
    its path ends there. Shared and named instances keep their conversation
    from one work to the next until the run ends.
 5. **A run fails when a failure that counts reaches no handler.** The run ends
@@ -97,7 +97,8 @@ A route is a target, or a list of targets. A list starts every target at once:
 "next": ["security", "performance"]
 ```
 
-An empty list, or an absent `next`, ends this path of the run.
+A target appears at most once in a route (`DUPLICATE`). An empty list, or an
+absent `next`, ends this path of the run.
 
 ### Fan-out
 
@@ -171,15 +172,14 @@ A step that routes by choice has a `next` map. Its keys are the step's
 "next": { "revise": "write", "ready": ["publish", "notify"], "blocked": [] }
 ```
 
-When an agent's work can lead to different steps, routing is always by
-choice: the agent submits one of the keys with the
+When an agent's work can lead to different steps, routing is always by choice:
+the agent submits one of the keys with the
 [result tool](agents.md#the-result-tool). Nothing else in an agent's output
-selects a route. The criteria for choosing
-belong in the agent's instructions or in the message, not in the route.
-Choices follow the [choice naming rule](document.md#names). An
-[approval](#approval) routes by choice too: the choices are offered to a
-person. [Calls](#call) and [joins](#joins) route by their **outcomes**,
-defined below.
+selects a route. The criteria for choosing belong in the agent's instructions
+or in the message, not in the route. Choices follow the
+[choice naming rule](document.md#names). An [approval](#approval) routes by
+choice too: the choices are offered to a person. [Calls](#call) and
+[joins](#joins) route by their **outcomes**, defined below.
 
 ## Messages
 
@@ -202,7 +202,7 @@ resource name never meets a name the host adds.
 
 | Field | Content |
 | --- | --- |
-| `prompt` | A string, or a list of content sources, written by the document author; or a selection of an [instructing agent's](agents.md#instructing-other-agents) `instructions`. |
+| `prompt` | A string, or a list of content sources, written by the document author; or a selection of an [instructing agent's](agents.md#instructing-other-agents) `instructions`, as described below. |
 | `resources` | Named content sources, or selections from the previous step's output. |
 
 A **selection** `{ "from": [...] }` reads a value from the output of the step
@@ -253,11 +253,12 @@ The receiving agent's standing `instructions` apply above any prompt.
 
 A route **brings a prompt** when its explicit `message` has one, when it leaves
 an instructing agent without an explicit `message`, or when it leaves an
-approval that at least one route reaches and every route that reaches it
-brings a prompt. When some routes to an agent step bring a prompt and others
-do not, the step MUST have a default `prompt` (`PROMPT`), so that its mission
-never depends on where the flow came from. When every route brings one, or none does, a default prompt is optional.
-The message the host delivers at entry is not a route.
+approval that at least one route reaches and every route that reaches it brings
+a prompt. When some routes to an agent step bring a prompt and others do not,
+the step MUST have a default `prompt` (`PROMPT`), so that its mission never
+depends on where the flow came from. When every route brings one, or none does,
+a default prompt is optional. The message the host delivers at entry is not a
+route.
 
 ## Agent
 
@@ -309,12 +310,11 @@ reaches it.
   never working.
 
 When two works on one instance can run at the same time, for example two steps
-in two branches of one join, or one step in the paths of a fan-out, and no
-step involved declares `delivery`, validators warn that their work will be
-serialized (`SHARED_INSTANCE_PARALLEL`). Declaring
-`delivery` explicitly states the intent and silences the warning. A branch
-that finishes after its join decided is a special case: see
-[`remaining`](#waiting-modes).
+in two branches of one join, or one step in the paths of a fan-out, and no step
+involved declares `delivery`, validators warn that their work will be
+serialized (`SHARED_INSTANCE_PARALLEL`). Declaring `delivery` explicitly states
+the intent and silences the warning. A branch that finishes after its join
+decided is a special case: see [`remaining`](#waiting-modes).
 
 ## Call
 
@@ -342,11 +342,11 @@ MCP server.
 
 | Field | Content |
 | --- | --- |
-| `command` | A shell command, run by the host in the flow's workspace. |
+| `command` | A shell command, run by the host in a directory it chooses. |
 | `parse` | For `command`: `"lines"` or `"json"`, how to read its standard output as `data.value`. |
 | `mcp` | `server`, a document MCP server, and `tool`, a tool name. |
 | `arguments` | For `mcp`: argument name to [operand](#operands). |
-| `timeoutMs` | The most time the call may take. See [Time limits](#time-limits). |
+| `timeoutMs` | The most machine time the call may take. See [Time limits](#time-limits). |
 | `answerTimeoutMs` | For `mcp`: how long a request to a person during the call may stay unanswered. See [Time limits](#time-limits). |
 | `next` | A route, taken whatever the outcome, or a map with exactly `passed` and `failed`. |
 | `onError` | A route, taken when the call fails, not when its outcome is `failed`. |
@@ -601,8 +601,7 @@ branch never routes outside itself: a cancelled work follows neither `next` nor
 there. Its results never count for a later group of the join. An element of a
 fan-out that has not started never starts, whatever `remaining` says: with
 `concurrency: 1` and a quorum of one, elements are tried in order until one is
-accepted. Works of other steps on the same
-instances are not affected.
+accepted. Works of other steps on the same instances are not affected.
 
 `finish` and `wait` let work with effects, such as edits or a deployment,
 complete instead of being cut off, and keep the results of late branches in
@@ -674,9 +673,12 @@ A composition is a reusable flow fragment.
     "steps": {
       "spread": { "type": "agent", "agent": { "parameter": "reviewer" },
                   "next": ["r1", "r2", "r3"] },
-      "r1": { "type": "agent", "agent": { "parameter": "reviewer" }, "instance": "new", "next": "vote" },
-      "r2": { "type": "agent", "agent": { "parameter": "reviewer" }, "instance": "new", "next": "vote" },
-      "r3": { "type": "agent", "agent": { "parameter": "reviewer" }, "instance": "new", "next": "vote" },
+      "r1": { "type": "agent", "agent": { "parameter": "reviewer" }, "instance": "new",
+              "next": { "approve": "vote", "reject": "vote" } },
+      "r2": { "type": "agent", "agent": { "parameter": "reviewer" }, "instance": "new",
+              "next": { "approve": "vote", "reject": "vote" } },
+      "r3": { "type": "agent", "agent": { "parameter": "reviewer" }, "instance": "new",
+              "next": { "approve": "vote", "reject": "vote" } },
       "vote": { "type": "join", "quorum": { "count": 2, "accept": ["approve"] },
                 "next": { "reached": { "output": "approved" }, "missed": { "output": "rejected" } } }
     },
@@ -719,11 +721,12 @@ A composition is a reusable flow fragment.
   route from that step would. The output of a compose step is the output of
   that body step.
 - Every output is used by at least one body route.
-- A composition leaves at most once per entry, like a step: through one
-  output, or through the compose step's `onError`. So a body route, normal or
+- A composition leaves at most once per entry, like a step: through one output,
+  or through the compose step's `onError`. So a body route, normal or
   `onError`, that starts several targets at once, or a fan-out, starts the
-  branches of one join, whose origin is that step (`COMPOSITION`). A branch that leaves
-  through an output closes its group, and a branch failure reaches the join.
+  branches of one join, whose origin is that step (`COMPOSITION`). A branch
+  that leaves through an output closes its group, and a branch failure reaches
+  the join.
 - A body failure that nothing in the body handles fails the compose step
   with the same error, since the body is its work. The compose step then
   follows its own `onError`, or, without one, fails like any step
@@ -743,9 +746,8 @@ A route may return to an earlier step. `maxVisits`, a positive integer, limits
 how many times a step starts work in one run. Starting work beyond the limit
 fails the step with `VISIT_LIMIT`, without doing the work. For a join,
 `maxVisits` counts groups: when its origin follows a route that targets
-branches and the limit is reached, the branches do not start and the join
-fails with `VISIT_LIMIT`.
-Without `maxVisits`, there is no limit.
+branches and the limit is reached, the branches do not start and the join fails
+with `VISIT_LIMIT`. Without `maxVisits`, there is no limit.
 
 ## Time limits
 
@@ -801,7 +803,7 @@ failure; it is information, never an instruction.
 | `CHECK_FAILED` | The completion check failed more than `maxFailures` times. |
 | `PLAN_REJECTED` | A `planFirst: "ask"` plan was refused without comment. |
 | `CALL_FAILED` | A call could not run. |
-| `OPERAND` | A selection or operand path cannot be read. |
+| `OPERAND` | A selection or operand path cannot be read, or a fan-out's value is not a list. |
 | `CONTENT_UNAVAILABLE` | Content needed for a message cannot be obtained. |
 | `APPROVAL_TIMEOUT` | An approval received no answer in time. |
 | `TIMEOUT` | An agent's or a call's work ran out of its `timeoutMs`. |
