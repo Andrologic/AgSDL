@@ -851,5 +851,12 @@
     "description": "Whether a body route brings a prompt can depend on the agent bound to a parameter: it is checked in each use.",
     "errors": [],
     "warnings": []
+  },
+  "uri-ip-literal": {
+    "description": "Brackets in a URI enclose an IP literal in the authority, and nothing else (RFC 3986).",
+    "errors": [
+      "SHAPE"
+    ],
+    "warnings": []
   }
 }

@@ -106,7 +106,8 @@ class SchemaChecker:
             if "minLength" in schema and len(value) < schema["minLength"]:
                 errors.append((pointer(path), "the string is too short"))
             if "pattern" in schema and not self._pattern(schema["pattern"]).search(value):
-                errors.append((pointer(path), f"{value!r} does not match {schema['pattern']}"))
+                shown = schema["pattern"] if len(schema["pattern"]) <= 80 else "the expected syntax"
+                errors.append((pointer(path), f"{value!r} does not match {shown}"))
         if is_number(value) and "minimum" in schema and value < schema["minimum"]:
             errors.append((pointer(path), f"expected at least {schema['minimum']}"))
         if isinstance(value, list):
