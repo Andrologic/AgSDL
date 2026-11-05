@@ -15,7 +15,7 @@ runs it. A definition has no state: running agents are
     "permissions": {
       "preset": "workspace",
       "rules": [
-        { "action": "shell", "match": "git push*", "effect": "ask" },
+        { "action": "shell", "match": "git push *", "effect": "ask" },
         { "action": "write", "match": ".env*", "effect": "deny" }
       ]
     },
@@ -102,7 +102,7 @@ document is written rather than when the agent fails to act.
   "preset": "workspace",
   "directories": { "../shared-docs": "read", "/tmp/build-cache": "write" },
   "rules": [
-    { "action": "shell", "match": "git push*", "effect": "ask" },
+    { "action": "shell", "match": "git push *", "effect": "ask" },
     { "action": "write", "match": ".env*", "effect": "deny" },
     { "action": "read", "match": "**/.env*", "effect": "deny" }
   ]
@@ -139,7 +139,10 @@ and commands, not to the MCP servers it may use; to restrict a server, write
 confine a server further.
 
 `match` uses `*` for any sequence of characters; for paths, `**` also crosses
-directory separators. A rule without `match` covers every use of its action.
+directory separators. For `shell`, a final ` *` covers the command with any
+arguments, none included: `git push *` covers `git push` and
+`git push origin main`, not `git pushx`. A rule without `match` covers every
+use of its action.
 
 A path, in a rule or in `directories`, is relative to the workspace, or starts
 with `~/` for the user's home directory, or with `/` for an absolute path.
@@ -233,7 +236,7 @@ after the shortest `answerTimeoutMs` among those works that declare one.
 ```json
 "releaser": {
   "harness": "codex",
-  "permissions": { "preset": "workspace", "reviewer": "person", "rules": [{ "action": "shell", "match": "npm publish*", "effect": "ask" }] },
+  "permissions": { "preset": "workspace", "reviewer": "person", "rules": [{ "action": "shell", "match": "npm publish *", "effect": "ask" }] },
   "answerTimeoutMs": 3600000
 }
 ```

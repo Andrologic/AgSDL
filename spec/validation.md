@@ -64,7 +64,7 @@ A report is a JSON object:
 | `SCHEMA` | A value schema is inconsistent: a keyword on the wrong type, an `enum` value of the wrong type or repeated, a `required` name that is not a declared property, `minItems` above `maxItems`; or a result has a schema without a JSON media type. An unknown keyword is a `SHAPE` error. |
 | `PERMISSIONS` | A completion check command is denied by the agent's own permissions, or a `read-only` agent has a `"write"` directory. |
 | `RESULT_NAME` | An agent declares a result named `text`, which collides with the default message. |
-| `HARNESS_UNSUPPORTED` | The agent uses a property, or needs a permission effect enforced, that its harness module declares absent, or enforces only by harness rules that the agent's shell commands could bypass. |
+| `HARNESS_UNSUPPORTED` | The agent uses a property, or needs a permission effect enforced, that its harness module declares absent, or enforces only by harness rules that the agent's shell commands could bypass, or a `shell` pattern its harness cannot match. |
 | `HARNESS_VALUE` | A value is outside the module's closed vocabulary. |
 | `HARNESS_SETTINGS` | `harnessSettings` violate the module's settings schema, or the module defines no settings. |
 

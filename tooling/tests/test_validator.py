@@ -12,7 +12,7 @@ REPOSITORY = os.path.dirname(TOOLING)
 sys.path.insert(0, TOOLING)
 
 from agsdl import jsoninput, load_modules, validate_bytes  # noqa: E402
-from agsdl.permissions import effect_for, effects_in_use, glob_matches  # noqa: E402
+from agsdl.permissions import command_prefix, effect_for, effects_in_use, glob_matches  # noqa: E402
 from agsdl.graph import Graph  # noqa: E402
 from agsdl.mermaid import render  # noqa: E402
 from agsdl.validator import load_module  # noqa: E402
@@ -98,6 +98,10 @@ class JsonInputTest(unittest.TestCase):
 class PermissionsTest(unittest.TestCase):
     def test_glob(self):
         self.assertTrue(glob_matches("git push*", "git push origin main"))
+        self.assertTrue(glob_matches("git push *", "git push", command=True))
+        self.assertTrue(glob_matches("git push *", "git push origin", command=True))
+        self.assertFalse(glob_matches("git push *", "git pushx", command=True))
+        self.assertFalse(glob_matches("git push *", "git push", paths=True))
         self.assertFalse(glob_matches("git push*", "git status"))
         self.assertTrue(glob_matches(".env*", ".env.local", paths=True))
         self.assertFalse(glob_matches("src/*", "src/a/b.py", paths=True))
@@ -106,13 +110,19 @@ class PermissionsTest(unittest.TestCase):
     def test_most_restrictive_matching_rule_wins(self):
         permissions = {"preset": "workspace", "rules": [
             {"action": "shell", "match": "git *", "effect": "allow"},
-            {"action": "shell", "match": "git push*", "effect": "ask"},
+            {"action": "shell", "match": "git push *", "effect": "ask"},
         ]}
         self.assertEqual(effect_for(permissions, "shell", "git push"), "ask")
         self.assertEqual(effect_for(permissions, "shell", "git status"), "allow")
         self.assertEqual(effect_for(permissions, "shell", "make"), "allow")
         self.assertEqual(effect_for(None, "shell", "make"), "deny")
         self.assertEqual(effect_for({"rules": []}, "read", "a.txt"), "deny")
+
+    def test_command_prefix(self):
+        for pattern in ("git push *", "rm", "npm run test"):
+            self.assertTrue(command_prefix(pattern), pattern)
+        for pattern in ("git push*", "git push * --force", "* --force", " *", "rm "):
+            self.assertFalse(command_prefix(pattern), pattern)
 
     def test_effects_in_use(self):
         effects = effects_in_use({"rules": [{"action": "network", "effect": "allow"}]})

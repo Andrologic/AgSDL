@@ -15,7 +15,7 @@
         "rules": [
           {
             "action": "shell",
-            "match": "git push*",
+            "match": "git push *",
             "effect": "ask"
           },
           {

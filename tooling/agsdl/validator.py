@@ -6,7 +6,7 @@ from collections import deque
 
 from . import jsoninput, valueschema
 from .graph import Graph, analyse_joins, open_body_forks, route_items, route_targets, step_routes
-from .permissions import effect_for, effects_in_use, normalize, outside, shell_denied
+from .permissions import command_prefix, covers_all, effect_for, effects_in_use, normalize, outside, shell_denied
 from .schemacheck import SchemaChecker, pointer
 
 CONTRACT = "agsdl-0.3.0"
@@ -1052,7 +1052,16 @@ class Checker:
                     self.report.error("HARNESS_UNSUPPORTED", where, f"{harness} cannot enforce {effect!r} for {action!r}")
                 elif not enforced(action, level):
                     self.report.error("HARNESS_UNSUPPORTED", where, f"{harness} cannot enforce {effect!r} for {action!r}: {bypass}")
-        preset, _ = normalize(permissions)
+        preset, rules = normalize(permissions)
+        if enforcement.get("shell", {}).get("match") == "prefix":
+            for index, rule in enumerate(rules):
+                if rule["action"] != "shell" or rule["effect"] == "allow" or covers_all(rule):
+                    continue
+                if not command_prefix(rule["match"]):
+                    self.report.error(
+                        "HARNESS_UNSUPPORTED", where + ["rules", index, "match"],
+                        f"{harness} matches commands by their leading words only; write the words, then \" *\" for any arguments",
+                    )
         if preset is not None and outside(permissions) == "deny":
             level = enforcement.get("read", {}).get("outside", "absent")
             if level == "absent":

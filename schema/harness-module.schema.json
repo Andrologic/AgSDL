@@ -90,24 +90,11 @@
         ]
       },
       "additionalProperties": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "allow": {
-            "$ref": "#/$defs/enforcement"
-          },
-          "ask": {
-            "$ref": "#/$defs/enforcement"
-          },
-          "deny": {
-            "$ref": "#/$defs/enforcement"
-          },
-          "note": {
-            "type": "string"
-          },
-          "outside": {
-            "$ref": "#/$defs/enforcement"
-          }
+        "$ref": "#/$defs/permissionEntry"
+      },
+      "properties": {
+        "shell": {
+          "$ref": "#/$defs/shellEntry"
         }
       }
     },
@@ -216,6 +203,54 @@
         "versions": {
           "type": "string",
           "minLength": 1
+        }
+      }
+    },
+    "permissionEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "$ref": "#/$defs/enforcement"
+        },
+        "ask": {
+          "$ref": "#/$defs/enforcement"
+        },
+        "deny": {
+          "$ref": "#/$defs/enforcement"
+        },
+        "note": {
+          "type": "string"
+        },
+        "outside": {
+          "$ref": "#/$defs/enforcement"
+        }
+      }
+    },
+    "shellEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allow": {
+          "$ref": "#/$defs/enforcement"
+        },
+        "ask": {
+          "$ref": "#/$defs/enforcement"
+        },
+        "deny": {
+          "$ref": "#/$defs/enforcement"
+        },
+        "note": {
+          "type": "string"
+        },
+        "outside": {
+          "$ref": "#/$defs/enforcement"
+        },
+        "match": {
+          "description": "How the harness matches a command. \"prefix\": by its leading words only, so a deny or ask holds only for a pattern made of words, alone or followed by \" *\". Without it, any pattern.",
+          "enum": [
+            "prefix"
+          ]
         }
       }
     }

@@ -398,6 +398,18 @@
     "errors": [],
     "warnings": []
   },
+  "shell-prefix": {
+    "description": "A harness that matches commands by their leading words enforces a deny on words, alone or followed by \" *\"; an allow it cannot express is not granted, and is no error.",
+    "errors": [],
+    "warnings": []
+  },
+  "shell-prefix-unsupported": {
+    "description": "A harness that matches commands by their leading words cannot enforce a deny on any other pattern.",
+    "errors": [
+      "HARNESS_UNSUPPORTED"
+    ],
+    "warnings": []
+  },
   "effort-open": {
     "description": "An effort level outside a module's suggestions is not an error.",
     "errors": [],

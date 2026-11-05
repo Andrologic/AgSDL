@@ -12,7 +12,7 @@
           "rules": [
             {
               "action": "shell",
-              "match": "npm publish*",
+              "match": "npm publish *",
               "effect": "ask"
             }
           ]

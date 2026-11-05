@@ -21,6 +21,10 @@ A redesign. Documents written for 0.2 must be rewritten. See
   `reviewer` to choose whether a person or a model answers `ask` actions.
   Harness rules count for reads, writes and network access only when the
   agent cannot run shell commands.
+  A `shell` pattern ending in ` *` covers the command with any arguments,
+  none included; a module whose harness matches commands by their leading
+  words says so with `"match": "prefix"`, and enforces `deny` and `ask` only
+  on such patterns.
 - The `agsdl_submit_result` tool and automatic corrections, bounded by
   `maxCorrections` and `completionCheck.maxFailures`.
 - Instances: shared, named and `new`.

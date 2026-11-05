@@ -17,12 +17,12 @@
         "rules": [
           {
             "action": "shell",
-            "match": "npm run lint*",
+            "match": "npm run lint *",
             "effect": "allow"
           },
           {
             "action": "shell",
-            "match": "npm test*",
+            "match": "npm test *",
             "effect": "allow"
           }
         ]
@@ -67,7 +67,7 @@
         "rules": [
           {
             "action": "shell",
-            "match": "npm install*",
+            "match": "npm install *",
             "effect": "ask"
           }
         ]

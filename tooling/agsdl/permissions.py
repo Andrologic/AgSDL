@@ -51,8 +51,11 @@ def shell_denied(permissions):
     return (PRESETS[preset]["shell"] if preset else "deny") == "deny"
 
 
-def glob_matches(pattern, text, paths=False):
-    """Match `*` (and `**` for paths) against text."""
+def glob_matches(pattern, text, paths=False, command=False):
+    """Match `*` (and `**` for paths) against text. For a command, a final
+    ` *` also covers the command without arguments."""
+    if command and pattern.endswith(" *") and text == pattern[:-2]:
+        return True
     out = []
     i = 0
     while i < len(pattern):
@@ -72,16 +75,25 @@ def effect_for(permissions, action, subject):
     """The effective effect of one concrete action, as far as it can be decided statically."""
     preset, rules = normalize(permissions)
     paths = action in ("read", "write")
+    command = action == "shell"
     matching = [
         rule["effect"]
         for rule in rules
-        if rule["action"] == action and ("match" not in rule or glob_matches(rule["match"], subject, paths))
+        if rule["action"] == action and ("match" not in rule or glob_matches(rule["match"], subject, paths, command))
     ]
     if matching:
         return max(matching, key=ORDER.get)
     if preset is None:
         return "deny"
     return PRESETS[preset][action]
+
+
+def command_prefix(pattern):
+    """Whether a shell pattern names leading words: words alone, or words
+    then ` *`. A harness that matches commands by their leading words
+    enforces a deny or ask on such a pattern, and no other."""
+    words = pattern[:-2] if pattern.endswith(" *") else pattern
+    return bool(words) and "*" not in words and words == words.strip()
 
 
 def effects_in_use(permissions):

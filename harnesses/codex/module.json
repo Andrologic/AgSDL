@@ -116,7 +116,8 @@
       "allow": "harness",
       "deny": "harness",
       "ask": "harness",
-      "note": "Maps to execpolicy prefix_rule decisions allow, forbidden and prompt, so patterns must be command-token prefixes."
+      "match": "prefix",
+      "note": "Maps to execpolicy prefix_rule decisions allow, forbidden and prompt, which match the leading words of a command."
     },
     "network": {
       "allow": "sandbox",

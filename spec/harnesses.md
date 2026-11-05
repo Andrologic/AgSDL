@@ -105,6 +105,14 @@ Each entry of `permissions` gives, for one action, how each effect is enforced:
 A `deny` or `ask` declared as `sandbox` or `harness` holds for every rule of
 that action, with or without `match`, and for the presets.
 
+The `shell` entry MAY add `"match": "prefix"`: the harness matches a command
+by its leading words only. A `deny` or `ask` then holds only for a pattern
+made of words, alone or followed by ` *`, such as `git push *`; on words
+alone, it also covers them with arguments. On any other pattern, such as
+`git push * --force` or `rm*`, it is not enforced. A host
+never widens an `allow` to fit the harness: what the harness cannot express,
+the host does not grant.
+
 `harness` rules act on the harness's own tools. A shell command can read,
 write or reach the network without them, so for `read`, `write`, `network`
 and reads outside the zone, `harness` enforcement holds only when the agent

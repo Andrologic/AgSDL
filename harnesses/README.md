@@ -44,7 +44,7 @@ shows the module's note. "—" means absent: using the property is an error.
 | --- | --- | --- | --- | --- |
 | `read` | sandbox | sandbox | harness | — |
 | `write` | sandbox | sandbox | harness | — |
-| `shell` | harness | harness | harness | — |
+| `shell` | harness, leading words | harness | harness | — |
 | `network` | sandbox | sandbox | harness | harness |
 | `mcp` | harness | harness | harness | harness |
 | `delegate` | harness | harness | harness | harness |
@@ -53,7 +53,9 @@ shows the module's note. "—" means absent: using the property is an error.
 Permissions are enforced or they are not. A `deny` that a harness cannot
 enforce makes the agent invalid; `full` requests no `deny` at all. For `read`,
 `write`, `network` and reads outside the zone, `harness` holds only when the
-agent cannot run shell commands. The module files give `allow` and `ask` too.
+agent cannot run shell commands. Codex matches a command by its leading
+words, so its `shell` rules hold only for words alone or followed by ` *`. The
+module files give `allow` and `ask` too.
 
 The table is a summary. The module files are the reference.
 

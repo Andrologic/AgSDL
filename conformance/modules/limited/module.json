@@ -42,7 +42,8 @@
     },
     "shell": {
       "allow": "harness",
-      "deny": "harness"
+      "deny": "harness",
+      "match": "prefix"
     }
   }
 }
