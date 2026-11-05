@@ -545,7 +545,7 @@ class Checker:
         self.check_instruction_fanouts(graph)
         for edge in graph.edges:
             if edge.each is not None:
-                reason = self.selection_problem(graph, edge, edge.each, infos) or self.fanout_problem(graph, edge, infos)
+                reason = self.selection_problem(graph, edge, edge.each, infos, in_message=False) or self.fanout_problem(graph, edge, infos)
                 if reason:
                     self.report.error("MESSAGE_PATH", edge.pointer + ["each"], reason, expanded(edge.src))
             message = edge.message
@@ -573,23 +573,21 @@ class Checker:
                 if reason:
                     self.report.error("MESSAGE_PATH", edge.pointer + ["message", "resources", name, "from"], reason, expanded(edge.src))
 
-    def selection_problem(self, graph, edge, path, infos):
+    def selection_problem(self, graph, edge, path, infos, in_message=True):
+        """Why a selection path cannot be read on a route, or None. `item` is
+        read only in a message: `each` itself reads the step's output."""
         if not path:
             return None
         head = path[0]
         if head == "item":
             # The element of a fan-out: read below the list the fan-out reads.
-            if edge.each is None:
+            if edge.each is None or not in_message:
                 return "'item' exists only in the message of a fan-out"
             if list(edge.each) == ["instructions"]:
                 return None if len(path) == 1 else "'item' is an instruction, a string"
-            return self.selection_problem(graph, edge, list(edge.each) + [0] + list(path[1:]), infos)
+            return self.selection_problem(graph, edge, list(edge.each) + [0] + list(path[1:]), infos, in_message=False)
         if edge.kind == "error":
-            if head != "error":
-                return "an error route carries only 'error'"
-            if len(path) > 1 and path[1] not in ("code", "message", "details"):
-                return f"an error has no field {path[1]!r}"
-            return None
+            return self.error_path_problem(path)
         node = graph.nodes[edge.src]
         if node.type == "agent":
             agent = self.agents.get(node.agent)
@@ -681,6 +679,23 @@ class Checker:
                             if reason:
                                 return f"branch {path[1]!r}: {reason}"
             return None
+        return None
+
+    @staticmethod
+    def error_path_problem(path):
+        """Check a path in the input of an error route: code and message are
+        strings, details a list of objects whose fields are not declared."""
+        if path[0] != "error":
+            return "an error route carries only 'error'"
+        if len(path) == 1:
+            return None
+        field = path[1]
+        if field not in ("code", "message", "details"):
+            return f"an error has no field {field!r}"
+        if field in ("code", "message"):
+            return f"'{field}' is a string" if len(path) > 2 else None
+        if len(path) > 2 and (not isinstance(path[2], int) or isinstance(path[2], bool)):
+            return "'details' is a list: select an entry by its index"
         return None
 
     @staticmethod

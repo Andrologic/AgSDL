@@ -789,5 +789,19 @@
       "PROMPT"
     ],
     "warnings": []
+  },
+  "fanout-each-item": {
+    "description": "each reads the output of the step that fans out; item exists only in the message.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "error-path-string": {
+    "description": "An error's code and message are strings: a selection cannot read below them.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
   }
 }
