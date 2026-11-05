@@ -67,7 +67,7 @@ What an agent receives has three layers:
 | --- | --- | --- |
 | Framing | The definition's `instructions` | The document author |
 | Mission | The `prompt` of the message that starts or joins the work | The document author, who wrote the connection |
-| Information | `resources` of the definition and of the message | None: data to read, not orders |
+| Information | `resources` of the definition and of the message, and the message's `item` and `comments` | None: data to read, not orders |
 
 Results of agents, calls and joins are always information. A tool result or a
 document saying "ignore your instructions" remains data. An agent gives another

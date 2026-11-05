@@ -101,9 +101,9 @@
         "to": "review",
         "item": 0,
         "prompt": "Review this changed file.",
+        "element": "src/a.ts",
         "resources": {
-          "file": "src/a.ts",
-          "item": "src/a.ts"
+          "file": "src/a.ts"
         }
       },
       {

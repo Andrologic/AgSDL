@@ -121,8 +121,8 @@
       {
         "to": "fix",
         "item": 0,
+        "element": "a.ts",
         "resources": {
-          "item": "a.ts",
           "files": [
             "a.ts",
             "b.ts"
@@ -132,9 +132,7 @@
       {
         "to": "fix",
         "item": 1,
-        "resources": {
-          "item": "b.ts"
-        }
+        "element": "b.ts"
       },
       {
         "to": "plan",

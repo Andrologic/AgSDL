@@ -78,7 +78,7 @@ work; a host for which it names none, or several, fails the scenario.
 | --- | --- |
 | `run` | Ended the run as `"succeeded"` or `"failed"`. |
 | `starts` | Started exactly this many works per step; a step not listed starts none. A message that joins a current work with `steer` starts none. |
-| `messages` | Delivered these messages. `nth` counts the messages to the step, and `item` selects a fan-out path. |
+| `messages` | Delivered these messages. `nth` counts the messages to the step, and `item` selects a fan-out path. `prompt`, `resources`, `element`, the message's `item`, and `comments` are what the message holds. |
 | `joins` | Made exactly these join decisions, in timeline order. |
 | `failures` | Reported exactly these failures, in any order. |
 | `cancelled` | Cancelled exactly these works for a group that decided, closed or failed, in any order. A work that runs out of its `timeoutMs` is a failure, not listed here. |

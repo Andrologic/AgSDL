@@ -1,5 +1,5 @@
 {
-  "description": "An approval passes on the message it received with the person's comment; it fails with APPROVAL_TIMEOUT without an answer in time, a person's time included.",
+  "description": "An approval passes on the message it received, with the person's comment in its comments; it fails with APPROVAL_TIMEOUT without an answer in time, a person's time included.",
   "document": {
     "contract": "agsdl-0.3.0",
     "id": "approval",
@@ -77,9 +77,14 @@
         "to": "write",
         "nth": 2,
         "resources": {
-          "text": "Draft 1",
-          "comment": "Fix the title."
-        }
+          "text": "Draft 1"
+        },
+        "comments": [
+          {
+            "step": "approve",
+            "comment": "Fix the title."
+          }
+        ]
       }
     ],
     "failures": [

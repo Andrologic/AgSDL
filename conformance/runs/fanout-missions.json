@@ -95,9 +95,7 @@
         "to": "build",
         "item": 0,
         "prompt": "Add the orders table.",
-        "resources": {
-          "item": "Add the orders table."
-        }
+        "element": "Add the orders table."
       },
       {
         "to": "build",

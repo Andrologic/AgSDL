@@ -266,6 +266,30 @@
               "resources": {
                 "description": "Resources by name, each compared as a pattern: an object matches when every key given matches; other values match exactly. Resources not given are not compared.",
                 "type": "object"
+              },
+              "element": {
+                "description": "The message's item, the element of its fan-out, compared as a pattern."
+              },
+              "comments": {
+                "description": "The message's comments, compared as a pattern: the whole list, in order.",
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "step",
+                    "comment"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "step": {
+                      "$ref": "#/$defs/address"
+                    },
+                    "comment": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
               }
             }
           }

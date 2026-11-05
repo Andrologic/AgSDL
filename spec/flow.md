@@ -115,8 +115,8 @@ target starts once per element, at once, in list order: a **fan-out**.
 "gather": { "type": "join", "failures": "keep", "next": { "done": "summary", "incomplete": "plan" } }
 ```
 
-- Each start receives the route's message, default or explicit, plus
-  `resources.item`, the element. In that message, a selection that starts
+- Each start receives the route's message, default or explicit, with the
+  element as its `item`. In that message, a selection that starts
   with `"item"` reads in the element, for example
   `{ "from": ["item", "file"] }`; validators check it against the list's
   declared schema.
@@ -183,7 +183,11 @@ defined below.
 
 ## Messages
 
-A message has a `prompt`, the mission, and `resources`, information.
+A message has a `prompt`, the mission, and `resources`, information. What
+the host adds to a message on its way is information kept apart from the
+resources, under fields of its own: `item`, the element of a
+[fan-out](#fan-out), and `comments`, the comments of
+[approvals](#approval). A resource name never meets a name the host adds.
 
 ```json
 "message": {
@@ -215,7 +219,7 @@ When a route has no `message`, the target receives the **default message**:
 | Agent | `resources.text` with the agent's text, and one resource per accepted result, under the result's name. The prompt is the agent's `instructions` when it [instructs](agents.md#instructing-other-agents); otherwise there is none. |
 | Call | `resources.result` with the call's `data`. |
 | Join | One resource per branch, under the branch name, with the branch output. No prompt. |
-| Approval | The message it received, plus `resources.comment` with the person's comment when it is not empty. |
+| Approval | The message it received, plus an entry in `comments` when the person wrote one. |
 | Composition | The default message of the body step that left the composition. |
 | Error route | `resources.error` with the [error](#failures). |
 
@@ -432,6 +436,19 @@ comment. The output of the step is:
 `comment` is always present, and empty when the person wrote nothing. Every
 choice is a normal answer, not a failure: `approved` and `denied` are only a
 common naming.
+
+The approval passes on the message it received. When the person wrote a
+comment, it adds an entry to the message's `comments`, a list in the order
+the people answered: `step`, the approval, by the step names leading to it
+joined with `/` ([compositions](#compositions)), and `comment`. Approvals that
+follow one another each add theirs:
+
+```json
+"comments": [
+  { "step": "review/approve", "comment": "Too long." },
+  { "step": "approve-release", "comment": "Fine once shortened." }
+]
+```
 
 An approval decides between missions. The [`ask`](agents.md#actions-and-effects)
 permission effect decides on one action during a mission.

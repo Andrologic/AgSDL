@@ -46,6 +46,8 @@ def addressed(scenario):
         yield address, "work"
     for message in expect.get("messages", []):
         yield message["to"], "work"
+        for comment in message.get("comments", []):
+            yield comment["step"], "approval"
     for join in expect.get("joins", []):
         yield join["join"], "join"
     for failure in expect.get("failures", []):
@@ -79,6 +81,8 @@ class RunScenarioTest(unittest.TestCase):
                     self.assertIn(addr, steps, f"no step {address!r}")
                     if role == "join":
                         self.assertEqual(steps[addr], "join", f"{address!r} is not a join")
+                    elif role == "approval":
+                        self.assertEqual(steps[addr], "approval", f"{address!r} is not an approval")
                     elif role == "work":
                         self.assertNotEqual(steps[addr], "join", f"a join does no work: {address!r}")
 
