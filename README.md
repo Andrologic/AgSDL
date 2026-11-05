@@ -1,5 +1,7 @@
 # AgSDL
 
+[![Repository checks](https://github.com/Andrologic/AgSDL/actions/workflows/verification.yml/badge.svg)](https://github.com/Andrologic/AgSDL/actions/workflows/verification.yml)
+
 AgSDL, the Agentic Systems Definition Language, describes **agents** and the
 **flows** that connect them, in JSON that people and software can read,
 validate and version.
@@ -32,6 +34,21 @@ anything runs.
 | 0.2.0 | Last published edition, tag [`v0.2.0`](https://github.com/Andrologic/AgSDL/tree/v0.2.0). |
 
 AgSDL is not stable. Expect breaking changes until 1.0.
+
+Today you can write documents, validate them, draw their flows, and check
+whether each agent keeps its guarantees on the harness you choose. No host runs
+0.3 documents yet: Macro is the first one planned.
+
+## Implementations
+
+| Kind | Implementation | Status |
+| --- | --- | --- |
+| Validator | [Reference validator](tooling/README.md), in this repository | 0.3.0 |
+| Renderer | [Mermaid renderer](tooling/README.md#draw), in this repository | 0.3.0 |
+| Harness modules | [Codex, Claude Code, opencode, pi](harnesses/README.md) | 1.0.0 |
+| Host | Macro | Planned |
+
+To list another implementation, open an issue.
 
 ## A first document
 
@@ -145,7 +162,7 @@ levels a harness accepts.
 | `examples/` | Complete, valid documents. |
 | `tooling/` | The reference validator and a Mermaid renderer. |
 | `conformance/` | Test documents with their expected diagnostics, and run scenarios for hosts. |
-| `docs/` | Scope, quickstart and design decisions. |
+| `docs/` | Scope, quickstart, design decisions and the release process. |
 
 Earlier editions, their reports and their history are available from their
 Git tags.
