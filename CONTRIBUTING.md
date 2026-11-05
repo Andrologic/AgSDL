@@ -50,4 +50,8 @@ the diff contains nothing unrelated.
 ## Git workflow
 
 Stable history lives on `main`; integration happens on `develop`. Work on a
-`feature/*` branch and open a pull request to `develop`.
+`feature/*` branch and open a pull request to `develop`. Maintainers release
+editions as described in [Releasing](docs/releasing.md).
+
+Report a false permission guarantee privately, as described in
+[SECURITY.md](SECURITY.md).
