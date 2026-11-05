@@ -863,5 +863,12 @@
     "description": "A local MCP server's arguments may be empty strings; only its program must not be.",
     "errors": [],
     "warnings": []
+  },
+  "parallel-no-join-shared": {
+    "description": "Paths of a fork that meets no join run at the same time: steps on them that share an instance are serialized.",
+    "errors": [],
+    "warnings": [
+      "SHARED_INSTANCE_PARALLEL"
+    ]
   }
 }

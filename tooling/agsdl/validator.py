@@ -867,6 +867,44 @@ class Checker:
             if graph.nodes[addr].decl.get("remaining") == "finish":
                 self.check_after_finish(graph, addr, finishing)
         self.check_fanout_instances(graph, infos)
+        self.check_open_fork_instances(graph, infos)
+
+    def check_open_fork_instances(self, graph, infos):
+        """Paths of a fork that meets no join run at the same time to their end."""
+        origins = {(info["prefix"] + (info["origin"],)) for info in infos.values()}
+        warned = set()
+        succ = graph.successors()
+        for addr in sorted(graph.nodes):
+            if addr in origins:
+                continue
+            groups = {}
+            for edge in succ[addr]:
+                if edge.each is None:
+                    groups.setdefault((edge.kind, edge.key), set()).add(edge.dst)
+            for targets in groups.values():
+                if len(targets) < 2:
+                    continue
+                users = {}
+                for target in sorted(targets):
+                    for member in sorted(graph.reachable(target)):
+                        node = graph.nodes[member]
+                        if node.type != "agent" or node.agent is None or member in warned:
+                            continue
+                        instance = node.decl.get("instance")
+                        if instance == "new" or "delivery" in node.decl:
+                            continue
+                        key = (node.agent, instance)
+                        other = users.get(key)
+                        if other is not None and other[0] != target:
+                            warned.add(member)
+                            self.report.warning(
+                                "SHARED_INSTANCE_PARALLEL",
+                                node.pointer,
+                                f"steps '{other[1]}' and '{node.name}' can use the {instance_label(instance)} of agent '{node.agent}' at the same time; their work will be serialized",
+                                expanded(member),
+                            )
+                        else:
+                            users.setdefault(key, (target, node.name))
 
     def check_fanout_instances(self, graph, infos):
         """A step in the paths of a fan-out runs once per element, at the same time."""
