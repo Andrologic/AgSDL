@@ -10,14 +10,23 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    name: check (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ['3.9', '3.12']
+        include:
+          # The oldest Python the tools support. Newer Ubuntu images no
+          # longer provide it, so this job keeps an image that does.
+          - python-version: '3.9'
+            os: ubuntu-24.04
+          # The newest stable Python.
+          - python-version: '3.x'
+            os: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Check repository, validator, conformance cases and examples
