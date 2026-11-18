@@ -603,6 +603,16 @@ fan-out that has not started never starts, whatever `remaining` says: with
 `concurrency: 1` and a quorum of one, elements are tried in order until one is
 accepted. Works of other steps on the same instances are not affected.
 
+When `stop` cancels a path that another open group also waits for, the host
+withdraws any element of that path that has not started from each group before
+admitting more work on those paths. A withdrawn element contributes no entry
+to a join output. For a path that has started, the host cancels each work once
+and disregards results it receives after committing to cancellation. The
+other groups wait for the affected work to stop before deciding an outcome
+or continuing, even with `remaining: "finish"`. Each of those groups then
+treats the cancelled path as ended without a result and applies its normal
+waiting rules. This end does not count as a failure.
+
 `finish` and `wait` let work with effects, such as edits or a deployment,
 complete instead of being cut off, and keep the results of late branches in
 the run's record. With `finish`, steps after the join run at the same time as
