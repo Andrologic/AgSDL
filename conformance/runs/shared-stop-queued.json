@@ -17,7 +17,7 @@
           "agent": "worker",
           "next": [
             "a",
-            "b"
+            "release"
           ]
         },
         "a": {
@@ -45,6 +45,11 @@
         "j2": {
           "type": "join",
           "remaining": "stop"
+        },
+        "release": {
+          "type": "call",
+          "command": "true",
+          "next": "b"
         }
       }
     }
@@ -58,6 +63,24 @@
       "returns": {
         "text": "",
         "results": {}
+      }
+    },
+    {
+      "running": [
+        {
+          "step": "a"
+        },
+        {
+          "step": "release"
+        }
+      ]
+    },
+    {
+      "work": "release",
+      "command": {
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
       }
     },
     {
@@ -80,7 +103,8 @@
     "run": "succeeded",
     "starts": {
       "origin": 1,
-      "a": 1
+      "a": 1,
+      "release": 1
     },
     "joins": [
       {
@@ -90,7 +114,7 @@
           "a": {
             "choice": "one"
           },
-          "b": {
+          "release": {
             "ended": "without-result"
           }
         }
