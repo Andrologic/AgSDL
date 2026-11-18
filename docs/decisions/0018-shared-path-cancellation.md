@@ -17,4 +17,5 @@ that is still stopping, including when the affected join uses `finish`.
 
 [Waiting modes](../../spec/flow.md#waiting-modes) defines the rule. The
 conformance scenarios cover a pending fan-out, a fan-out with active work,
-and an all join that receives a branch without a result.
+and all joins that receive one branch without a result. They exercise both
+running and queued work.

@@ -606,7 +606,9 @@ accepted. Works of other steps on the same instances are not affected.
 When `stop` cancels a path that another open group also waits for, the host
 withdraws any element of that path that has not started from each group before
 admitting more work on those paths. A withdrawn element contributes no entry
-to a join output. For a path that has started, the host cancels each work once
+to a join output. A path already admitted to an instance queue ends without a
+result when its queued message is removed, even when its work has yet to start.
+For a path with active work, the host cancels each work once
 and disregards results it receives after committing to cancellation. The
 other groups wait for the affected work to stop before deciding an outcome
 or continuing, even with `remaining: "finish"`. Each of those groups then

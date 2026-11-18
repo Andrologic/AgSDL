@@ -72,6 +72,10 @@ joined with `/`, such as `"review/vote"`. `item` is the index of the element
 whose path runs the work, in a fan-out. An event names exactly one running
 work; a host for which it names none, or several, fails the scenario.
 
+The timeline treats stopping a work and confirming that it stopped as one
+operation. Hosts can test the wait for a physical stop confirmation with
+their own executor tests.
+
 ### Expectations
 
 | Field | What the host must have done |
