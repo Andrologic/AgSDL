@@ -37,6 +37,13 @@ python3 -m agsdl ../examples/*.json
 | [review-changed-files](review-changed-files.json) | A command's output read as lines; one reviewer per changed file, eight at a time; a quorum of one that starts no further review and waits for the started ones. | opencode, Claude Code |
 | [assistant](assistant.json) | One fully configured agent without a flow: skills, MCP, permission rules, plan, plan first, completion check. | Claude Code |
 
+In [release-approval](release-approval.json), a person can stop the run
+while the approval is pending. The host closes the request and the
+publication call never starts. After the call starts, stopping the run
+requires confirmation that the call and activity it started have ended.
+Any publication that already took effect stays in place. See
+[Stopping and recovering a run](../spec/flow.md#stopping-and-recovering-a-run).
+
 Draw any flow with:
 
 ```sh

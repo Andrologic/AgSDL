@@ -146,6 +146,55 @@
         {
           "type": "object",
           "required": [
+            "stopRun"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "stopRun": {
+              "const": true
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "hostRestart"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hostRestart": {
+              "enum": [
+                "resume",
+                "interrupt"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "runState"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "runState": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "running",
+                    "stopping"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/runOutcome"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
             "work"
           ],
           "additionalProperties": false,
@@ -211,6 +260,10 @@
                 "yes",
                 "no"
               ]
+            },
+            "stopped": {
+              "description": "Confirms that the work and all activity it started have ended after a whole-run stop.",
+              "const": true
             }
           },
           "oneOf": [
@@ -243,6 +296,11 @@
               "required": [
                 "answer"
               ]
+            },
+            {
+              "required": [
+                "stopped"
+              ]
             }
           ]
         }
@@ -256,10 +314,7 @@
       "additionalProperties": false,
       "properties": {
         "run": {
-          "enum": [
-            "succeeded",
-            "failed"
-          ]
+          "$ref": "#/$defs/runOutcome"
         },
         "starts": {
           "description": "How many works each step starts. Each compose entry counts at the compose step's address, and each body work counts at its own address. An omitted step has zero starts.",
@@ -385,7 +440,7 @@
           }
         },
         "cancelled": {
-          "description": "Every work the host cancels for a group that decided, closed or failed, in any order.",
+          "description": "Every work the host cancels under a group rule or a whole-run stop, in any order.",
           "type": "array",
           "items": {
             "$ref": "#/$defs/workRef"
@@ -433,6 +488,14 @@
           "$ref": "#/$defs/item"
         }
       }
+    },
+    "runOutcome": {
+      "enum": [
+        "succeeded",
+        "failed",
+        "cancelled",
+        "interrupted"
+      ]
     }
   }
 }

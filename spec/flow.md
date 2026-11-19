@@ -50,7 +50,7 @@ decide it.
 
 1. **A step is one unit of work.** When a message starts a step, the step does
    one work and ends in exactly one way: a normal route, a failure, or a
-   cancellation by a join. A compose step is no exception: its body is its
+   cancellation. A compose step is no exception: its body is its
    work, and it leaves at most once, through one output or as a failure; a
    body path that ends without reaching an output ends the compose step's
    path, as an empty route does. A join does no work of its own; it closes a
@@ -81,6 +81,8 @@ decide it.
    when no work is active or waiting and no `steer` attempt is pending. It
    fails if a failure reached no handler and counted for the flow. Otherwise
    it succeeds.
+   A [whole-run stop or interruption](#stopping-and-recovering-a-run)
+   can end the run with a different outcome.
 
 ## Routes
 
@@ -840,6 +842,70 @@ integer: a request to a person that the server makes during the call, left
 unanswered that long, is declined, and the tool goes on with that refusal.
 Without it, the host waits for the person.
 
+## Stopping and recovering a run
+
+### Stop requested by a person
+
+A host that accepts a person's request to stop a run MUST record the stop
+before acknowledging it, so the request survives a host restart. The host
+orders the stop with respect to results, failures and the run's terminal
+outcome. A terminal run keeps its outcome. A repeated stop during
+cancellation leaves the same cancellation in progress.
+
+Once the host commits to the stop, the run is stopping. The host MUST
+prevent new work, message deliveries, join decisions and routing, including
+error routes and routes inside compositions. It withdraws queued messages
+and fan-out elements that have yet to start. It closes pending approvals
+and requests for answers, and cancels all open work, including calls,
+composition bodies and work still running under a join's `finish` or
+`wait`. Work already stopping remains subject to the same confirmation
+requirement. A pending `steer` attempt is withdrawn where possible.
+The host MUST NOT retry, queue or route its message after the stop.
+Late delivery reports cannot start work or trigger an error route.
+
+The host MUST stop all activity started on behalf of the run, including
+background commands and sub-agents. It MUST report the terminal outcome
+`cancelled` only after confirming that this activity has ended and that
+no work or request remains pending. An acknowledgement of a stop request
+or a lost connection does not establish termination. While confirmation is
+outstanding, the host MUST show the stop as still pending.
+
+Cancellation produces no step failure. The host disregards late output,
+failures and answers for routing and reporting step failures. The run's
+record retains decisions and failures committed before the stop. Stopping
+does not undo effects that have already occurred.
+
+### Host interruption
+
+After an unexpected interruption or a planned host shutdown, a host MAY
+resume an open run if it can recover its execution state and enforce the
+same guarantees. It MUST reconcile in-flight work and committed effects
+before it advances the run. It must preserve the document, the state of
+paths, queues and joins, recorded results and decisions, instance
+conversations, pending requests and limits, including elapsed time as
+defined by each limit. It MUST establish exclusive
+control of action and routing so that old and new execution cannot race.
+Resumed work MUST have the same effective permissions, result submission
+and checking rules. Resumption MUST preserve deliveries and starts
+without duplicating work, calls or effects. A harness session identifier
+alone is insufficient.
+
+An accepted stop survives the interruption. The host MUST continue
+cancellation when it can recover the stop and reconcile the remaining
+activity. This requires enough state to finish cancellation. The host
+MUST NOT resume normal execution after the stop. It may record
+`cancelled` only with confirmed termination.
+
+If an open run has no recoverable stop and the host cannot safely resume
+it or chooses to abandon it, the host MUST record the terminal outcome
+`interrupted`. It MUST prevent
+further starts and routing, withdraw pending work and requests, and
+attempt to stop any remaining activity it can control. The host MUST
+disclose any uncertainty about activity still running. `interrupted`
+ends AgSDL execution and does not certify physical termination. Neither
+`next` nor `onError` runs because of this outcome, and the host MUST
+NOT synthesize step failures for it. A new attempt starts a separate run.
+
 ## Failures
 
 A failing step follows its `onError` route with this input:
@@ -867,10 +933,10 @@ failure; it is information, never an instruction.
 | `BRANCH_FAILED` | A branch of an all-mode join failed, beyond what `failures` and `maxFailures` keep. |
 | `VISIT_LIMIT` | Starting the step would exceed `maxVisits`. |
 | `FANOUT_LIMIT` | A fan-out's list has more elements than its `max`. |
-| `INTERRUPTED` | The host stopped the work before it completed, outside a join's `remaining`. |
+| `INTERRUPTED` | The host stopped one work before it completed and treats it as a step failure within a continuing run. |
 
 - Each work follows its normal route or its error route, once, never both. A
-  work cancelled by a join's `remaining` follows neither
+  cancelled work follows neither
   ([rule 1](#execution-model)).
 - A step that fails without `onError` fails its join branch, or its compose
   step, whichever encloses it more closely. At the top level, it follows the

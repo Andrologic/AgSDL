@@ -76,11 +76,18 @@ joins and answers expired requests. Then:
 | `{ "steer": { "to": "signal", "nth": 1, "outcome": "received" } }` | Resolve the indicated steer attempt. See below. |
 | `{ "elapse": 60000 }` | That many milliseconds pass, for every work running or waiting for a person. Each time limit counts them as the specification says: `timeoutMs` not while a person is asked, `answerTimeoutMs` and an approval's `timeoutMs` only then. |
 | `{ "running": [{ "step": "fix", "item": 0 }] }` | A check: exactly these works are running, or waiting for a person, now. |
+| `{ "stopRun": true }` | A person requests that the host stop the whole run. The host accepts the request. |
+| `{ "work": "fix", "stopped": true }` | The executor confirms that this work and all activity it started have ended after a whole-run stop. |
+| `{ "hostRestart": "resume" }` | Interrupt and restart the host. The fixture makes the state and guarantees needed for continuation available, and replay exercises resumption. If a stop was committed, continue cancellation instead. |
+| `{ "hostRestart": "interrupt" }` | Interrupt and restart the host with the state needed for safe continuation or recovery of a stop unavailable. |
+| `{ "runState": "stopping" }` | A check of the current run state. Values are `running`, `stopping` or any terminal outcome in `expect.run`. |
 
 `work` names a step, or a composition body step by the names leading to it,
 joined with `/`, such as `"review/vote"`. `item` is the index of the element
 whose path runs the work, in a fan-out. An event names exactly one running
-work; a host for which it names none, or several, fails the scenario.
+work; a host for which it names none, or several, fails the scenario. After
+`stopRun`, a `stopped` event or a late work notification names a work still
+awaiting stop confirmation.
 
 A `steer` event names an attempt by destination step address and `nth`. Count
 attempts to inject into current work across all paths to that step, in attempt
@@ -108,20 +115,29 @@ even if a later attempt was confirmed first, and fallback counts when the queued
 message starts its own work. An uncertain attempt provides no confirmed
 delivery to check.
 
-The timeline treats stopping a work and confirming that it stopped as one
-operation. Hosts can test the wait for a physical stop confirmation with
-their own executor tests.
+Replay confirms join and timeout cancellation immediately. For whole-run
+stops, the fixture holds termination confirmation for each active agent
+or call until its `stopped` event. It may deliver late notifications while
+confirmation is held. Approval cancellation and withdrawal of queued work
+need no executor confirmation. A compose step needs no separate confirmation
+once its body has stopped. This fixture tests the host's handling of
+confirmation, using simulated executor events.
+
+Restart replay preserves the full run history for expectations such as
+`starts`. A host without optional resumption can report a
+`hostRestart: "resume"` scenario as not run if it has no committed stop
+to recover.
 
 ### Expectations
 
 | Field | What the host must have done |
 | --- | --- |
-| `run` | Ended the run as `"succeeded"` or `"failed"`. |
+| `run` | Ended the run as `"succeeded"`, `"failed"`, `"cancelled"` or `"interrupted"`. |
 | `starts` | Started exactly this many works per step. Each compose entry counts once at the compose step's address. Each body work counts at its own address, such as `review/check`. An omitted step has zero starts. A message that joins a current work with `steer` starts none. |
 | `messages` | Delivered these messages. `nth` selects a message delivered to the step named by `to`, counting from 1 in delivery order across all paths to that step. This includes `steer` messages that join a current work. `item` selects a fan-out path. `prompt`, `resources`, `element`, the message's `item`, and `comments` are what the message holds. |
 | `joins` | Made exactly these join decisions, in timeline order. `nth` selects a decision at the step named by `join`, counting from 1 in that order. |
 | `failures` | Reported exactly these failures, in any order. |
-| `cancelled` | Cancelled exactly these works for a group that decided, closed or failed, in any order. A work that runs out of its `timeoutMs` is a failure, not listed here. |
+| `cancelled` | Cancelled exactly these started works under a group rule or a whole-run stop, in any order. Includes a compose step cancelled by a whole-run stop and its cancelled body works. A work that runs out of its `timeoutMs` is a failure and is omitted. |
 | `answers` | Answered these requests itself, after `answerTimeoutMs`. |
 
 Fields that are absent are not checked. In `messages`, only the fields given
