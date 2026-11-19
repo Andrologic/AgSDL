@@ -51,6 +51,15 @@ document itself, an optional `entry` message, a `timeline` and an `expect`.
 
 ### Replaying the timeline
 
+For replay, configure the host to use each fan-out's declared
+`concurrency` without lowering it. When the document omits `concurrency`,
+the replay has no fan-out limit. For example, `fanout-keep.json` checks
+that both items are running and then ends item 1 first. This setup is
+specific to replay. In ordinary runs, the
+[fan-out rules](../spec/flow.md#fan-out) allow the host to lower the limit.
+If a host cannot use the replay setup, report the affected scenario as
+not run.
+
 The host starts the run with the `entry` message, then takes the events in
 order. Before each event, and after the last one, it does everything it can
 without a further event: it routes outputs, starts and cancels works, decides
