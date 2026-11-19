@@ -1,0 +1,21 @@
+{
+  "description": "A whole-run stop suppresses fallback and routing when an in-flight steer is confirmed undelivered.",
+  "document": "cases/steer-in-branch.json",
+  "timeline": [
+    { "work": "start", "returns": { "text": "Ship the release." } },
+    { "work": "watch", "returns": { "text": "Update the changelog." } },
+    { "running": [{ "step": "code" }] },
+    { "stopRun": true },
+    { "steer": { "to": "signal", "nth": 1, "outcome": "not-received" } },
+    { "runState": "stopping" },
+    { "work": "code", "stopped": true },
+    { "runState": "cancelled" }
+  ],
+  "expect": {
+    "run": "cancelled",
+    "starts": { "start": 1, "watch": 1, "code": 1 },
+    "cancelled": [{ "step": "code" }],
+    "joins": [],
+    "failures": []
+  }
+}
