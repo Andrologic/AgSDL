@@ -54,7 +54,6 @@
       "minimum": 0
     },
     "nth": {
-      "description": "Which start of the step, counting from 1, in timeline order.",
       "type": "integer",
       "minimum": 1
     },
@@ -255,6 +254,7 @@
                 "$ref": "#/$defs/item"
               },
               "nth": {
+                "description": "Which message delivery to the step named by 'to', counting from 1 in delivery order across all paths to that step. Includes steer messages that join a current work.",
                 "$ref": "#/$defs/nth"
               },
               "prompt": {
@@ -309,6 +309,7 @@
                 "$ref": "#/$defs/address"
               },
               "nth": {
+                "description": "Which decision at the step named by 'join', counting from 1 in timeline order.",
                 "$ref": "#/$defs/nth"
               },
               "outcome": {
