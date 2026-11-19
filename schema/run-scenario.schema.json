@@ -81,6 +81,41 @@
         {
           "type": "object",
           "required": [
+            "steer"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "steer": {
+              "description": "Resolve one pending steer attempt. The listed attempt waits for this event during replay.",
+              "type": "object",
+              "required": [
+                "to",
+                "nth",
+                "outcome"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "to": {
+                  "$ref": "#/$defs/address"
+                },
+                "nth": {
+                  "description": "Attempt number at this destination, across all paths, beginning at 1.",
+                  "$ref": "#/$defs/nth"
+                },
+                "outcome": {
+                  "enum": [
+                    "received",
+                    "not-received",
+                    "uncertain"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
             "elapse"
           ],
           "additionalProperties": false,

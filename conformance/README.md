@@ -73,6 +73,7 @@ joins and answers expired requests. Then:
 | `{ "work": "fix", "fails": "AGENT_FAILED" }` | The work fails with this code. |
 | `{ "work": "release", "request": "ask" }` | The work opens a request that the host puts to a person: an `ask`, a `plan` or a `question`. |
 | `{ "work": "release", "answer": "yes" }` | A person answers the work's oldest open request. |
+| `{ "steer": { "to": "signal", "nth": 1, "outcome": "received" } }` | Resolve the indicated steer attempt. See below. |
 | `{ "elapse": 60000 }` | That many milliseconds pass, for every work running or waiting for a person. Each time limit counts them as the specification says: `timeoutMs` not while a person is asked, `answerTimeoutMs` and an approval's `timeoutMs` only then. |
 | `{ "running": [{ "step": "fix", "item": 0 }] }` | A check: exactly these works are running, or waiting for a person, now. |
 
@@ -80,6 +81,31 @@ joins and answers expired requests. Then:
 joined with `/`, such as `"review/vote"`. `item` is the index of the element
 whose path runs the work, in a fan-out. An event names exactly one running
 work; a host for which it names none, or several, fails the scenario.
+
+A `steer` event names an attempt by destination step address and `nth`. Count
+attempts to inject into current work across all paths to that step, in attempt
+order, from 1. Messages that go straight to new work or wait in the queue
+without an injection attempt do not count. This is a different count from
+`expect.messages[].nth`.
+
+Before replay, the test harness reads the timeline to find the attempts it
+must leave pending. It acknowledges each listed attempt when the host sends
+it and supplies evidence only at its matching event. An unlisted attempt
+confirms receipt immediately, including in timelines with no `steer` event.
+Each event must resolve an existing pending attempt exactly once. An extra
+injection for the same message fails the scenario. The event outcomes are:
+
+- `received` confirms receipt while the targeted work still counted, even
+  if the event comes after the work's completion.
+- `not-received` confirms the targeted work became unavailable before
+  receipt and the attempt can no longer deliver.
+- `uncertain` ends the wait for evidence without establishing receipt or
+  non-receipt.
+
+A pending steer is absent from `running`. In a message expectation, a
+confirmed steer counts as a delivery, and fallback counts when the queued
+message starts its own work. An uncertain attempt provides no confirmed
+delivery to check.
 
 The timeline treats stopping a work and confirming that it stopped as one
 operation. Hosts can test the wait for a physical stop confirmation with
