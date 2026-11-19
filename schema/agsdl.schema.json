@@ -775,6 +775,7 @@
           "$ref": "#/$defs/name"
         },
         "delivery": {
+          "description": "How a message reaches a working instance. Steer attempts delivery to the current work and absorbs the message on confirmed receipt.",
           "enum": [
             "queue",
             "steer"

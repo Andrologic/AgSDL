@@ -71,7 +71,7 @@
         "type": "agent",
         "agent": "developer",
         "delivery": "steer",
-        "description": "Joins the developer's current work if there is one.",
+        "description": "Joins the developer's current work on confirmed receipt. If the work ends and the host confirms it never received the report, the report can start its own work.",
         "next": "merge"
       },
       "merge": {

@@ -86,6 +86,22 @@ class RunScenarioTest(unittest.TestCase):
                     elif role == "work":
                         self.assertNotEqual(steps[addr], "join", f"a join does no work: {address!r}")
 
+                attempts = set()
+                for event in scenario["timeline"]:
+                    if "steer" not in event:
+                        continue
+                    steer = event["steer"]
+                    address = steer["to"]
+                    addr = tuple(address.split("/"))
+                    node = graph.nodes.get(addr)
+                    self.assertTrue(
+                        node and node.type == "agent" and node.decl.get("delivery") == "steer",
+                        f"{address!r} is not a steer step",
+                    )
+                    attempt = (address, steer["nth"])
+                    self.assertNotIn(attempt, attempts, f"steer attempt {attempt!r} resolves twice")
+                    attempts.add(attempt)
+
 
 if __name__ == "__main__":
     unittest.main()
