@@ -103,7 +103,8 @@ injection for the same message fails the scenario. The event outcomes are:
   non-receipt.
 
 A pending steer is absent from `running`. In a message expectation, a
-confirmed steer counts as a delivery, and fallback counts when the queued
+confirmed steer counts as a delivery when the host receives confirmation,
+even if a later attempt was confirmed first, and fallback counts when the queued
 message starts its own work. An uncertain attempt provides no confirmed
 delivery to check.
 
