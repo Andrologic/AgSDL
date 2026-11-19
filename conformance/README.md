@@ -81,7 +81,7 @@ their own executor tests.
 | Field | What the host must have done |
 | --- | --- |
 | `run` | Ended the run as `"succeeded"` or `"failed"`. |
-| `starts` | Started exactly this many works per step; a step not listed starts none. A message that joins a current work with `steer` starts none. |
+| `starts` | Started exactly this many works per step. Each compose entry counts once at the compose step's address. Each body work counts at its own address, such as `review/check`. An omitted step has zero starts. A message that joins a current work with `steer` starts none. |
 | `messages` | Delivered these messages. `nth` counts the messages to the step, and `item` selects a fan-out path. `prompt`, `resources`, `element`, the message's `item`, and `comments` are what the message holds. |
 | `joins` | Made exactly these join decisions, in timeline order. |
 | `failures` | Reported exactly these failures, in any order. |
