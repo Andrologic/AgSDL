@@ -430,8 +430,9 @@ Instructions carry the authority the document gives them, never more:
 - They set the mission of one work. A later work of the same instance
   receives its own prompt.
 - When they reach an instance that is already working, the step's
-  [`delivery`](flow.md#delivery) applies, as for any message: `steer` adds
-  them to the current work, `queue` makes them the mission of the next.
+  [`delivery`](flow.md#delivery) applies, as for any message. Receipt by the
+  current work absorbs them with `steer`. A queued message supplies the
+  mission for its own work.
 - Selected into `resources`, they are information like any other.
 
 ## Conducting the work

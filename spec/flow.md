@@ -50,7 +50,7 @@ decide it.
 
 1. **A step is one unit of work.** When a message starts a step, the step does
    one work and ends in exactly one way: a normal route, a failure, or a
-   cancellation by a join. A compose step is no exception: its body is its
+   cancellation. A compose step is no exception: its body is its
    work, and it leaves at most once, through one output or as a failure; a
    body path that ends without reaching an output ends the compose step's
    path, as an empty route does. A join does no work of its own; it closes a
@@ -72,14 +72,17 @@ decide it.
    Paths that meet no join end on their own, except in a composition body,
    where every fork is closed by one join (rule 1).
 4. **An instance does one work at a time.** A message for a working instance
-   waits its turn, or, with `steer`, joins the current work if that work still
-   counts for the flow. A message that joins a work starts nothing of its own:
-   its path ends there. Shared and named instances keep their conversation
-   from one work to the next until the run ends.
+   waits its turn, or, with `steer`, tries to join the current work if that
+   work still counts for the flow. When receipt by that work is confirmed,
+   the message is absorbed and its path ends without starting work of its own.
+   Shared and named instances keep their conversation from one work to the
+   next until the run ends.
 5. **A run fails when a failure that counts reaches no handler.** The run ends
-   when no work is active or waiting. It fails if a failure reached no
-   handler, other than in work that no longer counts for the flow; otherwise
+   when no work is active or waiting and no `steer` attempt is pending. It
+   fails if a failure reached no handler and counted for the flow. Otherwise
    it succeeds.
+   A [whole-run stop or interruption](#stopping-and-recovering-a-run)
+   can end the run with a different outcome.
 
 ## Routes
 
@@ -294,16 +297,13 @@ reaches it.
 | `delivery` | Instance idle | Instance working |
 | --- | --- | --- |
 | `queue` (default) | The work starts. | The message waits until the current work ends, then starts its own work. |
-| `steer` | The work starts. | The message joins the current work, whatever step started it, if that work still counts for the flow ([rule 4](#execution-model)). Otherwise it waits, as with `queue`. |
+| `steer` | The work starts. | The host attempts delivery to the current work, whatever step started it, if that work still counts for the flow ([rule 4](#execution-model)). Otherwise the message waits, as with `queue`. |
 
 - Each instance processes waiting messages in arrival order. A `steer`
   message that joins the current work does not wait behind them. Every
   message identifies its sender to the agent.
 - A queued message starts a work of its own: it has its own output and follows
   its own routes.
-- A steered message that joins a current work has no output of its own. The
-  current work's result and routes apply, not the routes of the `steer` step.
-  The `steer` step's `next` is used only when it starts its own work.
 - A harness that cannot inject a message into a current work does not support
   `steer`. Its module declares it.
 - `delivery` MUST NOT be used with `"instance": "new"`: a fresh instance is
@@ -315,6 +315,45 @@ involved declares `delivery`, validators warn that their work will be
 serialized (`SHARED_INSTANCE_PARALLEL`). Declaring `delivery` explicitly states
 the intent and silences the warning. A branch that finishes after its join
 decided is a special case: see [`remaining`](#waiting-modes).
+
+### Confirming a steer
+
+The host MUST tie each attempt to one message and one specific work. It MUST
+NOT make a second injection attempt for that message. An attempt is pending
+until it has an outcome. Sending the request or receiving an acknowledgement
+of the request leaves the attempt pending unless that acknowledgement also
+confirms receipt by the work.
+
+- **Received.** The host MUST have evidence that the message entered the
+  intended work's input while that work still counted for the flow. This is
+  receipt even if the agent has yet to act on the message. Evidence of that
+  receipt can arrive after the work ends, while the attempt is still pending.
+  Once confirmed, the message is absorbed. It has no output of its own. The
+  receiving work's result and routes apply. The `steer` step starts no work
+  and follows no route for the absorbed message.
+- **Work became unavailable before receipt.** If the work ended or stopped
+  counting for the flow and the host can establish that the attempt did not
+  and cannot deliver the message, the host MUST queue the same message based
+  on its original arrival order relative to other messages still waiting.
+  It starts its own work as with `queue`, even if another work has since
+  started. A refusal for another reason follows the normal failure rules.
+- **Receipt uncertain.** If receipt cannot be confirmed or ruled out, the
+  host MUST resolve the attempt as `STEER_UNCERTAIN`. A host MUST bound the
+  wait for evidence. The `steer` step fails before starting work and follows
+  the normal [failure rules](#failures). The host MUST NOT automatically
+  resend the message or count it as absorbed. Completion of the receiving
+  work alone is insufficient evidence for either delivery or non-delivery.
+
+If the harness confirms delivery to the wrong work or after the intended
+work stopped counting, the `steer` step fails with `HARNESS_REFUSED`.
+
+The host MUST settle an attempt once. Duplicate or late reports about a
+settled attempt do not change its outcome. Pending confirmation starts no
+work and consumes neither a visit nor time from the `steer` step's
+`timeoutMs`. The receiving work's own completion and routes can proceed
+while a steer is pending. A pending sender path still occupies its fan-out
+slot and is unfinished for joins. In particular, an all join waits for it
+and a quorum join applies its normal rules to the unfinished path.
 
 ## Call
 
@@ -539,7 +578,7 @@ branch.
 | --- | --- |
 | A route reaches the join | The branch delivers its result: the output of the step that routed to the join. |
 | A route ends inside the branch (empty or absent `next`) | The branch ends without a result. |
-| A `steer` message is absorbed by a current work | The branch ends without a result, absorbed by the step that owns that work. |
+| Receipt of a `steer` message is confirmed | The branch ends without a result, absorbed by the step that owns the receiving work. |
 | A route, normal or `onError`, leads outside the branch | The group **closes**. See below. |
 | A step fails without `onError` | The branch fails. |
 
@@ -602,6 +641,25 @@ there. Its results never count for a later group of the join. An element of a
 fan-out that has not started never starts, whatever `remaining` says: with
 `concurrency: 1` and a quorum of one, elements are tried in order until one is
 accepted. Works of other steps on the same instances are not affected.
+
+When `stop` cancels a path that another open group also waits for, the host
+withdraws any element of that path that has not started from each group before
+admitting more work on those paths. A withdrawn element contributes no entry
+to a join output. A path already admitted to an instance queue ends without a
+result when its queued message is removed, even when its work has yet to start.
+For a path with active work, the host cancels each work once
+and disregards results it receives after committing to cancellation. The
+other groups wait for the affected work to stop before deciding an outcome
+or continuing, even with `remaining: "finish"`. Each of those groups then
+treats the cancelled path as ended without a result and applies its normal
+waiting rules. This end does not count as a failure.
+
+If `stop` cancels a sender path with a pending `steer` attempt, the host MUST
+prevent further delivery where possible and settle the attempt before
+treating the path as stopped. It MUST NOT queue the message or follow any
+route for the cancelled path. Other open groups that wait for that path see
+it end without a result. The host still reports `STEER_UNCERTAIN` if receipt
+remains uncertain, without counting it as a branch or run failure.
 
 `finish` and `wait` let work with effects, such as edits or a deployment,
 complete instead of being cut off, and keep the results of late branches in
@@ -772,7 +830,7 @@ The clock measures the work, not waits that are not its own:
   counts for none, and waits for the person. When the host cannot see the
   harness's calls to that server, it counts the request for each work whose
   agent uses that server.
-- Corrections and `steer` messages belong to the same work and do not restart
+- Corrections and absorbed `steer` messages belong to the same work and do not restart
   it.
 
 A person's slowness is never a `TIMEOUT`. To bound how long an agent's work
@@ -783,6 +841,79 @@ its work. A call to an MCP tool MAY have `answerTimeoutMs`, a positive
 integer: a request to a person that the server makes during the call, left
 unanswered that long, is declined, and the tool goes on with that refusal.
 Without it, the host waits for the person.
+
+## Stopping and recovering a run
+
+### Stop requested by a person
+
+A host that accepts a person's request to stop a run MUST record the stop
+before acknowledging it, so the request survives a host restart. The host
+orders the stop with respect to results, failures and the run's terminal
+outcome. A terminal run keeps its outcome. A repeated stop during
+cancellation leaves the same cancellation in progress.
+
+Once the host commits to the stop, the run is stopping. The host MUST
+prevent new work, message deliveries, join decisions and routing, including
+error routes and routes inside compositions. It withdraws queued messages
+and fan-out elements that have yet to start. It closes pending approvals
+and requests for answers, and cancels all open work, including calls,
+composition bodies and work still running under a join's `finish` or
+`wait`. Work already stopping remains subject to the same confirmation
+requirement. The stop closes every pending `steer` attempt for the graph.
+The host withdraws the injection where possible.
+The host MUST NOT retry, queue or route its message after the stop.
+The host records late evidence in the run history. Evidence of receipt
+before the stop counts as a delivery for reporting only. No report
+reopens the path, changes a join or produces a step failure, including
+`STEER_UNCERTAIN`. Physical termination still requires confirmation.
+
+The host MUST stop all activity started on behalf of the run, including
+background commands and sub-agents. It MUST report the terminal outcome
+`cancelled` only after confirming that this activity has ended and that
+no work or request remains pending. An acknowledgement of a stop request
+or a lost connection does not establish termination. While confirmation is
+outstanding, the host MUST show the stop as still pending.
+
+Cancellation produces no step failure. The host disregards late output,
+failures and answers for routing and reporting step failures. The run's
+record retains decisions and failures committed before the stop. Stopping
+does not undo effects that have already occurred.
+
+### Host interruption
+
+After an unexpected interruption or a planned host shutdown, a host MAY
+resume an open run if it can recover its execution state and enforce the
+same guarantees. It MUST reconcile in-flight work and committed effects
+before it advances the run. It must preserve the document, the state of
+paths, queues and joins, recorded results and decisions, instance
+conversations, pending requests and limits, including elapsed time as
+defined by each limit. It MUST establish exclusive
+control of action and routing so that old and new execution cannot race.
+Resumed work MUST have the same effective permissions, result submission
+and checking rules. Resumption MUST preserve deliveries and starts
+without duplicating work, calls or effects. A harness session identifier
+alone is insufficient. For a pending steer, resumption requires the original
+message and target work identities, the state of the attempt and its
+remaining time for confirmation. The host must reconcile the original
+attempt without reinjecting the message.
+
+An accepted stop survives the interruption. The host MUST continue
+cancellation when it can recover the stop and reconcile the remaining
+activity. This requires enough state to finish cancellation. The host
+MUST NOT resume normal execution after the stop. It may record
+`cancelled` only with confirmed termination. If the stop is known but termination
+cannot be verified, the run remains in the stopping state. The host
+reports the uncertainty and continues reconciliation.
+
+If an open run has no recoverable stop and the host cannot safely resume
+it or chooses to abandon it, the host MUST record the terminal outcome
+`interrupted`. It MUST prevent
+further starts and routing, withdraw pending work and requests, and
+attempt to stop any remaining activity it can control. The host MUST
+disclose any uncertainty about activity still running. `interrupted`
+ends AgSDL execution and does not certify physical termination. Neither
+`next` nor `onError` runs because of this outcome, and the host MUST
+NOT synthesize step failures for it. A new attempt starts a separate run.
 
 ## Failures
 
@@ -799,6 +930,7 @@ failure; it is information, never an instruction.
 | --- | --- |
 | `AGENT_FAILED` | The agent's work failed, without a more precise code. |
 | `HARNESS_REFUSED` | The harness refused what the document asks, at run time. |
+| `STEER_UNCERTAIN` | The host could neither confirm nor rule out receipt of a steer message by the intended work. |
 | `OUTPUT_INVALID` | The agent needed more than `maxCorrections` corrections of its submissions, or a command's standard output is not the JSON its `parse` declares. |
 | `CHECK_FAILED` | The completion check failed more than `maxFailures` times. |
 | `PLAN_REJECTED` | A `planFirst: "ask"` plan was refused without comment. |
@@ -810,10 +942,10 @@ failure; it is information, never an instruction.
 | `BRANCH_FAILED` | A branch of an all-mode join failed, beyond what `failures` and `maxFailures` keep. |
 | `VISIT_LIMIT` | Starting the step would exceed `maxVisits`. |
 | `FANOUT_LIMIT` | A fan-out's list has more elements than its `max`. |
-| `INTERRUPTED` | The host stopped the work before it completed, outside a join's `remaining`. |
+| `INTERRUPTED` | The host stopped one work before it completed and treats it as a step failure within a continuing run. |
 
 - Each work follows its normal route or its error route, once, never both. A
-  work cancelled by a join's `remaining` follows neither
+  cancelled work follows neither
   ([rule 1](#execution-model)).
 - A step that fails without `onError` fails its join branch, or its compose
   step, whichever encloses it more closely. At the top level, it follows the

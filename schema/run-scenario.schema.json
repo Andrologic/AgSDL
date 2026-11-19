@@ -54,7 +54,6 @@
       "minimum": 0
     },
     "nth": {
-      "description": "Which start of the step, counting from 1, in timeline order.",
       "type": "integer",
       "minimum": 1
     },
@@ -82,6 +81,41 @@
         {
           "type": "object",
           "required": [
+            "steer"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "steer": {
+              "description": "Resolve one pending steer attempt. The listed attempt waits for this event during replay.",
+              "type": "object",
+              "required": [
+                "to",
+                "nth",
+                "outcome"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "to": {
+                  "$ref": "#/$defs/address"
+                },
+                "nth": {
+                  "description": "Attempt number at this destination, across all paths, beginning at 1.",
+                  "$ref": "#/$defs/nth"
+                },
+                "outcome": {
+                  "enum": [
+                    "received",
+                    "not-received",
+                    "uncertain"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
             "elapse"
           ],
           "additionalProperties": false,
@@ -106,6 +140,56 @@
               "items": {
                 "$ref": "#/$defs/workRef"
               }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "stopRun"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "stopRun": {
+              "const": true
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "hostRestart"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "hostRestart": {
+              "enum": [
+                "resume",
+                "stop-only",
+                "interrupt"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "runState"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "runState": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "running",
+                    "stopping"
+                  ]
+                },
+                {
+                  "$ref": "#/$defs/runOutcome"
+                }
+              ]
             }
           }
         },
@@ -177,6 +261,10 @@
                 "yes",
                 "no"
               ]
+            },
+            "stopped": {
+              "description": "Confirms that the work and all activity it started have ended after a whole-run stop.",
+              "const": true
             }
           },
           "oneOf": [
@@ -209,6 +297,11 @@
               "required": [
                 "answer"
               ]
+            },
+            {
+              "required": [
+                "stopped"
+              ]
             }
           ]
         }
@@ -222,13 +315,10 @@
       "additionalProperties": false,
       "properties": {
         "run": {
-          "enum": [
-            "succeeded",
-            "failed"
-          ]
+          "$ref": "#/$defs/runOutcome"
         },
         "starts": {
-          "description": "How many works each step starts. A step not listed starts none.",
+          "description": "How many works each step starts. Each compose entry counts at the compose step's address, and each body work counts at its own address. An omitted step has zero starts.",
           "type": "object",
           "propertyNames": {
             "$ref": "#/$defs/address"
@@ -255,6 +345,7 @@
                 "$ref": "#/$defs/item"
               },
               "nth": {
+                "description": "Which message delivery to the step named by 'to', counting from 1 in delivery order across all paths to that step. Includes steer messages that join a current work.",
                 "$ref": "#/$defs/nth"
               },
               "prompt": {
@@ -309,6 +400,7 @@
                 "$ref": "#/$defs/address"
               },
               "nth": {
+                "description": "Which decision at the step named by 'join', counting from 1 in timeline order.",
                 "$ref": "#/$defs/nth"
               },
               "outcome": {
@@ -349,7 +441,7 @@
           }
         },
         "cancelled": {
-          "description": "Every work the host cancels for a group that decided, closed or failed, in any order.",
+          "description": "Every work the host cancels under a group rule or a whole-run stop, in any order.",
           "type": "array",
           "items": {
             "$ref": "#/$defs/workRef"
@@ -397,6 +489,14 @@
           "$ref": "#/$defs/item"
         }
       }
+    },
+    "runOutcome": {
+      "enum": [
+        "succeeded",
+        "failed",
+        "cancelled",
+        "interrupted"
+      ]
     }
   }
 }

@@ -38,7 +38,7 @@ def addressed(scenario):
     """Every (address, role) a scenario names."""
     for event in scenario["timeline"]:
         if "work" in event:
-            yield event["work"], "work"
+            yield event["work"], "executor work" if "stopped" in event else "work"
         for work in event.get("running", []):
             yield work["step"], "work"
     expect = scenario["expect"]
@@ -59,6 +59,22 @@ def addressed(scenario):
 
 
 class RunScenarioTest(unittest.TestCase):
+    def test_stop_events_have_one_action(self):
+        for event in (
+            {"stopRun": False},
+            {"stopRun": True, "hostRestart": "resume"},
+            {"work": "build", "stopped": True, "fails": "INTERRUPTED"},
+            {"stopped": True},
+        ):
+            with self.subTest(event=event):
+                scenario = {
+                    "description": "An invalid timeline event.",
+                    "document": "cases/flow-error.json",
+                    "timeline": [event],
+                    "expect": {"run": "cancelled"},
+                }
+                self.assertTrue(SCENARIO_SCHEMA.check(scenario))
+
     def test_scenarios_are_consistent(self):
         modules = load_modules(os.path.join(CONFORMANCE, "modules"))
         paths = sorted(glob.glob(os.path.join(CONFORMANCE, "runs", "*.json")))
@@ -76,6 +92,12 @@ class RunScenarioTest(unittest.TestCase):
                 steps = {addr: node.type for addr, node in graph.nodes.items() if node.decl is not None}
                 for addr in graph.composes:
                     steps.setdefault(addr, "compose")
+                stop_requested = False
+                for event in scenario["timeline"]:
+                    if "stopRun" in event:
+                        stop_requested = True
+                    if "stopped" in event:
+                        self.assertTrue(stop_requested, "stop confirmation requires a whole-run stop")
                 for address, role in addressed(scenario):
                     addr = tuple(address.split("/"))
                     self.assertIn(addr, steps, f"no step {address!r}")
@@ -83,8 +105,26 @@ class RunScenarioTest(unittest.TestCase):
                         self.assertEqual(steps[addr], "join", f"{address!r} is not a join")
                     elif role == "approval":
                         self.assertEqual(steps[addr], "approval", f"{address!r} is not an approval")
+                    elif role == "executor work":
+                        self.assertIn(steps[addr], {"agent", "call"}, f"{address!r} needs no executor confirmation")
                     elif role == "work":
                         self.assertNotEqual(steps[addr], "join", f"a join does no work: {address!r}")
+
+                attempts = set()
+                for event in scenario["timeline"]:
+                    if "steer" not in event:
+                        continue
+                    steer = event["steer"]
+                    address = steer["to"]
+                    addr = tuple(address.split("/"))
+                    node = graph.nodes.get(addr)
+                    self.assertTrue(
+                        node and node.type == "agent" and node.decl.get("delivery") == "steer",
+                        f"{address!r} is not a steer step",
+                    )
+                    attempt = (address, steer["nth"])
+                    self.assertNotIn(attempt, attempts, f"steer attempt {attempt!r} resolves twice")
+                    attempts.add(attempt)
 
 
 if __name__ == "__main__":
