@@ -859,9 +859,13 @@ and fan-out elements that have yet to start. It closes pending approvals
 and requests for answers, and cancels all open work, including calls,
 composition bodies and work still running under a join's `finish` or
 `wait`. Work already stopping remains subject to the same confirmation
-requirement. A pending `steer` attempt is withdrawn where possible.
+requirement. The stop closes every pending `steer` attempt for the graph.
+The host withdraws the injection where possible.
 The host MUST NOT retry, queue or route its message after the stop.
-Late delivery reports cannot start work or trigger an error route.
+The host records late evidence in the run history. Evidence of receipt
+before the stop counts as a delivery for reporting only. No report
+reopens the path, changes a join or produces a step failure, including
+`STEER_UNCERTAIN`. Physical termination still requires confirmation.
 
 The host MUST stop all activity started on behalf of the run, including
 background commands and sub-agents. It MUST report the terminal outcome
@@ -888,13 +892,18 @@ control of action and routing so that old and new execution cannot race.
 Resumed work MUST have the same effective permissions, result submission
 and checking rules. Resumption MUST preserve deliveries and starts
 without duplicating work, calls or effects. A harness session identifier
-alone is insufficient.
+alone is insufficient. For a pending steer, resumption requires the original
+message and target work identities, the state of the attempt and its
+remaining time for confirmation. The host must reconcile the original
+attempt without reinjecting the message.
 
 An accepted stop survives the interruption. The host MUST continue
 cancellation when it can recover the stop and reconcile the remaining
 activity. This requires enough state to finish cancellation. The host
 MUST NOT resume normal execution after the stop. It may record
-`cancelled` only with confirmed termination.
+`cancelled` only with confirmed termination. If the stop is known but termination
+cannot be verified, the run remains in the stopping state. The host
+reports the uncertainty and continues reconciliation.
 
 If an open run has no recoverable stop and the host cannot safely resume
 it or chooses to abandon it, the host MUST record the terminal outcome

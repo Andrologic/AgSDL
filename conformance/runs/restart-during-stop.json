@@ -14,6 +14,8 @@
     {
       "runState": "stopping"
     },
+    { "hostRestart": "stop-only" },
+    { "runState": "stopping" },
     {
       "work": "build",
       "stopped": true

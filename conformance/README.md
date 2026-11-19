@@ -80,6 +80,7 @@ joins and answers expired requests. Then:
 | `{ "work": "fix", "stopped": true }` | The executor confirms that this work and all activity it started have ended after a whole-run stop. |
 | `{ "hostRestart": "resume" }` | Interrupt and restart the host. The fixture makes the state and guarantees needed for continuation available, and replay exercises resumption. If a stop was committed, continue cancellation instead. |
 | `{ "hostRestart": "interrupt" }` | Interrupt and restart the host with the state needed for safe continuation or recovery of a stop unavailable. |
+| `{ "hostRestart": "stop-only" }` | Restart with the committed stop available but without current evidence of executor termination. A later executor event supplies fresh evidence. |
 | `{ "runState": "stopping" }` | A check of the current run state. Values are `running`, `stopping` or any terminal outcome in `expect.run`. |
 
 `work` names a step, or a composition body step by the names leading to it,
@@ -99,7 +100,10 @@ Before replay, the test harness reads the timeline to find the attempts it
 must leave pending. It acknowledges each listed attempt when the host sends
 it and supplies evidence only at its matching event. An unlisted attempt
 confirms receipt immediately, including in timelines with no `steer` event.
-Each event must resolve an existing pending attempt exactly once. An extra
+Each event identifies one previously acknowledged attempt and supplies its
+evidence once. After a whole-run stop has closed the attempt, the event
+records late evidence only. A late `received` event confirms delivery
+before the stop and contributes to message expectations. An extra
 injection for the same message fails the scenario. The event outcomes are:
 
 - `received` confirms receipt while the targeted work still counted, even
