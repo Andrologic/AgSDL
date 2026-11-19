@@ -82,8 +82,8 @@ their own executor tests.
 | --- | --- |
 | `run` | Ended the run as `"succeeded"` or `"failed"`. |
 | `starts` | Started exactly this many works per step. Each compose entry counts once at the compose step's address. Each body work counts at its own address, such as `review/check`. An omitted step has zero starts. A message that joins a current work with `steer` starts none. |
-| `messages` | Delivered these messages. `nth` counts the messages to the step, and `item` selects a fan-out path. `prompt`, `resources`, `element`, the message's `item`, and `comments` are what the message holds. |
-| `joins` | Made exactly these join decisions, in timeline order. |
+| `messages` | Delivered these messages. `nth` selects a message delivered to the step named by `to`, counting from 1 in delivery order across all paths to that step. This includes `steer` messages that join a current work. `item` selects a fan-out path. `prompt`, `resources`, `element`, the message's `item`, and `comments` are what the message holds. |
+| `joins` | Made exactly these join decisions, in timeline order. `nth` selects a decision at the step named by `join`, counting from 1 in that order. |
 | `failures` | Reported exactly these failures, in any order. |
 | `cancelled` | Cancelled exactly these works for a group that decided, closed or failed, in any order. A work that runs out of its `timeoutMs` is a failure, not listed here. |
 | `answers` | Answered these requests itself, after `answerTimeoutMs`. |

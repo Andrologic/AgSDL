@@ -1,5 +1,5 @@
 {
-  "description": "A steer message for a working instance joins its current work and has no work of its own.",
+  "description": "The first message to nudge joins the work already running on its instance. The second message arrives when the instance is idle and starts nudge's first work.",
   "document": {
     "contract": "agsdl-0.3.0",
     "id": "delivery-steer",
@@ -27,7 +27,12 @@
         "work": {
           "type": "agent",
           "agent": "dev",
-          "next": []
+          "next": {
+            "step": "nudge",
+            "message": {
+              "prompt": "Summarize the release."
+            }
+          }
         },
         "ping": {
           "type": "call",
@@ -78,6 +83,19 @@
       }
     },
     {
+      "running": [
+        {
+          "step": "nudge"
+        }
+      ]
+    },
+    {
+      "work": "nudge",
+      "returns": {
+        "text": "Release 2.0 includes an updated changelog."
+      }
+    },
+    {
       "running": []
     }
   ],
@@ -86,12 +104,19 @@
     "starts": {
       "start": 1,
       "work": 1,
-      "ping": 1
+      "ping": 1,
+      "nudge": 1
     },
     "messages": [
       {
         "to": "nudge",
+        "nth": 1,
         "prompt": "Also update the changelog."
+      },
+      {
+        "to": "nudge",
+        "nth": 2,
+        "prompt": "Summarize the release."
       }
     ],
     "failures": []
