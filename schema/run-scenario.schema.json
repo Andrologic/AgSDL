@@ -228,7 +228,7 @@
           ]
         },
         "starts": {
-          "description": "How many works each step starts. A step not listed starts none.",
+          "description": "How many works each step starts. Each compose entry counts at the compose step's address, and each body work counts at its own address. An omitted step has zero starts.",
           "type": "object",
           "propertyNames": {
             "$ref": "#/$defs/address"
