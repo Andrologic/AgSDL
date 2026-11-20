@@ -3,8 +3,6 @@
 ## Host implementations
 
 - Track AgSDL 0.4.0 run scenario coverage in the Argentic flow engine.
-- Add a Macro harness module when a Macro release exposes its own agent loop
-  to AgSDL documents and its supported properties and permissions can be verified.
 
 ## Toward 1.0
 
