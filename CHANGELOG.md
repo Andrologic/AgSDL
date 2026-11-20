@@ -2,6 +2,19 @@
 
 Harness modules keep their own changelogs, in `harnesses/<name>/CHANGELOG.md`.
 
+## Unreleased (target 0.4.0)
+
+- A host confirms that a steer message reached the intended work before
+  counting it as delivered. It queues the message after definite non-receipt
+  and reports `STEER_UNCERTAIN` when it cannot establish what happened.
+- A whole-run stop withdraws pending work and ends as `cancelled` once the
+  host confirms termination. A host that cannot safely continue after an
+  interruption records `interrupted`. A committed stop survives a restart.
+- When a stop cancels a path shared by open joins, the host stops the work
+  once and accounts for the path in each affected group.
+- Run scenarios specify how to count compose starts, message deliveries and
+  join decisions, and how to replay fan-out concurrency and steer receipts.
+
 ## 0.3.0 (2026-11-05)
 
 A redesign. Documents written for 0.2 must be rewritten. See

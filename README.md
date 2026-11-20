@@ -35,9 +35,9 @@ anything runs.
 
 AgSDL is not stable. Expect breaking changes until 1.0.
 
-Today you can write documents, validate them, draw their flows, and check
-whether each agent keeps its guarantees on the harness you choose. No host runs
-0.3 documents yet: Macro is the first one planned.
+The [changelog](CHANGELOG.md) lists the changes since the published tag.
+You can write documents, validate them, draw their flows and check the
+capabilities declared by each harness module.
 
 ## Implementations
 
@@ -46,7 +46,7 @@ whether each agent keeps its guarantees on the harness you choose. No host runs
 | Validator | [Reference validator](tooling/README.md), in this repository | 0.3.0 |
 | Renderer | [Mermaid renderer](tooling/README.md#draw), in this repository | 0.3.0 |
 | Harness modules | [Codex, Claude Code, opencode, pi](harnesses/README.md) | 1.0.0 |
-| Host | Macro | Planned |
+| Host | Macro (Argentic runtime) | Macro's development branch runs a [qualified subset of 0.3.0 with Codex](https://github.com/Andrologic/Macro/blob/9e4d8e1208160aa60d4ad1a36cb2de940fd040b3/docs/agsdl-codex-native.md#agsdl-03-execution). Its [conformance suite](https://github.com/Andrologic/Macro/blob/9e4d8e1208160aa60d4ad1a36cb2de940fd040b3/dev/agsdl/README.md) replays 37 scenarios with scripted executors. |
 
 To list another implementation, open an issue.
 
