@@ -1,7 +1,7 @@
 {
   "description": "With remaining finish, an unfinished branch goes on inside itself after the join has decided: its next step still starts, and it ends where it would reach the join.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "finish-branch-goes-on",
     "agents": {
       "lead": {

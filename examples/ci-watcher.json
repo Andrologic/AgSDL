@@ -1,5 +1,5 @@
 {
-  "contract": "agsdl-0.3.0",
+  "contract": "agsdl-0.4.0",
   "id": "ci-watcher",
   "title": "Developer with a CI watcher",
   "description": "While the developer works, a watcher follows CI and steers the developer when a build fails.",

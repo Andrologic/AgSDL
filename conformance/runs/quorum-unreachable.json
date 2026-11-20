@@ -1,7 +1,7 @@
 {
   "description": "A quorum that the paths a route starts cannot reach is missed as the group opens, and none of them start.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "quorum-unreachable",
     "agents": {
       "lead": {

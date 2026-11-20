@@ -1,7 +1,7 @@
 {
   "description": "A person stops a run with a call, approval and fan-out composition open. A late result and failure cannot route, and the host waits for both executor confirmations.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "whole-run-stop",
     "agents": {
       "worker": {

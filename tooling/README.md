@@ -1,6 +1,6 @@
 # Tooling
 
-The reference validator and a Mermaid renderer for AgSDL 0.3.0. They need
+The reference validator and a Mermaid renderer for AgSDL 0.4.0. They need
 Python 3.9 or newer and its standard library only. They read documents; they
 never run agents, calls or flows.
 

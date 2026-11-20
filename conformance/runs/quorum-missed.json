@@ -1,7 +1,7 @@
 {
   "description": "A quorum join decides missed as soon as the count cannot be reached, and cancels the remaining branch.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "quorum-missed",
     "agents": {
       "lead": {

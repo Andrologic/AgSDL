@@ -1,5 +1,5 @@
 {
-  "contract": "agsdl-0.3.0",
+  "contract": "agsdl-0.4.0",
   "id": "fix-until-green",
   "title": "Fix until the tests pass",
   "description": "The tests run outside the agent; failures go back to the same developer, who keeps its conversation.",

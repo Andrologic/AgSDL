@@ -9,7 +9,7 @@ Create `/tmp/hello.json`, outside the repository:
 
 ```json
 {
-  "contract": "agsdl-0.3.0",
+  "contract": "agsdl-0.4.0",
   "id": "hello",
   "agents": {
     "helper": {
@@ -38,7 +38,7 @@ For completion and checks while you type, add the schema at the top of the
 document, in any editor that reads JSON Schema:
 
 ```json
-"$schema": "https://raw.githubusercontent.com/Andrologic/AgSDL/v0.3.0/schema/agsdl.schema.json",
+"$schema": "https://raw.githubusercontent.com/Andrologic/AgSDL/v0.4.0/schema/agsdl.schema.json",
 ```
 
 ## 2. A diagnostic
@@ -66,7 +66,7 @@ of `/tmp/hello.json` with:
 
 ```json
 {
-  "contract": "agsdl-0.3.0",
+  "contract": "agsdl-0.4.0",
   "id": "hello",
   "agents": {
     "writer": {

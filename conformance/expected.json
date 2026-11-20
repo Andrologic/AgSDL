@@ -157,7 +157,7 @@
     "warnings": []
   },
   "shape-wrong-contract": {
-    "description": "Only the agsdl-0.3.0 marker is accepted.",
+    "description": "Only the agsdl-0.4.0 marker is accepted.",
     "errors": [
       "SHAPE"
     ],
@@ -918,5 +918,24 @@
     "warnings": [
       "SHARED_INSTANCE_PARALLEL"
     ]
+  },
+  "fanout-join-text-not-list": {
+    "description": "A fan-out cannot read a branch text string as a list.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "approval-comments-path": {
+    "description": "Approval comments are a list of entries with declared string fields.",
+    "errors": [
+      "MESSAGE_PATH"
+    ],
+    "warnings": []
+  },
+  "fanout-join-approval-comments": {
+    "description": "A join can fan out over the comments list received by an approval and read the comment on each entry.",
+    "errors": [],
+    "warnings": []
   }
 }

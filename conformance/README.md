@@ -2,7 +2,7 @@
 
 Cases are documents with the diagnostics a validator must report. Run
 scenarios are scripted runs with what a host must do. They let another
-implementation check that it reads and runs AgSDL 0.3.0 as the specification
+implementation check that it reads and runs AgSDL 0.4.0 as the specification
 says.
 
 ## Cases

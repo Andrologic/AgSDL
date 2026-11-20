@@ -1,7 +1,7 @@
 {
   "description": "concurrency 1 starts elements in list order as paths end; once a quorum of one is reached, the remaining elements never start.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "fanout-one-at-a-time",
     "agents": {
       "lead": {

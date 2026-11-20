@@ -1,7 +1,7 @@
 {
   "description": "An instructing agent submits its instructions as a list; each element is the prompt of one path.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "fanout-missions",
     "agents": {
       "lead": {

@@ -2,8 +2,8 @@
   "$schema": "../../schema/harness-module.schema.json",
   "name": "opencode",
   "title": "opencode",
-  "version": "1.0.0",
-  "contract": "agsdl-0.3.0",
+  "version": "2.0.0",
+  "contract": "agsdl-0.4.0",
   "harnessVersions": ">=2.0.28 <3.0.0",
   "sources": [
     "https://opencode.ai/v2/docs/permissions/",

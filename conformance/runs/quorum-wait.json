@@ -1,7 +1,7 @@
 {
   "description": "With remaining wait, the join decides at once but the run continues only once the other branches have ended.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "quorum-wait",
     "agents": {
       "lead": {

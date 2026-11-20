@@ -8,7 +8,7 @@ from .validator import MODULES_DIR, ModuleError, load_modules, validate_bytes
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="agsdl", description="Validate AgSDL 0.3.0 documents.")
+    parser = argparse.ArgumentParser(prog="agsdl", description="Validate AgSDL 0.4.0 documents.")
     parser.add_argument("documents", nargs="+", metavar="DOCUMENT")
     parser.add_argument("--json", action="store_true", help="print JSON reports")
     parser.add_argument("--modules", default=MODULES_DIR, help="directory of harness modules")

@@ -2,7 +2,7 @@
   "name": "example",
   "title": "Example harness",
   "version": "1.0.0",
-  "contract": "agsdl-0.3.0",
+  "contract": "agsdl-0.4.0",
   "harnessVersions": ">=1.0.0",
   "properties": {
     "resources": { "support": "native" },

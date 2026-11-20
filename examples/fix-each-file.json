@@ -1,5 +1,5 @@
 {
-  "contract": "agsdl-0.3.0",
+  "contract": "agsdl-0.4.0",
   "id": "fix-each-file",
   "title": "Fix each file",
   "description": "A lead lists the files to fix; one fresh worker per file, four at a time; failed files go back to the lead, and the tests run once every file is fixed.",

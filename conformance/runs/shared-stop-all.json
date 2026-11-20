@@ -1,7 +1,7 @@
 {
   "description": "An all join receives a branch without a result when a sibling join cancels the shared work.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "shared-stop-all",
     "agents": {
       "worker": {
