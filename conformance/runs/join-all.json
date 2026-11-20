@@ -1,7 +1,7 @@
 {
   "description": "An all-mode join waits for every branch, then delivers one resource per branch.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "join-all",
     "agents": {
       "lead": {

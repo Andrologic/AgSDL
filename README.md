@@ -30,23 +30,24 @@ anything runs.
 
 | Edition | Status |
 | --- | --- |
-| **0.3.0** | Current edition, tag [`v0.3.0`](https://github.com/Andrologic/AgSDL/tree/v0.3.0) (2026-11-05). Not compatible with earlier editions. |
-| 0.2.0 | Previous edition, tag [`v0.2.0`](https://github.com/Andrologic/AgSDL/tree/v0.2.0). |
+| **0.4.0** | Current edition, tag [`v0.4.0`](https://github.com/Andrologic/AgSDL/tree/v0.4.0) (2026-11-20). |
+| 0.3.0 | Previous edition, tag [`v0.3.0`](https://github.com/Andrologic/AgSDL/tree/v0.3.0) (2026-11-05). |
 
 AgSDL is not stable. Expect breaking changes until 1.0.
 
-Today you can write documents, validate them, draw their flows, and check
-whether each agent keeps its guarantees on the harness you choose. No host runs
-0.3 documents yet: Macro is the first one planned.
+The [changelog](CHANGELOG.md) describes the new obligations for hosts that
+handle message delivery, cancellation and recovery.
+You can write documents, validate them, draw their flows and check the
+capabilities declared by each harness module.
 
 ## Implementations
 
 | Kind | Implementation | Status |
 | --- | --- | --- |
-| Validator | [Reference validator](tooling/README.md), in this repository | 0.3.0 |
-| Renderer | [Mermaid renderer](tooling/README.md#draw), in this repository | 0.3.0 |
-| Harness modules | [Codex, Claude Code, opencode, pi](harnesses/README.md) | 1.0.0 |
-| Host | Macro | Planned |
+| Validator | [Reference validator](tooling/README.md), in this repository | 0.4.0 |
+| Renderer | [Mermaid renderer](tooling/README.md#draw), in this repository | 0.4.0 |
+| Harness modules | [Codex, Claude Code, opencode, pi](harnesses/README.md) | 2.0.0 for AgSDL 0.4.0 |
+| Host | Macro (Argentic runtime) | Macro's development branch runs a [qualified subset of 0.3.0 with Codex](https://github.com/Andrologic/Macro/blob/9e4d8e1208160aa60d4ad1a36cb2de940fd040b3/docs/agsdl-codex-native.md#agsdl-03-execution). Its [conformance suite](https://github.com/Andrologic/Macro/blob/9e4d8e1208160aa60d4ad1a36cb2de940fd040b3/dev/agsdl/README.md) replays 37 scenarios with scripted executors. |
 
 To list another implementation, open an issue.
 
@@ -57,7 +58,7 @@ until it is ready.
 
 ```json
 {
-  "contract": "agsdl-0.3.0",
+  "contract": "agsdl-0.4.0",
   "id": "write-and-review",
   "title": "Write and review",
   "description": "A developer writes a change; a fresh reviewer sends it back until it is ready.",
@@ -175,5 +176,5 @@ notice is in [NOTICE](NOTICE).
 The license grants no right to the AgSDL name. Only this repository defines
 AgSDL editions, and a modified specification must use another name. A tool or
 harness may say that it implements an edition, for example "implements
-AgSDL 0.3.0". The [conformance cases and run scenarios](conformance/README.md)
+AgSDL 0.4.0". The [conformance cases and run scenarios](conformance/README.md)
 let it check that claim.

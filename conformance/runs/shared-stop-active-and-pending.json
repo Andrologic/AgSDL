@@ -1,7 +1,7 @@
 {
   "description": "A stop join withdraws and cancels a shared path for both groups.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "shared-stop-active-and-pending",
     "agents": {
       "lead": {

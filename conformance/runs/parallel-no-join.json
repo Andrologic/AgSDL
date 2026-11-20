@@ -1,7 +1,7 @@
 {
   "description": "Paths that meet no join end on their own; an unhandled failure on one does not stop the other, and fails the run.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "parallel-no-join",
     "agents": {
       "lead": {

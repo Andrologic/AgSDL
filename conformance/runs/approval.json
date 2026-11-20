@@ -1,7 +1,7 @@
 {
   "description": "An approval passes on the message it received, with the person's comment in its comments; it fails with APPROVAL_TIMEOUT without an answer in time, a person's time included.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "approval",
     "agents": {
       "writer": {

@@ -1,7 +1,8 @@
-"""Static validation of AgSDL 0.3.0 documents."""
+"""Static validation of AgSDL 0.4.0 documents."""
 
 import json
 import os
+import stat
 from collections import deque
 
 from . import jsoninput, valueschema
@@ -9,7 +10,7 @@ from .graph import Graph, analyse_joins, open_body_forks, route_items, route_tar
 from .permissions import command_prefix, covers_all, effect_for, effects_in_use, normalize, outside, shell_denied
 from .schemacheck import SchemaChecker, pointer
 
-CONTRACT = "agsdl-0.3.0"
+CONTRACT = "agsdl-0.4.0"
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPOSITORY = os.path.dirname(os.path.dirname(HERE))
 SCHEMA_DIR = os.path.join(REPOSITORY, "schema")
@@ -17,6 +18,14 @@ MODULES_DIR = os.path.join(REPOSITORY, "harnesses")
 
 CALL_OUTCOMES = {"passed", "failed"}
 NO_MESSAGE_TYPES = {"call", "join"}
+APPROVAL_COMMENTS = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {"step": {"type": "string"}, "comment": {"type": "string"}},
+        "additionalProperties": False,
+    },
+}
 
 
 def _load_schema(name):
@@ -81,13 +90,18 @@ def load_module(path):
 
 def load_modules(directory=MODULES_DIR):
     modules = {}
-    if not os.path.isdir(directory):
-        return modules
-    for entry in sorted(os.listdir(directory)):
-        path = os.path.join(directory, entry, "module.json")
-        if os.path.isfile(path):
-            module = load_module(path)
-            modules[module["name"]] = module
+    try:
+        for entry in sorted(os.listdir(directory)):
+            path = os.path.join(directory, entry, "module.json")
+            try:
+                mode = os.stat(path).st_mode
+            except (FileNotFoundError, NotADirectoryError):
+                continue
+            if stat.S_ISREG(mode):
+                module = load_module(path)
+                modules[module["name"]] = module
+    except OSError as error:
+        raise ModuleError(str(error)) from None
     return modules
 
 
@@ -689,6 +703,9 @@ class Checker:
                 return None
             if path[1] not in ("prompt", "resources", "item", "comments"):
                 return f"a message has prompt, resources, item and comments, not {path[1]!r}"
+            if path[1] == "comments":
+                _, reason = valueschema.descend(APPROVAL_COMMENTS, path[2:])
+                return reason
             if path[1] == "resources" and len(path) > 2:
                 names = self.received_resources(graph, node.addr, infos, frozenset())
                 if names is not None and path[2] not in names:
@@ -718,19 +735,22 @@ class Checker:
                         return 'only a quorum or failures: "keep" keeps a failed branch'
                     return self.error_path_problem(rest)
                 if rest:
-                    # The branch output is the output of the step that reached the join.
-                    members = info["branches"][path[1]]
-                    for producer in graph.edges:
-                        if producer.dst != node.addr or producer.kind != "normal":
-                            continue
-                        local = scope_member(producer.src, info["prefix"])
-                        direct = local == info["origin"] == path[1]
-                        if local in members or direct:
-                            reason = self.selection_problem(graph, producer, rest, infos)
-                            if reason:
-                                return f"branch {path[1]!r}: {reason}"
+                    for producer in self.branch_producers(graph, node, info, path[1]):
+                        reason = self.selection_problem(graph, producer, rest, infos)
+                        if reason:
+                            return f"branch {path[1]!r}: {reason}"
             return None
         return None
+
+    @staticmethod
+    def branch_producers(graph, join, info, branch):
+        """Routes whose step output can reach the join for this branch."""
+        members = info["branches"][branch]
+        for edge in graph.edges:
+            if edge.dst == join.addr and edge.kind == "normal":
+                local = scope_member(edge.src, info["prefix"])
+                if local in members or local == info["origin"] == branch:
+                    yield edge
 
     def branch_item_problem(self, graph, join, info, branch, rest, infos):
         """Check a path below `item` in an entry of a fan-out branch: the
@@ -878,8 +898,8 @@ class Checker:
                 return "string"
             if len(path) == 1 or path[1:] == ["resources"]:
                 return "object"
-            if path[1:] == ["comments"]:
-                return "array"
+            if path[1] == "comments":
+                return valueschema.kind_at(APPROVAL_COMMENTS, path[2:])
             return None
         if node.type == "join":
             if head == "outcome":
@@ -887,9 +907,26 @@ class Checker:
             if len(path) == 1:
                 return "object"
             info = infos.get(node.addr)
-            if len(path) == 2 and info is not None:
+            if info is None or path[1] not in info["branches"]:
+                return None
+            if len(path) == 2:
                 return "array" if path[1] in info.get("fanout", ()) else "object"
-            return None
+            rest = path[2:]
+            if path[1] in info.get("fanout", ()):
+                if not valueschema.is_index(rest[0]):
+                    return None
+                rest = rest[1:]
+                if not rest:
+                    return "object"
+                if rest[0] == "item":
+                    return None
+            if rest[0] in ("ended", "by"):
+                return "string" if len(rest) == 1 else None
+            if rest[0] == "error":
+                return None
+            kinds = {self.declared_kind(graph, producer, rest, infos)
+                     for producer in self.branch_producers(graph, node, info, path[1])}
+            return kinds.pop() if len(kinds) == 1 else None
         return None
 
     def check_shared_instances(self, graph, infos):

@@ -1,7 +1,7 @@
 {
   "description": "An ask left unanswered for answerTimeoutMs gets no from the host; the agent continues.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "answer-timeout-ask",
     "agents": {
       "dev": {

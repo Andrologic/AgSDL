@@ -1,9 +1,11 @@
-"""Tests for the AgSDL 0.3.0 reference validator."""
+"""Tests for the AgSDL 0.4.0 reference validator."""
 
 import glob
 import json
 import os
+import subprocess
 import sys
+import tempfile
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -56,6 +58,22 @@ class ExamplesTest(unittest.TestCase):
 
 
 class ModulesTest(unittest.TestCase):
+    def test_missing_or_non_directory_modules_fail(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for path in (os.path.join(directory, "missing"), __file__):
+                with self.subTest(path=path):
+                    result = subprocess.run(
+                        [sys.executable, "-m", "agsdl", "--modules", path,
+                         os.path.join(EXAMPLES, "write-and-review.json")],
+                        cwd=TOOLING, capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, 2)
+                    self.assertIn(path, result.stderr)
+            with open(os.path.join(EXAMPLES, "write-and-review.json"), "rb") as handle:
+                report = validate_bytes(handle.read(), load_modules(directory))
+            self.assertTrue(report.valid)
+            self.assertEqual(codes(report, "warning"), ["HARNESS_UNVERIFIED"])
+
     def test_harness_modules_load(self):
         modules = load_modules(HARNESSES)
         for path in glob.glob(os.path.join(HARNESSES, "*", "module.json")):
@@ -151,7 +169,7 @@ class ReportTest(unittest.TestCase):
         })
 
     def test_shape_failure_stops_checks(self):
-        report = validate_bytes(b'{"contract": "agsdl-0.3.0", "id": "x"}', {})
+        report = validate_bytes(b'{"contract": "agsdl-0.4.0", "id": "x"}', {})
         self.assertEqual(codes(report, "error"), ["SHAPE"])
 
 

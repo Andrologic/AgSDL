@@ -1,7 +1,7 @@
 {
   "description": "A list longer than max fails before anything starts: the closing join fails with FANOUT_LIMIT and handles it like any step.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "fanout-limit",
     "agents": {
       "lead": {

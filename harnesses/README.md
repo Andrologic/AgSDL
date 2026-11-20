@@ -10,10 +10,10 @@ validator reads them and never runs anything.
 
 | Harness | Module version | Harness versions covered |
 | --- | --- | --- |
-| Codex | 1.0.0 | `>=0.152.0 <1.0.0` |
-| Claude Code | 1.0.0 | `>=2.1.257 <3.0.0` |
-| opencode | 1.0.0 | `>=2.0.28 <3.0.0` |
-| pi | 1.0.0 | `>=1.2.0 <2.0.0` |
+| Codex | 2.0.0 | `>=0.152.0 <1.0.0` |
+| Claude Code | 2.0.0 | `>=2.1.257 <3.0.0` |
+| opencode | 2.0.0 | `>=2.0.28 <3.0.0` |
+| pi | 2.0.0 | `>=1.2.0 <2.0.0` |
 
 Each module lists, in `sources`, the code and documentation its claims rest
 on, and explains every approximation in a `note`. Each has its own

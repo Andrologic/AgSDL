@@ -1,7 +1,7 @@
 {
   "description": "A branch failure fails the group at once: the other branch is cancelled, and the join fails with BRANCH_FAILED, handled by its onError.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "join-branch-failed",
     "agents": {
       "lead": {

@@ -1,5 +1,5 @@
 {
-  "contract": "agsdl-0.3.0",
+  "contract": "agsdl-0.4.0",
   "id": "assistant",
   "title": "A configured coding assistant",
   "description": "No flow: a host runs this agent and sends it messages directly.",

@@ -1,7 +1,7 @@
 {
   "description": "A shared path waiting in an instance queue ends without a result when the other join stops it.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "shared-stop-queued",
     "agents": {
       "worker": {

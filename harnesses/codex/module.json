@@ -2,8 +2,8 @@
   "$schema": "../../schema/harness-module.schema.json",
   "name": "codex",
   "title": "Codex",
-  "version": "1.0.0",
-  "contract": "agsdl-0.3.0",
+  "version": "2.0.0",
+  "contract": "agsdl-0.4.0",
   "harnessVersions": ">=0.152.0 <1.0.0",
   "sources": [
     "codex:codex-rs/protocol/src/openai_models.rs",

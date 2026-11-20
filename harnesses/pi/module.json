@@ -2,8 +2,8 @@
   "$schema": "../../schema/harness-module.schema.json",
   "name": "pi",
   "title": "pi",
-  "version": "1.0.0",
-  "contract": "agsdl-0.3.0",
+  "version": "2.0.0",
+  "contract": "agsdl-0.4.0",
   "harnessVersions": ">=1.2.0 <2.0.0",
   "sources": [
     "pi:packages/coding-agent/package.json",

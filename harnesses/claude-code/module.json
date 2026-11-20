@@ -2,8 +2,8 @@
   "$schema": "../../schema/harness-module.schema.json",
   "name": "claude-code",
   "title": "Claude Code",
-  "version": "1.0.0",
-  "contract": "agsdl-0.3.0",
+  "version": "2.0.0",
+  "contract": "agsdl-0.4.0",
   "harnessVersions": ">=2.1.257 <3.0.0",
   "sources": [
     "https://code.claude.com/docs/en/auto-mode-config",

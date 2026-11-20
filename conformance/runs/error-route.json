@@ -1,7 +1,7 @@
 {
   "description": "A failing step follows its onError with the error as default message; a handled failure does not fail the run.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "error-route",
     "agents": {
       "dev": {

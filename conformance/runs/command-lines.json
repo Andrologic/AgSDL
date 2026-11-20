@@ -1,7 +1,7 @@
 {
   "description": "A command with parse lines gives the non-empty lines of standard output as data.value, and a route fans out over them.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "command-lines",
     "agents": {
       "reviewer": {

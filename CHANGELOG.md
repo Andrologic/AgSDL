@@ -2,6 +2,35 @@
 
 Harness modules keep their own changelogs, in `harnesses/<name>/CHANGELOG.md`.
 
+## 0.4.0 (2026-11-20)
+
+Documents use `agsdl-0.4.0`. The document fields carry over from 0.3.0.
+Hosts must implement the revised execution rules to accept the new marker.
+The four harness modules target this edition at version 2.0.0.
+
+- A host confirms that a steer message reached the intended work before
+  counting it as delivered. It queues the message after definite non-receipt
+  and reports `STEER_UNCERTAIN` when it cannot establish what happened.
+- A whole-run stop withdraws pending work and ends as `cancelled` once the
+  host confirms termination. A host that cannot safely continue after an
+  interruption records `interrupted`. A committed stop survives a restart.
+- When a stop cancels a path shared by open joins, the host stops the work
+  once and accounts for the path in each affected group.
+- Run scenarios specify how to count compose starts, message deliveries and
+  join decisions, and how to replay fan-out concurrency and steer receipts.
+- The validator returns exit code 2 for an inaccessible module directory.
+  An unknown harness in a readable directory still produces a warning.
+- The validator checks the index and fields of approval comments. It also
+  reports `MESSAGE_PATH` when a fan-out after a join selects branch text or
+  another value known to be a scalar.
+
+Of the 16 run scenarios added or revised since the 0.3.0 tag, seven met
+their expectations in the [Argentic test runtime](https://github.com/Andrologic/argentic/tree/a4d0c5713dae4d8bd040bdbf64e8942cfdc291f2)
+using the pre-release inputs with the 0.3.0 marker. These were the four
+shared-stop scenarios, `approval-comments`, `compose-body-failure` and
+`delivery-steer`. The other nine use timeline events for steer confirmation,
+whole-run stops or restarts that this revision's test driver cannot replay.
+
 ## 0.3.0 (2026-11-05)
 
 A redesign. Documents written for 0.2 must be rewritten. See

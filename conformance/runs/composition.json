@@ -1,7 +1,7 @@
 {
   "description": "A compose step runs its body, delivers its message to the body's entry, and leaves once, through the output its join reaches.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "composition",
     "agents": {
       "writer": {

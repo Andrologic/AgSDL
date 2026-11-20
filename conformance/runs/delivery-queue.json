@@ -1,7 +1,7 @@
 {
   "description": "A queued message for a working instance waits for the current work to end, then starts its own work.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "delivery-queue",
     "agents": {
       "lead": {

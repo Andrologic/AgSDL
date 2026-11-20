@@ -1,7 +1,7 @@
 {
   "description": "A body failure that nothing in the body handles fails the compose step with the same error; without its own onError, the compose step follows the flow's.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "compose-body-failure",
     "agents": {
       "writer": {

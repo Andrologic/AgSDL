@@ -21,7 +21,7 @@ A report is a JSON object:
 
 ```json
 {
-  "contract": "agsdl-0.3.0",
+  "contract": "agsdl-0.4.0",
   "valid": false,
   "diagnostics": [
     {
