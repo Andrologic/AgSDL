@@ -2,9 +2,7 @@
 
 ## Host implementations
 
-- Track coverage of the new run scenarios in Macro and its Argentic runtime.
-  Add a Macro harness module once a release supports the edition and its
-  capabilities can be documented.
+- Track AgSDL 0.4.0 run scenario coverage in the Argentic flow engine.
 
 ## Toward 1.0
 
