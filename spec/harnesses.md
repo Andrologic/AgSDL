@@ -191,5 +191,5 @@ Two refinements follow from [Agents](agents.md):
 - Open values, such as model names and open effort levels, are never errors
   at writing time. Module suggestions serve editors only.
 
-A host such as Macro shows these diagnostics with the agent's details, not on
+A host shows these diagnostics with the agent's details, not on
 the flow diagram.

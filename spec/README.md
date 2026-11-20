@@ -55,7 +55,7 @@ The key words MUST, MUST NOT, SHOULD and MAY are used as in
 [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
 
 - **Document**: one JSON file with contract `agsdl-0.4.0`.
-- **Host**: the software that runs a document, for example Macro.
+- **Host**: the software that runs a document, for example Argentic.
 - **Harness**: the software that runs one agent's loop.
 - **Validator**: software that checks a document without running it.
 - **Agent definition**: an entry of `agents`. It is configuration, without
