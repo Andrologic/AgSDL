@@ -47,7 +47,7 @@ capabilities declared by each harness module.
 | Validator | [Reference validator](tooling/README.md), in this repository | 0.4.0 |
 | Renderer | [Mermaid renderer](tooling/README.md#draw), in this repository | 0.4.0 |
 | Harness modules | [Codex, Claude Code, opencode, pi](harnesses/README.md) | 2.0.0 for AgSDL 0.4.0 |
-| Host | [Argentic](https://github.com/Andrologic/argentic/tree/a4d0c5713dae4d8bd040bdbf64e8942cfdc291f2) | Its [host profile](https://github.com/Andrologic/argentic/blob/a4d0c5713dae4d8bd040bdbf64e8942cfdc291f2/crates/argentic-runtime/HOST.md) covers a subset of 0.3.0. The [0.4.0 changelog](CHANGELOG.md#040-2026-11-20) lists the scenarios tested with pre-release inputs. |
+| Host | [Argentic](https://github.com/Andrologic/argentic/tree/a4d0c5713dae4d8bd040bdbf64e8942cfdc291f2) | Its [host profile](https://github.com/Andrologic/argentic/blob/a4d0c5713dae4d8bd040bdbf64e8942cfdc291f2/crates/argentic-runtime/HOST.md) covers a subset of 0.3.0. The [0.4.0 changelog](CHANGELOG.md#040-2026-11-20) records the results for the [pre-release scenarios](https://github.com/Andrologic/AgSDL/tree/993fbef04f32cd49612ee1a12cc14c0137e5a712/conformance/runs) tested with the 0.3.0 marker. |
 
 Argentic runs AgSDL flows. Applications can embed its Rust runtime or run
 `argentic-host` as a separate process. [Macro embeds the runtime](https://github.com/Andrologic/Macro/blob/9e4d8e1208160aa60d4ad1a36cb2de940fd040b3/src-tauri/Cargo.toml#L55-L57).
