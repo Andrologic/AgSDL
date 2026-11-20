@@ -1,4 +1,4 @@
-"""Static validation of AgSDL 0.3.0 documents."""
+"""Static validation of AgSDL 0.4.0 documents."""
 
 import json
 import os
@@ -10,7 +10,7 @@ from .graph import Graph, analyse_joins, open_body_forks, route_items, route_tar
 from .permissions import command_prefix, covers_all, effect_for, effects_in_use, normalize, outside, shell_denied
 from .schemacheck import SchemaChecker, pointer
 
-CONTRACT = "agsdl-0.3.0"
+CONTRACT = "agsdl-0.4.0"
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPOSITORY = os.path.dirname(os.path.dirname(HERE))
 SCHEMA_DIR = os.path.join(REPOSITORY, "schema")

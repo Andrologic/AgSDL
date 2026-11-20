@@ -18,8 +18,8 @@ never run it. Modules are maintained in this repository under
 {
   "name": "codex",
   "title": "Codex",
-  "version": "1.0.0",
-  "contract": "agsdl-0.3.0",
+  "version": "2.0.0",
+  "contract": "agsdl-0.4.0",
   "harnessVersions": ">=0.152.0 <1.0.0",
   "sources": ["https://learn.chatgpt.com/docs/config-file/config-reference"],
   "properties": {

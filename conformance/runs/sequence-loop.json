@@ -1,7 +1,7 @@
 {
   "description": "Steps follow routes one after the other; a choice loops back with the agent's default message.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "sequence-loop",
     "agents": {
       "writer": {

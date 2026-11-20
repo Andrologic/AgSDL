@@ -1,7 +1,7 @@
 {
   "description": "A fan-out over a value that is not a list fails before anything starts: the closing join fails with OPERAND and handles it like any step.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "fanout-operand",
     "agents": {
       "worker": {

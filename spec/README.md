@@ -1,8 +1,11 @@
-# AgSDL 0.3.0 specification
+# AgSDL 0.4.0 specification
 
-Status: **published 2026-11-05, not stable.** The contract marker is
-`agsdl-0.3.0`. Earlier editions are available from their Git tags (`v0.2.0`,
-`v0.1.1`, …). AgSDL 0.3.0 is not compatible with them.
+Status: **published 2026-11-20, not stable.** The contract marker is
+`agsdl-0.4.0`. The 0.3.0 edition is available at its
+[Git tag](https://github.com/Andrologic/AgSDL/tree/v0.3.0).
+The document fields carry over from 0.3.0. Hosts adopting 0.4.0 also
+implement the [delivery](flow.md#confirming-a-steer) and
+[run termination](flow.md#stopping-and-recovering-a-run) rules.
 
 AgSDL describes **agents** and the **flows** that connect them. A document
 says what each agent is, what it may do, which harness runs it, and how work
@@ -51,7 +54,7 @@ disagree, this text wins and the schema is a defect.
 The key words MUST, MUST NOT, SHOULD and MAY are used as in
 [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
 
-- **Document**: one JSON file with contract `agsdl-0.3.0`.
+- **Document**: one JSON file with contract `agsdl-0.4.0`.
 - **Host**: the software that runs a document, for example Macro.
 - **Harness**: the software that runs one agent's loop.
 - **Validator**: software that checks a document without running it.

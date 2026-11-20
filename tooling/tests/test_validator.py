@@ -1,4 +1,4 @@
-"""Tests for the AgSDL 0.3.0 reference validator."""
+"""Tests for the AgSDL 0.4.0 reference validator."""
 
 import glob
 import json
@@ -169,7 +169,7 @@ class ReportTest(unittest.TestCase):
         })
 
     def test_shape_failure_stops_checks(self):
-        report = validate_bytes(b'{"contract": "agsdl-0.3.0", "id": "x"}', {})
+        report = validate_bytes(b'{"contract": "agsdl-0.4.0", "id": "x"}', {})
         self.assertEqual(codes(report, "error"), ["SHAPE"])
 
 

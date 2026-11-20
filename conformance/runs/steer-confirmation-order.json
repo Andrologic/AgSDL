@@ -1,7 +1,7 @@
 {
   "description": "Two steers reach the same work. Their delivery ranks follow the order of confirmation.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "steer-confirmation-order",
     "agents": {
       "lead": {

@@ -1,7 +1,7 @@
 {
   "description": "The failure that exceeds maxFailures fails the group: unfinished paths are cancelled and the join fails with BRANCH_FAILED.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "fanout-max-failures",
     "agents": {
       "lead": {

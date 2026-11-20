@@ -1,7 +1,7 @@
 {
   "description": "The flow's onError handles a top-level step without its own; a failure of the handler reaches no handler and fails the run.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "flow-error",
     "agents": {
       "dev": {

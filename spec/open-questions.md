@@ -1,8 +1,8 @@
 # Open questions
 
-These questions are not settled in AgSDL 0.3.0. Nothing in this page is a
+These questions are not settled in AgSDL 0.4.0. Nothing in this page is a
 requirement. Each question can be settled later by an optional addition,
-without changing the meaning of a 0.3 document.
+without changing the meaning of a 0.4 document.
 
 ## Declared call outcomes
 

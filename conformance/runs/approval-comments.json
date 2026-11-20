@@ -1,7 +1,7 @@
 {
   "description": "Approvals in a row each add the person's comment, when there is one, to the message's comments, in answer order and apart from its resources, so a result named comment stays as it is.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "approval-comments",
     "agents": {
       "writer": {

@@ -1,7 +1,7 @@
 {
   "description": "A quorum join continues once enough branches are accepted, with the accepted results only; remaining stop cancels the rest.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "quorum-reached",
     "agents": {
       "lead": {

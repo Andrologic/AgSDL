@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/Andrologic/AgSDL/v0.3.0/schema/harness-module.schema.json",
-  "title": "AgSDL 0.3.0 harness module",
+  "$id": "https://raw.githubusercontent.com/Andrologic/AgSDL/v0.4.0/schema/harness-module.schema.json",
+  "title": "AgSDL 0.4.0 harness module",
   "type": "object",
   "required": [
     "name",
@@ -27,7 +27,7 @@
       "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)$"
     },
     "contract": {
-      "const": "agsdl-0.3.0"
+      "const": "agsdl-0.4.0"
     },
     "harnessVersions": {
       "type": "string",

@@ -1,7 +1,7 @@
 {
   "description": "A fan-out starts one path per element with the element as item; a keep join lists the paths in element order and routes incomplete when one failed.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "fanout-keep",
     "agents": {
       "lead": {

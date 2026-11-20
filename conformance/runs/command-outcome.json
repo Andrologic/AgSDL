@@ -1,7 +1,7 @@
 {
   "description": "A command routes passed on exit status 0 and failed otherwise; failed is a normal outcome, and data.value is read even then.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "command-outcome",
     "agents": {
       "dev": {

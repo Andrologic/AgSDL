@@ -1,7 +1,7 @@
 {
   "description": "A steer message from one branch joins the current work of another branch: its branch ends absorbed, and the join decides once the other branch delivers.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "join-branch-steer",
     "agents": {
       "lead": {

@@ -1,7 +1,7 @@
 {
   "description": "A route that leaves a branch closes the group: the other branch follows remaining, the join decides nothing, and the run continues at the route's target.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "join-group-closes",
     "agents": {
       "lead": {

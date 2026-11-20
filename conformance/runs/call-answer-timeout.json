@@ -1,7 +1,7 @@
 {
   "description": "A request to a person that an MCP server makes during a call, left unanswered for the call's answerTimeoutMs, is declined by the host; the tool goes on with the refusal.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "call-answer-timeout",
     "mcpServers": {
       "github": {

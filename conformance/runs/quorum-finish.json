@@ -1,7 +1,7 @@
 {
   "description": "With remaining finish, the run continues at once while the other branches go on; their late failure is reported but does not fail the run.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "quorum-finish",
     "agents": {
       "lead": {

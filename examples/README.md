@@ -1,6 +1,6 @@
 # Examples
 
-Complete AgSDL 0.3.0 documents. Each one is valid. Validate them all from
+Complete AgSDL 0.4.0 documents. Each one is valid. Validate them all from
 `tooling/`:
 
 ```sh

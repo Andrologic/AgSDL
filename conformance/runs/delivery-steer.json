@@ -1,7 +1,7 @@
 {
   "description": "The first message to nudge joins the work already running on its instance. The second message arrives when the instance is idle and starts nudge's first work.",
   "document": {
-    "contract": "agsdl-0.3.0",
+    "contract": "agsdl-0.4.0",
     "id": "delivery-steer",
     "agents": {
       "lead": {
