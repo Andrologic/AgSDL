@@ -36,7 +36,7 @@ available from their Git tags.
 ## Out of scope
 
 - running agents or flows. Tooling here reads documents; it never executes
-  them. Hosts such as Macro run them;
+  them. Hosts such as Argentic run them;
 - exporters that write a harness's native files, and adapters that connect a
   harness to a host. They live beside the modules, in the projects that need
   them;
