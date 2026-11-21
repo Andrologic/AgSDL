@@ -29,6 +29,9 @@ The [JSON Schema](../schema/agsdl.schema.json) enforces the shapes described
 here. It creates no meaning on its own: when the schema and this text
 disagree, this text wins and the schema is a defect.
 
+The companion [project folder format](project.md) assembles a 0.4.0 document
+from local component files.
+
 ## Principles
 
 1. **The graph links missions; the agent conducts its mission.** A flow step

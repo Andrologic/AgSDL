@@ -1,0 +1,6 @@
+{
+  "harness": "codex",
+  "permissions": "read-only",
+  "instructions": [{ "uri": "instructions.md" }],
+  "mcpServers": ["issues"]
+}

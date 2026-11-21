@@ -151,3 +151,10 @@ so `{ "error": { "code": "TIMEOUT" } }` matches whatever the error's message;
 a list matches a list of the same length whose elements match in order; any
 other value matches only itself. Parallel works may start in any order, so
 no scenario checks one.
+
+## Project assembly
+
+Opening the [review project](../examples/review-project/agsdl.json) must yield
+[this document](projects/review.json) with URI paths based at the project
+root. Its separate secret requirements map `issues` to `["ISSUES_TOKEN"]`.
+The assembled document validates with the repository harness modules.

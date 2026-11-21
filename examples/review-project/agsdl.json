@@ -1,0 +1,14 @@
+{
+  "projectFormat": "agsdl-project-1",
+  "contract": "agsdl-0.4.0",
+  "id": "review-project",
+  "agents": {
+    "reviewer": { "file": "agents/reviewer/agent.json" }
+  },
+  "flow": { "file": "flows/review.json" },
+  "mcpServers": {
+    "issues": { "file": "mcp/issues.json" }
+  },
+  "settingsFiles": { "reviewer": "harnesses/codex/reviewer.json" },
+  "secrets": { "file": "secrets/requirements.json" }
+}

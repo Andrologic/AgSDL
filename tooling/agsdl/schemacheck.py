@@ -1,6 +1,6 @@
 """A small JSON Schema checker for the keywords the AgSDL schemas use.
 
-It supports: $ref (local), type, const, enum, pattern, minLength, minimum,
+It supports: $ref (local or explicitly supplied schemas), type, const, enum, pattern, minLength, minimum,
 minItems, maxItems, uniqueItems, prefixItems, items, properties, required,
 additionalProperties, propertyNames, oneOf, anyOf and not. Annotations are
 ignored. It is not a general JSON Schema implementation.
@@ -58,14 +58,16 @@ def pointer(parts):
 
 
 class SchemaChecker:
-    def __init__(self, root):
+    def __init__(self, root, references=None):
+        self.references = references or {}
         self.root = root
         self._patterns = {}
 
-    def check(self, value):
-        """Return a list of (pointer, message) for value against the root schema."""
+    def check(self, value, definition=None):
+        """Return a list of (pointer, message) for the root or a named definition."""
         errors = []
-        self._check(value, self.root, [], errors)
+        schema = self.root if definition is None else self.root["$defs"][definition]
+        self._check(value, schema, [], errors)
         return errors
 
     def _resolve(self, ref):
@@ -91,7 +93,9 @@ class SchemaChecker:
             errors.append((pointer(path), "no value is allowed here"))
             return
         if "$ref" in schema:
-            self._check(value, self._resolve(schema["$ref"]), path, errors)
+            name, _, fragment = schema["$ref"].partition("#")
+            checker = self.references[name] if name else self
+            checker._check(value, checker._resolve("#" + fragment), path, errors)
         if "type" in schema:
             names = schema["type"] if isinstance(schema["type"], list) else [schema["type"]]
             if not any(json_type_matches(value, n) for n in names):

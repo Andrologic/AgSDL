@@ -4,11 +4,12 @@ import argparse
 import json
 import sys
 
-from .validator import MODULES_DIR, ModuleError, load_modules, validate_bytes
+from .project import validate_path
+from .validator import MODULES_DIR, ModuleError, load_modules
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="agsdl", description="Validate AgSDL 0.4.0 documents.")
+    parser = argparse.ArgumentParser(prog="agsdl", description="Validate AgSDL documents and project folders.")
     parser.add_argument("documents", nargs="+", metavar="DOCUMENT")
     parser.add_argument("--json", action="store_true", help="print JSON reports")
     parser.add_argument("--modules", default=MODULES_DIR, help="directory of harness modules")
@@ -22,12 +23,10 @@ def main(argv=None):
     reports = {}
     for path in args.documents:
         try:
-            with open(path, "rb") as handle:
-                data = handle.read()
+            report = validate_path(path, modules)
         except OSError as error:
             print(f"agsdl: {error}", file=sys.stderr)
             return 2
-        report = validate_bytes(data, modules)
         if not report.valid:
             status = 1
         if args.json:
