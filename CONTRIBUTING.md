@@ -54,11 +54,11 @@ each commit with `git commit -s`. The `Signed-off-by` line certifies the
 [Developer Certificate of Origin](https://developercertificate.org/): you have
 the right to submit the change under the Apache License 2.0.
 
-## Git workflow
+## GitHub Flow
 
-Stable history lives on `main`; integration happens on `develop`. Work on a
-`feature/*` branch and open a pull request to `develop`. Maintainers release
-editions as described in [Releasing](docs/releasing.md).
+Create a short-lived branch from the latest `main` and open a pull request
+back to `main`. Merge after review and passing checks, then delete the work
+branch. Maintainers release editions as described in [Releasing](docs/releasing.md).
 
 Report a false permission guarantee privately, as described in
 [SECURITY.md](SECURITY.md).
