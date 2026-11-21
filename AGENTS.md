@@ -23,8 +23,9 @@ Do not describe AgSDL as stable.
   inside one agent. Do not model phases of one mission as steps.
 - Write repository documentation in English. Do not commit plans, logs or
   session notes.
-- Keep the local checkout on `develop`; work on `feature/*` branches in
-  separate worktrees. Keep each commit to one reviewed step.
+- Keep the primary checkout on `main`. Use separate worktrees for work
+  branches. Follow [GitHub Flow](CONTRIBUTING.md#github-flow) and keep each
+  commit to one reviewed step.
 
 ## Completion criterion
 
