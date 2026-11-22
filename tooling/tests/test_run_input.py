@@ -77,6 +77,14 @@ class RunInputTest(unittest.TestCase):
         self.assertEqual(snapshot.select(["x"]), [1])
         self.assertEqual(resources["ordinary"]["uri"], "file.txt")
 
+    def test_missing_optional_field_reports_the_input_resource(self):
+        flow = {"input": {"type": "object", "properties": {"city": {"type": "string"}}}}
+        snapshot = RunInput.accept(flow, {})
+        with self.assertRaises(InputError) as caught:
+            snapshot.bind_resources({"requestedCity": {"input": ["city"]}})
+        self.assertEqual((caught.exception.code, caught.exception.path), ("OPERAND", "/city"))
+        self.assertIn("run input for resource 'requestedCity'", str(caught.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

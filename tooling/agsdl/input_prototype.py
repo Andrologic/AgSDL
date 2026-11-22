@@ -1,7 +1,7 @@
 """Inspect declared run inputs and preview MCP arguments without starting a run."""
 
 import argparse
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import json
 import sys
 
@@ -22,20 +22,29 @@ def json_text(value):
     return json.dumps(value)
 
 
+def json_argument(text):
+    try:
+        return jsoninput.parse_bytes(text.encode())
+    except (jsoninput.InputError, ValueError, InvalidOperation) as error:
+        raise argparse.ArgumentTypeError(str(error)) from None
+
+
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(prog="python3 -m agsdl.input_prototype", description=__doc__)
     parser.add_argument("--modules", default=MODULES_DIR, help="directory of harness modules")
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="validate the authored document")
     check.add_argument("document")
     preview = commands.add_parser("preview", help="check a launch value and optionally resolve a call")
     preview.add_argument("document")
-    preview.add_argument("--input", metavar="JSON", help="the JSON value supplied at launch")
+    preview.add_argument("--input", metavar="JSON", type=json_argument, default=MISSING,
+                         help="the JSON value supplied at launch")
     preview.add_argument("--call", metavar="STEP", help="top-level MCP call to preview")
-    preview.add_argument("--previous", metavar="JSON", help="sample output of the preceding step")
+    preview.add_argument("--previous", metavar="JSON", type=json_argument, default=MISSING,
+                         help="sample output of the preceding step")
     args = parser.parse_args(argv)
-    if args.command == "preview" and args.previous is not None and args.call is None:
-        parser.error("--previous requires --call")
+    if args.command == "preview" and args.previous is not MISSING and args.call is None:
+        preview.error("--previous requires --call")
 
     try:
         document = jsoninput.load(args.document)
@@ -45,25 +54,28 @@ def main(argv=None):
             return 0 if report.valid else 1
         flow = document.get("flow")
         if flow is None:
-            parser.error("preview requires a document with a flow")
-        supplied = MISSING if args.input is None else jsoninput.parse_bytes(args.input.encode())
-        run_input = RunInput.accept(flow, supplied)
+            preview.error("preview requires a document with a flow")
+        run_input = RunInput.accept(flow, args.input)
         result = {"launch": "accepted"}
         if args.call is not None:
             step = flow["steps"].get(args.call)
             if not step or step["type"] != "call" or "mcp" not in step:
-                parser.error("--call must name a top-level MCP call")
-            previous = MISSING if args.previous is None else jsoninput.parse_bytes(args.previous.encode())
-            result["arguments"] = run_input.resolve_arguments(step.get("arguments", {}), previous)
+                preview.error("--call must name a top-level MCP call")
+            arguments = step.get("arguments", {})
+            if args.previous is MISSING and any("path" in operand for operand in arguments.values()):
+                preview.error(f"supply --previous JSON for call {args.call!r}, which reads the preceding output")
+            result["arguments"] = run_input.resolve_arguments(arguments, args.previous)
         print(json_text(result))
         return 0
     except InputError as error:
         result = {"code": error.code, "path": error.path, "message": str(error)}
         if error.code == "INPUT_INVALID":
             result["launch"] = "rejected"
+        else:
+            result.update(launch="accepted", step=args.call)
         print(json.dumps(result))
         return 1
-    except (OSError, ModuleError, jsoninput.InputError, ValueError) as error:
+    except (OSError, ModuleError, jsoninput.InputError, ValueError, InvalidOperation) as error:
         print(f"agsdl.input_prototype: {error}", file=sys.stderr)
         return 2
 

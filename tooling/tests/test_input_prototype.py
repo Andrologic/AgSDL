@@ -1,6 +1,6 @@
 """Exercise the venue fixture through the prototype host API and command."""
 
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from decimal import Decimal
 from io import StringIO
 import json
@@ -42,8 +42,11 @@ class VenueInputTest(unittest.TestCase):
         resources = snapshot.bind_resources(route["message"]["resources"])
         self.assertEqual(resources["requestedCity"], expected["requestedCityResource"])
         self.assertEqual(resources["quotes"], {"from": ["data"]})
+        # Resume from the saved launch value after the reviewer has finished.
+        saved = json_text(snapshot.value).encode()
+        resumed = RunInput.accept(self.flow, jsoninput.parse_bytes(saved))
         record = self.flow["steps"][self.flow["steps"][route["step"]]["next"]]
-        self.assertEqual(snapshot.resolve_arguments(record["arguments"], expected["compareOutput"]),
+        self.assertEqual(resumed.resolve_arguments(record["arguments"], expected["compareOutput"]),
                          expected["recordArguments"])
 
     def test_preview_cli(self):
@@ -55,6 +58,26 @@ class VenueInputTest(unittest.TestCase):
     def test_preview_preserves_exact_json_numbers(self):
         value = {"arguments": {"amount": [Decimal("12345678901234567890.123456789")]}}
         self.assertEqual(jsoninput.parse_bytes(json_text(value).encode()), value)
+
+    def test_preview_identifies_missing_or_malformed_samples(self):
+        for options, hint in [
+            (["--input", '{"city":"Paris"}', "--call", "record"], "--previous"),
+            (["--input", "{"], "--input"),
+            (["--call", "record", "--previous", "{"], "--previous"),
+        ]:
+            with self.subTest(options=options):
+                errors = StringIO()
+                with redirect_stderr(errors), self.assertRaises(SystemExit) as caught:
+                    self.command("preview", *options)
+                self.assertEqual(caught.exception.code, 2)
+                self.assertIn(hint, errors.getvalue().splitlines()[-1])
+
+    def test_accepted_launch_with_incomplete_previous_output(self):
+        status, response = self.command("preview", "--input", '{"city":"Paris"}', "--call", "record",
+                                        "--previous", '{"results":{}}')
+        self.assertEqual((status, response["launch"], response["step"], response["code"], response["path"]),
+                         (1, "accepted", "record", "OPERAND", "/results/city"))
+        self.assertIn("previous output for argument 'chosenCity'", response["message"])
 
     def test_launch_refused_before_binding_entry_call(self):
         expected = self.cases["rejected"]

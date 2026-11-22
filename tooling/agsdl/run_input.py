@@ -40,7 +40,9 @@ def _json(value, path):
     raise InputError("INPUT_INVALID", pointer(path), "expected a JSON value")
 
 
-def _select(value, path):
+def _select(value, path, source):
+    if value is MISSING:
+        raise InputError("OPERAND", pointer(path), f"{source} was not supplied")
     for index, part in enumerate(path):
         if isinstance(value, dict) and isinstance(part, str) and part in value:
             value = value[part]
@@ -49,9 +51,7 @@ def _select(value, path):
               and 0 <= part < len(value)):
             value = value[int(part)]
         else:
-            raise InputError("OPERAND", pointer(path[:index + 1]), "cannot read selection")
-    if value is MISSING:
-        raise InputError("OPERAND", pointer(path), "value is missing")
+            raise InputError("OPERAND", pointer(path[:index + 1]), f"cannot read this path from {source}")
     return deepcopy(value)
 
 
@@ -76,11 +76,12 @@ class RunInput:
             raise InputError("INPUT_INVALID", "", "flow input is required")
         try:
             _json(value, [])
-            problems = valueschema.validate(value, schema, [])
+            snapshot = cls(value)
+            problems = valueschema.validate(snapshot._value, schema, [])
             if problems:
                 path, message = problems[0]
                 raise InputError("INPUT_INVALID", path, message)
-            return cls(value)
+            return snapshot
         except RecursionError:
             raise InputError("INPUT_INVALID", "", "input is cyclic or nested too deeply") from None
 
@@ -91,16 +92,16 @@ class RunInput:
 
     def select(self, path):
         """Read a path from the snapshot."""
-        return _select(self._value, path)
+        return _select(self._value, path, "run input")
 
     def resolve_arguments(self, arguments, previous=MISSING):
         """Resolve literal, run-input and previous-step operands."""
         resolved = {}
         for name, operand in arguments.items():
             if "input" in operand:
-                resolved[name] = self.select(operand["input"])
+                resolved[name] = _select(self._value, operand["input"], f"run input for argument {name!r}")
             elif "path" in operand:
-                resolved[name] = _select(previous, operand["path"])
+                resolved[name] = _select(previous, operand["path"], f"previous output for argument {name!r}")
             else:
                 resolved[name] = deepcopy(operand["value"])
         return resolved
@@ -110,7 +111,8 @@ class RunInput:
         bound = {}
         for name, resource in resources.items():
             if "input" in resource:
-                bound[name] = {"value": self.select(resource["input"]),
+                value = _select(self._value, resource["input"], f"run input for resource {name!r}")
+                bound[name] = {"value": value,
                                "mediaType": resource.get("mediaType", "application/json")}
             else:
                 bound[name] = deepcopy(resource)
