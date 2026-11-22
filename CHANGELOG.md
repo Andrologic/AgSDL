@@ -2,6 +2,21 @@
 
 Harness modules keep their own changelogs, in `harnesses/<name>/CHANGELOG.md`.
 
+## 0.5.0 (2026-11-22)
+
+This distribution adds two formats for sharing AgSDL 0.4.0 documents.
+Existing documents use the same `agsdl-0.4.0` contract and execution rules.
+
+- A project folder uses an `agsdl.json` manifest (`agsdl-project-1`) to
+  assemble agents, flows and other components from separate files. It can
+  declare local MCP assets and the names of secrets its servers need.
+- A portable `.agsdl` archive (`agsdl-archive-1`) carries a project snapshot
+  with a file inventory and SHA-256 digests. The archive tool packs, inspects
+  and restores snapshots offline. Authors can include an optional Git bundle
+  of recorded project versions. Reading the current snapshot requires only Python.
+- The validator and Mermaid renderer accept a project folder or archive.
+  The validator reports `LIMIT` when a graph exceeds its work or nesting limit.
+
 ## 0.4.0 (2026-11-20)
 
 Documents use `agsdl-0.4.0`. The document fields carry over from 0.3.0.

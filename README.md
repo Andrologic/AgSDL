@@ -28,15 +28,20 @@ anything runs.
 
 ## Status
 
-| Edition | Status |
+[Release v0.5.0](https://github.com/Andrologic/AgSDL/releases/tag/v0.5.0)
+ships the tools and schemas for [multifile projects](spec/project.md) and
+[portable `.agsdl` archives](spec/archive.md). A project assembles a document
+with contract `agsdl-0.4.0`. Its manifest uses `agsdl-project-1` and its
+archive inventory uses `agsdl-archive-1`.
+
+| Language edition | Status |
 | --- | --- |
 | **0.4.0** | Current edition, tag [`v0.4.0`](https://github.com/Andrologic/AgSDL/tree/v0.4.0) (2026-11-20). |
 | 0.3.0 | Previous edition, tag [`v0.3.0`](https://github.com/Andrologic/AgSDL/tree/v0.3.0) (2026-11-05). |
 
 AgSDL is not stable. Expect breaking changes until 1.0.
 
-The [changelog](CHANGELOG.md) describes the new obligations for hosts that
-handle message delivery, cancellation and recovery.
+The [changelog](CHANGELOG.md) lists changes in each release.
 You can write documents, validate them, draw their flows and check the
 capabilities declared by each harness module.
 
@@ -44,8 +49,8 @@ capabilities declared by each harness module.
 
 | Kind | Implementation | Status |
 | --- | --- | --- |
-| Validator | [Reference validator](tooling/README.md), in this repository | 0.4.0 |
-| Renderer | [Mermaid renderer](tooling/README.md#draw), in this repository | 0.4.0 |
+| Validator | [Reference validator](tooling/README.md), in this repository | Ships in v0.5.0 |
+| Renderer | [Mermaid renderer](tooling/README.md#draw), in this repository | Ships in v0.5.0 |
 | Harness modules | [Codex, Claude Code, opencode, pi](harnesses/README.md) | 2.0.0 for AgSDL 0.4.0 |
 | Host | [Argentic](https://github.com/Andrologic/argentic/tree/a4d0c5713dae4d8bd040bdbf64e8942cfdc291f2) | Its [host profile](https://github.com/Andrologic/argentic/blob/a4d0c5713dae4d8bd040bdbf64e8942cfdc291f2/crates/argentic-runtime/HOST.md) covers a subset of 0.3.0. The [0.4.0 changelog](CHANGELOG.md#040-2026-11-20) records the results for the [pre-release scenarios](https://github.com/Andrologic/AgSDL/tree/993fbef04f32cd49612ee1a12cc14c0137e5a712/conformance/runs) tested with the 0.3.0 marker. |
 
