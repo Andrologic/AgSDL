@@ -1,5 +1,6 @@
 """End-to-end tests for portable project archives and offline history."""
 
+import errno
 import hashlib
 import json
 import os
@@ -10,10 +11,13 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import zipfile
 
 TOOLING = Path(__file__).resolve().parents[1]
 EXAMPLE = TOOLING.parent / "examples/review-project"
+sys.path.insert(0, str(TOOLING))
+from agsdl import archive as archive_tool
 
 
 class ArchiveTest(unittest.TestCase):
@@ -87,6 +91,57 @@ class ArchiveTest(unittest.TestCase):
             self.assertEqual((target / path).read_bytes(), (self.project / path).read_bytes())
         self.cli("unpack", self.archive, target, ok=False)
         self.assertEqual((target / "agsdl.json").read_bytes(), (self.project / "agsdl.json").read_bytes())
+
+    @unittest.skipUnless(sys.platform.startswith("linux") or sys.platform == "darwin",
+                         "native exclusive rename fallback")
+    def test_publication_on_volumes_without_hard_links(self):
+        source = self.base / "ready"
+        source.write_bytes(b"first")
+        with mock.patch("agsdl.archive_publish.os.link",
+                        side_effect=OSError(errno.EOPNOTSUPP, "hard links unavailable")):
+            archive_tool.publish_new(source, self.archive)
+            source.write_bytes(b"second")
+            with self.assertRaises(FileExistsError):
+                archive_tool.publish_new(source, self.archive)
+        self.assertEqual(self.archive.read_bytes(), b"first")
+        self.assertEqual(source.read_bytes(), b"second")
+
+    def test_executable_metadata_survives_unpack_and_repack(self):
+        # Include an authored file with the preferred local metadata name.
+        manifest_path = self.project / "agsdl.json"
+        manifest = json.loads(manifest_path.read_bytes())
+        manifest["content"] = {"notes": {"uri": ".agsdl-executables"}}
+        (self.project / ".agsdl-executables").write_bytes(b"Authored content")
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        self.pack()
+        executable = "agents/reviewer/instructions.md"
+
+        def mark_executable(entries):
+            result = []
+            for info, data in entries:
+                if info.filename == "archive.json":
+                    index = json.loads(data)
+                    index["files"][executable]["executable"] = True
+                    data = json.dumps(index).encode()
+                result.append((info, data))
+            return result
+
+        self.rewrite(mark_executable)
+        expected = json.loads(self.cli("inspect", self.archive).stdout)["contentSha256"]
+        target = self.base / "restored"
+        repacked = self.base / "repacked.agsdl"
+        with mock.patch.object(archive_tool, "NATIVE_EXECUTABLE_BITS", False):
+            archive_tool.unpack(self.archive, target)
+            (target / executable).chmod(0o644)
+            archive_tool.pack(target, repacked)
+            manifest.pop("content")
+            (target / "agsdl.json").write_text(json.dumps(manifest), encoding="utf-8")
+            edited = self.base / "edited.agsdl"
+            archive_tool.pack(target, edited)
+            flags = archive_tool.inspect_archive(edited)["inventory"]["files"]
+            self.assertTrue(flags[executable]["executable"])
+        self.assertEqual((target / ".agsdl-executables").read_bytes(), b"Authored content")
+        self.assertEqual(json.loads(self.cli("inspect", repacked).stdout)["contentSha256"], expected)
 
     def test_only_declared_files_and_complete_skill_directory(self):
         manifest_path = self.project / "agsdl.json"
@@ -196,6 +251,10 @@ class ArchiveTest(unittest.TestCase):
         self.cli("unpack", self.archive, target, "--with-history")
         restored = target / ".agsdl-history.bundle"
         self.assertEqual(restored.read_bytes(), entries["history.bundle"])
+        if os.name == "posix":
+            self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o700)
+            self.assertEqual(stat.S_IMODE(restored.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE(self.archive.stat().st_mode), 0o600)
         clone = self.base / "clone"
         subprocess.run(["git", "clone", "-b", "versions", str(restored), str(clone)],
                        capture_output=True, check=True)
@@ -214,6 +273,10 @@ class ArchiveTest(unittest.TestCase):
         self.cli("version", self.project, restored, "-m", "Alternative", "--parent", commits[0],
                  "--fork", branch)
         self.assertEqual(restored.read_bytes(), entries["history.bundle"])
+        if os.name == "posix":
+            self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o700)
+            self.assertEqual(stat.S_IMODE(restored.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE(self.archive.stat().st_mode), 0o600)
         branch_clone = self.base / "branch-clone"
         subprocess.run(["git", "clone", "-b", "versions", str(branch), str(branch_clone)],
                        capture_output=True, check=True)

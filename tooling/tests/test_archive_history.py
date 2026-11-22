@@ -1,13 +1,19 @@
 """Tests for the isolated Git archive history."""
 
+import json
+import hashlib
+import io
+import errno
 import os
 from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import types
 import unittest
+import zlib
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -22,30 +28,44 @@ class ArchiveHistoryTest(unittest.TestCase):
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
         self.snapshot = self.root / "snapshot"
-        self.snapshot.mkdir()
+        shutil.copytree(Path(__file__).resolve().parents[2] / "examples/review-project", self.snapshot)
+        manifest = self.snapshot / "agsdl.json"
+        project = json.loads(manifest.read_text(encoding="utf-8"))
+        project["skills"] = {"history": {"uri": "skill/SKILL.md"}}
+        manifest.write_text(json.dumps(project), encoding="utf-8")
+        self.skill = self.snapshot / "skill"
+        self.skill.mkdir()
+        (self.skill / "SKILL.md").write_text("Instructions", encoding="utf-8")
         self.bundle = self.root / "history.bundle"
-        (self.snapshot / "data").write_bytes(b"\x00one\r\n")
+        (self.skill / "data").write_bytes(b"\x00one\r\n")
 
     def test_append_select_and_branch(self):
         first = record_version(self.snapshot, self.bundle, "first")
-        (self.snapshot / "data").write_bytes(b"two")
+        (self.skill / "data").write_bytes(b"two")
         second = record_version(self.snapshot, self.bundle, "second")
         self.assertEqual(verify_history(self.bundle, self.snapshot), second)
-        (self.snapshot / "data").write_bytes(b"\x00one\r\n")
+        (self.skill / "data").write_bytes(b"\x00one\r\n")
         with self.assertRaisesRegex(ValueError, "tip"):
             verify_history(self.bundle, self.snapshot, first)
-        (self.snapshot / "new").write_bytes(b"branch")
-        branch = record_version(self.snapshot, self.bundle, "branch", parent=first)
-        self.assertEqual(verify_history(self.bundle, self.snapshot), branch)
+        (self.skill / "new").write_bytes(b"branch")
+        original = self.bundle.read_bytes()
+        with self.assertRaisesRegex(ValueError, "fork"):
+            record_version(self.snapshot, self.bundle, "branch", parent=first)
+        fork = self.root / "fork.bundle"
+        branch = record_version(self.snapshot, self.bundle, "branch", parent=first, fork=fork)
+        self.assertEqual(self.bundle.read_bytes(), original)
+        self.assertEqual(verify_history(fork, self.snapshot), branch)
+        with self.assertRaises(FileExistsError):
+            record_version(self.snapshot, self.bundle, "branch", parent=first, fork=fork)
         with self.assertRaises(ValueError):
-            verify_history(self.bundle, self.snapshot, second)
+            verify_history(fork, self.snapshot, second)
 
     def test_content_paths_and_modes(self):
-        path = self.snapshot / "data"
+        path = self.skill / "data"
         path.chmod(0o755)
-        nested = self.snapshot / "folder"
+        nested = self.skill / "folder"
         nested.mkdir()
-        filename = "-name with spaces" if os.name == "nt" else "-name\tline\n"
+        filename = "-name with spaces"
         (nested / filename).write_bytes(b"binary\xff")
         commit = record_version(self.snapshot, self.bundle, "snapshot")
         self.assertEqual(verify_history(self.bundle, self.snapshot), commit)
@@ -70,7 +90,7 @@ class ArchiveHistoryTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify_history(self.bundle, self.snapshot, "HEAD")
         try:
-            (self.snapshot / "link").symlink_to(self.snapshot / "data")
+            (self.skill / "link").symlink_to(self.skill / "data")
         except OSError:
             pass  # Creating symlinks may require privileges on Windows.
         else:
@@ -97,13 +117,66 @@ class ArchiveHistoryTest(unittest.TestCase):
             self.assertEqual(verify_history(self.bundle, self.snapshot), commit)
         self.assertFalse(marker.exists())
 
+    def test_history_rejects_a_different_project_id(self):
+        record_version(self.snapshot, self.bundle, "first")
+        original = self.bundle.read_bytes()
+        manifest = self.snapshot / "agsdl.json"
+        project = json.loads(manifest.read_text(encoding="utf-8"))
+        project["id"] = "other-project"
+        manifest.write_text(json.dumps(project), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "different project IDs"):
+            record_version(self.snapshot, self.bundle, "second")
+        self.assertEqual(self.bundle.read_bytes(), original)
+
+    def test_older_revision_must_contain_only_selected_files(self):
+        repo = self.root / "ordinary-history"
+        shutil.copytree(self.snapshot, repo)
+        def git(*args):
+            return subprocess.run(["git", "-C", str(repo), "-c", "user.name=Test",
+                                   "-c", "user.email=test@invalid", *args],
+                                  check=True, capture_output=True)
+        git("init")
+        (repo / "notes.txt").write_text("A note", encoding="utf-8")
+        git("add", ".")
+        git("commit", "-m", "older")
+        (repo / "notes.txt").unlink()
+        git("add", "-u")
+        git("commit", "-m", "current")
+        git("branch", "versions")
+        git("bundle", "create", "--version=2", str(self.bundle), "refs/heads/versions")
+        with self.assertRaisesRegex(ValueError, "selected project files"):
+            verify_history(self.bundle, self.snapshot)
+
+    def test_empty_history_directory_is_rejected(self):
+        record_version(self.snapshot, self.bundle, "first")
+        with tempfile.TemporaryDirectory() as directory:
+            repo = archive_history._Repository(directory)
+            tip = repo.load(self.bundle)
+            tree = repo.run("log", "--format=%T", tip).splitlines()[0]
+            blobs, directories = repo.tree_entries(tree)
+            directories.add("empty")
+            with self.assertRaisesRegex(ValueError, "directory without selected files"):
+                repo.validate_project_tree(blobs, directories, repo.directory / "blobs")
+
+    def test_blob_materialization_without_hard_links(self):
+        commit = record_version(self.snapshot, self.bundle, "first")
+        with mock.patch.object(archive_history.os, "link", side_effect=OSError(errno.EPERM, "unsupported")):
+            self.assertEqual(verify_history(self.bundle, self.snapshot), commit)
+
+    def test_git_runs_in_private_directory(self):
+        real_popen = subprocess.Popen
+        with mock.patch.object(archive_history.subprocess, "Popen", wraps=real_popen) as popen:
+            record_version(self.snapshot, self.bundle, "private")
+        for call in popen.call_args_list:
+            self.assertIn("agsdl-history-", str(call.kwargs["cwd"]))
+
     def test_rejects_invalid_or_incremental_bundle(self):
         self.bundle.write_bytes(b"not a bundle")
         with self.assertRaises(ValueError):
             verify_history(self.bundle, self.snapshot)
         self.bundle.unlink()
         first = record_version(self.snapshot, self.bundle, "first")
-        (self.snapshot / "data").write_bytes(b"second")
+        (self.skill / "data").write_bytes(b"second")
         record_version(self.snapshot, self.bundle, "second")
         repo = self.root / "repo.git"
         subprocess.run(["git", "init", "--bare", str(repo)], check=True, capture_output=True)
@@ -135,10 +208,25 @@ class ArchiveHistoryTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             verify_history(directory, self.snapshot)
 
+    def test_preflight_counts_delta_result_sizes(self):
+        base = b"A" * 20
+        base_object = b"\xb4\x01" + zlib.compress(base)
+        delta = bytes((20, 20, 0x90, 20))
+        pack = (b"PACK\x00\x00\x00\x02\x00\x00\x00\x02" + base_object
+                + b"\x64" + bytes((len(base_object),)) + zlib.compress(delta))
+        pack += hashlib.sha1(pack).digest()
+        source = io.BytesIO(pack)
+        source.seek(12)
+        archive_history._preflight_pack(source, 2, 0, time.monotonic() + 5)
+        source.seek(12)
+        with mock.patch.object(archive_history, "_MAX_EXPANDED", 30):
+            with self.assertRaisesRegex(ValueError, "expansion limit"):
+                archive_history._preflight_pack(source, 2, 0, time.monotonic() + 5)
+
     def test_new_bundle_is_validated_before_replacement(self):
         record_version(self.snapshot, self.bundle, "first")
         original = self.bundle.read_bytes()
-        (self.snapshot / "new").write_bytes(os.urandom(2048))
+        (self.skill / "new").write_bytes(os.urandom(2048))
         with mock.patch.object(archive_history, "_MAX_BUNDLE", len(original) + 100):
             with self.assertRaises(ValueError):
                 record_version(self.snapshot, self.bundle, "too large")
@@ -163,20 +251,26 @@ class ArchiveHistoryTest(unittest.TestCase):
 
     @unittest.skipIf(os.name == "nt", "Windows does not preserve executable mode bits")
     def test_explicit_executable_set_and_tip_requirement(self):
-        (self.snapshot / "data").chmod(0o755)
+        (self.skill / "data").chmod(0o755)
         first = record_version(self.snapshot, self.bundle, "first")
-        (self.snapshot / "data").chmod(0o644)
+        (self.skill / "data").chmod(0o644)
         self.assertEqual(verify_history(self.bundle, self.snapshot, first,
-                                        executables={"data"}), first)
-        (self.snapshot / "data").write_bytes(b"second")
+                                        executables={"skill/data"}), first)
+        (self.skill / "data").write_bytes(b"second")
         record_version(self.snapshot, self.bundle, "second")
         with self.assertRaisesRegex(ValueError, "tip"):
-            verify_history(self.bundle, self.snapshot, first, executables={"data"})
+            verify_history(self.bundle, self.snapshot, first, executables={"skill/data"})
+
+    def test_record_explicit_executable_set(self):
+        commit = record_version(self.snapshot, self.bundle, "mode", executables={"skill/data"})
+        self.assertEqual(verify_history(self.bundle, self.snapshot, commit, executables={"skill/data"}), commit)
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            verify_history(self.bundle, self.snapshot, commit, executables=set())
 
     def test_hashing_batches_paths_with_spaces_without_filters(self):
-        (self.snapshot / ".gitattributes").write_text("* text eol=lf\n")
+        (self.skill / ".gitattributes").write_text("* text eol=lf\n")
         for index in range(260):
-            (self.snapshot / ("file {:03d} with spaces".format(index))).write_bytes(b"a\r\nb")
+            (self.skill / ("file {:03d} with spaces".format(index))).write_bytes(b"a\r\nb")
         real_popen = subprocess.Popen
         with mock.patch.object(archive_history.subprocess, "Popen", wraps=real_popen) as popen:
             commit = record_version(self.snapshot, self.bundle, "batch")
@@ -186,16 +280,18 @@ class ArchiveHistoryTest(unittest.TestCase):
         self.assertTrue(all("--no-filters" in command for command in hashes))
         self.assertEqual(verify_history(self.bundle, self.snapshot), commit)
 
-    def test_windows_command_path_and_output_cap(self):
+    def test_unavailable_resource_limits_and_output_cap(self):
         record_version(self.snapshot, self.bundle, "first")
         windows_os = types.SimpleNamespace(**vars(os))
         windows_os.name = "nt"
         real_popen = subprocess.Popen
         with mock.patch.object(archive_history, "os", windows_os), \
+             mock.patch.dict(os.environ, {"PATH": str(self.root) + os.pathsep + os.environ.get("PATH", "")}), \
              mock.patch.object(archive_history.subprocess, "Popen", wraps=real_popen) as popen:
             verify_history(self.bundle, self.snapshot)
-        self.assertTrue(all(call.args[0][0] == "git" for call in popen.call_args_list))
-        self.assertTrue(all(not call.kwargs["start_new_session"] for call in popen.call_args_list))
+        self.assertTrue(all(Path(call.args[0][0]).is_absolute() and
+                            Path(call.args[0][0]).stem.lower() == "git"
+                            for call in popen.call_args_list))
         with mock.patch.object(archive_history, "_MAX_STREAM", 1):
             with self.assertRaisesRegex(ValueError, "output exceeds"):
                 verify_history(self.bundle, self.snapshot)

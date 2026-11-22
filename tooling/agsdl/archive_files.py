@@ -98,10 +98,16 @@ def open_portable_file(root: Path, name: str):
 
 
 def portable_files(project_root: Path, *, modules=None) -> dict:
-    """Return declared project files and complete local skill directories."""
+    """Return the selected files of a valid project."""
+    _, files = discover_project(project_root, modules=modules)
+    return files
+
+
+def discover_project(project_root: Path, *, modules=None, validate=True):
+    """Assemble a project and collect its declared files and complete local skills."""
     root = Path(project_root)
-    if root.is_symlink():
-        raise ValueError("project root cannot be a symbolic link")
+    if root.is_symlink() or getattr(root.lstat(), "st_file_attributes", 0) & 0x400:
+        raise ValueError("project root cannot be a symbolic link or reparse point")
     root = root.resolve()
     files = {}
     spellings = {}
@@ -118,9 +124,10 @@ def portable_files(project_root: Path, *, modules=None) -> dict:
         if len(spellings) > MAX_PATHS:
             raise ValueError("too many project paths")
         path = root / relative
-        mode = path.lstat().st_mode
-        if stat.S_ISLNK(mode):
-            raise ValueError(f"symbolic link in project: {name}")
+        info = path.lstat()
+        mode = info.st_mode
+        if stat.S_ISLNK(mode) or getattr(info, "st_file_attributes", 0) & 0x400:
+            raise ValueError(f"symbolic link or reparse point in project: {name}")
         if not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
             raise ValueError(f"special file in project: {name}")
         return path, mode
@@ -192,10 +199,11 @@ def portable_files(project_root: Path, *, modules=None) -> dict:
         return value
 
     project = load_project(root, _file_observer=declared, _json_reader=read_json)
-    report = validate_document(project.document, modules)
-    if not report.valid:
-        error = next(item for item in report.diagnostics if item["severity"] == "error")
-        raise ValueError(f"{project.location(error['path'])}: {error['message']}")
+    if validate:
+        report = validate_document(project.document, modules)
+        if not report.valid:
+            error = next(item for item in report.diagnostics if item["severity"] == "error")
+            raise ValueError(f"{project.location(error['path'])}: {error['message']}")
 
     def walk(directory):
         if directory in walked:
@@ -218,4 +226,6 @@ def portable_files(project_root: Path, *, modules=None) -> dict:
         if skill_path.parent == Path("."):
             raise ValueError("a local skill cannot be rooted at the project root")
         walk(skill_path.parent)
-    return files
+    # The callbacks and byte counters apply only during dependency discovery.
+    project._file_observer = project._json_reader = None
+    return project, files

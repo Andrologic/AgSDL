@@ -3,6 +3,7 @@
 import argparse
 from contextlib import contextmanager
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -16,9 +17,11 @@ import zipfile
 import zlib
 
 from . import jsoninput
-from .archive_files import check_portable_name, open_portable_file, portable_files
+from .archive_files import check_portable_name, discover_project, open_portable_file, portable_files
 from .archive_history import record_version, verify_history
-from .project import ProjectError, load_project
+from .archive_publish import publish_new
+from .archive_zip import member_ends, read_member
+from .project import ProjectError
 from .schemacheck import SchemaChecker
 from .validator import SCHEMA_DIR
 
@@ -29,6 +32,46 @@ MAX_TOTAL = 256 * 1024 * 1024
 MAX_INDEX = 2 * 1024 * 1024
 MAX_DIRECTORY = 8 * 1024 * 1024
 HISTORY_FILE = ".agsdl-history.bundle"
+NATIVE_EXECUTABLE_BITS = os.name != "nt"
+MODE_SIDECAR = ".agsdl-executables"
+MODE_HEADER = b"AgSDL executable paths v1\n"
+
+
+def mode_sidecar(files):
+    """Find a root-level name outside the project's declared paths."""
+    roots = {name.partition("/")[0].casefold() for name in files}
+    name = MODE_SIDECAR
+    suffix = 0
+    while name in roots:
+        suffix += 1
+        name = f"{MODE_SIDECAR}.{suffix}"
+    return name
+
+
+def restored_executables(project, files):
+    if NATIVE_EXECUTABLE_BITS:
+        return set()
+    # An edit can free (or claim) the original sidecar's preferred filename.
+    # Read only root-level metadata outside the project's current selection.
+    selected = {name.casefold() for name in files}
+    with os.scandir(project) as entries:
+        for entry in entries:
+            name = entry.name
+            prefix = MODE_SIDECAR
+            if name != prefix:
+                suffix = name[len(prefix) + 1:]
+                if not name.startswith(prefix + ".") or not (suffix.isascii() and suffix.isdecimal()):
+                    continue
+            if name.casefold() in selected or not entry.is_file(follow_symlinks=False):
+                continue
+            with open_portable_file(project, name) as source:
+                if source.read(len(MODE_HEADER)) != MODE_HEADER:
+                    continue
+                raw = source.read(MAX_INDEX + 1)
+            if len(raw) > MAX_INDEX:
+                raise ValueError(f"{name}: executable metadata exceeds the size limit")
+            return set(raw.decode("utf-8").split("\n")).intersection(files)
+    return set()
 
 
 def copy_and_hash(source, target, limit):
@@ -62,20 +105,20 @@ def copy_file(source, dest, limit):
 def stage_snapshot(project, snapshot):
     """Freeze the declared bytes once, then validate that exact copy."""
     snapshot.mkdir()
-    if project.is_symlink():
-        raise ValueError("project root cannot be a symbolic link")
-    project = project.resolve()
-    files = portable_files(project)
+    assembled, files = discover_project(project, validate=False)
+    project = assembled.root
     if len(files) + 1 > MAX_ENTRIES:
         raise ValueError("too many project files")
     total = 0
     inventory = {}
+    remembered = restored_executables(project, files)
     for name in sorted(files):
         target = snapshot / name
         target.parent.mkdir(parents=True, exist_ok=True)
         with open_portable_file(project, name) as source, target.open("xb") as dest:
             entry = copy_and_hash(source, dest, MAX_TOTAL - total)
-            entry["executable"] = bool(os.fstat(source.fileno()).st_mode & 0o111)
+            entry["executable"] = (name in remembered or
+                                   bool(os.fstat(source.fileno()).st_mode & 0o111))
         total += entry["size"]
         target.chmod(0o755 if entry["executable"] else 0o644)
         inventory[name] = entry
@@ -108,7 +151,8 @@ def pack(project, output, history=None):
         if history is not None:
             bundle = work / "history.bundle"
             info = copy_file(history, bundle, MAX_TOTAL - total)
-            info["commit"] = verify_history(bundle, snapshot)
+            info["commit"] = verify_history(bundle, snapshot, executables={
+                name for name, row in files.items() if row["executable"]})
             index["history"] = info
             total += info["size"]
             payload["history.bundle"] = bundle
@@ -126,7 +170,8 @@ def pack(project, output, history=None):
                         write_member(archive, name, source)
             with tmp.open("rb") as handle:
                 preflight(handle)
-            os.link(tmp, output)
+            tmp.chmod(0o600)
+            publish_new(tmp, output)
 
 
 def preflight(handle):
@@ -185,15 +230,24 @@ def members(archive, expected_count):
 
 
 def extract(archive_path, work, check_history=False, modules=None):
+    index, _ = _extract_project(archive_path, work, check_history, modules)
+    return index
+
+
+def _extract_project(archive_path, work, check_history=False, modules=None):
     snapshot = work / "project"
-    snapshot.mkdir()
+    snapshot.mkdir(mode=0o700)
     with archive_path.open("rb") as handle:
         count = preflight(handle)
         with zipfile.ZipFile(handle) as archive:
             table = members(archive, count)
             if "archive.json" not in table or table["archive.json"].file_size > MAX_INDEX:
                 raise ValueError("missing or oversized archive.json")
-            index = jsoninput.parse_bytes(archive.read(table.pop("archive.json")))
+            ends = member_ends(archive)
+            raw = io.BytesIO()
+            info = table.pop("archive.json")
+            read_member(archive, info, raw, ends[info.header_offset])
+            index = jsoninput.parse_bytes(raw.getvalue())
             problems = SCHEMA.check(index)
             if problems:
                 where, message = problems[0]
@@ -209,22 +263,27 @@ def extract(archive_path, work, check_history=False, modules=None):
                 info = table[name]
                 if info.file_size != entry["size"]:
                     raise ValueError(f"incorrect size: {name}")
+                # JSON Schema also accepts integral decimals (e.g. 1.0).
                 entry["size"] = info.file_size
                 dest = work / name
                 dest.parent.mkdir(parents=True, exist_ok=True)
-                with archive.open(info) as source, dest.open("xb") as target:
-                    actual = copy_and_hash(source, target, info.file_size)
+                with dest.open("xb") as target:
+                    actual = read_member(archive, info, target, ends[info.header_offset])
                 if actual["sha256"] != entry["sha256"] or actual["size"] != entry["size"]:
                     raise ValueError(f"incorrect file contents: {name}")
-                dest.chmod(0o755 if entry.get("executable") else 0o644)
-    if portable_files(snapshot, modules=modules).keys() != files.keys():
+                if name == "history.bundle":
+                    dest.chmod(0o600)
+                else:
+                    dest.chmod(0o755 if entry["executable"] else 0o644)
+    project, selected = discover_project(snapshot, modules=modules)
+    if selected.keys() != files.keys():
         raise ValueError("inventory includes files outside the declared project")
     if check_history:
         if "history" not in index:
             raise ValueError("archive contains no Git history")
         verify_history(work / "history.bundle", snapshot, index["history"]["commit"],
                        executables={name for name, row in files.items() if row["executable"]})
-    return index
+    return index, project
 
 
 def check_tree_names(files):
@@ -250,8 +309,7 @@ def open_archive(path, modules=None):
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
         try:
-            extract(path, work, modules=modules)
-            project = load_project(work / "project")
+            _, project = _extract_project(path, work, modules=modules)
         except (ValueError, jsoninput.InputError, zipfile.BadZipFile, zlib.error, EOFError, RecursionError) as error:
             raise ProjectError(str(error)) from None
         yield project
@@ -260,8 +318,7 @@ def open_archive(path, modules=None):
 def inspect_archive(path):
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
-        index = extract(path, work)
-        project = load_project(work / "project")
+        index, project = _extract_project(path, work)
         servers = project.document.get("mcpServers", {})
         inventory_bytes = json.dumps(index["files"], ensure_ascii=False, sort_keys=True,
                                      separators=(",", ":")).encode("utf-8")
@@ -280,8 +337,14 @@ def unpack(path, destination, with_history=False):
         raise FileExistsError(f"destination exists: {destination}")
     with tempfile.TemporaryDirectory(dir=destination.parent) as tmp:
         work = Path(tmp)
-        extract(path, work, with_history)
+        index = extract(path, work, with_history)
         project = work / "project"
+        if not NATIVE_EXECUTABLE_BITS:
+            files = index["files"]
+            executable = sorted(name for name, row in files.items() if row["executable"])
+            if executable:
+                with (project / mode_sidecar(files)).open("xb") as sidecar:
+                    sidecar.write(MODE_HEADER + "\n".join(executable).encode("utf-8"))
         if with_history:
             (work / "history.bundle").rename(project / HISTORY_FILE)
         if os.name == "nt":
@@ -337,17 +400,12 @@ def main(argv=None):
                 check_store_location(args.project, args.fork)
             with tempfile.TemporaryDirectory() as tmp:
                 snapshot = Path(tmp) / "project"
-                stage_snapshot(args.project, snapshot)
+                files = stage_snapshot(args.project, snapshot)
                 if (args.parent is None) != (args.fork is None):
                     raise ValueError("use --parent and --fork together to preserve the original history")
-                if args.fork:
-                    with tempfile.TemporaryDirectory(dir=args.fork.parent) as directory:
-                        fork = Path(directory) / "fork.bundle"
-                        copy_file(args.store, fork, MAX_TOTAL)
-                        commit = record_version(snapshot, fork, args.message, args.parent)
-                        os.link(fork, args.fork)
-                else:
-                    commit = record_version(snapshot, args.store, args.message)
+                commit = record_version(snapshot, args.store, args.message, args.parent,
+                                        fork=args.fork, executables={
+                                            name for name, row in files.items() if row["executable"]})
                 print(commit)
     except (ValueError, OSError, jsoninput.InputError, zipfile.BadZipFile, zlib.error, EOFError, RecursionError) as error:
         print(f"agsdl.archive: {error}", file=sys.stderr)

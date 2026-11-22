@@ -104,6 +104,8 @@ To keep versions, use a dedicated bundle outside the project, or use the
 reserved filename `.agsdl-history.bundle` at its root. The first command creates it.
 Run `version` again after editing the project to append a commit. Each call
 prints the commit ID. The export checks the snapshot against the recorded tip.
+Keep the manifest's `id` when renaming or moving a project. To start a project
+with a different ID, choose a new store.
 
 ```sh
 python3 -m agsdl.archive version restored versions.bundle -m "First review"
@@ -126,6 +128,12 @@ Snapshot commands require only Python. Recording, including or restoring Git
 history also requires Git. The default `unpack` restores the current project
 even when Git is unavailable. The [archive format](../spec/archive.md) defines
 the portable files and the checks performed during import.
+
+On POSIX, the exported archive and restored history are owner-readable and
+owner-writable. The restored project directory has mode `0700`. On Windows,
+unpacking a project with executable files saves their names in a local
+`.agsdl-executables` file. The tool chooses a numbered suffix if that name
+belongs to the project and reads those flags on the next export or version.
 
 The inspect report includes a content fingerprint. It hashes the UTF-8 JSON
 encoding of the files inventory with sorted keys, integer sizes, literal

@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -33,3 +32,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Check repository, validator, conformance cases and examples
         run: ./scripts/check.sh
+
+  windows-archive:
+    name: Portable archive (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.x'
+      - name: Check archive CLI round trips with and without Git
+        run: python -m unittest discover -s tooling/tests -p test_archive.py

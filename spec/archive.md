@@ -44,12 +44,16 @@ Reject paths that collide after case folding and NFC normalization, including
 ancestor directories. An archive path can have up to 64 components, 255 UTF-8
 bytes per component and 4096 bytes in total, measured from the project root.
 A relative reference inside an authored file can still use `..` within the
-project as defined by the project format.
+project as defined by the project format. A directory traversed only on the
+way to `..` can be absent after extraction. Check existing components of
+the authored path for symlinks before resolving the final file.
 
 ## Reading and writing
 
 Verify the inventory against the complete set of ZIP entries. Reject
 duplicates, file/directory conflicts, and any size or digest mismatch.
+Check the complete stored or deflated stream against its declared size and
+CRC, including the data descriptor when present.
 Read into a new private directory, validate the assembled project and compare
 its discovered files with the inventory before publishing the result.
 The reference tool limits an archive to 8192 entries, 256 MiB of uncompressed
@@ -80,13 +84,18 @@ An export of only the current snapshot omits the entire history.
 Use a self-contained version 2 Git bundle with SHA-1 object IDs, no prerequisites and
 one advertised reference, `refs/heads/versions`. Its tip must be the
 inventory's `history.commit`. A history reader verifies the bundle in an
-empty repository and compares the tip's complete tree, including paths,
-file contents and executable bits, with the snapshot. Opening an old version
+empty repository. Every reachable commit must carry the same project ID.
+Its tree must contain exactly the files selected by that revision's manifest,
+including its complete local skill directories. Apply the portable path and
+file type rules to each revision. Compare the tip's complete tree, including
+paths, file contents and executable bits, with the snapshot. Opening an old version
 uses ordinary Git history. Creating a version based on an older commit in
 the reference tool writes a separate bundle so the original versions remain
 available.
 
 The reference Git reader accepts up to 64 MiB of bundle bytes, 10000 objects
-and 128 MiB of expanded content. Its Git operation budget is 60 seconds.
+and 128 MiB of expanded content. It checks the expansion limit on both the
+packed object data and the reconstructed object sizes before importing the
+pack. Its Git operation budget is 60 seconds.
 These implementation limits are separate from snapshot import. A snapshot
 reader can access the current project regardless of Git availability.
