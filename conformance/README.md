@@ -158,3 +158,12 @@ Opening the [review project](../examples/review-project/agsdl.json) must yield
 [this document](projects/review.json) with URI paths based at the project
 root. Its separate secret requirements map `issues` to `["ISSUES_TOKEN"]`.
 The assembled document validates with the repository harness modules.
+
+## Archive interchange
+
+Pack the review project above and unpack it into a fresh directory. The
+project must still assemble to the same reference document, with identical
+source bytes. Adding unrelated notes beside the manifest must leave the
+inventory unchanged. For the Git profile, record successive revisions of the
+reviewer's instructions, export the latest snapshot with its history, and
+verify that the recipient can check out the earlier instructions offline.

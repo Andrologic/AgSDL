@@ -149,6 +149,7 @@ levels a harness accepts.
 | --- | --- |
 | Write a first document | [Quickstart](docs/quickstart.md) |
 | Organize a standalone project | [Project folders](spec/project.md) and the [review project manifest](examples/review-project/agsdl.json) |
+| Share a project and its versions | [Portable archives](spec/archive.md) and [CLI examples](tooling/README.md#portable-archives) |
 | Understand the language | [Specification](spec/README.md) |
 | See complete documents | [Examples](examples/README.md) |
 | Know what a harness supports | [Harness modules](harnesses/README.md) |

@@ -13,6 +13,7 @@ rejected. The specification states the rules; these records explain them.
 | [0019](0019-steer-receipt.md) | A steer is absorbed on confirmed receipt. Definite non-receipt permits fallback, and uncertain receipt fails the step. |
 | [0020](0020-run-cancellation-and-recovery.md) | A whole-run stop requires confirmed termination, and an abandoned run after host interruption has its own outcome. |
 | [0021](0021-project-folders.md) | A standalone project assembles one document from explicitly declared components. |
+| [0022](0022-portable-archives.md) | A portable snapshot carries editable files and optional Git ancestry. |
 
 Records 0001 to 0013 concern editions 0.0.1 to 0.2.0. They are available from
 the [`v0.2.0`](https://github.com/Andrologic/AgSDL/tree/v0.2.0/docs/decisions) tag.
