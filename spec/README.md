@@ -30,7 +30,8 @@ here. It creates no meaning on its own: when the schema and this text
 disagree, this text wins and the schema is a defect.
 
 The companion [project folder format](project.md) assembles a 0.4.0 document
-from local component files.
+from local component files. A [portable archive](archive.md) carries the folder
+and optional Git versions.
 
 ## Principles
 

@@ -11,7 +11,7 @@ import argparse
 import sys
 
 from . import jsoninput
-from .project import ProjectError, read_input
+from .project import ProjectError, open_input
 from .graph import route_items, route_targets, step_routes
 
 SHAPES = {
@@ -70,18 +70,18 @@ def main(argv=None):
     parser.add_argument("--composition", help="draw this composition instead of the flow")
     args = parser.parse_args(argv)
     try:
-        document, _ = read_input(args.document)
+        with open_input(args.document) as (document, _):
+            if args.composition:
+                container = document.get("compositions", {}).get(args.composition)
+            else:
+                container = document.get("flow")
+            if not container:
+                print("agsdl.mermaid: nothing to draw", file=sys.stderr)
+                return 2
+            sys.stdout.write(render(container["steps"], container["entry"], container.get("onError")))
     except (OSError, jsoninput.InputError, ProjectError) as error:
         print(f"agsdl.mermaid: {error}", file=sys.stderr)
         return 2
-    if args.composition:
-        container = document.get("compositions", {}).get(args.composition)
-    else:
-        container = document.get("flow")
-    if not container:
-        print("agsdl.mermaid: nothing to draw", file=sys.stderr)
-        return 2
-    sys.stdout.write(render(container["steps"], container["entry"], container.get("onError")))
     return 0
 
 

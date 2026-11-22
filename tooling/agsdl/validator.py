@@ -6,7 +6,8 @@ import stat
 from collections import deque
 
 from . import jsoninput, valueschema
-from .graph import Graph, analyse_joins, open_body_forks, route_items, route_targets, step_routes
+from .graph import (Graph, GraphBudget, GraphLimitError, analyse_joins, open_body_forks,
+                    route_items, route_targets, step_routes)
 from .permissions import command_prefix, covers_all, effect_for, effects_in_use, normalize, outside, shell_denied
 from .schemacheck import SchemaChecker, pointer
 
@@ -184,6 +185,7 @@ class Checker:
         self.content = document.get("content", {})
         self.uses = {name: {"new": False, "steer": False, "choices": set(), "used": False} for name in self.agents}
         self.cycle = False
+        self.graph_budget = GraphBudget()
 
     def run(self):
         scopes = []
@@ -195,8 +197,15 @@ class Checker:
         for container, where, composition in scopes:
             self.check_scope(container, where, composition)
         self.check_agents()
-        if not self.cycle:
-            self.check_graphs()
+        try:
+            if not self.cycle:
+                self.check_graphs()
+        except (GraphLimitError, RecursionError) as error:
+            self.report.joins.clear()
+            message = (str(error) if isinstance(error, GraphLimitError)
+                       else "graph analysis exceeds the validator's depth limit")
+            self.report.error("LIMIT", [], message)
+            return
         self.check_completion_choices()
         self.check_harnesses()
 
@@ -236,21 +245,27 @@ class Checker:
                     self.report.error("COMPOSITION", ["compositions", name, "outputs", index], f"no route of composition '{name}' leaves through output '{output}'")
         state = {}
 
-        def visit(name):
+        for name in uses:
+            if name in state:
+                continue
             state[name] = "active"
-            for target, where in uses.get(name, []):
+            stack = [(name, iter(uses[name]))]
+            while stack:
+                current, targets = stack[-1]
+                item = next(targets, None)
+                if item is None:
+                    state[current] = "done"
+                    stack.pop()
+                    continue
+                target, where = item
                 if target not in uses:
                     continue
                 if state.get(target) == "active":
                     self.cycle = True
                     self.report.error("COMPOSITION", where, f"composition '{target}' uses itself, directly or through other compositions")
                 elif target not in state:
-                    visit(target)
-            state[name] = "done"
-
-        for name in uses:
-            if name not in state:
-                visit(name)
+                    state[target] = "active"
+                    stack.append((target, iter(uses[target])))
 
     # Steps and routes -----------------------------------------------------
 
@@ -461,13 +476,17 @@ class Checker:
         if "flow" in self.doc and self.doc["flow"]["entry"] in self.doc["flow"]["steps"]:
             # The flow's onError acts as the onError of the steps it covers,
             # which excludes join branches: find them without it first.
-            infos, _ = analyse_joins(Graph.for_scope(self.doc))
-            members = {m[0] for info in infos.values() for found in info["branches"].values() for m in found}
-            covered = Graph.flow_error_covered(self.doc, members)
-            scopes[None] = Graph.for_scope(self.doc, covered=covered)
+            scope = Graph.for_scope(self.doc, budget=self.graph_budget)
+            if "onError" in self.doc["flow"]:
+                infos, _ = analyse_joins(scope)
+                members = {m[0] for info in infos.values() for found in info["branches"].values() for m in found}
+                covered = Graph.flow_error_covered(self.doc, members)
+                if covered:
+                    scope = Graph.for_scope(self.doc, covered=covered, budget=self.graph_budget)
+            scopes[None] = scope
         for name, composition in self.compositions.items():
             if composition["entry"] in composition["steps"]:
-                scopes[name] = Graph.for_scope(self.doc, name)
+                scopes[name] = Graph.for_scope(self.doc, name, budget=self.graph_budget)
         # Joins are deduced in their own scope, where a compose step is one step.
         joins = {}
         for key, graph in scopes.items():
@@ -491,11 +510,12 @@ class Checker:
         }
         graphs = []
         if None in scopes:
-            graphs.append(Graph.for_flow(self.doc, in_branch, covered))
+            graphs.append(Graph.for_flow(self.doc, in_branch, covered, budget=self.graph_budget))
             # A join in a composition is reported once per use, by its step path.
             for use, (decl, child, _) in sorted(graphs[0].composes.items()):
                 if child is None:
                     continue
+                self.graph_budget.spend(len(joins.get(decl["composition"], {})))
                 for name, info in joins.get(decl["composition"], {}).items():
                     self.report.joins["/".join(use + (name,))] = {
                         "origin": "/".join(use + (info["origin"],)),
@@ -503,7 +523,7 @@ class Checker:
                     }
         for name in self.compositions:
             if name in scopes:
-                graphs.append(Graph.for_composition(self.doc, name, in_branch))
+                graphs.append(Graph.for_composition(self.doc, name, in_branch, budget=self.graph_budget))
         for index, graph in enumerate(graphs):
             infos = {}
             for addr, node in graph.nodes.items():
@@ -541,6 +561,7 @@ class Checker:
     def brings_prompt(self, graph, edge, incoming, seen):
         """Whether a route always delivers a prompt to its target, or None when
         that depends on an agent parameter not bound in this graph."""
+        graph.budget.spend(len(seen) + 1)
         if edge.message is not None:
             return "prompt" in edge.message
         if edge.kind == "error":
@@ -582,6 +603,7 @@ class Checker:
             target = graph.nodes[edge.dst]
             if target.type == "call":
                 # An operand reads the output of the step the route leaves.
+                graph.budget.spend(len(target.decl.get("arguments", {})))
                 for name, operand in target.decl.get("arguments", {}).items():
                     if "path" not in operand:
                         continue
@@ -622,6 +644,7 @@ class Checker:
     def selection_problem(self, graph, edge, path, infos, in_message=True):
         """Why a selection path cannot be read on a route, or None. `item` is
         read only in a message: `each` itself reads the step's output."""
+        graph.budget.spend()
         if not path:
             return None
         head = path[0]
@@ -745,6 +768,7 @@ class Checker:
     @staticmethod
     def branch_producers(graph, join, info, branch):
         """Routes whose step output can reach the join for this branch."""
+        graph.budget.spend(len(graph.edges))
         members = info["branches"][branch]
         for edge in graph.edges:
             if edge.dst == join.addr and edge.kind == "normal":
@@ -755,6 +779,7 @@ class Checker:
     def branch_item_problem(self, graph, join, info, branch, rest, infos):
         """Check a path below `item` in an entry of a fan-out branch: the
         element of the list that the origin fans out over."""
+        graph.budget.spend(len(graph.edges))
         for edge in graph.edges:
             if edge.each is None:
                 continue
@@ -826,6 +851,7 @@ class Checker:
     def received_resources(self, graph, addr, infos, seen):
         """The names of the resources a step can receive, or None when they
         are not all known: from the host, a parameter, or a loop of approvals."""
+        graph.budget.spend(len(graph.edges) + 1)
         if addr == graph.root:
             # The entry receives the host's message, which no document declares.
             return None
@@ -860,6 +886,7 @@ class Checker:
 
     def declared_kind(self, graph, edge, path, infos):
         """The declared JSON type at a selection path, or None when it is not declared."""
+        graph.budget.spend()
         if not path:
             return "object"
         if edge.kind == "error":
@@ -934,6 +961,7 @@ class Checker:
             seen = {}
             finishing = {}
             for start, members in info["branches"].items():
+                graph.budget.spend(len(graph.nodes))
                 for member in sorted(graph.nodes):
                     if scope_member(member, info["prefix"]) not in members:
                         continue
@@ -960,32 +988,47 @@ class Checker:
             if graph.nodes[addr].decl.get("remaining") == "finish":
                 self.check_after_finish(graph, addr, finishing)
         self.check_fanout_instances(graph, infos)
-        self.check_open_fork_instances(graph, infos)
+        graph.budget.spend(len(graph.nodes))
+        shared = {addr for addr, node in graph.nodes.items()
+                  if node.type == "agent" and node.agent is not None
+                  and node.decl.get("instance") != "new" and "delivery" not in node.decl}
+        if shared:
+            self.check_open_fork_instances(graph, infos, shared)
 
-    def check_open_fork_instances(self, graph, infos):
+    def check_open_fork_instances(self, graph, infos, shared):
         """Paths of a fork that meets no join run at the same time to their end."""
+        # Only branches that can reach a shared instance can emit this warning.
+        relevant = shared.copy()
+        pending = list(shared)
+        pred = graph.predecessors()
+        while pending:
+            current = pending.pop()
+            graph.budget.spend(len(pred[current]) + 1)
+            for edge in pred[current]:
+                if edge.src not in relevant:
+                    relevant.add(edge.src)
+                    pending.append(edge.src)
+        blocked = graph.nodes.keys() - relevant
         origins = {(info["prefix"] + (info["origin"],)) for info in infos.values()}
         warned = set()
         succ = graph.successors()
-        for addr in sorted(graph.nodes):
+        for addr in sorted(relevant):
             if addr in origins:
                 continue
             groups = {}
             for edge in succ[addr]:
-                if edge.each is None:
+                if edge.each is None and edge.dst in relevant:
                     groups.setdefault((edge.kind, edge.key), set()).add(edge.dst)
             for targets in groups.values():
                 if len(targets) < 2:
                     continue
                 users = {}
                 for target in sorted(targets):
-                    for member in sorted(graph.reachable(target)):
+                    for member in sorted(graph.reachable(target, blocked=blocked) & shared):
                         node = graph.nodes[member]
-                        if node.type != "agent" or node.agent is None or member in warned:
+                        if member in warned:
                             continue
                         instance = node.decl.get("instance")
-                        if instance == "new" or "delivery" in node.decl:
-                            continue
                         key = (node.agent, instance)
                         other = users.get(key)
                         if other is not None and other[0] != target:
@@ -996,6 +1039,8 @@ class Checker:
                                 f"steps '{other[1]}' and '{node.name}' can use the {instance_label(instance)} of agent '{node.agent}' at the same time; their work will be serialized",
                                 expanded(member),
                             )
+                            if len(warned) == len(shared):
+                                return
                         else:
                             users.setdefault(key, (target, node.name))
 
@@ -1006,6 +1051,7 @@ class Checker:
         for edge in graph.edges:
             if edge.each is None:
                 continue
+            graph.budget.spend(len(infos))
             closing = {
                 addr for addr, info in infos.items()
                 if info["origin"] == scope_member(edge.src, info["prefix"])

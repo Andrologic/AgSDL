@@ -1,5 +1,6 @@
 """Read a project folder and assemble its AgSDL document."""
 
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 import re
@@ -28,6 +29,8 @@ class Project:
     mcp_files: dict = field(default_factory=dict)
     origins: dict = field(default_factory=dict)
     _spellings: dict = field(default_factory=dict, repr=False)
+    _file_observer: object = field(default=None, repr=False)
+    _json_reader: object = field(default=None, repr=False)
 
     def location(self, where):
         """Locate a document JSON pointer in the file that supplied it."""
@@ -43,6 +46,8 @@ class Project:
                 or re.match(r"[A-Za-z][A-Za-z0-9+.\-]*:", name)
                 or any(ord(c) < 32 for c in name)):
             raise ProjectError(f"{owner}: invalid local path {name!r}")
+        if self._file_observer is not None:
+            self._file_observer(owner, name)
         try:
             target = (self.root / owner.parent / name).resolve()
             relative = target.relative_to(self.root)
@@ -58,6 +63,8 @@ class Project:
 
     def read(self, relative):
         try:
+            if self._json_reader is not None:
+                return self._json_reader(relative)
             return jsoninput.load(self.root / relative)
         except jsoninput.InputError as error:
             raise ProjectError(f"{relative}: {error}") from None
@@ -131,13 +138,13 @@ def check_shape(checker, value, location, definition=None):
         raise ProjectError(f"{location(where)}: {message}")
 
 
-def load_project(path):
+def load_project(path, *, _file_observer=None, _json_reader=None):
     """Load a directory or its manifest. All paths in the result use its root."""
     path = Path(path)
     root = (path if path.is_dir() else path.parent).resolve()
     if not path.is_dir() and path.name != MANIFEST:
         raise ProjectError(f"expected {MANIFEST}")
-    project = Project(root, {})
+    project = Project(root, {}, _file_observer=_file_observer, _json_reader=_json_reader)
     entry = project.local_file(Path(MANIFEST), MANIFEST)
     manifest = project.read(entry)
     return _assemble(project, manifest)
@@ -207,15 +214,26 @@ def read_input(path):
     return project.document, project
 
 
+@contextmanager
+def open_input(path, modules=None):
+    path = Path(path)
+    if path.suffix == ".agsdl" and not path.is_dir():
+        from .archive import open_archive
+        with open_archive(path, modules) as project:
+            yield project.document, project
+    else:
+        yield read_input(path)
+
+
 def validate_path(path, modules=None):
     try:
-        doc, project = read_input(path)
+        with open_input(path, modules) as (doc, project):
+            report = validate_document(doc, modules)
+            if project:
+                for item in report.diagnostics:
+                    item["message"] = f"{project.location(item['path'])}: {item['message']}"
+            return report
     except (jsoninput.InputError, ProjectError) as error:
         report = Report()
         report.error("PROJECT" if isinstance(error, ProjectError) else "PARSE", "", str(error))
         return report
-    report = validate_document(doc, modules)
-    if project:
-        for item in report.diagnostics:
-            item["message"] = f"{project.location(item['path'])}: {item['message']}"
-    return report

@@ -7,6 +7,29 @@ compose step as one step; joins are deduced there.
 """
 
 from collections import deque
+from types import MappingProxyType
+
+
+# Shared across scope graphs, expansions and analysis in one validation.
+# Construction charges 32 units per stored item to bound memory as well as work.
+GRAPH_WORK_LIMIT = 2_000_000
+GRAPH_DEPTH_LIMIT = 128
+# Building nodes, scopes and edges retains objects for later analysis.
+GRAPH_ENTRY_COST = 32
+
+
+class GraphLimitError(Exception):
+    """Graph construction or analysis exceeded the validator's work limit."""
+
+
+class GraphBudget:
+    def __init__(self):
+        self.remaining = GRAPH_WORK_LIMIT
+
+    def spend(self, amount=1):
+        self.remaining -= amount
+        if self.remaining < 0:
+            raise GraphLimitError("graph analysis exceeds the validator's work limit")
 
 
 class Scope:
@@ -85,8 +108,9 @@ def step_routes(decl, pointer):
 class Graph:
     """The expanded graph of a flow, or of one composition analysed on its own."""
 
-    def __init__(self, document, in_branch=None, covered=None):
+    def __init__(self, document, in_branch=None, covered=None, budget=None):
         self.document = document
+        self.budget = budget if budget is not None else GraphBudget()
         # Names of the steps inside a join branch, per scope (None for the flow).
         self.in_branch = in_branch or {}
         # Top-level steps that use the flow's onError as their own.
@@ -96,14 +120,16 @@ class Graph:
         self.composes = {}
         self.edges = []
         self.root = None
+        self._successors = None
+        self._predecessors = None
 
     # Construction -------------------------------------------------------
 
     @classmethod
-    def for_flow(cls, document, in_branch=None, covered=None):
+    def for_flow(cls, document, in_branch=None, covered=None, budget=None):
         """The flow expanded across compositions. `covered` names the top-level
         steps that use the flow's onError (see flow_error_covered)."""
-        graph = cls(document, in_branch, covered)
+        graph = cls(document, in_branch, covered, budget)
         flow = document["flow"]
         scope = Scope(flow["steps"], ["flow", "steps"], ())
         graph._add_scope(scope, ())
@@ -136,9 +162,9 @@ class Graph:
         }
 
     @classmethod
-    def for_scope(cls, document, composition=None, covered=None):
+    def for_scope(cls, document, composition=None, covered=None, budget=None):
         """The steps of the flow, or of one composition body, with compose steps as one step."""
-        graph = cls(document, covered=covered if composition is None else None)
+        graph = cls(document, covered=covered if composition is None else None, budget=budget)
         if composition is None:
             container = document["flow"]
             pointer = ["flow", "steps"]
@@ -147,17 +173,20 @@ class Graph:
             pointer = ["compositions", composition, "steps"]
         scope = Scope(container["steps"], pointer, (), composition=composition)
         for name, decl in scope.steps.items():
+            graph.budget.spend(GRAPH_ENTRY_COST)
             graph.nodes[(name,)] = Node((name,), decl, scope, name)
         for node in list(graph.nodes.values()):
             for kind, key, route, rpointer in step_routes(node.decl, node.pointer):
                 for tkind, tname, message, where, each in route_items(route, rpointer):
                     dst = graph._local_target(scope, tkind, tname)
                     if dst is not None:
+                        graph.budget.spend(GRAPH_ENTRY_COST)
                         graph.edges.append(Edge(node.addr, dst, kind, key, message, where, each))
         for name in sorted(graph.covered):
             for tkind, tname, message, where, each in route_items(container["onError"], ["flow", "onError"]):
                 dst = graph._local_target(scope, tkind, tname)
                 if dst is not None:
+                    graph.budget.spend(GRAPH_ENTRY_COST)
                     graph.edges.append(Edge((name,), dst, "error", None, message, where, each))
         entry = (container["entry"],)
         graph.root = entry if entry in graph.nodes else None
@@ -170,12 +199,13 @@ class Graph:
             return None
         addr = ("#exit", name)
         if addr not in self.nodes:
+            self.budget.spend(GRAPH_ENTRY_COST)
             self.nodes[addr] = Node(addr, None, scope, name)
         return addr
 
     @classmethod
-    def for_composition(cls, document, name, in_branch=None):
-        graph = cls(document, in_branch)
+    def for_composition(cls, document, name, in_branch=None, budget=None):
+        graph = cls(document, in_branch, budget=budget)
         composition = graph.compositions[name]
         scope = Scope(composition["steps"], ["compositions", name, "steps"], ("#" + name,), composition=name)
         graph._add_scope(scope, (name,))
@@ -184,7 +214,10 @@ class Graph:
         return graph
 
     def _add_scope(self, scope, stack):
+        if len(stack) > GRAPH_DEPTH_LIMIT:
+            raise GraphLimitError("composition nesting exceeds the validator's depth limit")
         for name, decl in scope.steps.items():
+            self.budget.spend(GRAPH_ENTRY_COST)
             addr = scope.prefix + (name,)
             if decl["type"] == "compose":
                 target = decl["composition"]
@@ -224,6 +257,7 @@ class Graph:
         A body route that leaves through a compose output carries no message:
         the compose step's route for that output gives the targets, with their
         messages, fan-outs and pointers."""
+        self.budget.spend(GRAPH_ENTRY_COST)
         if kind == "step":
             addr = self.resolve(scope, name)
             return [(addr, message, pointer, fanout)] if addr is not None else []
@@ -232,6 +266,7 @@ class Graph:
                 return []
             exit_addr = ("#exit", name)
             if exit_addr not in self.nodes:
+                self.budget.spend(GRAPH_ENTRY_COST)
                 self.nodes[exit_addr] = Node(exit_addr, None, scope, name)
             return [(exit_addr, message, pointer, fanout)]
         decl, _, parent = self.composes[scope.compose]
@@ -274,21 +309,28 @@ class Graph:
                 scope = entry[4] if len(entry) > 4 else node.scope
                 for tkind, tname, message, where, each in route_items(route, pointer):
                     for dst, carried, at, fanout in self._targets(scope, tkind, tname, message, where, each):
+                        self.budget.spend(GRAPH_ENTRY_COST)
                         self.edges.append(Edge(node.addr, dst, kind, key, carried, at, fanout))
 
     # Queries ------------------------------------------------------------
 
-    def successors(self):
-        result = {addr: [] for addr in self.nodes}
-        for edge in self.edges:
-            result[edge.src].append(edge)
+    def _adjacency(self, reverse=False):
+        cache = "_predecessors" if reverse else "_successors"
+        result = getattr(self, cache)
+        if result is None:
+            self.budget.spend(len(self.nodes) + len(self.edges))
+            entries = {addr: [] for addr in self.nodes}
+            for edge in self.edges:
+                entries[edge.dst if reverse else edge.src].append(edge)
+            result = MappingProxyType({addr: tuple(edges) for addr, edges in entries.items()})
+            setattr(self, cache, result)
         return result
 
+    def successors(self):
+        return self._adjacency()
+
     def predecessors(self):
-        result = {addr: [] for addr in self.nodes}
-        for edge in self.edges:
-            result[edge.dst].append(edge)
-        return result
+        return self._adjacency(reverse=True)
 
     def reachable(self, start, blocked=()):
         succ = self.successors()
@@ -296,6 +338,7 @@ class Graph:
         queue = deque([start])
         while queue:
             current = queue.popleft()
+            self.budget.spend(len(succ[current]) + 1)
             for edge in succ[current]:
                 if edge.dst in blocked or edge.dst in seen:
                     continue
@@ -309,6 +352,7 @@ class Graph:
         queue = deque([target])
         while queue:
             current = queue.popleft()
+            self.budget.spend(len(pred[current]) + 1)
             for edge in pred[current]:
                 if edge.src in blocked or edge.src in seen or edge.src == target:
                     continue
@@ -316,35 +360,73 @@ class Graph:
                 queue.append(edge.src)
         return seen
 
-    def dominators(self):
+    def immediate_dominators(self):
+        """Compute immediate dominators in reverse postorder with linear storage."""
         if self.root is None:
             return {}
-        reach = self.reachable(self.root)
+        succ = self.successors()
         pred = self.predecessors()
-        dom = {n: set(reach) for n in reach}
-        dom[self.root] = {self.root}
+        seen = {self.root}
+        postorder = []
+        stack = [(self.root, iter(succ[self.root]))]
+        while stack:
+            node, edges = stack[-1]
+            edge = next(edges, None)
+            self.budget.spend()
+            if edge is None:
+                postorder.append(node)
+                stack.pop()
+            elif edge.dst not in seen:
+                seen.add(edge.dst)
+                stack.append((edge.dst, iter(succ[edge.dst])))
+        order = list(reversed(postorder))
+        rank = {node: index for index, node in enumerate(order)}
+        idom = {self.root: self.root}
+
+        def intersect(left, right):
+            while left != right:
+                self.budget.spend()
+                while rank[left] > rank[right]:
+                    self.budget.spend()
+                    left = idom[left]
+                while rank[right] > rank[left]:
+                    self.budget.spend()
+                    right = idom[right]
+            return left
+
         changed = True
         while changed:
             changed = False
-            for n in reach:
-                if n == self.root:
+            for node in order[1:]:
+                self.budget.spend(len(pred[node]) + 1)
+                incoming = [edge.src for edge in pred[node] if edge.src in idom]
+                if not incoming:
                     continue
-                incoming = [dom[e.src] for e in pred[n] if e.src in reach]
-                new = set.intersection(*incoming) if incoming else set()
-                new = new | {n}
-                if new != dom[n]:
-                    dom[n] = new
+                parent = incoming[0]
+                for predecessor in incoming[1:]:
+                    parent = intersect(parent, predecessor)
+                if idom.get(node) != parent:
+                    idom[node] = parent
                     changed = True
-        return dom
-
-    def immediate_dominators(self):
-        dom = self.dominators()
-        idom = {}
-        for n, ds in dom.items():
-            strict = ds - {n}
-            if strict:
-                idom[n] = max(strict, key=lambda d: len(dom[d]))
+        del idom[self.root]
         return idom
+
+    def dominators(self):
+        """Return the full dominator sets when a caller explicitly needs them."""
+        if self.root is None:
+            return {}
+        parents = self.immediate_dominators()
+        result = {self.root: {self.root}}
+        for node in parents:
+            path = set()
+            current = node
+            while current in parents:
+                self.budget.spend()
+                path.add(current)
+                current = parents[current]
+            path.add(current)
+            result[node] = path
+        return result
 
 
 def local_name(addr, prefix):
@@ -375,6 +457,7 @@ def open_body_forks(graph, infos):
                 continue
             # One join closes the fork: a branch that leaves closes its group,
             # and a branch failure reaches the join, so the body leaves once.
+            graph.budget.spend(sum(len(info["branches"]) + 1 for info in infos.values()))
             if any(info["origin"] == addr and targets <= set(info["branches"]) for info in infos.values()):
                 continue
             problems.append((node.pointer, addr, f"the fork at '{node.name}' does not start the branches of one join; a composition leaves at most once"))
@@ -384,6 +467,7 @@ def open_body_forks(graph, infos):
 
 def route_groups(graph, addr, succ):
     """Routes leaving a node, normal or error, as lists of destinations per route."""
+    graph.budget.spend(len(succ[addr]) + 1)
     groups = {}
     for edge in succ[addr]:
         groups.setdefault((edge.kind, edge.key), []).append(edge.dst)
@@ -399,18 +483,20 @@ def join_origin(graph, join, idom, succ):
     chain = []
     current = first
     while current is not None:
+        graph.budget.spend()
         chain.append(current)
         current = idom.get(current)
     dominators = set(chain)
 
     def fork(step, fanout_only=False):
+        graph.budget.spend(len(succ[step]) + 1)
         groups = {}
         for edge in succ[step]:
             groups.setdefault((edge.kind, edge.key), []).append(edge)
         for edges in groups.values():
             if any(e.each is not None and (e.dst in dominators or e.dst == join) for e in edges):
                 return True
-            if not fanout_only:
+            if not fanout_only and len(edges) >= 2:
                 reaching = {e.dst for e in edges if e.dst == join or join in graph.reachable(e.dst, blocked={step})}
                 if len(reaching) >= 2:
                     return True
@@ -436,7 +522,7 @@ def analyse_joins(graph):
     """
     infos = {}
     problems = []
-    if graph.root is None:
+    if graph.root is None or not any(node.type == "join" for node in graph.nodes.values()):
         return infos, problems
     idom = graph.immediate_dominators()
     succ = graph.successors()
@@ -450,13 +536,13 @@ def analyse_joins(graph):
     for addr, origin in origins.items():
         node = graph.nodes[addr]
         joins_to_j = graph.reaching(addr, blocked={origin})
-        starts = []
+        starts = {}  # Preserve the origin route order when naming branches.
         for dsts in route_groups(graph, origin, succ).values():
             for dst in dsts:
                 if dst in starts:
                     continue
                 if dst == addr or dst in joins_to_j:
-                    starts.append(dst)
+                    starts[dst] = None
         branches = {}
         for start in starts:
             if start == addr:
@@ -484,6 +570,7 @@ def analyse_joins(graph):
         listed = list(branches.items())
         for i, (s1, b1) in enumerate(listed):
             for s2, b2 in listed[:i]:
+                graph.budget.spend(min(len(b1), len(b2)) + 1)
                 shared = b1 & b2
                 if shared:
                     step = sorted(shared)[0]
@@ -491,6 +578,7 @@ def analyse_joins(graph):
         # Single entry.
         for start, members in branches.items():
             for member in members:
+                graph.budget.spend(len(pred[member]) + 1)
                 for edge in pred[member]:
                     if edge.src in members:
                         continue
@@ -514,6 +602,7 @@ def analyse_joins(graph):
                     fans = any(e.each is not None and e.dst in inside for e in succ[member] if (e.kind, e.key) == (kind, key))
                     if len(set(inside)) < 2 and not fans:
                         continue
+                    graph.budget.spend(len(members))
                     closers = {k for k in members if origins.get(k) == member}
                     open_fork = any(
                         d == addr or addr in graph.reachable(d, blocked=closers | {origin})

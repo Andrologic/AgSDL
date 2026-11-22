@@ -85,3 +85,57 @@ every [example](../examples/README.md) is valid.
 | `agsdl/graph.py` | Composition expansion, scope graphs, dominators and join analysis. |
 | `agsdl/validator.py` | All checks, harness modules and the report. |
 | `agsdl/mermaid.py` | The Mermaid renderer. |
+
+## Portable archives
+
+The archive commands run from `tooling/`. Create a snapshot, inspect its
+inventory and declared MCP prerequisites, then restore it to a new folder:
+
+```sh
+python3 -m agsdl.archive pack ../examples/review-project review.agsdl
+python3 -m agsdl.archive inspect review.agsdl
+python3 -m agsdl review.agsdl
+python3 -m agsdl.mermaid review.agsdl
+python3 -m agsdl.archive unpack review.agsdl restored
+python3 -m agsdl restored
+```
+
+To keep versions, use a dedicated bundle outside the project, or use the
+reserved filename `.agsdl-history.bundle` at its root. The first command creates it.
+Run `version` again after editing the project to append a commit. Each call
+prints the commit ID. The export checks the snapshot against the recorded tip.
+Keep the manifest's `id` when renaming or moving a project. To start a project
+with a different ID, choose a new store.
+
+```sh
+python3 -m agsdl.archive version restored versions.bundle -m "First review"
+python3 -m agsdl.archive pack restored shared.agsdl --history versions.bundle
+python3 -m agsdl.archive unpack shared.agsdl received --with-history
+git clone -b versions received/.agsdl-history.bundle editable
+git -C editable log --oneline
+```
+
+To work from an older version, check out that commit in `editable`, edit the
+files, then run the following command with its full commit ID. This creates
+`alternative.bundle` alongside the original history.
+
+```sh
+python3 -m agsdl.archive version editable versions.bundle -m "Alternative review" \
+  --parent FULL_COMMIT_ID --fork alternative.bundle
+```
+
+Snapshot commands require only Python. Recording, including or restoring Git
+history also requires Git. The default `unpack` restores the current project
+even when Git is unavailable. The [archive format](../spec/archive.md) defines
+the portable files and the checks performed during import.
+
+On POSIX, the exported archive and restored history are owner-readable and
+owner-writable. The restored project directory has mode `0700`. On Windows,
+unpacking a project with executable files saves their names in a local
+`.agsdl-executables` file. The tool chooses a numbered suffix if that name
+belongs to the project and reads those flags on the next export or version.
+
+The inspect report includes a content fingerprint. It hashes the UTF-8 JSON
+encoding of the files inventory with sorted keys, integer sizes, literal
+Unicode, and no formatting whitespace. The fingerprint stays the same when an
+author adds history to an otherwise identical snapshot.

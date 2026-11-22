@@ -7,15 +7,16 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOOLING = os.path.dirname(HERE)
 REPOSITORY = os.path.dirname(TOOLING)
 sys.path.insert(0, TOOLING)
 
-from agsdl import jsoninput, load_modules, validate_bytes  # noqa: E402
+from agsdl import jsoninput, load_modules, validate_bytes, validate_document  # noqa: E402
 from agsdl.permissions import command_prefix, effect_for, effects_in_use, glob_matches  # noqa: E402
-from agsdl.graph import Graph  # noqa: E402
+from agsdl.graph import Graph, GraphBudget, GraphLimitError, analyse_joins  # noqa: E402
 from agsdl.mermaid import render  # noqa: E402
 from agsdl.validator import load_module  # noqa: E402
 
@@ -168,12 +169,154 @@ class ReportTest(unittest.TestCase):
             "review/check/vote": {"origin": "review/check/spread", "branches": ["r1", "r2", "r3"]},
         })
 
+    def test_hundreds_of_steps_with_and_without_join(self):
+        with open(os.path.join(CONFORMANCE, "cases", "join-direct-branch.json")) as handle:
+            document = json.load(handle)
+        modules = load_modules(os.path.join(CONFORMANCE, "modules"))
+        for has_join in (True, False):
+            with self.subTest(join=has_join):
+                flow = document["flow"]
+                if not has_join:
+                    flow["entry"] = "three"
+                    flow["steps"] = {"three": flow["steps"]["three"]}
+                steps = flow["steps"]
+                entry = flow["entry"]
+                for index in reversed(range(350)):
+                    name = f"work-{index}"
+                    steps[name] = {"type": "agent", "agent": "a", "next": entry}
+                    entry = name
+                flow["entry"] = entry
+                report = validate_document(document, modules)
+                self.assertTrue(report.valid, report.diagnostics)
+                self.assertEqual(bool(report.joins), has_join)
+
+    def test_fanout_visits_without_shared_instance_users(self):
+        with open(os.path.join(CONFORMANCE, "cases", "fanout-visits.json")) as handle:
+            document = json.load(handle)
+        agents = [step for step in document["flow"]["steps"].values() if step["type"] == "agent"]
+        for index, step in enumerate(agents):
+            if index % 2:
+                step.pop("instance", None)
+                step["delivery"] = "queue"
+            else:
+                step["instance"] = "new"
+                step.pop("delivery", None)
+        modules = load_modules(os.path.join(CONFORMANCE, "modules"))
+        with mock.patch("agsdl.validator.Checker.check_open_fork_instances") as check:
+            report = validate_document(document, modules)
+        check.assert_not_called()
+        self.assertIn("FANOUT_VISITS", codes(report, "warning"))
+        self.assertNotIn("SHARED_INSTANCE_PARALLEL", codes(report, "warning"))
+
+    def test_open_fork_shared_instance_warning(self):
+        with open(os.path.join(CONFORMANCE, "cases", "parallel-no-join-shared.json")) as handle:
+            document = json.load(handle)
+        report = validate_document(document, load_modules(os.path.join(CONFORMANCE, "modules")))
+        self.assertTrue(report.valid)
+        self.assertIn("SHARED_INSTANCE_PARALLEL", codes(report, "warning"))
+
+    def test_open_fork_can_warn_for_one_shared_step(self):
+        with open(os.path.join(CONFORMANCE, "cases", "parallel-no-join-shared.json")) as handle:
+            document = json.load(handle)
+        steps = document["flow"]["steps"]
+        for step in steps.values():
+            step["instance"] = "new"
+        for name in ("x", "y"):
+            steps[name]["next"] = "later"
+        steps["later"] = {"type": "agent", "agent": "a"}
+        report = validate_document(document, load_modules(os.path.join(CONFORMANCE, "modules")))
+        self.assertTrue(report.valid)
+        self.assertIn("SHARED_INSTANCE_PARALLEL", codes(report, "warning"))
+
+    def test_forks_after_the_only_shared_step(self):
+        with open(os.path.join(CONFORMANCE, "cases", "parallel-no-join-shared.json")) as handle:
+            document = json.load(handle)
+        steps = {"start": {"type": "agent", "agent": "a", "next": "fork-0"}}
+        for i in range(600):
+            left, right = f"left-{i}", f"right-{i}"
+            steps[f"fork-{i}"] = {"type": "agent", "agent": "a", "instance": "new",
+                                  "next": [left, right]}
+            for name in (left, right):
+                steps[name] = {"type": "agent", "agent": "a", "instance": "new"}
+                if i < 599:
+                    steps[name]["next"] = f"fork-{i + 1}"
+        document["flow"] = {"entry": "start", "steps": steps}
+        report = validate_document(document, load_modules(os.path.join(CONFORMANCE, "modules")))
+        self.assertTrue(report.valid, report.diagnostics)
+        self.assertNotIn("SHARED_INSTANCE_PARALLEL", codes(report, "warning"))
+
+    def test_graph_limit_is_a_reported_error(self):
+        with open(os.path.join(EXAMPLES, "reusable-review.json"), "rb") as handle:
+            data = handle.read()
+        with mock.patch("agsdl.graph.GRAPH_WORK_LIMIT", 1):
+            report = validate_bytes(data, load_modules(HARNESSES))
+        self.assertFalse(report.valid)
+        self.assertIn("LIMIT", codes(report, "error"))
+        self.assertEqual(report.joins, {})
+        self.assertTrue(validate_bytes(data, load_modules(HARNESSES)).valid)
+
     def test_shape_failure_stops_checks(self):
         report = validate_bytes(b'{"contract": "agsdl-0.4.0", "id": "x"}', {})
         self.assertEqual(codes(report, "error"), ["SHAPE"])
 
 
 class GraphTest(unittest.TestCase):
+    def test_immediate_dominators_with_a_loop_and_merge(self):
+        document = {"flow": {"entry": "start", "steps": {
+            "start": {"type": "agent", "agent": "a", "next": ["left", "right"]},
+            "left": {"type": "agent", "agent": "a", "next": "merge"},
+            "right": {"type": "agent", "agent": "a", "next": "merge"},
+            "merge": {"type": "join", "next": "left"},
+        }}}
+        graph = Graph.for_scope(document)
+        self.assertEqual(graph.immediate_dominators(), {
+            ("left",): ("start",), ("right",): ("start",), ("merge",): ("start",),
+        })
+
+    def test_repeated_walks_reuse_adjacency_and_charge_visits(self):
+        document = {"flow": {"entry": "one", "steps": {
+            "one": {"type": "agent", "agent": "a", "next": "two"},
+            "two": {"type": "agent", "agent": "a", "next": "one"},
+        }}}
+        graph = Graph.for_scope(document)
+        successors = graph.successors()
+        predecessors = graph.predecessors()
+        self.assertIs(successors, graph.successors())
+        self.assertIs(predecessors, graph.predecessors())
+        with self.assertRaises(TypeError):
+            successors[("one",)] = ()
+        self.assertIsInstance(successors[("one",)], tuple)
+        before = graph.budget.remaining
+        self.assertEqual(graph.reachable(("one",)), {("one",), ("two",)})
+        cost = before - graph.budget.remaining
+        self.assertEqual(cost, 4)
+        self.assertEqual(graph.reachable(("one",), blocked={("two",)}), {("one",)})
+        self.assertEqual(graph.reaching(("one",)), {("two",)})
+        self.assertEqual(graph.reaching(("one",), blocked={("two",)}), set())
+        graph.budget.remaining = cost - 1
+        with self.assertRaises(GraphLimitError):
+            graph.reachable(("one",))
+
+    def test_graphs_share_a_work_budget(self):
+        with open(os.path.join(EXAMPLES, "reusable-review.json")) as handle:
+            document = json.load(handle)
+        budget = GraphBudget()
+        start = budget.remaining
+        Graph.for_flow(document, budget=budget)
+        one_graph = start - budget.remaining
+        budget.remaining = one_graph
+        Graph.for_flow(document, budget=budget)
+        with self.assertRaises(GraphLimitError):
+            Graph.for_flow(document, budget=budget)
+
+    def test_join_analysis_uses_the_graph_budget(self):
+        with open(os.path.join(CONFORMANCE, "cases", "join-direct-branch.json")) as handle:
+            document = json.load(handle)
+        graph = Graph.for_scope(document)
+        graph.budget.remaining = 0
+        with self.assertRaises(GraphLimitError):
+            analyse_joins(graph)
+
     def test_body_failure_reaches_its_branch_first(self):
         with open(os.path.join(EXAMPLES, "reusable-review.json")) as handle:
             document = json.load(handle)
