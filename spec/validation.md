@@ -52,6 +52,7 @@ A report is a JSON object:
 
 | Code | Condition |
 | --- | --- |
+| `LIMIT` | The reference validator reached its work or nesting limit before it could finish checking the graph. |
 | `PARSE` | The input is not acceptable JSON. |
 | `SHAPE` | The document does not match the schema or the contract marker. |
 | `REFERENCE` | A name refers to nothing: agent, step, content, skill, MCP server, composition, parameter, output, choice. |
