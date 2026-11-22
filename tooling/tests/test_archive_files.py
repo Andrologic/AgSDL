@@ -12,6 +12,7 @@ from unittest import mock
 TOOLING = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(TOOLING))
 from agsdl.archive_files import check_portable_name, open_portable_file, portable_files
+from agsdl.archive import pack, unpack
 from agsdl.project import load_project
 from agsdl.validator import validate_document
 
@@ -60,6 +61,26 @@ class ArchiveFilesTest(unittest.TestCase):
         with mock.patch("agsdl.archive_files.validate_document", wraps=validate_document) as validate:
             portable_files(self.root, modules=modules)
         self.assertIs(validate.call_args.args[1], modules)
+
+    def test_transient_directories_survive_archive_round_trip(self):
+        (self.root / "transient").mkdir()
+        (self.root / "agents/reviewer/transient").mkdir()
+        self.manifest["agents"]["reviewer"]["file"] = "transient/../agents/reviewer/agent.json"
+        agent = self.root / "agents/reviewer/agent.json"
+        value = json.loads(agent.read_text())
+        value["instructions"][0]["uri"] = "transient/../instructions.md"
+        agent.write_text(json.dumps(value))
+        self.save()
+        original = load_project(self.root).document
+        archive = self.root.parent / "project.agsdl"
+        restored = self.root.parent / "restored"
+        pack(self.root, archive)
+        unpack(archive, restored)
+        self.assertFalse((restored / "transient").exists())
+        self.assertFalse((restored / "agents/reviewer/transient").exists())
+        self.assertEqual(load_project(restored).document, original)
+        self.assertEqual((restored / "agsdl.json").read_bytes(), self.entry.read_bytes())
+        self.assertEqual((restored / "agents/reviewer/agent.json").read_bytes(), agent.read_bytes())
 
     def test_portable_names(self):
         for name in ("", "/a", "a//b", "a/../b", "a/./b", "a\\b", "C:foo", "nul.txt",

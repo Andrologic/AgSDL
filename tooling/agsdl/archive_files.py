@@ -143,7 +143,12 @@ def portable_files(project_root: Path, *, modules=None) -> dict:
                 relative = relative.parent
                 continue
             relative = relative / part
-            inspect(relative)
+            try:
+                inspect(relative)
+            except FileNotFoundError:
+                # A directory used only before .. is not stored in the archive.
+                # The final path is still checked below.
+                pass
         path, mode = inspect(relative)
         if not stat.S_ISREG(mode):
             raise ValueError(f"expected regular file: {relative}")
