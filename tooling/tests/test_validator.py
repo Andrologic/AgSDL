@@ -228,6 +228,23 @@ class ReportTest(unittest.TestCase):
         self.assertTrue(report.valid)
         self.assertIn("SHARED_INSTANCE_PARALLEL", codes(report, "warning"))
 
+    def test_forks_after_the_only_shared_step(self):
+        with open(os.path.join(CONFORMANCE, "cases", "parallel-no-join-shared.json")) as handle:
+            document = json.load(handle)
+        steps = {"start": {"type": "agent", "agent": "a", "next": "fork-0"}}
+        for i in range(600):
+            left, right = f"left-{i}", f"right-{i}"
+            steps[f"fork-{i}"] = {"type": "agent", "agent": "a", "instance": "new",
+                                  "next": [left, right]}
+            for name in (left, right):
+                steps[name] = {"type": "agent", "agent": "a", "instance": "new"}
+                if i < 599:
+                    steps[name]["next"] = f"fork-{i + 1}"
+        document["flow"] = {"entry": "start", "steps": steps}
+        report = validate_document(document, load_modules(os.path.join(CONFORMANCE, "modules")))
+        self.assertTrue(report.valid, report.diagnostics)
+        self.assertNotIn("SHARED_INSTANCE_PARALLEL", codes(report, "warning"))
+
     def test_graph_limit_is_a_reported_error(self):
         with open(os.path.join(EXAMPLES, "reusable-review.json"), "rb") as handle:
             data = handle.read()
