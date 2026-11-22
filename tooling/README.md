@@ -6,6 +6,10 @@ never run agents, calls or flows.
 
 Run the commands from this directory, or add it to `PYTHONPATH`.
 
+The [declared run input prototype](../spec/prototypes/run-input.md) has a
+separate command, `python3 -m agsdl.input_prototype`, for checking a document
+and previewing the arguments a host would send to an MCP tool.
+
 ## Validate
 
 ```sh

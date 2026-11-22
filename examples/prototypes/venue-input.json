@@ -1,0 +1,54 @@
+{
+  "contract": "agsdl-prototype-run-input",
+  "id": "venue-input",
+  "mcpServers": {
+    "venues": { "url": "https://venues.example.org/mcp" }
+  },
+  "agents": {
+    "reviewer": {
+      "harness": "codex",
+      "permissions": "read-only",
+      "instructions": "Compare the venue quotes and return the city of the best offer.",
+      "results": {
+        "city": { "required": true, "schema": { "type": "string" } }
+      }
+    }
+  },
+  "flow": {
+    "input": {
+      "type": "object",
+      "properties": { "city": { "type": "string" } },
+      "required": ["city"],
+      "additionalProperties": false
+    },
+    "entry": "lookup",
+    "steps": {
+      "lookup": {
+        "type": "call",
+        "mcp": { "server": "venues", "tool": "quotes" },
+        "arguments": { "city": { "input": ["city"] } },
+        "next": {
+          "passed": {
+            "step": "compare",
+            "message": {
+              "resources": {
+                "requestedCity": { "input": ["city"] },
+                "quotes": { "from": ["data"] }
+              }
+            }
+          },
+          "failed": []
+        }
+      },
+      "compare": { "type": "agent", "agent": "reviewer", "next": "record" },
+      "record": {
+        "type": "call",
+        "mcp": { "server": "venues", "tool": "record_choice" },
+        "arguments": {
+          "requestedCity": { "input": ["city"] },
+          "chosenCity": { "path": ["results", "city"] }
+        }
+      }
+    }
+  }
+}
