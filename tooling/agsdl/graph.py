@@ -7,6 +7,7 @@ compose step as one step; joins are deduced there.
 """
 
 from collections import deque
+from types import MappingProxyType
 
 
 # Shared across scope graphs, expansions and analysis in one validation.
@@ -119,6 +120,8 @@ class Graph:
         self.composes = {}
         self.edges = []
         self.root = None
+        self._successors = None
+        self._predecessors = None
 
     # Construction -------------------------------------------------------
 
@@ -311,19 +314,23 @@ class Graph:
 
     # Queries ------------------------------------------------------------
 
-    def successors(self):
-        self.budget.spend(len(self.nodes) + len(self.edges))
-        result = {addr: [] for addr in self.nodes}
-        for edge in self.edges:
-            result[edge.src].append(edge)
+    def _adjacency(self, reverse=False):
+        cache = "_predecessors" if reverse else "_successors"
+        result = getattr(self, cache)
+        if result is None:
+            self.budget.spend(len(self.nodes) + len(self.edges))
+            entries = {addr: [] for addr in self.nodes}
+            for edge in self.edges:
+                entries[edge.dst if reverse else edge.src].append(edge)
+            result = MappingProxyType({addr: tuple(edges) for addr, edges in entries.items()})
+            setattr(self, cache, result)
         return result
 
+    def successors(self):
+        return self._adjacency()
+
     def predecessors(self):
-        self.budget.spend(len(self.nodes) + len(self.edges))
-        result = {addr: [] for addr in self.nodes}
-        for edge in self.edges:
-            result[edge.dst].append(edge)
-        return result
+        return self._adjacency(reverse=True)
 
     def reachable(self, start, blocked=()):
         succ = self.successors()
@@ -331,6 +338,7 @@ class Graph:
         queue = deque([start])
         while queue:
             current = queue.popleft()
+            self.budget.spend(len(succ[current]) + 1)
             for edge in succ[current]:
                 if edge.dst in blocked or edge.dst in seen:
                     continue
@@ -344,6 +352,7 @@ class Graph:
         queue = deque([target])
         while queue:
             current = queue.popleft()
+            self.budget.spend(len(pred[current]) + 1)
             for edge in pred[current]:
                 if edge.src in blocked or edge.src in seen or edge.src == target:
                     continue

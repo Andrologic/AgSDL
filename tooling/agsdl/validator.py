@@ -988,7 +988,12 @@ class Checker:
             if graph.nodes[addr].decl.get("remaining") == "finish":
                 self.check_after_finish(graph, addr, finishing)
         self.check_fanout_instances(graph, infos)
-        self.check_open_fork_instances(graph, infos)
+        for node in graph.nodes.values():
+            graph.budget.spend()
+            if (node.type == "agent" and node.agent is not None
+                    and node.decl.get("instance") != "new" and "delivery" not in node.decl):
+                self.check_open_fork_instances(graph, infos)
+                break
 
     def check_open_fork_instances(self, graph, infos):
         """Paths of a fork that meets no join run at the same time to their end."""

@@ -190,6 +190,44 @@ class ReportTest(unittest.TestCase):
                 self.assertTrue(report.valid, report.diagnostics)
                 self.assertEqual(bool(report.joins), has_join)
 
+    def test_fanout_visits_without_shared_instance_users(self):
+        with open(os.path.join(CONFORMANCE, "cases", "fanout-visits.json")) as handle:
+            document = json.load(handle)
+        agents = [step for step in document["flow"]["steps"].values() if step["type"] == "agent"]
+        for index, step in enumerate(agents):
+            if index % 2:
+                step.pop("instance", None)
+                step["delivery"] = "queue"
+            else:
+                step["instance"] = "new"
+                step.pop("delivery", None)
+        modules = load_modules(os.path.join(CONFORMANCE, "modules"))
+        with mock.patch("agsdl.validator.Checker.check_open_fork_instances") as check:
+            report = validate_document(document, modules)
+        check.assert_not_called()
+        self.assertIn("FANOUT_VISITS", codes(report, "warning"))
+        self.assertNotIn("SHARED_INSTANCE_PARALLEL", codes(report, "warning"))
+
+    def test_open_fork_shared_instance_warning(self):
+        with open(os.path.join(CONFORMANCE, "cases", "parallel-no-join-shared.json")) as handle:
+            document = json.load(handle)
+        report = validate_document(document, load_modules(os.path.join(CONFORMANCE, "modules")))
+        self.assertTrue(report.valid)
+        self.assertIn("SHARED_INSTANCE_PARALLEL", codes(report, "warning"))
+
+    def test_open_fork_can_warn_for_one_shared_step(self):
+        with open(os.path.join(CONFORMANCE, "cases", "parallel-no-join-shared.json")) as handle:
+            document = json.load(handle)
+        steps = document["flow"]["steps"]
+        for step in steps.values():
+            step["instance"] = "new"
+        for name in ("x", "y"):
+            steps[name]["next"] = "later"
+        steps["later"] = {"type": "agent", "agent": "a"}
+        report = validate_document(document, load_modules(os.path.join(CONFORMANCE, "modules")))
+        self.assertTrue(report.valid)
+        self.assertIn("SHARED_INSTANCE_PARALLEL", codes(report, "warning"))
+
     def test_graph_limit_is_a_reported_error(self):
         with open(os.path.join(EXAMPLES, "reusable-review.json"), "rb") as handle:
             data = handle.read()
@@ -217,6 +255,30 @@ class GraphTest(unittest.TestCase):
         self.assertEqual(graph.immediate_dominators(), {
             ("left",): ("start",), ("right",): ("start",), ("merge",): ("start",),
         })
+
+    def test_repeated_walks_reuse_adjacency_and_charge_visits(self):
+        document = {"flow": {"entry": "one", "steps": {
+            "one": {"type": "agent", "agent": "a", "next": "two"},
+            "two": {"type": "agent", "agent": "a", "next": "one"},
+        }}}
+        graph = Graph.for_scope(document)
+        successors = graph.successors()
+        predecessors = graph.predecessors()
+        self.assertIs(successors, graph.successors())
+        self.assertIs(predecessors, graph.predecessors())
+        with self.assertRaises(TypeError):
+            successors[("one",)] = ()
+        self.assertIsInstance(successors[("one",)], tuple)
+        before = graph.budget.remaining
+        self.assertEqual(graph.reachable(("one",)), {("one",), ("two",)})
+        cost = before - graph.budget.remaining
+        self.assertEqual(cost, 4)
+        self.assertEqual(graph.reachable(("one",), blocked={("two",)}), {("one",)})
+        self.assertEqual(graph.reaching(("one",)), {("two",)})
+        self.assertEqual(graph.reaching(("one",), blocked={("two",)}), set())
+        graph.budget.remaining = cost - 1
+        with self.assertRaises(GraphLimitError):
+            graph.reachable(("one",))
 
     def test_graphs_share_a_work_budget(self):
         with open(os.path.join(EXAMPLES, "reusable-review.json")) as handle:
