@@ -1,7 +1,7 @@
 # AgSDL agent instructions
 
-AgSDL 0.4.0 is the current edition, published from tag `v0.4.0`, with
-contract marker `agsdl-0.4.0`. Earlier editions remain in their tags.
+Distribution v0.5.0 ships the AgSDL 0.4.0 language edition with contract
+marker `agsdl-0.4.0`, project format 1 and archive format 1. Earlier editions remain in their tags.
 Do not describe AgSDL as stable.
 
 ## Read before changing the project
