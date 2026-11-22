@@ -28,6 +28,20 @@ The checks and diagnostic codes are listed in
 [Validation](../spec/validation.md). Join reports give the origin and branches
 the validator deduced for each join.
 
+## Project folders
+
+Pass the project directory or its `agsdl.json` to either command.
+
+```sh
+python3 -m agsdl ../examples/review-project
+python3 -m agsdl.mermaid ../examples/review-project
+```
+
+In Python, `load_project(path)` returns the assembled `document`, its base
+directory `root`, the MCP `secrets` requirements and the local `mcp_files`
+by server ID. Use `validate_path(path, modules)` for a validation report
+with source locations. See [project folders](../spec/project.md).
+
 ## Draw
 
 ```sh

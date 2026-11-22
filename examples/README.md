@@ -52,3 +52,6 @@ python3 -m agsdl.mermaid ../examples/ci-watcher.json
 
 Model names such as `example/large`, skill paths and the MCP server URLs are
 fictional.
+
+The [review project](review-project/agsdl.json) keeps its agent, instructions,
+flow, harness settings and MCP secret requirements in separate files.

@@ -11,6 +11,7 @@ import argparse
 import sys
 
 from . import jsoninput
+from .project import ProjectError, read_input
 from .graph import route_items, route_targets, step_routes
 
 SHAPES = {
@@ -69,8 +70,8 @@ def main(argv=None):
     parser.add_argument("--composition", help="draw this composition instead of the flow")
     args = parser.parse_args(argv)
     try:
-        document = jsoninput.load(args.document)
-    except (OSError, jsoninput.InputError) as error:
+        document, _ = read_input(args.document)
+    except (OSError, jsoninput.InputError, ProjectError) as error:
         print(f"agsdl.mermaid: {error}", file=sys.stderr)
         return 2
     if args.composition:

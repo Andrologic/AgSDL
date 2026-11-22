@@ -1,0 +1,6 @@
+{
+  "entry": "review",
+  "steps": {
+    "review": { "type": "agent", "agent": "reviewer" }
+  }
+}

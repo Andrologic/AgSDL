@@ -1,0 +1,20 @@
+{
+  "contract": "agsdl-0.4.0",
+  "id": "review-project",
+  "agents": {
+    "reviewer": {
+      "harness": "codex",
+      "permissions": "read-only",
+      "instructions": [{ "uri": "agents/reviewer/instructions.md" }],
+      "mcpServers": ["issues"],
+      "harnessSettings": { "webSearch": "disabled" }
+    }
+  },
+  "flow": {
+    "entry": "review",
+    "steps": {
+      "review": { "type": "agent", "agent": "reviewer" }
+    }
+  },
+  "mcpServers": { "issues": { "url": "https://mcp.example.com/issues" } }
+}

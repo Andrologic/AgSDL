@@ -1,0 +1,182 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AgSDL project manifest, format 1",
+  "type": "object",
+  "required": [
+    "projectFormat",
+    "contract",
+    "id",
+    "agents"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "projectFormat": {
+      "const": "agsdl-project-1"
+    },
+    "$schema": {
+      "$ref": "agsdl.schema.json#/properties/$schema"
+    },
+    "contract": {
+      "$ref": "agsdl.schema.json#/properties/contract"
+    },
+    "id": {
+      "$ref": "agsdl.schema.json#/properties/id"
+    },
+    "title": {
+      "$ref": "agsdl.schema.json#/properties/title"
+    },
+    "description": {
+      "$ref": "agsdl.schema.json#/properties/description"
+    },
+    "agents": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "agsdl.schema.json#/$defs/name"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "agsdl.schema.json#/properties/agents/additionalProperties"
+          },
+          {
+            "$ref": "#/$defs/file"
+          }
+        ]
+      }
+    },
+    "skills": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "agsdl.schema.json#/$defs/name"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "agsdl.schema.json#/properties/skills/additionalProperties"
+          },
+          {
+            "$ref": "#/$defs/file"
+          }
+        ]
+      }
+    },
+    "content": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "agsdl.schema.json#/$defs/name"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "agsdl.schema.json#/properties/content/additionalProperties"
+          },
+          {
+            "$ref": "#/$defs/file"
+          }
+        ]
+      }
+    },
+    "mcpServers": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "agsdl.schema.json#/$defs/name"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "agsdl.schema.json#/properties/mcpServers/additionalProperties"
+          },
+          {
+            "$ref": "#/$defs/file"
+          }
+        ]
+      }
+    },
+    "compositions": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "agsdl.schema.json#/$defs/name"
+      },
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "agsdl.schema.json#/properties/compositions/additionalProperties"
+          },
+          {
+            "$ref": "#/$defs/file"
+          }
+        ]
+      }
+    },
+    "flow": {
+      "oneOf": [
+        {
+          "$ref": "agsdl.schema.json#/properties/flow"
+        },
+        {
+          "$ref": "#/$defs/file"
+        }
+      ]
+    },
+    "settingsFiles": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "agsdl.schema.json#/$defs/name"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/path"
+      }
+    },
+    "secrets": {
+      "$ref": "#/$defs/file"
+    },
+    "mcpFiles": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "agsdl.schema.json#/$defs/name"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "uniqueItems": true,
+        "minItems": 1,
+        "items": {
+          "$ref": "#/$defs/path"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/|[A-Za-z][A-Za-z0-9+.\\-]*:)[^\\\\\\u0000-\\u001F]+$"
+    },
+    "file": {
+      "type": "object",
+      "required": [
+        "file"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "$ref": "#/$defs/path"
+        }
+      }
+    },
+    "secretRequirements": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "agsdl.schema.json#/$defs/name"
+      },
+      "additionalProperties": {
+        "type": "array",
+        "minItems": 1,
+        "uniqueItems": true,
+        "items": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        }
+      }
+    }
+  }
+}
