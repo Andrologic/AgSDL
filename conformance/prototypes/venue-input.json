@@ -1,0 +1,16 @@
+{
+  "document": "../../examples/prototypes/venue-input.json",
+  "accepted": {
+    "input": { "city": "Paris" },
+    "lookupArguments": { "city": "Paris" },
+    "requestedCityResource": { "value": "Paris", "mediaType": "application/json" },
+    "compareOutput": { "results": { "city": "Lyon" } },
+    "recordArguments": { "requestedCity": "Paris", "chosenCity": "Lyon" }
+  },
+  "rejected": {
+    "input": { "city": 42 },
+    "code": "INPUT_INVALID",
+    "path": "/city",
+    "starts": []
+  }
+}

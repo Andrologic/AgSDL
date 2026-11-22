@@ -4,6 +4,12 @@ These questions are not settled in AgSDL 0.4.0. Nothing in this page is a
 requirement. Each question can be settled later by an optional addition,
 without changing the meaning of a 0.4 document.
 
+## Declared run input
+
+Should a flow declare a typed value that an entry call and later steps can
+read throughout a run? The [run input prototype](prototypes/run-input.md)
+provides a venue-selection example and a launch preview for hosts to try.
+
 ## Declared call outcomes
 
 A call's outcome is `passed` or `failed`. Some commands give several exit
